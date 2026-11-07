@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 260" width="280" height="260">
+  <defs>
+    <radialGradient id="bodyGrad" cx="58%" cy="30%" r="70%" fx="64%" fy="22%">
+      <stop offset="0%" stop-color="#FFF48C"/>
+      <stop offset="36%" stop-color="#FAD149"/>
+      <stop offset="76%" stop-color="#E3A52C"/>
+      <stop offset="100%" stop-color="#C4821A"/>
+    </radialGradient>
+    <radialGradient id="bellyGrad" cx="64%" cy="36%" r="65%">
+      <stop offset="0%" stop-color="#FFF8E6"/>
+      <stop offset="55%" stop-color="#F3DFC1"/>
+      <stop offset="88%" stop-color="#DFC195"/>
+      <stop offset="100%" stop-color="#C9A878"/>
+    </radialGradient>
+    <radialGradient id="eyeGreenGrad" cx="45%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#B5E2A1"/>
+      <stop offset="58%" stop-color="#86B87A"/>
+      <stop offset="100%" stop-color="#58854F"/>
+    </radialGradient>
+    <linearGradient id="armFrontGrad" x1="12%" y1="15%" x2="92%" y2="85%">
+      <stop offset="0%" stop-color="#F7CA44"/>
+      <stop offset="42%" stop-color="#E3A42B"/>
+      <stop offset="68%" stop-color="#9A7240"/>
+      <stop offset="86%" stop-color="#614728"/>
+      <stop offset="100%" stop-color="#3E2D18"/>
+    </linearGradient>
+    <linearGradient id="armWaveGrad" x1="20%" y1="85%" x2="80%" y2="10%">
+      <stop offset="0%" stop-color="#F7CA44"/>
+      <stop offset="45%" stop-color="#E3A42B"/>
+      <stop offset="72%" stop-color="#8F693B"/>
+      <stop offset="100%" stop-color="#3E2D18"/>
+    </linearGradient>
+    <linearGradient id="handBackGrad" x1="10%" y1="20%" x2="90%" y2="80%">
+      <stop offset="0%" stop-color="#8A6438"/>
+      <stop offset="55%" stop-color="#594024"/>
+      <stop offset="100%" stop-color="#382815"/>
+    </linearGradient>
+    <linearGradient id="legGrad" x1="45%" y1="0%" x2="55%" y2="96%">
+      <stop offset="0%" stop-color="#DF9E26"/>
+      <stop offset="48%" stop-color="#CC8B20"/>
+      <stop offset="74%" stop-color="#856035"/>
+      <stop offset="90%" stop-color="#573F22"/>
+      <stop offset="100%" stop-color="#382814"/>
+    </linearGradient>
+    <linearGradient id="legBackGrad" x1="45%" y1="0%" x2="55%" y2="96%">
+      <stop offset="0%" stop-color="#C98A1E"/>
+      <stop offset="48%" stop-color="#B07516"/>
+      <stop offset="74%" stop-color="#70502B"/>
+      <stop offset="100%" stop-color="#332411"/>
+    </linearGradient>
+    <linearGradient id="scarfGrad" x1="0%" y1="0%" x2="100%" y2="20%">
+      <stop offset="0%" stop-color="#FF525E"/>
+      <stop offset="58%" stop-color="#E62E3D"/>
+      <stop offset="100%" stop-color="#A81623"/>
+    </linearGradient>
+    <linearGradient id="skiBoardGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2B2D42"/>
+      <stop offset="15%" stop-color="#EF233C"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="82%" stop-color="#EF233C"/>
+      <stop offset="100%" stop-color="#FFB703"/>
+    </linearGradient>
+    <linearGradient id="goggleLensGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5D4"/>
+      <stop offset="50%" stop-color="#00BBF9"/>
+      <stop offset="100%" stop-color="#F15BB5"/>
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="100%" y1="50%" x2="0%" y2="50%">
+      <stop offset="0%" stop-color="#FFF8B8"/>
+      <stop offset="30%" stop-color="#FF9F1C"/>
+      <stop offset="70%" stop-color="#E71D36" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#7209B7" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#141E2B" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <g id="action-ski-crash" filter="url(#dropShadow)" transform="translate(50, 22)">
+    <g transform="translate(20, 28) rotate(-38)">
+      <animateTransform attributeName="transform" type="rotate" values="-38 90 30; -28 90 30; -38 90 30" dur="0.9s" repeatCount="indefinite"/>
+      <path d="M-20,4 L120,4 C135,4 145,-5 150,-12 C145,0 135,10 120,10 L-20,10 Z" fill="url(#skiBoardGrad)"/>
+    </g>
+    <g transform="rotate(14 95 140)">
+    <g id="tail" transform="translate(48, 122)">
+      <path d="M8,-6 C-4,-4 -12,2 -14,7 C-10,10 -1,10 10,6 Z" fill="#D99822"/>
+    </g>
+    <g id="leg-back" transform="translate(108, 140) rotate(20)">
+      <g>
+        
+        <path d="M-9,-4 C-11,14 -6,34 -4,44 L-12,46 C-16,47 -15,51 -10,52 L22,53 C29,53 34,49 30,45 C26,42 16,40 12,37 C14,25 16,10 12,-4 Z" fill="url(#legBackGrad)"/>
+        <ellipse cx="26" cy="49" rx="6" ry="3.2" fill="#3B2914"/>
+        <ellipse cx="18" cy="51" rx="5.5" ry="3" fill="#473219"/>
+        <ellipse cx="9" cy="51.5" rx="4.5" ry="2.5" fill="#523A1E"/>
+      </g>
+    </g>
+    <g id="leg-front" transform="translate(74, 140) rotate(-25)">
+      <g>
+        
+        <path d="M-10,-4 C-12,16 -7,37 -5,48 L-14,50 C-18,51 -17,55 -11,56 L24,57 C32,57 36,52 31,48 C26,45 16,43 12,39 C15,26 18,11 14,-4 Z" fill="url(#legGrad)"/>
+        <ellipse cx="28" cy="52.5" rx="6.5" ry="3.5" fill="#382612"/>
+        <ellipse cx="19" cy="54.5" rx="6" ry="3.2" fill="#463118"/>
+        <ellipse cx="9" cy="55" rx="5" ry="2.8" fill="#543B1F"/>
+      </g>
+    </g>
+    <g id="eye-far-right">
+      <ellipse cx="131.5" cy="22" rx="4.5" ry="5.5" transform="rotate(-8 131.5 22)" fill="#7EB072"/>
+      <ellipse cx="133.8" cy="22" rx="2.2" ry="3.4" fill="#141A15"/>
+      <circle cx="134.4" cy="20.5" r="0.9" fill="#FFFFFF"/>
+    </g>
+    <g id="torso-head">
+      <path d="M98,10
+               C112,9 124,14 131,21
+               C136,24 139,28 137,33
+               C135,37 127,39 124,44
+               C121,50 125,56 131,64
+               C142,78 148,96 144,114
+               C140,132 126,146 106,151
+               C84,156 60,150 50,134
+               C41,119 43,98 51,80
+               C59,62 68,47 75,33
+               C80,21 86,11 98,10 Z" fill="url(#bodyGrad)"/>
+      <g id="belly">
+        <path d="M118,57
+                 C133,64 145,82 143,103
+                 C141,122 125,134 103,134
+                 C83,134 74,120 79,101
+                 C83,82 95,62 110,56
+                 C113,55 116,56 118,57 Z" fill="url(#bellyGrad)"/>
+        <path d="M78,108 C82,126 102,132 122,126 C134,122 141,112 143,102 C142,122 125,135 103,135 C83,135 75,122 78,108 Z" fill="#D3B182" opacity="0.65"/>
+        <ellipse cx="116" cy="76" rx="16" ry="9" transform="rotate(-18 116 76)" fill="#FFFFFF" opacity="0.45"/>
+      </g>
+      <g id="face-dizzy">
+        <ellipse cx="113" cy="22.5" rx="8.5" ry="8" fill="url(#eyeGreenGrad)"/>
+        <path d="M113,22 m-4,0 a4,4 0 1,0 8,0 a3,3 0 1,0 -6,0 a1.5,1.5 0 1,0 3,0" fill="none" stroke="#141A15" stroke-width="1.7" stroke-linecap="round"/>
+        <ellipse cx="126" cy="34" rx="5.5" ry="3.8" fill="#4A1210"/>
+        <ellipse cx="126" cy="35.5" rx="3.5" ry="1.8" fill="#C83E31"/>
+      </g>
+
+    </g>
+    <g id="arm-front" transform="translate(72, 72) rotate(12)">
+      <g>
+        
+        <path d="M-6,18 C-4,34 12,44 40,42 C48,41 52,36 48,32 C32,34 14,30 6,16 Z" fill="#B8821E" opacity="0.36"/>
+        <path d="M0,0
+                 C-8,8 -10,24 -2,34
+                 C6,43 24,42 40,39
+                 C44,38 46,35 43,33
+                 C39,31 35,31 35,31
+                 C41,30 45,27 43,24
+                 C40,22 34,23 34,23
+                 C39,21 41,17 37,15
+                 C33,13 26,17 22,20
+                 C14,22 8,18 10,8
+                 C11,2 6,-2 0,0 Z" fill="url(#armFrontGrad)"/>
+        <path d="M23,19 C26,14 31,11 35,13 C37,15 34,19 29,21" fill="#5C4224"/>
+        <path d="M30,24 L41,24 M31,31 L42,32" stroke="#2E2010" stroke-width="1.3" stroke-linecap="round"/>
+      </g>
+    </g>
+    </g>
+    <path d="M25,198 C45,172 85,175 110,185 C135,174 165,178 180,198 Z" fill="#FFFFFF" stroke="#CAE9FF" stroke-width="2"/>
+    <g transform="translate(110, 6)">
+      <animateTransform attributeName="transform" type="translate" values="106,6; 114,4; 106,6" dur="0.7s" repeatCount="indefinite"/>
+      <polygon points="0,-8 2.5,-2.5 8,-2 4,2 5,8 0,5 -5,8 -4,2 -8,-2 -2.5,-2.5" fill="#FFD166" stroke="#F4A261" stroke-width="1"/>
+      <polygon points="34,2 35.8,6 40,6.5 37,9.5 38,14 34,11.5 30,14 31,9.5 28,6.5 32.2,6" fill="#FFD166" stroke="#F4A261" stroke-width="1"/>
+      <polygon points="-28,4 -26.2,8 -22,8.5 -25,11.5 -24,16 -28,13.5 -32,16 -31,11.5 -34,8.5 -29.8,8" fill="#FFEE99" stroke="#F4A261" stroke-width="1"/>
+    </g>
+  </g>
+</svg>

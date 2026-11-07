@@ -1,0 +1,149 @@
+{
+  "character": "黄色奶蛙 / 奶娃 (Yellow Naiwa)",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "actions": {
+    "idle": {
+      "description": "待机 (正面微侧呼吸与眨眼)",
+      "frames": [
+        "idle/idle-01.svg",
+        "idle/idle-02.svg",
+        "idle/idle-03.svg",
+        "idle/idle-04.svg",
+        "idle/idle-05.svg",
+        "idle/idle-06.svg",
+        "idle/idle-07.svg"
+      ]
+    },
+    "running-right": {
+      "description": "向右奔跑",
+      "frames": [
+        "running-right/running-right-01.svg",
+        "running-right/running-right-02.svg",
+        "running-right/running-right-03.svg",
+        "running-right/running-right-04.svg",
+        "running-right/running-right-05.svg",
+        "running-right/running-right-06.svg",
+        "running-right/running-right-07.svg",
+        "running-right/running-right-08.svg"
+      ]
+    },
+    "running-left": {
+      "description": "向左奔跑",
+      "frames": [
+        "running-left/running-left-01.svg",
+        "running-left/running-left-02.svg",
+        "running-left/running-left-03.svg",
+        "running-left/running-left-04.svg",
+        "running-left/running-left-05.svg",
+        "running-left/running-left-06.svg",
+        "running-left/running-left-07.svg",
+        "running-left/running-left-08.svg"
+      ]
+    },
+    "waving": {
+      "description": "热情招手",
+      "frames": [
+        "waving/waving-01.svg",
+        "waving/waving-02.svg",
+        "waving/waving-03.svg",
+        "waving/waving-04.svg"
+      ]
+    },
+    "belly-laugh": {
+      "description": "标志性捧腹大笑 (闭眼露齿)",
+      "frames": [
+        "belly-laugh/belly-laugh-01.svg",
+        "belly-laugh/belly-laugh-02.svg",
+        "belly-laugh/belly-laugh-03.svg",
+        "belly-laugh/belly-laugh-04.svg",
+        "belly-laugh/belly-laugh-05.svg"
+      ]
+    },
+    "sad-failed": {
+      "description": "失败阻塞 / 垂头丧气蹲下",
+      "frames": [
+        "sad-failed/sad-failed-01.svg",
+        "sad-failed/sad-failed-02.svg",
+        "sad-failed/sad-failed-03.svg",
+        "sad-failed/sad-failed-04.svg",
+        "sad-failed/sad-failed-05.svg",
+        "sad-failed/sad-failed-06.svg",
+        "sad-failed/sad-failed-07.svg",
+        "sad-failed/sad-failed-08.svg"
+      ]
+    },
+    "working": {
+      "description": "执行任务 / 思考搓手",
+      "frames": [
+        "working/working-01.svg",
+        "working/working-02.svg",
+        "working/working-03.svg",
+        "working/working-04.svg",
+        "working/working-05.svg",
+        "working/working-06.svg"
+      ]
+    },
+    "waiting": {
+      "description": "等待输入 / 托腮等待",
+      "frames": [
+        "waiting/waiting-01.svg",
+        "waiting/waiting-02.svg",
+        "waiting/waiting-03.svg",
+        "waiting/waiting-04.svg",
+        "waiting/waiting-05.svg",
+        "waiting/waiting-06.svg"
+      ]
+    },
+    "review": {
+      "description": "完成待查看 / 抱胸叉腰",
+      "frames": [
+        "review/review-01.svg",
+        "review/review-02.svg",
+        "review/review-03.svg",
+        "review/review-04.svg",
+        "review/review-05.svg",
+        "review/review-06.svg"
+      ]
+    },
+    "look-directions": {
+      "description": "16方向注视 (上半组 1-8)",
+      "frames": [
+        "look-directions/look-directions-01.svg",
+        "look-directions/look-directions-02.svg",
+        "look-directions/look-directions-03.svg",
+        "look-directions/look-directions-04.svg",
+        "look-directions/look-directions-05.svg",
+        "look-directions/look-directions-06.svg",
+        "look-directions/look-directions-07.svg",
+        "look-directions/look-directions-08.svg",
+        "look-directions/look-directions-09.svg",
+        "look-directions/look-directions-10.svg",
+        "look-directions/look-directions-11.svg",
+        "look-directions/look-directions-12.svg",
+        "look-directions/look-directions-13.svg",
+        "look-directions/look-directions-14.svg",
+        "look-directions/look-directions-15.svg",
+        "look-directions/look-directions-16.svg"
+      ]
+    },
+    "classic-side-belly": {
+      "description": "经典45°侧面双手捧肚待机与眨眼 (源自 milk-frog-work-pet)",
+      "frames": [
+        "classic-side-belly/classic-side-belly-01.svg",
+        "classic-side-belly/classic-side-belly-02.svg",
+        "classic-side-belly/classic-side-belly-03.svg",
+        "classic-side-belly/classic-side-belly-04.svg",
+        "classic-side-belly/classic-side-belly-05.svg",
+        "classic-side-belly/classic-side-belly-06.svg"
+      ]
+    },
+    "laugh-fall-down": {
+      "description": "笑倒后停留躺平仰天大笑 (源自 naiwa-desktop/新增互动预览.png)",
+      "frames": [
+        "laugh-fall-down/laugh-fall-down-01.svg"
+      ]
+    }
+  },
+  "totalFrames": 81
+}

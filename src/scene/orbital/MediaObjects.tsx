@@ -8,13 +8,14 @@ import type { WorldAction, WorldSceneProps } from '../../types/world';
 import { roomAudio } from '../audioEngine';
 import { ObjectHandle } from './ObjectHandle';
 import { SoftBox } from './Primitives';
+import { CartridgePlayer } from '../../components/computer/CartridgePlayer';
 
 type Point = [number, number, number];
 const PLAYER: Point = [-0.35, 1.2, -2.25];
 const PLATTER: Point = [-0.48, 1.295, -2.25];
 const SLOT: Point = [2.26, 1.27, -2.05];
 const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridgeProps> }>('../../games/*/index.tsx');
-const gameNames: Record<GameId, string> = { mario: '蘑菇冒险', shooter: '弹球失控' };
+const gameNames: Record<GameId, string> = { mario: '雪线逃脱', shooter: '弹球失控' };
 const gameColors: Record<GameId, string> = { mario: '#cb795a', shooter: '#759dad' };
 // Six accessible records per shelf; the physical end tabs turn through the collection.
 const discPosition = (index: number): Point => [-0.74 + (index % 6) * 0.2, 1.37, -2.86];
@@ -276,8 +277,12 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     {sceneVisible && <Html transform position={[1.55, 1.68, -2.35]} distanceFactor={1} style={{ width: 368, height: 276, pointerEvents: computerFocused && activeComponent ? 'auto' : 'none', backfaceVisibility: 'hidden' }}>
       <div aria-label="电脑游戏屏幕" onPointerDown={event => { if (activeComponent) event.stopPropagation(); }} style={{ width: 800, height: 600, transform: 'scale(.46)', transformOrigin: 'top left', overflow: 'hidden', borderRadius: 24, background: '#142d27', color: '#d8e6b9', fontFamily: 'monospace', fontSize: 27, position: 'relative', touchAction: activeComponent ? 'none' : 'auto' }}>
         {computerFocused && props.activeGame && activeComponent ? <ScreenBoundary key={props.activeGame} onError={() => { setLoadError({ game: props.activeGame!, text: '卡带暂时无法运行，请拔出后重试。' }); props.onFeatureError('卡带暂时无法运行，请拔出后重试。'); }}>
-          {React.createElement(activeComponent, { width: 800, height: 600, isActive: gameActive, isMuted: props.isMuted, onExit: eject, onScoreChange: updateScore, onGameOver: result => updateScore(result.score, result.highScore) })}
-          <div style={{ position: 'absolute', top: 10, left: 20, pointerEvents: 'none', fontSize: 18 }}>得分 {score.current} · 最高 {score.high}{paused ? ' · 已暂停' : ''}</div>
+          {props.activeGame === 'mario' ? <CartridgePlayer title="雪线逃脱" muted={props.isMuted} onMute={props.onToggleMute} onExit={eject}>
+            {React.createElement(activeComponent, { width: 800, height: 600, isActive: gameActive, isMuted: props.isMuted, onExit: eject, onScoreChange: updateScore, onGameOver: result => updateScore(result.score, result.highScore) })}
+          </CartridgePlayer> : <>
+            {React.createElement(activeComponent, { width: 800, height: 600, isActive: gameActive, isMuted: props.isMuted, onExit: eject, onScoreChange: updateScore, onGameOver: result => updateScore(result.score, result.highScore) })}
+            <div style={{ position: 'absolute', top: 10, left: 20, pointerEvents: 'none', fontSize: 18 }}>得分 {score.current} · 最高 {score.high}{paused ? ' · 已暂停' : ''}</div>
+          </>}
         </ScreenBoundary> : <div style={screenMessage}>
           <strong style={{ fontSize: 42, letterSpacing: 5 }}>POCKET PLAY</strong>
           <span>{transfer?.game ? transfer.eject ? '正在拔出卡带' : '正在插入卡带' : props.activeGame ? loadError?.game === props.activeGame ? loadError.text : computerFocused ? '正在读取卡带…' : '游戏已暂停，靠近电脑继续' : '拿起一张卡带，开启冒险'}</span>

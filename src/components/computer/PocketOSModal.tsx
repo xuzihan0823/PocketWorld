@@ -123,7 +123,7 @@ export const PocketOSModal: React.FC<PocketOSModalProps> = ({
           {bootingGame && (
             <div className="crt-boot-animation">
               <div className="crt-scanline-bar" />
-              <strong>正在载入虚拟卡带：{bootingGame === 'mario' ? 'SUPER MARIO' : 'SPACE SHOOTER'}...</strong>
+              <strong>正在载入虚拟卡带：{bootingGame === 'mario' ? '雪线逃脱' : 'SPACE SHOOTER'}...</strong>
               <span>800 × 600 CANVAS CARTRIDGE BUS</span>
             </div>
           )}
@@ -153,7 +153,7 @@ export const PocketOSModal: React.FC<PocketOSModalProps> = ({
               <div className="placeholder-box">
                 <h3>
                   {activeGame === 'mario'
-                    ? '马里奥大冒险 (Super Mario)'
+                    ? '雪线逃脱'
                     : '雷电战机 (Space Shooter)'}
                 </h3>
                 <p>
@@ -190,10 +190,10 @@ export const PocketOSModal: React.FC<PocketOSModalProps> = ({
                     className="desktop-game-shortcut is-mario"
                     onClick={() => launchCartridge('mario')}
                   >
-                    <div className="shortcut-emblem">M</div>
+                    <div className="shortcut-emblem">雪</div>
                     <div className="shortcut-meta">
-                      <strong>马里奥大冒险</strong>
-                      <span>Super Mario · 横版闯关卡带</span>
+                      <strong>雪线逃脱</strong>
+                      <span>奶娃滑雪 · 豆包追赶 · 牛来护航</span>
                       <small>最高分：{marioHigh}</small>
                     </div>
                   </button>

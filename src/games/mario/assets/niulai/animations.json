@@ -1,0 +1,29 @@
+{
+  "frameWidth": 320,
+  "frameHeight": 360,
+  "artwork": "reference-redraw",
+  "actions": {
+    "slide": {
+      "partnerRole": "penguin",
+      "animation": "niulai-slide.svg",
+      "sheet": "niulai-slide-sheet.svg",
+      "frameCount": 8,
+      "fps": 8,
+      "groundAnchor": [
+        160,
+        340
+      ]
+    },
+    "charge": {
+      "partnerRole": "yeti",
+      "animation": "niulai-charge.svg",
+      "sheet": "niulai-charge-sheet.svg",
+      "frameCount": 8,
+      "fps": 12.5,
+      "groundAnchor": [
+        160,
+        340
+      ]
+    }
+  }
+}
