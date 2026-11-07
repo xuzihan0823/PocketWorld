@@ -6,6 +6,7 @@ import { ObjectHandle } from './ObjectHandle';
 import { SoftBox, Tube, surface } from './Primitives';
 import { FurnitureCylinder as Cylinder, FurnitureMotion, FURNITURE as C } from './FurnitureParts';
 import { FurnitureBook } from './FurnitureBooks';
+import { DRAWER_TRAVEL } from './drawerInteraction';
 
 function KeyboardKeys() {
   const keys = useRef<THREE.InstancedMesh>(null);
@@ -60,8 +61,8 @@ export function FurnitureDesk({ world }: { world: WorldModelProps }) {
       <SoftBox dims={[0.045, 0.29, 0.96]} position={[x, 0.85, -2.27]} color={C.edge} />
       <SoftBox dims={[0.018, 0.035, 0.84]} position={[x + (x < 0 ? 0.03 : -0.03), 0.78, -2.2]} color="#a5a49b" metalness={0.6} />
     </group>)}
-    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '推回抽屉' : '拉开工作台抽屉'} world={world} drag="z">
-      <FurnitureMotion mode="position" axis="z" target={drawer.open ? 0.64 : 0} reducedMotion={world.reducedMotion}>
+    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · 点击 / E 推回' : '靠近抽屉 · 点击 / E 后退拉开'} world={world}>
+      <FurnitureMotion mode="position" axis="z" target={drawer.open ? DRAWER_TRAVEL : 0} reducedMotion={world.reducedMotion}>
         <SoftBox dims={[1.08, 0.28, 0.065]} position={[0.35, 0.85, -1.69]} color={C.wood} radius={0.018} />
         <SoftBox dims={[1.02, 0.035, 0.88]} position={[0.35, 0.725, -2.15]} color="#bc996b" />
         {[-0.145, 0.845].map(x => <SoftBox key={x} dims={[0.035, 0.21, 0.87]} position={[x, 0.83, -2.15]} color="#bd9668" />)}
