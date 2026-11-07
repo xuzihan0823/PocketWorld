@@ -1,0 +1,71 @@
+.schedule-sheet {
+  position: relative; box-sizing: border-box; width: 360px; height: 472px; padding: 26px 25px 18px 29px;
+  display: flex; flex-direction: column; color: #414b3c; background-color: #f4ead3;
+  background-image: linear-gradient(90deg, #a8956a38, #f4ead300 7%, #fffaf21f 93%, #b5a47819);
+  box-shadow: 2px 4px 6px #372b1b26, inset 1px 0 2px #fff9e2;
+  font: 13px/1.5 'Songti SC', 'Noto Serif SC', Georgia, serif; user-select: text; outline: none;
+  border-radius: 1px 3px 5px 1px; overflow: hidden; scrollbar-width: thin; scrollbar-color: #b6a27b #f4ead3;
+}
+.schedule-heading { flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid #bbaa8670; }
+.schedule-heading h2 { margin: 0; font-size: 23px; font-weight: 500; letter-spacing: 1px; }
+.schedule-heading > span { color: #6c624e; font-size: 11px; font-variant-numeric: tabular-nums; }
+.schedule-tasks { display: grid; gap: 12px; margin-top: 16px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.schedule-tasks fieldset { padding: 0 0 9px; border: 0; border-bottom: 1px solid #bbaa8670; min-width: 0; margin: 0; }
+.schedule-tasks legend { padding: 0; margin-bottom: 6px; color: #76613e; font-size: 11px; }
+.schedule-task-heading { display: grid; grid-template-columns: minmax(0, 1fr) 87px; gap: 12px; }
+.schedule-sheet label { display: grid; gap: 3px; min-width: 0; }
+.schedule-sheet label > span { display: none; }
+.schedule-sheet input, .schedule-sheet textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: 2px 0; border: 0; border-radius: 0; background: transparent; color: #414b3c; font: 16px/1.5 'Songti SC', Georgia, serif; caret-color: #795739; }
+.schedule-time input { font-size: 13px; font-variant-numeric: tabular-nums; }
+.schedule-sheet textarea { height: 46px; resize: none; font-size: 13px; line-height: 22px; background-image: repeating-linear-gradient(transparent 0 21px, #bbaa863d 21px 22px); scrollbar-width: thin; }
+.schedule-sheet input::placeholder, .schedule-sheet textarea::placeholder { color: #77705d; opacity: 1; }
+.schedule-sheet input:focus-visible, .schedule-sheet textarea:focus-visible, .schedule-sheet button:focus-visible { outline: 1px solid #7c6746; outline-offset: 3px; }
+.schedule-content { margin-top: 6px; }
+.schedule-sheet button { border: 0; padding: 6px 0; background: transparent; color: #665035; font: inherit; cursor: pointer; text-underline-offset: 4px; }
+.schedule-sheet button:hover:not(:disabled) { text-decoration: underline; }
+.schedule-sheet button:disabled { opacity: .45; cursor: default; }
+.schedule-actions { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
+.schedule-actions > span, .schedule-actions nav > span { font-size: 11px; color: #6c624e; }
+.schedule-sheet footer { flex-shrink: 0; margin-top: 14px; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #bbaa8640; font-size: 10px; color: #6c624e; }
+.schedule-empty { flex: 1; display: flex; flex-direction: column; justify-content: center; line-height: 1.9; }
+.schedule-empty p { margin: 0 0 14px; }
+.schedule-empty button { align-self: flex-start; text-decoration: underline; }
+.schedule-posted-tasks { flex: 1; min-height: 0; overflow-y: auto; margin-top: 22px; scrollbar-width: thin; }
+.schedule-posted-tasks section { padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #bbaa8670; }
+.schedule-posted-tasks section > div { display: flex; justify-content: space-between; font-size: 11px; color: #76613e; }
+.schedule-posted-tasks h3 { margin: 10px 0 8px; font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+.schedule-posted-tasks p { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.schedule-actions nav { display: flex; align-items: center; gap: 10px; }
+.schedule-actions nav button { font-size: 11px; }
+.schedule-sheet .schedule-discard { color: #80533d; text-decoration: underline; }
+.schedule-error { color: #863f30; margin: 8px 0 0; font-size: 11px; }
+.schedule-error button { margin-left: 8px; text-decoration: underline; }
+.schedule-sheet:focus-visible { outline: none; }
+.schedule-sheet ::selection { background: #c4d2b9; color: #303c31; }
+
+@media (max-width: 719px) {
+  .schedule-sheet { width: calc(100vw - 32px); max-width: 430px; height: min(590px, calc(100svh - 150px)); padding: 22px 22px 16px; font-size: 15px; }
+  .schedule-heading { padding-bottom: 14px; }
+  .schedule-heading h2 { font-size: 24px; }
+  .schedule-heading > span, .schedule-tasks legend { font-size: 12px; }
+  .schedule-sheet button { min-height: 44px; min-width: 44px; padding: 8px 6px; font-size: 14px; }
+  .schedule-task-heading { grid-template-columns: minmax(0, 1fr) 105px; gap: 10px; }
+  .schedule-sheet input { min-height: 44px; }
+  .schedule-time input { font-size: 16px; }
+  .schedule-sheet textarea { font-size: 16px; height: 60px; line-height: 27px; background-image: repeating-linear-gradient(transparent 0 26px, #bbaa863d 26px 27px); }
+  .schedule-sheet footer { margin-top: 10px; padding-top: 4px; font-size: 12px; }
+  .schedule-actions { margin-top: 10px; gap: 8px; }
+  .schedule-actions > span, .schedule-actions nav > span { font-size: 12px; }
+  .schedule-actions nav { gap: 4px; }
+  .schedule-actions nav button { font-size: 13px; }
+  .schedule-posted-tasks p { font-size: 16px; }
+  .schedule-posted-tasks section > div { font-size: 13px; }
+  .schedule-error { flex-shrink: 0; font-size: 12px; }
+}
+
+.schedule-paper-drag { position: absolute; inset: 0; touch-action: none; cursor: grab; }
+.schedule-sheet.is-book > :not(.schedule-paper-drag) { position: relative; pointer-events: none; }
+.schedule-sheet.is-book input, .schedule-sheet.is-book textarea, .schedule-sheet.is-book button { pointer-events: auto; }
+.schedule-sheet.is-dragging { cursor: grabbing; user-select: none; will-change: transform; box-shadow: 4px 12px 18px #372b1b40; }
+.schedule-sheet.is-dragging .schedule-paper-drag { cursor: grabbing; }
+.schedule-page-number { flex-shrink: 0; margin-top: 18px; padding: 8px 0; color: #6c624e; font-size: 11px; }

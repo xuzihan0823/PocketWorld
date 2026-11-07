@@ -9,13 +9,16 @@ import { HabitatShell } from './HabitatShell';
 import { HabitatFurniture } from './HabitatFurniture';
 import { MediaObjects } from './MediaObjects';
 import { FeatureSurfaces } from './FeatureSurfaces';
+import { ScheduleProvider } from './ScheduleContext';
+import { ScheduleSurfaces } from './ScheduleSurfaces';
 import { OrbitalResidents } from './OrbitalResidents';
 
 const FOCUS: Record<string, { target: [number, number, number]; offset: [number, number, number] }> = {
   computer: { target: [1.55, 1.68, -2.30], offset: [0, 0.25, 2.35] },
   'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
   journal: { target: [-0.48, 1.20, -1.94], offset: [0, 1.05, 0.78] },
-  schedule: { target: [0.69, 1.20, -1.96], offset: [0, 1.05, 0.78] },
+  schedule: { target: [0.57, 1.20, -1.96], offset: [0, 0.88, 0.48] },
+  'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
   'book-01': { target: [-3.35, 0.9, -1.75], offset: [0.3, 1.3, 1.35] },
   bed: { target: [-2.5, 0.7, 1.0], offset: [3.2, 3.2, 4.0] },
 };
@@ -48,7 +51,7 @@ function CameraRig(props: OrbitalSceneProps) {
   useEffect(() => {
     if (!controls.current || props.transition.phase === 'idle') return;
     const view = `${props.transition.toScene}/${props.focusedObject ?? ''}`;
-    if (view === currentView.current && props.transition.phase !== 'returning' && props.transition.phase !== 'error') return;
+    if (view === currentView.current && props.transition.phase !== 'returning' && props.transition.phase !== 'error' && !props.focusedObject?.startsWith('schedule')) return;
     currentView.current = view;
     fromPosition.current.copy(camera.position);
     fromTarget.current.copy(controls.current.target);
@@ -57,7 +60,12 @@ function CameraRig(props: OrbitalSceneProps) {
     if (pose) {
       target.current.copy(origin).add(new THREE.Vector3(...pose.target));
       if (props.focusedObject === 'book-01' && props.transition.toScene === 'observatory') target.current.z += 1.25;
-      destination.current.copy(target.current).add(new THREE.Vector3(...pose.offset));
+      const offset = new THREE.Vector3(...pose.offset);
+      if (props.focusedObject?.startsWith('schedule')) {
+        offset.multiplyScalar(Math.max(1, 0.62 / (size.width / size.height)));
+        if (narrow && props.focusedObject === 'schedule') target.current.x = origin.x + 0.69;
+      }
+      destination.current.copy(target.current).add(offset);
     } else {
       target.current.copy(origin).add(new THREE.Vector3(0, 1.05, 0));
       destination.current.copy(target.current).addScaledVector(homeDirection, homeDistance);
@@ -68,7 +76,7 @@ function CameraRig(props: OrbitalSceneProps) {
       controls.current.update();
       moving.current = false;
     } else moving.current = true;
-  }, [props.transition.id, props.focusedObject, props.transition.phase === 'error']);
+  }, [props.transition.id, props.focusedObject, props.transition.phase === 'error', size.width, size.height]);
   useFrame(() => {
     if (!controls.current || !moving.current) return;
     const travel = props.transition.action?.kind === 'travel';
@@ -105,7 +113,7 @@ function OrbitalLighting({ objects }: Pick<WorldSceneProps, 'objects'>) {
 }
 function WorldContent(props: OrbitalSceneProps) {
   const [walkTarget, setWalkTarget] = useState<[number, number, number] | null>(null);
-  return <>
+  return <ScheduleProvider adapters={props.adapters}>
     <PerspectiveCamera makeDefault fov={34} position={[11, 10.05, 14]} near={0.08} far={2000} />
     <CameraRig {...props} />
     <Cosmos reducedMotion={props.reducedMotion} />
@@ -118,6 +126,7 @@ function WorldContent(props: OrbitalSceneProps) {
       return <group key={id} position={SCENE_ORIGINS[id]} visible={id === props.sceneId || (props.transition.action?.kind === 'travel' && props.transition.phase !== 'active' && props.transition.phase !== 'error')}>
         {id === props.sceneId && <OrbitalLighting objects={world.objects} />}
         <HabitatShell variant={id} onFloorClick={point => { if ((!props.focusedObject || props.focusedObject === 'bed') && props.sceneId === id && !props.gestureActive) setWalkTarget(point); }} />
+        {id === 'habitat' && <ScheduleSurfaces {...world} visible={props.sceneId === 'habitat'} />}
         <Suspense fallback={null}><HabitatFurniture {...world} /><MediaObjects {...world} /></Suspense>
         {id === props.sceneId && <>
           <FeatureSurfaces {...world} />
@@ -125,7 +134,7 @@ function WorldContent(props: OrbitalSceneProps) {
         </>}
       </group>;
     })}
-  </>;
+  </ScheduleProvider>;
 }
 export function OrbitalScene(props: OrbitalSceneProps) {
   const container = useRef<HTMLDivElement>(null);

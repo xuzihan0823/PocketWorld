@@ -101,7 +101,9 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     else void roomAudio.startMusic(current.disc);
   }, []);
   const onToggleMute = useCallback(() => { roomAudio.setMuted(!roomAudio.getSnapshot().isMuted); }, []);
-  const status = announcement || world.error || audio.error || world.hover?.hint || (world.focusedObject ? '操作物品继续探索 · Esc / 双指轻触退回' : '触碰物品，留一会儿');
+  const scheduleGuide = world.focusedObject === 'schedule' ? '上拖纸页贴出 · V 切换视角 · Esc 返回'
+    : world.focusedObject === 'schedule-glass' ? '左右键浏览 · V 切换视角 · Esc 返回' : '';
+  const status = announcement || world.error || audio.error || scheduleGuide || world.hover?.hint || (world.focusedObject ? '操作物品继续探索 · Esc / 双指轻触退回' : '触碰物品，留一会儿');
   const travelling = world.transition.action?.kind === 'travel' && !['active', 'idle', 'error'].includes(world.transition.phase);
   return <main className={`orbital-app${draggingFile ? ' is-importing' : ''}${world.focusedObject ? ' is-focused' : ''}`} aria-label="PocketWorld 轨道居住舱"
     onDragEnter={event => { if (!event.dataTransfer.types.includes('Files')) return; event.preventDefault(); inputDepth.current += 1; setDraggingFile(true); }}
@@ -124,6 +126,6 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     {audio.isPlaying && <aside className="orbital-now-playing"><span className="orbital-record-dot" /><div><small>NOW PLAYING</small><p>{audio.disc.title}</p></div></aside>}
     {draggingFile && <div className="orbital-drop-message"><span className="orbital-drop-disc" /><p>让这段音乐，留在这里。</p><small>松手制作一张自己的唱片</small></div>}
     <input ref={fileInput} type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac" hidden onChange={event => importFiles(event.target.files)} />
-    <span className="sr-only">键盘：J 日记，O 日程，R 阅读，B 休息，C 电脑，L 音乐，M 静音，Esc 返回。触屏在物品上拖动，双指轻触返回。</span>
+    <span className="sr-only">键盘：J 日记，O 日程，V 切换日程书与玻璃，向上拖动纸张贴出安排，R 阅读，B 休息，C 电脑，L 音乐，M 静音，Esc 返回。触屏在物品上拖动，双指轻触返回。</span>
   </main>;
 };

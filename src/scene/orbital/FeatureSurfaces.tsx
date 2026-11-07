@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
-import type { BookContent, JournalEntry, ScheduleEntry, WorldSceneProps } from '../../types/world';
+import type { BookContent, JournalEntry, WorldSceneProps } from '../../types/world';
 import { PRESET_BOOKS } from './library';
 export function FeatureSurfaces(props: WorldSceneProps) {
   const id = props.focusedObject;
   const [journal, setJournal] = useState<JournalEntry>({ id: 'today', date: new Date().toLocaleDateString('sv-SE'), text: '', updatedAt: '' });
-  const [schedule, setSchedule] = useState<ScheduleEntry[]>([{ id: 'morning', time: '09:00', title: '', completed: false }, { id: 'afternoon', time: '14:00', title: '', completed: false }, { id: 'evening', time: '20:00', title: '', completed: false }]);
   const [book, setBook] = useState<BookContent>(PRESET_BOOKS[0]);
   const [bookView, setBookView] = useState<'reading' | 'catalog' | 'add'>('reading');
   const [bookTitle, setBookTitle] = useState('');
@@ -31,10 +30,6 @@ export function FeatureSurfaces(props: WorldSceneProps) {
           const stored = props.adapters?.journal ? null : localStorage.getItem('pocketworld:journal:today');
           const entry = props.adapters?.journal ? await props.adapters.journal.load(abort.signal) : stored ? JSON.parse(stored) as JournalEntry : journal;
           if (!abort.signal.aborted && entry && typeof entry.text === 'string') setJournal(entry);
-        } else if (id === 'schedule') {
-          const stored = props.adapters?.schedule ? null : localStorage.getItem('pocketworld:schedule');
-          const entries = props.adapters?.schedule ? await props.adapters.schedule.load(abort.signal) : stored ? JSON.parse(stored) as ScheduleEntry[] : schedule;
-          if (!abort.signal.aborted && Array.isArray(entries)) setSchedule(entries.filter(row => typeof row.title === 'string' && typeof row.time === 'string'));
         } else if (id === 'book-01') {
           const content = props.adapters?.library && !bookId.startsWith('visitor-') ? await props.adapters.library.loadBook(bookId, abort.signal) : selectedBook;
           if (!abort.signal.aborted) setBook(content);
@@ -46,7 +41,7 @@ export function FeatureSurfaces(props: WorldSceneProps) {
     return () => abort.abort();
   }, [id, props.adapters, bookId, selectedBook]);
   useEffect(() => {
-    if (!loaded || !changed.current || (id !== 'journal' && id !== 'schedule')) return;
+    if (!loaded || !changed.current || id !== 'journal') return;
     const abort = new AbortController();
     setSaveState('正在记录');
     const timer = window.setTimeout(async () => {
@@ -55,15 +50,12 @@ export function FeatureSurfaces(props: WorldSceneProps) {
           const entry = { ...journal, updatedAt: new Date().toISOString() };
           if (props.adapters?.journal) await props.adapters.journal.save(entry, abort.signal);
           else localStorage.setItem('pocketworld:journal:today', JSON.stringify(entry));
-        } else {
-          if (props.adapters?.schedule) await props.adapters.schedule.save(schedule, abort.signal);
-          else localStorage.setItem('pocketworld:schedule', JSON.stringify(schedule));
         }
         if (!abort.signal.aborted) setSaveState('已记下');
       } catch { if (!abort.signal.aborted) { setSaveState('尚未保存'); onError.current('内容没有保存成功，请暂时保留这一页。'); } }
     }, 450);
     return () => { window.clearTimeout(timer); abort.abort(); };
-  }, [journal, schedule, id, loaded, props.adapters]);
+  }, [journal, id, loaded, props.adapters]);
   const page = Math.min(Math.max(0, props.objects['book-01']?.page ?? 0), Math.max(0, book.pages.length - 1));
   useEffect(() => {
     if (id !== 'book-01' || !loaded || bookId.startsWith('visitor-') || !props.adapters?.library?.saveBookmark) return;
@@ -88,17 +80,8 @@ export function FeatureSurfaces(props: WorldSceneProps) {
     setBookView('reading');
     if (nextId !== bookId) props.onAction({ sceneId: props.sceneId, objectId: 'book-01', kind: 'read', payload: { itemId: nextId } });
   };
-  const updateSchedule = (entryId: string, patch: Partial<ScheduleEntry>) => {
-    changed.current = true;
-    const rows = schedule.map(row => row.id === entryId ? { ...row, ...patch } : row);
-    setSchedule(rows);
-    if (!props.adapters?.schedule) {
-      try { localStorage.setItem('pocketworld:schedule', JSON.stringify(rows)); }
-      catch { onError.current('本地存储暂时不可用。'); }
-    }
-  };
-  if (!id || !['journal', 'schedule', 'book-01'].includes(id) || !loaded || !props.objects[id]?.open) return null;
-  const placement: Record<string, [number, number, number]> = { journal: [-0.482, 1.225, -1.92], schedule: [0.691, 1.225, -1.95], 'book-01': [-3.40, 0.79, props.sceneId === 'observatory' ? -0.61 : -1.86] };
+  if (!id || !['journal', 'book-01'].includes(id) || !loaded || !props.objects[id]?.open) return null;
+  const placement: Record<string, [number, number, number]> = { journal: [-0.482, 1.225, -1.92], 'book-01': [-3.40, 0.79, props.sceneId === 'observatory' ? -0.61 : -1.86] };
   return <Html transform position={placement[id]} rotation={[-Math.PI / 2 + 0.01, 0, 0]} distanceFactor={0.32} zIndexRange={[20, 10]} className="world-page-anchor">
     <article className="world-page" style={{ touchAction: id === 'book-01' ? 'pan-y' : 'auto' }} onPointerDown={event => {
       event.stopPropagation();
@@ -116,18 +99,14 @@ export function FeatureSurfaces(props: WorldSceneProps) {
         <button type="button" onClick={() => setBookView('catalog')}>书目</button>
         <button type="button" onClick={() => setBookView('add')}>添加书籍</button>
       </nav>}
-      <small>{id === 'journal' ? journal.date : id === 'schedule' ? '留一些时间给自己' : bookView === 'reading' ? book.author : '书柜 · 我的阅读角'}</small>
-      <h2>{id === 'journal' ? '今天，记住什么' : id === 'schedule' ? '今天的安排' : bookView === 'reading' ? book.title : bookView === 'catalog' ? '书柜藏书' : '添一本自己的书'}</h2>
+      <small>{id === 'journal' ? journal.date : bookView === 'reading' ? book.author : '书柜 · 我的阅读角'}</small>
+      <h2>{id === 'journal' ? '今天，记住什么' : bookView === 'reading' ? book.title : bookView === 'catalog' ? '书柜藏书' : '添一本自己的书'}</h2>
       {id === 'journal' && <textarea aria-label="日记正文" placeholder="写下此刻的想法……" value={journal.text} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} onChange={event => {
         changed.current = true;
         const entry = { ...journal, text: event.target.value, updatedAt: new Date().toISOString() };
         setJournal(entry);
         if (!props.adapters?.journal) { try { localStorage.setItem('pocketworld:journal:today', JSON.stringify(entry)); } catch { onError.current('本地存储暂时不可用。'); } }
       }} />}
-      {id === 'schedule' && <div className="world-agenda">{schedule.map((entry, index) => <label key={entry.id}>
-        <input aria-label={`第${index + 1}项时间`} value={entry.time} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} onChange={event => updateSchedule(entry.id, { time: event.target.value })} />
-        <input aria-label={`第${index + 1}项安排`} placeholder="一件想做的事" value={entry.title} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} onChange={event => updateSchedule(entry.id, { title: event.target.value })} />
-      </label>)}</div>}
       {id === 'book-01' && bookView === 'reading' && <p className="world-book-text">{book.pages[page] ?? '这一页暂时空着。'}</p>}
       {id === 'book-01' && bookView === 'catalog' && <div className="world-book-list">{props.books.map(entry => <button type="button" key={entry.id} onClick={() => openBook(entry.id)}>
         <strong>{entry.title}</strong><small>{entry.author || '佚名'} · {entry.id.startsWith('visitor-') ? '我的书' : '舱室藏书'}</small>

@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useSchedule } from './ScheduleContext';
+import { upholstery } from './Materials';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
 import { ObjectHandle } from './ObjectHandle';
 import { SoftBox, Tube } from './Primitives';
@@ -8,23 +12,52 @@ export function FurnitureBook({ world, id, position, rotation = [0, 0, 0], color
   world: WorldModelProps; id: string; position: FurnitureVector; rotation?: FurnitureVector; color?: string; kind?: 'read' | 'write' | 'plan'; scale?: number;
 }) {
   const state = world.objects[id] ?? CLOSED_OBJECT;
+  const notebook = useSchedule();
+  const planner = kind === 'plan';
   const opened = state.open || state.active;
   const label = kind === 'write' ? '翻开日记 · 写下今天' : kind === 'plan' ? '展开日程 · 安排计划' : opened ? '翻动书页' : '取阅书籍';
   return <group position={position} rotation={rotation} scale={scale}>
     <ObjectHandle id={id} action={opened && kind === 'read' ? 'turn-page' : kind} hint={label} world={world} drag="x" payload={kind === 'read' && opened ? { direction: 1 } : undefined}>
-      <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0.0125, 0]} radius={0.009} color={color} />
+      <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0.0125, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
       <SoftBox dims={[0.325, 0.065, 0.435]} position={[0.185, 0.057, 0]} radius={0.006} color={C.paper} />
-      <SoftBox dims={[0.025, 0.11, 0.47]} position={[0, 0.055, 0]} radius={0.009} color={color} />
+      {planner && Array.from({ length: 12 }, (_, i) => <SoftBox key={i} dims={[0.322, 0.0009, 0.433]} position={[0.185, 0.029 + i * 0.005, 0]} radius={0.0003} color={i % 3 === 0 ? '#bcb092' : '#d5c9ac'} />)}
+      <SoftBox dims={[0.025, 0.11, 0.47]} position={[0, 0.055, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
       <FurnitureMotion axis="z" target={opened ? Math.PI * 0.94 : 0} reducedMotion={world.reducedMotion} position={[0, 0.1, 0]}>
-        <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0, 0]} radius={0.009} color={color} />
+        <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
         <SoftBox dims={[0.24, 0.003, 0.34]} position={[0.18, 0.014, 0]} radius={0.001} color={kind === 'plan' ? '#b8c5ae' : '#be9c61'} />
         {[0, 1, 2].map(i => <SoftBox key={i} dims={[0.12 - i * 0.02, 0.002, 0.006]} position={[0.18, 0.016, -0.06 + i * 0.025]} radius={0.0005} color={C.edge} />)}
+        {planner && <>
+          <SoftBox dims={[0.325, 0.002, 0.433]} position={[0.18, -0.014, 0]} radius={0.002} color="#b7bfa5" material={upholstery('#b7bfa5')} />
+          <SoftBox dims={[0.008, 0.002, 0.42]} position={[0.027, -0.016, 0]} radius={0.001} color="#71816b" />
+          {[-0.195, 0.195].map(z => <Tube key={z} points={[[0.04, -0.016, z], [0.18, -0.016, z], [0.32, -0.016, z]]} radius={0.0008} color="#d7dcc1" />)}
+        </>}
       </FurnitureMotion>
-      <FurnitureMotion axis="z" target={opened ? (state.page % 2 === 0 ? 0 : 2.92) : 0} reducedMotion={world.reducedMotion} position={[0.015, 0.095, 0]}>
+      <FurnitureMotion axis="z" target={opened && !planner ? (state.page % 2 === 0 ? 0 : 2.92) : 0} reducedMotion={world.reducedMotion} position={[0.015, 0.095, 0]}>
         <SoftBox dims={[0.32, 0.004, 0.43]} position={[0.16, 0, 0]} radius={0.001} color="#fff3d6" />
       </FurnitureMotion>
+      {planner && <ScheduleTurningLeaf pageId={notebook.state.current.id} reducedMotion={world.reducedMotion} />}
+      {planner && <Tube points={[[0.013, 0.091, -0.205], [0.008, 0.093, 0], [0.013, 0.091, 0.205]]} radius={0.002} color="#c2b18e" />}
       <SoftBox dims={[0.024, 0.003, 0.13]} position={[0.27, 0.093, 0.22]} radius={0.001} color="#c5774b" />
     </ObjectHandle>
+  </group>;
+}
+
+function ScheduleTurningLeaf({ pageId, reducedMotion }: { pageId: string; reducedMotion: boolean }) {
+  const leaf = useRef<THREE.Group>(null);
+  const previous = useRef(pageId);
+  const elapsed = useRef(2);
+  useEffect(() => {
+    if (previous.current !== pageId) { elapsed.current = 0; previous.current = pageId; }
+  }, [pageId]);
+  useFrame((_, delta) => {
+    if (!leaf.current) return;
+    elapsed.current += Math.min(delta, 0.05);
+    const t = Math.min(1, elapsed.current / 0.9);
+    leaf.current.visible = !reducedMotion && t < 1;
+    leaf.current.rotation.z = (1 - (1 - t) ** 3) * Math.PI;
+  });
+  return <group ref={leaf} position={[0.015, 0.101, 0]} visible={false}>
+    <SoftBox dims={[0.32, 0.002, 0.43]} position={[0.16, 0, 0]} radius={0.0006} color="#f5ead0" />
   </group>;
 }
 

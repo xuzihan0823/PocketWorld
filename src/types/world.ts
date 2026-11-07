@@ -66,7 +66,7 @@ export interface WorldActionAdapter {
   cancel?: (context: WorldActionContext) => void;
 }
 export interface JournalEntry { id: string; date: string; text: string; updatedAt: string }
-export interface ScheduleEntry { id: string; time: string; title: string; completed: boolean }
+export interface ScheduleEntry { id: string; time: string; title: string; completed: boolean; content?: string }
 export interface BookContent { id: string; title: string; author?: string; pages: string[] }
 export interface SleepSession { startedAt: string; endedAt?: string; sceneId: WorldSceneId }
 /** Optional content providers. Geometry and gesture code never depend on a backend. */

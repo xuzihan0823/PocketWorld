@@ -39,10 +39,6 @@
 .world-page textarea { display: block; width: 100%; min-height: 100px; flex: 1; background: repeating-linear-gradient(transparent 0 27px, #cdc1a447 28px, transparent 29px); border: 0; outline: none; resize: none; color: #505247; font: 16px/29px 'Songti SC', serif; padding: 0; caret-color: #8b5c3f; }
 .world-page textarea::placeholder, .world-page input::placeholder { color: #76715e; }
 .world-page footer { font-size: 10px; margin-top: 14px; color: #706b58; letter-spacing: 1px; }
-.world-agenda { display: grid; gap: 18px; padding-top: 14px; }
-.world-agenda label { display: grid; gap: 6px; border-bottom: 1px solid #d0c3a4; padding-bottom: 10px; }
-.world-agenda input { box-sizing: border-box; width: 100%; border: 0; background: transparent; outline: none; color: #585c4a; font: 16px 'Songti SC', serif; }
-.world-agenda input:first-child { color: #856844; }
 .world-page textarea:focus-visible, .world-page input:focus-visible { outline: 1px solid #a99167; outline-offset: 4px; }
 .world-page ::selection { background: #c7d4bf; color: #303c31; }
 .world-book-text { font: 16px/2 'Songti SC', serif; white-space: pre-line; flex: 1; }
@@ -74,7 +70,6 @@
   .orbital-now-playing p { max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .world-book-text { font-size: 22px; line-height: 1.6; }
   .world-page textarea { font-size: 22px; line-height: 29px; }
-  .world-agenda input { font-size: 21px; }
   .world-page h2 { font-size: 25px; }
   .is-focused .orbital-footer { text-shadow: 0 1px 4px #000, 0 1px 7px #000; }
 }

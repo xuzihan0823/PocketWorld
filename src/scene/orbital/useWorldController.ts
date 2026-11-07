@@ -61,7 +61,7 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
     const visiblePrevious = displayed.sceneObjects[request.sceneId][request.objectId] ?? previous;
     let action = request;
     if (request.kind === 'sleep' && visiblePrevious.active) action = { ...request, kind: 'wake' };
-    if ((request.kind === 'write' || request.kind === 'plan' || request.kind === 'read') && visiblePrevious.open && displayed.focusedObject === request.objectId && (request.kind !== 'read' || !request.payload?.itemId || request.payload.itemId === visiblePrevious.itemId)) {
+    if ((request.kind === 'write' || request.kind === 'read') && visiblePrevious.open && displayed.focusedObject === request.objectId && (request.kind !== 'read' || !request.payload?.itemId || request.payload.itemId === visiblePrevious.itemId)) {
       action = { ...request, kind: 'turn-page', payload: { ...request.payload, direction: request.payload?.direction ?? 1 } };
     }
     const id = ++sequence.current;
