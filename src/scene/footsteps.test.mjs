@@ -53,6 +53,7 @@ function mount(kind, overrides = {}) {
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
+    './bedClimb': load('./orbital/bedClimb.ts', {}),
     '../interactables': { ROOM_OBSTACLES: [], INTERACTABLE_ITEMS: [] },
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
@@ -275,5 +276,28 @@ test('drawer: a chair rolling into the opening during retreat cancels the action
     for (let i = 0; i < 180; i++) view.frame(1 / 60);
     assert.equal(opened.length, 0);
     assert.equal(view.props.drawerInteraction.current.busy, false);
+  } finally { view.dispose(); }
+});
+
+test('bed: the resident climbs in over seconds and gets out along the same path', () => {
+  const view = mount('orbital', { objects: { bed: { active: true } } });
+  try {
+    view.root.position.set(-1.2, 0, 1.5);
+    const trace = [];
+    for (let i = 0; i < 60 * 6; i++) { view.frame(1 / 60); trace.push({ ...view.root.position, lie: view.pivot.rotation.x, posture: view.root.userData.posture }); }
+    const start = trace.findIndex(frame => frame.posture === 'bed');
+    const lying = trace.findIndex(frame => Math.abs(frame.lie + Math.PI / 2) < 1e-6);
+    assert.ok(start > 0 && (lying - start) / 60 > 2.5, `climb lasted ${(lying - start) / 60}s`);
+    for (let i = 1; i < trace.length; i++) assert.ok(Math.hypot(trace[i].x - trace[i - 1].x, trace[i].y - trace[i - 1].y, trace[i].z - trace[i - 1].z) < 0.045, `jump at frame ${i}`);
+    const seated = trace.slice(start).find(frame => frame.y > 0.18 && frame.lie > -0.3);
+    assert.ok(seated && seated.x > -2.2, 'sits on the bed edge before lying back');
+    assert.ok(Math.abs(trace.at(-1).x + 2.6) < 1e-6 && Math.abs(trace.at(-1).z - 0.94) < 1e-6);
+    view.props.objects.bed.active = false;
+    const exit = [];
+    for (let i = 0; i < 60 * 4; i++) { view.frame(1 / 60); exit.push({ ...view.root.position, posture: view.root.userData.posture }); }
+    const standing = exit.findIndex(frame => frame.posture === 'standing');
+    assert.ok(standing / 60 > 2.5, `got up in ${standing / 60}s`);
+    assert.ok(exit.slice(0, standing).some(frame => frame.y > 0.18 && frame.x > -2.2), 'sits on the edge before stepping down');
+    assert.deepEqual([exit[standing].x, exit[standing].y, exit[standing].z], [-1.48, 0, 0.95]);
   } finally { view.dispose(); }
 });
