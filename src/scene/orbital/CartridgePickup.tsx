@@ -87,6 +87,10 @@ export function CartridgePickup(props: Props) {
   const down = (event: ThreeEvent<PointerEvent>) => {
     if (event.button !== 0 || held.current || !props.enabled) return;
     event.stopPropagation();
+    if (props.world.focusedObject !== 'computer' && props.world.onApproach) {
+      props.world.onApproach(props.position, { sceneId: props.world.sceneId, objectId: 'computer', kind: 'inspect' }, props.onInspect);
+      return;
+    }
     const hit = project(event.clientX, event.clientY);
     if (!hit || !props.onGrab()) return;
     const target = event.target as Element;

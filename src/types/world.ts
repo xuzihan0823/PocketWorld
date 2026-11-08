@@ -32,6 +32,7 @@ export interface WorldModelProps {
   books: BookContent[];
   focusedObject: string | null;
   onAction: (action: WorldAction) => void;
+  onApproach?: (point: [number, number, number], action: WorldAction, perform: () => void) => void;
   onHover: (id: string | null, hint?: string) => void;
   onGesture: (active: boolean) => void;
   reducedMotion: boolean;

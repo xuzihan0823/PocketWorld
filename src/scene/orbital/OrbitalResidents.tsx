@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { WorldActionKind, WorldModelProps } from '../../types/world';
+import type { WorldAction, WorldActionKind, WorldModelProps } from '../../types/world';
 import { roomAudio } from '../audioEngine';
 import { ObjectHandle } from './ObjectHandle';
 import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL, type ChairPose } from './chairPose';
@@ -10,7 +10,8 @@ import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } 
 type Point = [number, number];
 type Box = [number, number, number, number];
 type Posture = 'standing' | 'chair' | 'bed';
-type ResidentsProps = WorldModelProps & { walkTarget: [number, number, number] | null; onArrive: () => void; enabled: boolean };
+type Approach = { point: [number, number, number]; action: WorldAction; perform: () => void };
+type ResidentsProps = WorldModelProps & { walkTarget: [number, number, number] | null; approach: Approach | null; onArrive: () => void; enabled: boolean };
 const RADIUS = 0.23;
 const CAT: Point = [-0.95, 1.95];
 const clamp = THREE.MathUtils.clamp;
@@ -111,6 +112,27 @@ function route(start: Point, end: Point, boxes: Box[]): Point[] {
   }
   return [];
 }
+// Pick the shortest reachable position close enough to the clicked surface.
+function approachRoute(start: Point, point: Point, boxes: Box[], fixed?: Point): Point[] | null {
+  const targets: Point[] = fixed ? [fixed] : [];
+  if (!fixed) {
+    if (Math.hypot(start[0] - point[0], start[1] - point[1]) <= 1.15) return [];
+    for (const radius of [0.65, 0.9, 1.12]) for (let i = 0; i < 32; i++) {
+      const a = i * Math.PI / 16;
+      targets.push([point[0] + Math.cos(a) * radius, point[1] + Math.sin(a) * radius]);
+    }
+  }
+  let best: Point[] | null = null, bestLength = Infinity;
+  for (const target of targets) {
+    if (!free(target, boxes)) continue;
+    const path = route(start, target, boxes);
+    if (!path.length) continue;
+    let length = 0, previous = start;
+    for (const waypoint of path) { length += Math.hypot(waypoint[0] - previous[0], waypoint[1] - previous[1]); previous = waypoint; }
+    if (length < bestLength) { best = path; bestLength = length; }
+  }
+  return best;
+}
 function Ball({ position, scale = [1, 1, 1], radius, color }: { position: [number, number, number]; scale?: [number, number, number]; radius: number; color: string }) {
   return <mesh position={position} scale={scale} castShadow receiveShadow><sphereGeometry args={[radius, 20, 14]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>;
 }
@@ -126,11 +148,10 @@ export function OrbitalResidents(props: ResidentsProps) {
   const hips = useRef<THREE.Group>(null);
   const rig = useRef<ResidentRig | null>(null);
   const keys = useRef(new Set<string>());
-  const jump = useRef(false);
   const strideAmount = useRef(0);
-  const touch = useRef<{ id: number; x: number; y: number; target: EventTarget | null } | null>(null);
   const petGesture = useRef(false);
-  const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, lift: 0, velocity: 0, gait: 0, stepCount: 0, stepGait: Math.PI * 0.45, stopTime: Infinity, nearby: '', dismissedBed: false, dismissedChair: false,
+  const pendingApproach = useRef<Approach | null>(null);
+  const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, gait: 0, stepCount: 0, stepGait: Math.PI * 0.45, stopTime: Infinity, nearby: '', dismissedBed: false, dismissedChair: false,
     perch: 0, idle: Infinity, kick: 0, planted: false, plant: SOLE_NEAR, sole: SOLE_NEAR, soleLift: SOLE_LIFT });
   const exit = useRef({ from: new THREE.Vector3(), yaw: 0, sit: 0, lie: 0, progress: 0 });
   const petBody = useRef<THREE.Group>(null);
@@ -172,84 +193,77 @@ export function OrbitalResidents(props: ResidentsProps) {
     movement.step.copy(movement.forward).multiplyScalar(vertical).addScaledVector(movement.right, horizontal).normalize();
     return [movement.step.x, movement.step.z];
   };
-  const releaseTouch = () => {
-    const held = touch.current;
-    if (!held) return;
-    touch.current = null;
-    try { (held.target as Element)?.releasePointerCapture?.(held.id); } catch { /* Browser may already have released it. */ }
-    current.current.onGesture(false);
-  };
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const p = current.current;
       const target = event.target as HTMLElement | null;
       if (!p.enabled || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || (target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) return;
-      if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(event.code)) return;
+      if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyE'].includes(event.code)) return;
       event.preventDefault();
       event.stopPropagation();
       void roomAudio.unlock();
       if (event.repeat) return;
+      if (event.code === 'KeyE' && state.current.external) {
+        state.current.external = false; pendingApproach.current = null; state.current.path = []; p.onArrive();
+      }
       if (event.code === 'KeyE') {
         if (state.current.posture !== 'standing' || p.objects.bed?.active || p.objects.chair?.active) stand();
         else {
           const id = state.current.nearby;
           if (id) act(id, id === 'pet' ? 'pet' : id === 'bed' ? 'sleep' : 'sit');
         }
-      } else if (event.code === 'Space') {
-        const wasResting = state.current.wanted !== 'standing' || state.current.posture !== 'standing';
-        if (wasResting) stand();
-        jump.current = true;
-      }
-      else {
+      } else {
         const scooting = p.sceneId === 'habitat' && state.current.posture === 'chair' && !state.current.exiting;
         if (!scooting) stand();
-        if (state.current.external) { state.current.external = false; p.onArrive(); }
+        if (state.current.external) { state.current.external = false; pendingApproach.current = null; p.onArrive(); }
         keys.current.add(event.code);
       }
     };
     const up = (event: KeyboardEvent) => { keys.current.delete(event.code); };
     const clear = () => {
-      keys.current.clear(); jump.current = false; releaseTouch();
+      keys.current.clear();
       if (petGesture.current) { petGesture.current = false; current.current.onGesture(false); }
     };
     const hide = () => { if (document.hidden) clear(); };
-    const touchUp = (event: PointerEvent) => {
-      const held = touch.current;
-      if (!held || event.pointerId !== held.id) return;
-      const swipe = held.y - event.clientY > 32 && Math.abs(held.x - event.clientX) < 95;
-      releaseTouch();
-      // onGesture temporarily disables residents while this component owns the pointer.
-      if (swipe && (!current.current.focusedObject || current.current.focusedObject === 'bed')) {
-        if (state.current.wanted !== 'standing' || state.current.posture !== 'standing') stand();
-        if (state.current.lift === 0) jump.current = true;
-      }
-    };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', clear);
-    window.addEventListener('pointerup', touchUp);
     window.addEventListener('pointercancel', clear);
     document.addEventListener('visibilitychange', hide);
     return () => {
       clear();
       window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clear);
-      window.removeEventListener('pointerup', touchUp); window.removeEventListener('pointercancel', clear); document.removeEventListener('visibilitychange', hide);
+      window.removeEventListener('pointercancel', clear); document.removeEventListener('visibilitychange', hide);
       if (state.current.nearby) current.current.onHover(null);
     };
   }, []);
 
   useEffect(() => {
-    if (!props.enabled) { keys.current.clear(); if (!touch.current) jump.current = false; }
-    if (props.focusedObject && props.focusedObject !== 'bed') releaseTouch();
-  }, [props.enabled, props.focusedObject]);
+    if (!props.enabled) keys.current.clear();
+  }, [props.enabled]);
   useEffect(() => {
     if (!props.walkTarget || !props.enabled) return;
+    pendingApproach.current = null;
     stand();
     const s = state.current;
     s.external = true;
     if (!s.exiting && resident.current) s.path = route([resident.current.position.x, resident.current.position.z], [props.walkTarget[0], props.walkTarget[2]], obstacles(room, CHAIR_POSES[props.sceneId]));
-  }, [props.walkTarget]);
+  }, [props.walkTarget, props.enabled]);
+  useEffect(() => {
+    if (!props.approach || !resident.current) { if (!props.approach) pendingApproach.current = null; return; }
+    stand();
+    const s = state.current;
+    pendingApproach.current = props.approach;
+    s.external = true;
+    if (!s.exiting) {
+      const pose = CHAIR_POSES[props.sceneId];
+      const fixed = props.approach.action.objectId === 'bed' ? [-1.48, 0.95] as Point : props.approach.action.objectId === 'chair' ? chairEntry(room, pose) : undefined;
+      const path = approachRoute([resident.current.position.x, resident.current.position.z], [props.approach.point[0], props.approach.point[2]], obstacles(room, pose), fixed);
+      if (path) s.path = path;
+      else { s.external = false; pendingApproach.current = null; props.onArrive(); }
+    }
+  }, [props.approach]);
 
   useFrame((_, rawDelta) => {
     const root = resident.current;
@@ -297,7 +311,12 @@ export function OrbitalResidents(props: ResidentsProps) {
         root.position.set(entry[0], 0, entry[1]);
         s.posture = 'standing'; s.exiting = false; s.blend = 0; s.sit = 0; s.lie = 0;
         roomAudio.playFootstep({ surface: surfaceAt(entry[0], entry[1]), intensity: 0.78 });
-        if (s.external && p.walkTarget) s.path = route(entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
+        if (s.external && pendingApproach.current) {
+          const request = pendingApproach.current;
+          const fixed = request.action.objectId === 'bed' ? [-1.48, 0.95] as Point : request.action.objectId === 'chair' ? chairEntry(room, pose) : undefined;
+          const path = approachRoute(entry, [request.point[0], request.point[2]], obstacles(room, pose), fixed);
+          if (path) s.path = path; else { s.external = false; pendingApproach.current = null; p.onArrive(); }
+        } else if (s.external && p.walkTarget) s.path = route(entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
         else if (wanted !== 'standing') s.path = route(entry, wanted === 'bed' ? [-1.48, 0.95] : seatEntry, obstacles(room, pose));
       }
     } else if (s.posture !== 'standing') {
@@ -363,8 +382,13 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (dx || dz) {
         const beforeX = root.position.x, beforeZ = root.position.z;
         const x = root.position.x + dx * dt * 2.15, z = root.position.z + dz * dt * 2.15;
-        if (free([x, root.position.z], room.boxes)) root.position.x = x;
-        if (free([root.position.x, z], room.boxes)) root.position.z = z;
+        if (s.path.length) {
+          // Follow the same straight segments used by the visibility graph; axis sliding can cross a corner and reverse the route.
+          if (clearSegment([beforeX, beforeZ], [x, z], room.boxes)) { root.position.x = x; root.position.z = z; }
+        } else {
+          if (free([x, root.position.z], room.boxes)) root.position.x = x;
+          if (free([root.position.x, z], room.boxes)) root.position.z = z;
+        }
         // Walking into the chair shoves it ahead; if it is pinned against something, the resident stops at contact.
         const offsetX = pose.x - root.position.x, offsetZ = pose.z - root.position.z, gap = Math.hypot(offsetX, offsetZ), contact = room.chairRadius + RADIUS;
         if (gap < contact && gap > 1e-4) {
@@ -380,33 +404,20 @@ export function OrbitalResidents(props: ResidentsProps) {
         walking = Math.hypot(root.position.x - beforeX, root.position.z - beforeZ) > 0.001;
         root.rotation.y = angle(root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 14));
       }
-      if (!s.path.length && s.external && p.enabled) { s.external = false; p.onArrive(); }
-      if (!s.path.length && autonomous && s.lift <= 0) {
+      if (!s.path.length && s.external && p.enabled) {
+        const request = pendingApproach.current;
+        pendingApproach.current = null; s.external = false; p.onArrive();
+        if (request) request.perform();
+      }
+      if (!s.path.length && autonomous) {
         if (Math.hypot(root.position.x - entry[0], root.position.z - entry[1]) < 0.06) { s.posture = wanted; s.blend = 0; }
         else s.path = route([root.position.x, root.position.z], entry, obstacles(room, pose));
       }
-      const wasLift = s.lift;
-      if (jump.current && p.enabled) {
-        if (s.lift === 0) {
-          s.velocity = 4.0;
-          roomAudio.playFootstep({ variant: 'push', surface: surfaceAt(root.position.x, root.position.z), intensity: 0.88 });
-        }
-        jump.current = false;
-      }
-      if (s.lift > 0 || s.velocity > 0) {
-        s.velocity -= 10.5 * dt;
-        s.lift = Math.max(0, s.lift + s.velocity * dt);
-        if (!s.lift) {
-          s.velocity = 0;
-          if (wasLift > 0) roomAudio.playFootstep({ variant: 'land', surface: surfaceAt(root.position.x, root.position.z), intensity: 1.15 });
-        }
-      }
-      root.position.y = s.lift;
+      root.position.y = 0;
       s.sit = 0; s.lie = 0;
     }
     pose.drop = s.perch;
-    const groundedWalk = walking && s.lift === 0;
-    if (groundedWalk) {
+    if (walking) {
       s.stopTime = 0;
       s.gait += dt * 10;
       const surface = surfaceAt(root.position.x, root.position.z);
@@ -415,8 +426,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         s.stepGait += Math.PI;
       }
     } else {
-      if (walking) s.gait += dt * 10;
-      s.stopTime = walking ? 0 : s.stopTime + dt;
+      s.stopTime += dt;
       if (s.stopTime > 0.12) {
         s.gait = (s.stepCount & 1) * Math.PI;
         s.stepGait = s.gait + Math.PI * 0.45;
@@ -450,7 +460,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       });
     }
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
-    root.userData.grounded = s.lift === 0;
+    root.userData.grounded = true;
     const candidates: { id: string; point: Point; distance: number }[] = [{ id: 'pet', point: CAT, distance: 1.1 }, { id: 'chair', point: seatEntry, distance: 0.9 }];
     if (p.sceneId === 'habitat') candidates.push({ id: 'bed', point: [-1.48, 0.95], distance: 1.0 });
     const nearby = p.enabled ? candidates.filter(item => Math.hypot(root.position.x - item.point[0], root.position.z - item.point[1]) < item.distance).sort((a, b) => Math.hypot(root.position.x - a.point[0], root.position.z - a.point[1]) - Math.hypot(root.position.x - b.point[0], root.position.z - b.point[1]))[0]?.id ?? '' : '';
@@ -475,13 +485,6 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
   });
 
-  const characterDown = (event: ThreeEvent<PointerEvent>) => {
-    if (!props.enabled || event.pointerType !== 'touch' || touch.current) return;
-    event.stopPropagation();
-    touch.current = { id: event.pointerId, x: event.clientX, y: event.clientY, target: event.target };
-    try { (event.target as Element).setPointerCapture?.(event.pointerId); } catch { /* Optional on touch-only browsers. */ }
-    props.onGesture(true);
-  };
   const petWorld: WorldModelProps = { ...props,
     onAction: action => { if (current.current.enabled || petGesture.current) current.current.onAction(action); petGesture.current = false; },
     onGesture: active => {
@@ -491,8 +494,8 @@ export function OrbitalResidents(props: ResidentsProps) {
     onHover: (id, hint) => { if (current.current.enabled || !id) current.current.onHover(id, hint); },
   };
   return <group name={`OrbitalResidents_${props.sceneId}`}>
-    <group ref={resident} name="OrbitalResident" position={spawn} onPointerDown={characterDown}
-      onPointerOver={e => { if (props.enabled) { e.stopPropagation(); props.onHover('resident', 'WASD 移动 · 空格跳跃 · 上划人物跳跃'); } }}
+    <group ref={resident} name="OrbitalResident" position={spawn}
+      onPointerOver={e => { if (props.enabled) { e.stopPropagation(); props.onHover('resident', 'WASD 移动 · 靠近物品按 E 互动'); } }}
       onPointerOut={() => { if (props.enabled) props.onHover(null); }}>
       <group ref={hips} position={[0, HIP, 0]}>
         <ResidentModel rig={rig} position={[0, -HIP, 0]} />

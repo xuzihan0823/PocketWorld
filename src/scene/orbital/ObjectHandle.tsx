@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { ThreeElements, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { WorldAction, WorldActionKind, WorldModelProps } from '../../types/world';
+import { SCENE_ORIGINS, type WorldAction, type WorldActionKind, type WorldModelProps } from '../../types/world';
 
 interface ObjectHandleProps extends Omit<ThreeElements['group'], 'id' | 'onPointerDown' | 'onPointerUp' | 'onPointerMove'> {
   id: string;
@@ -45,7 +45,13 @@ export function ObjectHandle({ id, action, hint, world, drag, payload, children,
     const distance = Math.hypot(event.clientX - held.current.x, event.clientY - held.current.y);
     const direction = event.clientX >= held.current.x ? 1 : -1;
     release();
-    if (distance < 9 || drag) world.onAction({ sceneId: world.sceneId, objectId: id, kind: action, payload: { ...payload, ...(distance > 9 ? { direction } : {}) } });
+    if (distance < 9 || drag) {
+      const request: WorldAction = { sceneId: world.sceneId, objectId: id, kind: action, payload: { ...payload, ...(distance > 9 ? { direction } : {}) } };
+      const origin = SCENE_ORIGINS[world.sceneId];
+      const point: [number, number, number] = [event.point.x - origin[0], event.point.y - origin[1], event.point.z - origin[2]];
+      const perform = () => callbacks.current.onAction(request);
+      if (world.onApproach) world.onApproach(point, request, perform); else perform();
+    }
   };
   return <group {...props} name={`Interactable_${id}`} userData={{ objectId: id, action, sceneId: world.sceneId }}
     onPointerOver={e => { e.stopPropagation(); world.onHover(id, hint); }}

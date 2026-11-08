@@ -123,6 +123,9 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
           setTransition({ id, phase: 'error', action: null, fromScene: snapshot.sceneId, toScene: snapshot.sceneId });
         }
       };
+      // Petting has no camera transition. Complete it immediately so it does not
+      // lock movement while the cat's independent reaction animation plays.
+      if (action.kind === 'pet') { await finish(); return; }
       const duration = reducedMotion.current ? 0.12 : action.kind === 'travel' ? 1.8 : 0.9;
       transaction.timeline = gsap.timeline({ onComplete: () => { void finish(); } });
       transaction.timeline.to(motion.current, { progress: 1, sceneProgress: 1, duration, ease: 'power2.inOut' });

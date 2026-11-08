@@ -226,7 +226,8 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
       if (props.isMusicPlaying) props.onToggleMusic();
       else begin({ disc: props.activeDisc, from: [PLATTER[0], PLATTER[1] + 0.15, PLATTER[2]], to: PLATTER });
     } else if (id === 'music-import') {
-      // Import is invoked only by the synchronous click below, never a transition callback.
+      // A second click after focusing opens the file picker in a user gesture.
+      focus('music-player');
     } else if (id === 'music-mute' || id === 'game-mute') props.onToggleMute();
     else if (id.startsWith('game-cartridge-')) {
       focus('computer');
@@ -272,7 +273,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pageCount > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[direction < 0 ? -0.87 : 0.4, 1.31, -2.87]}>
       <SoftBox dims={[0.035, 0.29, 0.21]} color="#765b43" />
     </ObjectHandle>)}
-    <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={[0.43, 1.35, -2.26]} onClick={event => { event.stopPropagation(); if (sceneVisible && event.delta < 9) props.onImportMusic(); }}>
+    <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={[0.43, 1.35, -2.26]} onClick={event => { event.stopPropagation(); if (sceneVisible && props.focusedObject === 'music-player' && event.delta < 9) props.onImportMusic(); }}>
       <Disc colors={['#efe4c7', '#c8a879']} radius={0.145} />
     </ObjectHandle>
     <group position={[2.57, 1.4, -2.55]}>

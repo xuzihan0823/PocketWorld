@@ -28,7 +28,7 @@ function mount(kind, overrides = {}) {
   const react = {
     useRef: value => ({ current: value }),
     useMemo: fn => fn(), useCallback: fn => fn,
-    useState: value => [typeof value === 'function' ? value() : value, () => {}],
+    useState: value => [typeof value === 'function' ? value() : value, next => { if (next && typeof next === 'object' && next.objectId) actions.push(next.kind); }],
     useSyncExternalStore: (_, snapshot) => snapshot(),
     useEffect: effect => effects.push(effect),
     createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
@@ -101,7 +101,7 @@ function mount(kind, overrides = {}) {
   };
 }
 
-for (const kind of ['orbital', 'legacy']) {
+for (const kind of ['legacy']) {
   for (const fps of [60, 120, 144, 240]) {
     test(`${kind}: one landing sound per jump at ${fps} FPS`, () => {
       const view = mount(kind);
@@ -118,21 +118,15 @@ for (const kind of ['orbital', 'legacy']) {
   }
 }
 
-test('moving through a jump keeps the gait animated without airborne walking sounds', () => {
+test('orbital: Space does not make the resident jump or play jump sounds', () => {
   const view = mount('orbital');
   try {
-    view.key('KeyD');
     view.key('Space');
-    const swings = [];
-    for (let i = 0; i < 60; i++) {
-      view.frame(1 / 120);
-      assert.ok(view.root.position.y > 0);
-      if (i >= 36) swings.push(view.pivot.rotation.z);
-    }
-    assert.ok(Math.max(...swings) - Math.min(...swings) > 0.02);
-    assert.equal(view.sounds.filter(sound => !sound.variant).length, 0);
-    for (let i = 0; i < 60; i++) view.frame(1 / 120);
-    assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
+    for (let i = 0; i < 120; i++) view.frame(1 / 120);
+    assert.equal(view.root.position.y, 0);
+    assert.equal(view.sounds.filter(sound => sound.variant === 'push' || sound.variant === 'land').length, 0);
+    view.key('KeyD');
+    for (let i = 0; i < 60; i++) view.frame(1 / 60);
     assert.ok(view.sounds.some(sound => !sound.variant));
   } finally { view.dispose(); }
 });
@@ -154,7 +148,7 @@ test('legacy: holding movement against a wall stops footsteps until movement res
   } finally { view.dispose(); }
 });
 
-test('bed shortcut unlocks audio synchronously before dispatching the action', () => {
+test('bed shortcut unlocks audio synchronously before queuing the approach', () => {
   const view = mount('app');
   try {
     view.key('KeyB');
@@ -187,4 +181,32 @@ test('push and landing survive nearby walking sounds while duplicate contacts st
   ctx.currentTime = 1;
   engine.playFootstep({ variant: 'push' });
   assert.equal(voices.length, 5);
+});
+
+
+test('a distant object is activated only after the resident approaches it', () => {
+  let performed = 0, reached = 0;
+  const point = [-3.3, 1, -1.8];
+  const view = mount('orbital', { approach: { point, action: { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, perform: () => performed++ }, onArrive: () => reached++ });
+  try {
+    assert.equal(performed, 0);
+    for (let i = 0; i < 30; i++) view.frame(1 / 60);
+    assert.equal(performed, 0);
+    for (let i = 0; i < 600 && !performed; i++) view.frame(1 / 60);
+    assert.equal(performed, 1);
+    assert.equal(reached, 1);
+    assert.ok(Math.hypot(view.root.position.x - point[0], view.root.position.z - point[2]) <= 1.15);
+  } finally { view.dispose(); }
+});
+
+test('manual movement cancels a pending distant interaction', () => {
+  let performed = 0, cancelled = 0;
+  const view = mount('orbital', { approach: { point: [-3.3, 1, -1.8], action: { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, perform: () => performed++ }, onArrive: () => cancelled++ });
+  try {
+    view.frame(1 / 60);
+    view.key('KeyD');
+    for (let i = 0; i < 300; i++) view.frame(1 / 60);
+    assert.equal(performed, 0);
+    assert.equal(cancelled, 1);
+  } finally { view.dispose(); }
 });

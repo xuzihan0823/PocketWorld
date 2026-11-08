@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import type { OrbitControls as Controls } from 'three-stdlib';
 import * as THREE from 'three';
-import { SCENE_ORIGINS, type WorldObjectState, type WorldSceneId, type WorldSceneProps } from '../../types/world';
+import { SCENE_ORIGINS, type WorldAction, type WorldObjectState, type WorldSceneId, type WorldSceneProps } from '../../types/world';
 import { roomAudio } from '../audioEngine';
 import { Cosmos, SUN_DIRECTION } from './Cosmos';
 import { HabitatShell } from './HabitatShell';
@@ -23,6 +23,8 @@ const FOCUS: Record<string, { target: [number, number, number]; offset: [number,
 interface OrbitalSceneProps extends WorldSceneProps {
   sceneObjects: Record<WorldSceneId, Record<string, WorldObjectState>>;
   gestureActive: boolean;
+  shortcut: WorldAction | null;
+  onShortcutHandled: () => void;
 }
 function CameraRig(props: OrbitalSceneProps) {
   const { camera, size } = useThree();
@@ -108,6 +110,23 @@ function OrbitalLighting({ objects }: Pick<WorldSceneProps, 'objects'>) {
 }
 function WorldContent(props: OrbitalSceneProps) {
   const [walkTarget, setWalkTarget] = useState<[number, number, number] | null>(null);
+  const [approach, setApproach] = useState<{ point: [number, number, number]; action: WorldAction; perform: () => void } | null>(null);
+  useEffect(() => { setWalkTarget(null); setApproach(null); }, [props.sceneId]);
+  useEffect(() => {
+    const action = props.shortcut;
+    if (!action) return;
+    const points: Record<string, [number, number, number]> = {
+      computer: [1.55, 0, -2.36], 'music-player': [-0.48, 0, -2.25],
+      journal: [-0.48, 0, -1.94], schedule: [0.69, 0, -1.96],
+      'book-01': [-3.35, 0, props.sceneId === 'habitat' ? -1.75 : -0.5], bed: [-2.6, 0, 1],
+    };
+    const point = points[action.objectId];
+    if (point && action.sceneId === props.sceneId) {
+      if (props.focusedObject === action.objectId) props.onAction(action);
+      else if (!props.focusedObject) { setWalkTarget(null); setApproach({ point, action, perform: () => props.onAction(action) }); }
+    }
+    props.onShortcutHandled();
+  }, [props.shortcut]);
   return <>
     <PerspectiveCamera makeDefault fov={34} position={[11, 10.05, 14]} near={0.08} far={2000} />
     <CameraRig {...props} />
@@ -117,14 +136,23 @@ function WorldContent(props: OrbitalSceneProps) {
       <Lightformer intensity={0.7} color="#a8bed1" position={[5, 1, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[5, 4, 1]} />
     </Environment>
     {(['habitat', 'observatory'] as WorldSceneId[]).map(id => {
-      const world = { ...props, sceneId: id, objects: props.sceneObjects[id], focusedObject: id === props.sceneId ? props.focusedObject : null };
+      const world = { ...props, onApproach: (point: [number, number, number], action: WorldAction, perform: () => void) => {
+        if (id !== props.sceneId) return;
+        if (props.focusedObject) {
+          const focused = props.focusedObject;
+          const belongs = action.objectId === focused || (focused === 'computer' && (action.objectId.startsWith('game-') || action.objectId === 'computer-exit')) || (focused === 'music-player' && action.objectId.startsWith('music-'));
+          if (belongs || (focused === 'bed' && action.objectId === 'bed')) perform();
+          return;
+        }
+        setWalkTarget(null); setApproach({ point, action, perform });
+      }, sceneId: id, objects: props.sceneObjects[id], focusedObject: id === props.sceneId ? props.focusedObject : null };
       return <group key={id} position={SCENE_ORIGINS[id]} visible={id === props.sceneId || (props.transition.action?.kind === 'travel' && props.transition.phase !== 'active' && props.transition.phase !== 'error')}>
         {id === props.sceneId && <OrbitalLighting objects={world.objects} />}
-        <HabitatShell variant={id} onFloorClick={point => { if ((!props.focusedObject || props.focusedObject === 'bed') && props.sceneId === id && !props.gestureActive) { void roomAudio.unlock(); setWalkTarget(point); } }} />
+        <HabitatShell variant={id} onFloorClick={point => { if ((!props.focusedObject || props.focusedObject === 'bed') && props.sceneId === id && !props.gestureActive) { void roomAudio.unlock(); setApproach(null); setWalkTarget(point); } }} />
         <Suspense fallback={null}><HabitatFurniture {...world} /><MediaObjects {...world} /></Suspense>
         {id === props.sceneId && <>
           <FeatureSurfaces {...world} />
-          <OrbitalResidents {...world} walkTarget={walkTarget} onArrive={() => setWalkTarget(null)} enabled={(!props.focusedObject || props.focusedObject === 'bed') && !props.gestureActive && ['idle', 'active', 'error'].includes(props.transition.phase)} />
+          <OrbitalResidents {...world} walkTarget={walkTarget} approach={approach} onArrive={() => { setWalkTarget(null); setApproach(null); }} enabled={(!props.focusedObject || props.focusedObject === 'bed') && !props.gestureActive && ['idle', 'active', 'error'].includes(props.transition.phase)} />
         </>}
       </group>;
     })}
