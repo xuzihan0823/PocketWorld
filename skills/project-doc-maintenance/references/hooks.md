@@ -7,7 +7,7 @@
 先用 Skills CLI 安装到项目，目标工具可选择 `codex`、`claude-code` 和 `pi`。DSH 从项目的 `.agents/skills/` 发现同一技能包。
 
 ```sh
-npx --yes skills add 'xuzihan0823/PocketWorld#docs/project-doc-maintenance' --skill project-doc-maintenance --agent codex claude-code pi --yes
+npx --yes skills add xuzihan0823/PocketWorld --skill project-doc-maintenance --agent codex claude-code pi --yes
 node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts codex,claude,pi,dsh
 ```
 
