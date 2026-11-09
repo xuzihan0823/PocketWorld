@@ -8,18 +8,22 @@
 
 ```sh
 npx --yes skills add 'xuzihan0823/PocketWorld#docs/project-doc-maintenance' --skill project-doc-maintenance --agent codex claude-code pi --yes
-node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts codex,claude,pi
+node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts codex,claude,pi,dsh
 ```
 
-DSH 使用当前启用的 preset 配置。确认 `agent.cordis.yml` 实际位置后显式指定，注册会追加独立的受管理插件行。下面路径为本机现有命名方式的示例。
+安装范围默认是当前项目，省略 `-g`。hooks 注册默认也使用项目配置。DSH 生成 `.dsh/project-doc-maintenance.patch.yml`，启动时通过 `--patch` 显式加载。以下使用已有的 Web profile，按实际使用的 profile 调整，并遵守本机后台运行规则。
 
 ```sh
-node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts dsh --dsh-preset "$HOME/.dsh/.agent-presets/standard-routed/agent.cordis.yml"
+dsh --profile web --patch .dsh/project-doc-maintenance.patch.yml
 ```
+
+DSH Desktop 的现有实例需要由支持 `--patch` 的启动入口加载该覆盖层，生成配置后先检查实际启动方式。项目 patch 按本机仓库路径生成，其他成员在各自检出目录重新注册。
+
+已有 preset 也可作为显式选择。使用 `--hosts dsh --dsh-preset agent.cordis.yml` 指定实际启用的插件行列表，注册器追加受管理插件行。该选项写入指定文件，文件所在位置决定其配置范围。
 
 注册器合并已有 hooks，保留其他设置，备份原配置到 Git 元数据目录，重复执行更新同一组配置。检测到同名非受管理 Pi 扩展、无效 JSON 或不匹配的 DSH 配置格式时报告具体问题。多文件写入失败会恢复已写入的配置。
 
-Codex 写入 `.codex/hooks.json`，Claude Code 写入 `.claude/settings.json`，Pi 写入 `.pi/extensions/project-doc-maintenance.ts`。DSH 的运行文件保存在仓库共享的 Git 元数据目录，preset 引用其绝对路径，任务 worktree 清理后仍可使用。DSH 按仓库区分插件行，只作用于相应仓库及其 worktree，其他机器需分别注册。全局安装的技能先安装一份到目标项目，便于生成项目内的 hooks 路径。
+Codex 写入 `.codex/hooks.json`，Claude Code 写入 `.claude/settings.json`，Pi 写入 `.pi/extensions/project-doc-maintenance.ts`，DSH 默认写入 `.dsh/project-doc-maintenance.patch.yml`。DSH 的运行文件保存在仓库共享的 Git 元数据目录，配置引用其绝对路径，任务 worktree 清理后仍可使用。DSH 按仓库区分插件行，只作用于相应仓库及其 worktree，其他机器需分别注册。全局安装的技能先安装一份到目标项目，便于生成项目内的 hooks 路径。
 
 按宿主要求完成信任或审阅并重载。Codex 的项目配置需受信任，Claude Code 的 hooks 变更按其审阅流程生效，Pi 重载扩展，DSH 新建使用相应 preset 的会话。
 
@@ -47,7 +51,7 @@ node .agents/skills/project-doc-maintenance/scripts/maintenance.mjs ack --sessio
 注册后增加 `--check` 检查配置是否完整，DSH 使用相同的 preset 参数。
 
 ```sh
-node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts codex,claude,pi --check
+node .agents/skills/project-doc-maintenance/scripts/setup-hooks.mjs --hosts codex,claude,pi,dsh --check
 ```
 
 该检查证明注册配置符合本包要求。实际触发需在宿主中核对会话开始提示、修改后的定期提醒和结束续跑。可在当前 worktree 的 `git rev-parse --git-path project-doc-maintenance` 所指目录检查 `host`、`lastEvent`、`lastSeen` 和 `reviewedAt`，以确认真实事件到达。

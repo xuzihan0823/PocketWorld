@@ -6,6 +6,8 @@
 
 在需要使用技能的项目根目录执行。以下命令从已合并到默认分支的版本安装到当前项目，`--agent` 可改成 Skills CLI 支持的目标工具名称。
 
+省略 `-g` 使用项目级安装，技能位于项目的 `.agents/skills/`，选定工具按 Skills CLI 规则使用该目录或项目内链接。四宿主 hooks 的默认注册也写入项目配置，DSH 使用启动时显式加载的项目 patch。
+
 ```sh
 npx --yes skills add xuzihan0823/PocketWorld --skill project-doc-maintenance --agent codex --yes
 ```

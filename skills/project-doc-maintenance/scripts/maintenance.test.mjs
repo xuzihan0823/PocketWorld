@@ -13,7 +13,7 @@ import { apply as dshAdapter } from '../adapters/dsh.mjs';
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function fixture(t) {
-  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-maintenance-test-'));
+  const parent = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'doc-maintenance-test-')));
   const root = path.join(parent, 'repo with spaces');
   fs.mkdirSync(root);
   git(root, ['init', '-b', 'main']);
@@ -185,4 +185,20 @@ test('DSH 运行文件独立于任务 worktree，同一 preset 可维护多个�
   fs.cpSync(skill, otherSkill, { recursive: true });
   applySetup(other, planSetup(other, otherSkill, ['dsh'], preset));
   assert.equal(fs.readFileSync(preset, 'utf8').match(/# BEGIN project-doc-maintenance managed/g).length, 2);
+});
+
+test('默认四宿主注册限定目标仓库，DSH 生成显式加载的项目 patch', t => {
+  const { root } = fixture(t);
+  const installed = path.join(root, '.agents/skills/project-doc-maintenance');
+  fs.cpSync(skill, installed, { recursive: true });
+  const hosts = ['codex', 'claude', 'pi', 'dsh'];
+  const changes = planSetup(root, installed, hosts);
+  assert.ok(changes.every(change => path.relative(root, change.file).split(path.sep)[0] !== '..'));
+  applySetup(root, changes);
+  const file = path.join(root, '.dsh/project-doc-maintenance.patch.yml');
+  const text = fs.readFileSync(file, 'utf8');
+  const patch = JSON.parse(text.slice(text.indexOf('\n') + 1));
+  assert.equal(patch[0].insert[0].config.repositoryDir, path.join(root, '.git'));
+  assert.ok(fs.existsSync(patch[0].insert[0].name));
+  assert.equal(planSetup(root, installed, hosts).length, 0);
 });

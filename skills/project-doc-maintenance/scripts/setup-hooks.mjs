@@ -58,12 +58,6 @@ export function planSetup(root, skill, hosts, preset) {
       changes.push({ file, before, after: `// ${marker}\nexport { default } from ${JSON.stringify(target)};\n` });
     }
     if (host === 'dsh') {
-      if (!preset) throw new Error('DSH 需要 --dsh-preset 指向当前使用的 agent.cordis.yml');
-      const file = path.resolve(preset);
-      const before = read(file);
-      if (before === null) throw new Error('DSH preset 文件不存在，请确认实际启用的配置');
-      const first = before.split('\n').find(line => line.trim() && !line.trim().startsWith('#') && line.trim() !== '---');
-      if (first && !first.startsWith('- ')) throw new Error('DSH preset 应为插件行列表，请确认 agent.cordis.yml 的格式');
       const common = fs.realpathSync(path.resolve(root, git(root, ['rev-parse', '--git-common-dir'])));
       const repositoryId = createHash('sha256').update(common).digest('hex').slice(0, 12);
       const runtime = path.join(common, 'project-doc-maintenance/runtime');
@@ -71,11 +65,29 @@ export function planSetup(root, skill, hosts, preset) {
         const target = path.join(runtime, resource);
         changes.push({ file: target, before: read(target), after: fs.readFileSync(path.join(skill, resource), 'utf8') });
       }
+      const pluginPath = path.join(runtime, 'adapters/dsh.mjs');
+      if (!preset) {
+        const file = path.join(root, '.dsh/project-doc-maintenance.patch.yml');
+        const before = read(file);
+        if (before !== null && !before.startsWith(`# ${marker}\n`)) throw new Error(`目标 DSH patch 已有其他内容。${file}`);
+        const patch = [{ insert: [{
+          id: `project-doc-maintenance-${repositoryId}`,
+          name: pluginPath,
+          config: { repositoryDir: common },
+        }] }];
+        changes.push({ file, before, after: `# ${marker}\n${JSON.stringify(patch, null, 2)}\n` });
+        continue;
+      }
+      const file = path.resolve(preset);
+      const before = read(file);
+      if (before === null) throw new Error('DSH preset 文件不存在，请确认实际启用的配置');
+      const first = before.split('\n').find(line => line.trim() && !line.trim().startsWith('#') && line.trim() !== '---');
+      if (first && !first.startsWith('- ')) throw new Error('DSH preset 应为插件行列表，请确认 agent.cordis.yml 的格式');
       const begin = `# BEGIN ${marker} ${repositoryId}`;
       const end = `# END ${marker} ${repositoryId}`;
       const expression = new RegExp(`\\n?${begin}[\\s\\S]*?${end}\\n?`, 'g');
       const base = before.replace(expression, '').trimEnd();
-      const plugin = JSON.stringify(path.join(runtime, 'adapters/dsh.mjs'));
+      const plugin = JSON.stringify(pluginPath);
       const repository = JSON.stringify(common);
       const after = `${base}\n\n${begin}\n- id: project-doc-maintenance-${repositoryId}\n  name: ${plugin}\n  config:\n    repositoryDir: ${repository}\n${end}\n`;
       changes.push({ file, before, after });
