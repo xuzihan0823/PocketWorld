@@ -7,6 +7,7 @@ import platform
 
 import bpy
 import numpy as np
+from mathutils.kdtree import KDTree
 
 spec = importlib.util.spec_from_file_location('transitions', Path(__file__).with_name('build_tripo_transitions.py'))
 transitions = importlib.util.module_from_spec(spec)
@@ -24,6 +25,64 @@ def vector_data(items, name):
     values = np.empty(len(items) * 3, dtype=np.float32)
     items.foreach_get(name, values)
     return values
+
+
+def roundtrip(root, scene, arm, mesh):
+    """Compare saved NLA playback with actual imported GLB at matching times."""
+    imported = bpy.data.scenes.new('Continuous_Roundtrip')
+    previous = bpy.context.window.scene
+    try:
+        bpy.context.window.scene = imported
+        imported.render.fps = 30
+        bpy.ops.import_scene.gltf(filepath=str(root / 'public/models/resident/luna-tripo-transitions.glb'))
+        other = next(o for o in imported.objects if o.type == 'MESH')
+        other_arm = next(o for o in imported.objects if o.type == 'ARMATURE')
+        rest = np.array([mesh.matrix_world @ v.co for v in mesh.data.vertices])
+        tree = KDTree(len(rest))
+        for i, point in enumerate(rest): tree.insert(point, i)
+        tree.balance()
+        mapping = []
+        for v in other.data.vertices:
+            point = other.matrix_world @ v.co
+            weights = {other.vertex_groups[g.group].name: g.weight for g in v.groups if g.weight > 1e-6}
+            matches = []
+            for _, i, _ in tree.find_range(point, 3e-6):
+                original = {mesh.vertex_groups[g.group].name: g.weight for g in mesh.data.vertices[i].groups if g.weight > 1e-6}
+                if weights.keys() != original.keys() or any(abs(weights[n] - original[n]) > 1e-5 for n in weights):
+                    continue
+                error = max((mesh.matrix_world @ key.data[i].co - other.matrix_world @
+                    other.data.shape_keys.key_blocks[key.name].data[v.index].co).length
+                    for key in mesh.data.shape_keys.key_blocks)
+                if error < 3e-6: matches.append(i)
+            assert matches, ('Unmatched exported vertex', v.index)
+            mapping.append(matches[0])
+        errors = {}
+        for name, times in {'SitCycle': [0., 2.8, 3.5, 5., 6.5, 9.],
+                            'LieCycle': [0., 1.3, 3.7, 5., 8.8, 11.5, 13.]}.items():
+            for world, rig, obj in [(scene, arm, mesh), (imported, other_arm, other)]:
+                bpy.context.window.scene = world
+                for owner in [rig, obj.data.shape_keys]:
+                    owner.animation_data.action = None
+                    for track in owner.animation_data.nla_tracks:
+                        track.mute = track.name != name
+                    assert any(not track.mute for track in owner.animation_data.nla_tracks), name
+                    owner.update_tag()
+            for time in times:
+                samples = []
+                # The importer places the glTF t=0 action into an NLA strip at frame 1.
+                for world, obj, frame in [(scene, mesh, time * 30 + 1), (imported, other, time * 30 + 1)]:
+                    bpy.context.window.scene = world
+                    world.frame_set(int(frame), subframe=frame - int(frame))
+                    bpy.context.view_layer.update()
+                    samples.append(transitions.polish.evaluated_coords(obj))
+                error = float(np.abs(samples[0][mapping] - samples[1]).max())
+                errors[f'{name}:{time}'] = error
+        assert max(errors.values()) < 1e-5, errors
+        return {'vertices': len(mapping), 'max_surface_error': max(errors.values()), 'samples': errors}
+    finally:
+        bpy.context.window.scene = previous
+        for item in list(imported.objects): bpy.data.objects.remove(item, do_unlink=True)
+        bpy.data.scenes.remove(imported)
 
 
 def validate(workspace):
@@ -73,9 +132,10 @@ def validate(workspace):
                 assert not playback[name][0]['morphs'] and not playback[name][-1]['morphs']
                 assert any(any('_Contact_' in key for key in item['morphs']) for item in playback[name]), (name, playback[name])
                 assert min(item['hips'][2] for item in playback[name]) < .35
+        exported = roundtrip(root, scene, arm, mesh)
         report = {'platform': platform.platform(), 'blender': bpy.app.version_string, 'bones': 103,
                   'original_geometry_uv_weights_and_correctives_unchanged': True,
-                  'source_and_saved_nla_tracks': list(frames), 'playback': playback,
+                  'source_and_saved_nla_tracks': list(frames), 'playback': playback, 'glb_roundtrip': exported,
                   'blend_sha256': hashlib.sha256((out / 'luna-tripo-transitions.blend').read_bytes()).hexdigest()}
         (out / 'blender-validation.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
         return report

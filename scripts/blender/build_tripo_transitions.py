@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import struct
 from pathlib import Path
 import sys
 
@@ -18,7 +19,7 @@ spec.loader.exec_module(polish)
 SOURCE_HASH = 'cf27f3a2780a1ac5f3472ee6721f85733ea083b1cc60df8cdb60360621482b7b'
 FPS = 30
 CLIPS = {'SitCycle': 9., 'LieCycle': 13.}
-KNOTS = [0., .2, .4, .6, .8, 1.]
+KNOTS = {'Sit': [0., .08, .22, .45, .7, 1.], 'Recline': [0., .2, .4, .6, .8, 1.]}
 
 
 def smooth(x):
@@ -42,6 +43,47 @@ def timeline(name, t):
 
 def capture(arm):
     return [bone.rotation_quaternion.copy() for bone in arm.pose.bones]
+
+
+def orient_bone(bone, rotation):
+    matrix = bone.matrix.copy()
+    position = matrix.translation.copy()
+    matrix = rotation.to_matrix().to_4x4() @ matrix
+    matrix.translation = position
+    bone.matrix = matrix
+    bone.location = (0, 0, 0)
+    bone.scale = (1, 1, 1)
+    bpy.context.view_layer.update()
+
+
+def plant_feet(state, sit, recline):
+    """Bake a two-bone leg solve; no helpers, constraints or runtime IK needed."""
+    arm = state['arm']
+    release = section(recline, 0., .65)
+    if release >= 1:
+        return
+    forward = arm.matrix_world.to_3x3().inverted() @ Vector((0, -1, 0))
+    for side in ['Left', 'Right']:
+        thigh, shin, foot = [arm.pose.bones['mixamorig:' + side + suffix]
+                             for suffix in ['UpLeg', 'Leg', 'Foot']]
+        anchor, orientation, rest_pole = state['feet'][side]
+        goal = anchor.lerp(foot.head, release)
+        foot_rotation = orientation.slerp(foot.matrix.to_quaternion(), release)
+        hip, knee, ankle = thigh.head.copy(), shin.head.copy(), foot.head.copy()
+        upper, lower = (knee - hip).length, (ankle - knee).length
+        axis = goal - hip
+        distance = max(1e-9, axis.length)
+        axis.normalize()
+        reach = min(upper + lower - 1e-8, max(abs(upper - lower) + 1e-8, distance))
+        along = (upper * upper - lower * lower + reach * reach) / (2 * reach)
+        height = math.sqrt(max(0., upper * upper - along * along))
+        preferred = rest_pole.lerp(forward.normalized(), section(sit, 0., .2))
+        pole = preferred - axis * preferred.dot(axis)
+        pole.normalize()
+        target_knee = hip + axis * along + pole * height
+        orient_bone(thigh, (knee - hip).rotation_difference(target_knee - hip))
+        orient_bone(shin, (foot.head - shin.head).rotation_difference(goal - shin.head))
+        orient_bone(foot, foot_rotation @ foot.matrix.to_quaternion().inverted())
 
 
 def basis(state, sit, recline, walk=None, offset=0.):
@@ -74,6 +116,10 @@ def basis(state, sit, recline, walk=None, offset=0.):
         # release the ankle support as the legs extend onto the platform.
         hips.location += state['hip_space'] @ Vector((0, 0, correction * (1 - recline)))
         bpy.context.view_layer.update()
+        if 'feet' in state:
+            hips.location += state['hip_space'] @ Vector((0, .14 * sit * (1 - recline), 0))
+            bpy.context.view_layer.update()
+            plant_feet(state, sit, recline)
 
 
 def weights(sit, recline, contacts):
@@ -82,9 +128,14 @@ def weights(sit, recline, contacts):
         return result
     # Adjacent sculpted shapes blend on the continuous pose parameter, not on
     # elapsed time. The return path therefore samples exactly the same surface.
-    for i, knot in enumerate(KNOTS[1:], 1):
-        result[f'Sit_Contact_{i}'] = max(0., 1 - abs(sit - knot) * 5) * (1 - min(1., recline * 5))
-        result[f'Recline_Contact_{i}'] = max(0., 1 - abs(recline - knot) * 5)
+    for kind, progress in [('Sit', sit), ('Recline', recline)]:
+        knots = KNOTS[kind]
+        for i, knot in enumerate(knots[1:], 1):
+            left, right = knots[i - 1], knots[min(i + 1, len(knots) - 1)]
+            weight = ((progress - left) / (knot - left) if progress <= knot
+                      else (right - progress) / max(1e-9, right - knot))
+            result[f'{kind}_Contact_{i}'] = max(0., min(1., weight)) * (
+                1 - min(1., recline * 5) if kind == 'Sit' else 1.)
     return result
 
 
@@ -104,7 +155,7 @@ def sculpt(state):
         graphs.append((groups, neighbors))
     results = {}
     for kind in ['Sit', 'Recline']:
-        for index, progress in enumerate(KNOTS[1:], 1):
+        for index, progress in enumerate(KNOTS[kind][1:], 1):
             sit, recline = (progress, 0.) if kind == 'Sit' else (1., progress)
             basis(state, sit, recline)
             set_keys(obj, weights(sit, recline, False))
@@ -114,7 +165,7 @@ def sculpt(state):
             delta = np.zeros_like(posed)
             support = .047 * section(recline, .5, 1.)
             for (mask, part), (groups, neighbors) in zip(regions, graphs):
-                target = polish.project_contacts(posed, mask, capsules, part, clearance=.004)
+                target = polish.project_contacts(posed, mask, capsules, part, clearance=.006)
                 if recline > .5:
                     target[mask, 2] = np.maximum(target[mask, 2], support)
                 offsets = np.array([(target[ids] - posed[ids]).mean(0) for ids in groups])
@@ -124,7 +175,7 @@ def sculpt(state):
                         offsets[i] = .7 * previous[i] + .3 * previous[sorted(neighbors[i])].mean(0)
                 for i, ids in enumerate(groups):
                     delta[ids] = offsets[i]
-                fixed = polish.project_contacts(posed + delta, mask, capsules, part, clearance=.003)
+                fixed = polish.project_contacts(posed + delta, mask, capsules, part, clearance=.005)
                 if recline > .5:
                     fixed[mask, 2] = np.maximum(fixed[mask, 2], support)
                 delta[mask] = (fixed - posed)[mask]
@@ -167,7 +218,7 @@ def author(state, name, duration):
     keys.animation_data.action = morph_action
     # Dense keys are cheap here: glTF omits constant bone channels on export.
     last = round(duration * FPS) + 1
-    for frame in range(1, last + 1, 2):
+    for frame in range(1, last + 1):
         t = (frame - 1) / FPS
         sit, recline, walk, offset = timeline(name, t)
         basis(state, sit, recline, walk, offset)
@@ -210,8 +261,18 @@ def prepare(workspace):
     polish.phase2.pose(arm, 'Sit', 2.)
     sit = capture(arm)
     polish.phase2.pose(arm, 'LieDown', 2.)
-    return dict(root=root, scene=scene, obj=obj, arm=arm, rest=rest, sit=sit, lie=capture(arm),
-                ankle=ankle, hip_space=hip_space)
+    state = dict(root=root, scene=scene, obj=obj, arm=arm, rest=rest, sit=sit, lie=capture(arm),
+                 ankle=ankle, hip_space=hip_space)
+    basis(state, 0., 0.)
+    state['feet'] = {}
+    for side in ['Left', 'Right']:
+        thigh, shin, foot = [arm.pose.bones['mixamorig:' + side + suffix]
+                             for suffix in ['UpLeg', 'Leg', 'Foot']]
+        axis = (foot.head - thigh.head).normalized()
+        pole = shin.head - thigh.head
+        pole = (pole - axis * pole.dot(axis)).normalized()
+        state['feet'][side] = (foot.head.copy(), foot.matrix.to_quaternion(), pole)
+    return state
 
 
 def export(state):
@@ -238,6 +299,7 @@ def export(state):
                              export_yup=True, export_image_format='AUTO')
     last_frames = dict(Walk=37, ArmsUp=121, Sit=121, LieDown=121,
                        **{name: round(duration * FPS) + 1 for name, duration in CLIPS.items()})
+    align_cycle_times(runtime)
     polish.bake_morph_channels(runtime, obj, last_frames)
     polish.phase2.pose(arm, 'Rest', 0.)
     set_keys(obj, {})
@@ -247,6 +309,49 @@ def export(state):
     return runtime
 
 
+def align_cycle_times(filepath):
+    """Align Blender frame 1 with glTF t=0 for both bones and morph weights.
+
+    This exporter starts the bone tracks at 1/30 s while authored Key curves
+    start at zero. Allocate separate time accessors so the four legacy clips
+    and any shared buffer data remain untouched.
+    """
+    data = filepath.read_bytes()
+    size = struct.unpack_from('<I', data, 12)[0]
+    doc = json.loads(data[20:20 + size])
+    binary = bytearray(data[28 + size:])
+    for animation in doc['animations']:
+        if animation['name'] not in CLIPS:
+            continue
+        inputs = sorted({sampler['input'] for sampler in animation['samplers']})
+        times = {}
+        for index in inputs:
+            accessor = doc['accessors'][index]
+            view = doc['bufferViews'][accessor['bufferView']]
+            assert accessor['componentType'] == 5126 and accessor['type'] == 'SCALAR'
+            start = view.get('byteOffset', 0) + accessor.get('byteOffset', 0)
+            times[index] = np.frombuffer(binary, dtype='<f4', count=accessor['count'], offset=start).copy()
+        origin = min(float(values[0]) for values in times.values())
+        assert abs(origin - 1 / FPS) < 1e-6 or abs(origin) < 1e-6, origin
+        remap = {}
+        for index, values in times.items():
+            values -= origin
+            view_index = len(doc['bufferViews'])
+            doc['bufferViews'].append({'buffer': 0, 'byteOffset': len(binary), 'byteLength': values.nbytes})
+            binary.extend(values.tobytes())
+            remap[index] = len(doc['accessors'])
+            doc['accessors'].append({'bufferView': view_index, 'componentType': 5126,
+                'count': len(values), 'type': 'SCALAR', 'min': [float(values.min())], 'max': [float(values.max())]})
+        for sampler in animation['samplers']:
+            sampler['input'] = remap[sampler['input']]
+    doc['buffers'][0]['byteLength'] = len(binary)
+    encoded = json.dumps(doc, separators=(',', ':')).encode('utf-8')
+    encoded += b' ' * (-len(encoded) % 4)
+    filepath.write_bytes(struct.pack('<III', 0x46546c67, 2, 28 + len(encoded) + len(binary)) +
+                         struct.pack('<II', len(encoded), 0x4e4f534a) + encoded +
+                         struct.pack('<II', len(binary), 0x004e4942) + binary)
+
+
 def build(workspace):
     state = prepare(workspace)
     state['corrections'] = sculpt(state)
@@ -254,7 +359,9 @@ def build(workspace):
         author(state, name, duration)
     state['runtime'] = export(state)
     report = {'source_sha256': SOURCE_HASH, 'fps': FPS, 'clips_seconds': CLIPS,
-              'bone_count': len(state['arm'].data.bones), 'corrections': state['corrections']}
+              'bone_count': len(state['arm'].data.bones), 'corrections': state['corrections'],
+              'contact_knots': KNOTS, 'baked_footplant': True,
+              'cycle_bone_and_morph_time_origin': 0}
     (state['root'] / 'art/resident/tripo-transitions/authoring.json').write_text(
         json.dumps(report, indent=2) + '\n', encoding='utf-8')
     return state

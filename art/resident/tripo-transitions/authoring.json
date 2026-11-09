@@ -8,44 +8,64 @@
   "bone_count": 103,
   "corrections": {
     "Sit_Contact_1": {
-      "vertices": 1192,
-      "max_world_offset": 0.03147716447710991
+      "vertices": 1344,
+      "max_world_offset": 0.03192683309316635
     },
     "Sit_Contact_2": {
-      "vertices": 1223,
-      "max_world_offset": 0.03131982311606407
+      "vertices": 1407,
+      "max_world_offset": 0.03384113684296608
     },
     "Sit_Contact_3": {
-      "vertices": 1213,
-      "max_world_offset": 0.02572629414498806
+      "vertices": 1424,
+      "max_world_offset": 0.03261822462081909
     },
     "Sit_Contact_4": {
-      "vertices": 1189,
-      "max_world_offset": 0.01518683135509491
+      "vertices": 1421,
+      "max_world_offset": 0.022939490154385567
     },
     "Sit_Contact_5": {
-      "vertices": 1851,
-      "max_world_offset": 0.0019740029238164425
+      "vertices": 1692,
+      "max_world_offset": 0.003959315363317728
     },
     "Recline_Contact_1": {
-      "vertices": 1053,
-      "max_world_offset": 0.003960458096116781
+      "vertices": 1332,
+      "max_world_offset": 0.005961001385003328
     },
     "Recline_Contact_2": {
-      "vertices": 1139,
-      "max_world_offset": 0.007743036840111017
+      "vertices": 1443,
+      "max_world_offset": 0.00974535197019577
     },
     "Recline_Contact_3": {
-      "vertices": 1098,
-      "max_world_offset": 0.007760645821690559
+      "vertices": 1393,
+      "max_world_offset": 0.009762964211404324
     },
     "Recline_Contact_4": {
-      "vertices": 1169,
-      "max_world_offset": 0.006530599668622017
+      "vertices": 1453,
+      "max_world_offset": 0.006530601531267166
     },
     "Recline_Contact_5": {
-      "vertices": 4897,
+      "vertices": 5115,
       "max_world_offset": 0.06155126169323921
     }
-  }
+  },
+  "contact_knots": {
+    "Sit": [
+      0.0,
+      0.08,
+      0.22,
+      0.45,
+      0.7,
+      1.0
+    ],
+    "Recline": [
+      0.0,
+      0.2,
+      0.4,
+      0.6,
+      0.8,
+      1.0
+    ]
+  },
+  "baked_footplant": true,
+  "cycle_bone_and_morph_time_origin": 0
 }

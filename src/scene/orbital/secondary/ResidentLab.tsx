@@ -150,8 +150,10 @@ export default function ResidentLab() {
       const targetIndices = meshes[0].morphTargetDictionary ?? {};
       function sampleContactAllowance() {
         const values = meshes[0].morphTargetInfluences ?? [];
+        // Hair contact starts with the first shallow knee bend. Match the
+        // earlier corrective knots while retaining the simulation history.
         const contact = isCycle(activePose)
-          ? THREE.MathUtils.smoothstep((values[targetIndices.Sit_Clearance] ?? 0) + (values[targetIndices.LieDown_Clearance] ?? 0), .03, .36)
+          ? THREE.MathUtils.smoothstep((values[targetIndices.Sit_Clearance] ?? 0) + (values[targetIndices.LieDown_Clearance] ?? 0), 0, .12)
           : 0;
         motion.setRotationAllowance(1 - .96 * contact, 1 - .95 * contact);
       }
@@ -192,6 +194,7 @@ export default function ResidentLab() {
       function render() {
         floor.visible = grid.visible = !underside;
         seat.visible = activePose === 'Sit' || activePose === 'SitCycle';
+        seat.position.z = activePose === 'SitCycle' ? -.18 : -.04;
         bed.visible = activePose === 'LieDown' || activePose === 'LieCycle';
         bed.position.set(0, activePose === 'LieCycle' ? .023 : .01, activePose === 'LieCycle' ? -.07 : -.01);
         if (underside) bed.visible = false;
