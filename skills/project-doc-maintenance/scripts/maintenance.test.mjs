@@ -88,13 +88,21 @@ test('四宿主注册保留已有配置，重复运行幂等，失效配置在�
   assert.deepEqual(claude.permissions, { allow: ['Read'] });
   assert.equal(claude.hooks.Stop[0].hooks[0].command, 'echo existing');
   assert.ok(fs.readFileSync(preset, 'utf8').startsWith('- id: existing\n'));
+  const alias = path.join(root, '.claude/skills/project-doc-maintenance');
+  fs.mkdirSync(path.dirname(alias));
+  fs.symlinkSync(installed, alias, 'dir');
+  assert.match(execFileSync(process.execPath, [path.join(alias, 'scripts/setup-hooks.mjs'), '--hosts', 'codex', '--check'], {
+    cwd: root, encoding: 'utf8',
+  }), /注册配置检查通过/);
   fs.writeFileSync(path.join(root, '.claude/settings.json'), 'invalid');
   assert.throws(() => planSetup(root, installed, hosts, preset));
 });
 
 test('命令 hooks 使用官方输入输出协议，并发检查保留计数', async t => {
   const { root, payload } = fixture(t);
-  const script = path.join(skill, 'scripts/maintenance.mjs');
+  const alias = path.join(root, 'skill-alias');
+  fs.symlinkSync(skill, alias, 'dir');
+  const script = path.join(alias, 'scripts/maintenance.mjs');
   for (const host of ['codex', 'claude']) {
     const invoke = hook_event_name => JSON.parse(execFileSync(process.execPath, [script, '--host', host], {
       cwd: root, encoding: 'utf8', input: JSON.stringify({ ...payload, hook_event_name }),

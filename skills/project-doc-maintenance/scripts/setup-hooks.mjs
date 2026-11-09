@@ -121,7 +121,7 @@ function main() {
   process.stdout.write(`已更新 ${changes.length} 个宿主配置。请按宿主要求信任配置并重载或新建会话，再检查实际 hook 事件。\n`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try { main(); } catch (error) {
     process.stderr.write(`hooks 注册失败。${error.message}\n`);
     process.exitCode = 1;

@@ -159,7 +159,7 @@ async function main() {
   process.stdout.write(JSON.stringify(output));
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.existsSync(process.argv[1]) && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => {
     process.stderr.write(`project-doc-maintenance hook 失败。${error.message}\n`);
     process.exitCode = 1;
