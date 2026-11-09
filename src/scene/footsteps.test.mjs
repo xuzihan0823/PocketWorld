@@ -53,7 +53,6 @@ function mount(kind, overrides = {}) {
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
-    '../interactables': { ROOM_OBSTACLES: [], INTERACTABLE_ITEMS: [] },
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
     './scene/orbital/library/useLibrary': { useLibrary: options => ({ dispatch: options.onAction, back: options.onReturn, data: { books: [] }, flow: { current: { phase: 'idle' } } }) },
@@ -64,14 +63,13 @@ function mount(kind, overrides = {}) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/orbital.css': {},
   };
-  const files = { orbital: './orbital/OrbitalResidents.tsx', legacy: './models/Protagonist.tsx', app: '../App.tsx' };
-  const names = { orbital: 'OrbitalResidents', legacy: 'Protagonist', app: 'App' };
+  const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
+  const names = { orbital: 'OrbitalResidents', app: 'App' };
   const props = {
     sceneId: 'habitat', objects: {}, enabled: true, reducedMotion: false, walkTarget: null,
     interaction: { current: null }, drawerEnabled: true, drawerInteraction: { current: null }, onDrawerAction() {},
     onGesture() {}, onHover() {}, onArrive() {}, onAction() {},
-    controlsEnabled: true, posture: 'standing', onPostureChange() {}, onClearWalkTarget() {},
-    onNearbyChange() {}, onInteract() {}, onPositionUpdate() {}, ...overrides,
+    ...overrides,
   };
   const component = load(files[kind], dependencies, {
     window: target, document: new EventTarget(), Element: class {}, HTMLElement: class {}, URLSearchParams,
@@ -91,7 +89,7 @@ function mount(kind, overrides = {}) {
   }
   attach(tree);
   effects.forEach(effect => cleanups.push(effect()));
-  const root = groups.find(item => ['OrbitalResident', 'Protagonist_Character'].includes(item.name))?.group;
+  const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
     root, pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
     key(code, type = 'keydown') {
@@ -107,21 +105,19 @@ function mount(kind, overrides = {}) {
   };
 }
 
-for (const kind of ['orbital', 'legacy']) {
-  for (const fps of [60, 120, 144, 240]) {
-    test(`${kind}: one landing sound per jump at ${fps} FPS`, () => {
-      const view = mount(kind);
-      try {
-        view.key('Space');
-        for (let i = 0; i < fps; i++) view.frame(1 / fps);
-        assert.equal(view.root.position.y, 0);
-        assert.equal(view.sounds.filter(sound => sound.variant === 'push').length, 1);
-        assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
-        for (let i = 0; i < fps / 2; i++) view.frame(1 / fps);
-        assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
-      } finally { view.dispose(); }
-    });
-  }
+for (const fps of [60, 120, 144, 240]) {
+  test(`orbital: one landing sound per jump at ${fps} FPS`, () => {
+    const view = mount('orbital');
+    try {
+      view.key('Space');
+      for (let i = 0; i < fps; i++) view.frame(1 / fps);
+      assert.equal(view.root.position.y, 0);
+      assert.equal(view.sounds.filter(sound => sound.variant === 'push').length, 1);
+      assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
+      for (let i = 0; i < fps / 2; i++) view.frame(1 / fps);
+      assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
+    } finally { view.dispose(); }
+  });
 }
 
 test('moving through a jump keeps the gait animated without airborne walking sounds', () => {
@@ -140,23 +136,6 @@ test('moving through a jump keeps the gait animated without airborne walking sou
     for (let i = 0; i < 60; i++) view.frame(1 / 120);
     assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
     assert.ok(view.sounds.some(sound => !sound.variant));
-  } finally { view.dispose(); }
-});
-
-test('legacy: holding movement against a wall stops footsteps until movement resumes', () => {
-  const view = mount('legacy');
-  try {
-    view.key('KeyD');
-    for (let i = 0; i < 90; i++) view.frame(1 / 60);
-    assert.equal(view.root.position.x, 3.55);
-    const stoppedCount = view.sounds.length;
-    assert.ok(stoppedCount > 0);
-    for (let i = 0; i < 60; i++) view.frame(1 / 60);
-    assert.equal(view.sounds.length, stoppedCount);
-    view.key('KeyD', 'keyup');
-    view.key('KeyA');
-    for (let i = 0; i < 30; i++) view.frame(1 / 60);
-    assert.ok(view.sounds.length > stoppedCount);
   } finally { view.dispose(); }
 });
 

@@ -30,9 +30,8 @@ PocketWorld/
 │   │   │   ├── media/        # 电脑屏幕、卡带、唱片机、键盘与测试
 │   │   │   └── shaders/      # 宇宙与木材着色器
 │   │   ├── audioEngine.ts    # 房间音效与音乐播放
-│   │   ├── geometry.ts       # 共用几何工具
-│   │   └── models/           # 早期房间模型实现
-│   ├── components/           # 页面级电脑、音乐和详情组件
+│   │   └── geometry.ts       # 共用几何工具
+│   ├── components/computer/  # 独立滑雪页面与卡带播放器
 │   ├── games/
 │   │   ├── mario/            # 奶娃滑雪大冒险，保留 mario 卡带标识
 │   │   └── shooter/          # 团团魔法录与独立调试入口
@@ -72,4 +71,4 @@ npm test
 
 默认页面进入房间。`?game=ski` 或 `?dev=mario` 进入滑雪独立页，`?dev=shooter` 进入团团魔法录独立页。
 
-`npm test` 先构建生产产物，再编译游戏引擎并发现 `src/` 内的全部 `*.test.mjs`。生产构建用于检查按需加载依赖图，引擎测试包生成在被 Git 忽略的 `src/games/shooter/survival/dist/`。测试包含原型弹球引擎，其既有命令行参数由统一入口自动传入。功能测试与对应实现就近维护。
+`npm test` 先构建生产产物，再编译游戏引擎并发现 `src/` 内的全部 `*.test.mjs`。生产构建用于检查按需加载依赖图，引擎测试包生成在被 Git 忽略的 `src/games/shooter/survival/dist/`。功能测试与对应实现就近维护。

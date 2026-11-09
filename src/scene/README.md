@@ -11,7 +11,7 @@
 - `orbital/media/` 管理电脑屏幕布局、游戏卡带加载与拖放、唱片交互、实体键盘和相关测试。
 - `orbital/` 根目录保留舱室、家具、住民、交互基础组件、材质与场景样式。
 - `audioEngine.ts` 提供音乐播放、静音、环境与脚步音效。
-- `geometry.ts` 提供几何工具。`RoomScene.tsx`、`models/`、`textures.ts` 和 `interactables.ts` 属于早期房间实现。
+- `geometry.ts` 提供场景共用的几何工具。
 
 ## 模块接入
 

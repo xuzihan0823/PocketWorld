@@ -1,4 +1,4 @@
-import type { SoundEvent } from './engine';
+type SoundEvent = 'launch' | 'hit' | 'destroy' | 'wave';
 
 /** No assets, timers or global listeners. Nodes are bounded and explicitly disconnected. */
 export class PinballAudio {
