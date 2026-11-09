@@ -1,0 +1,277 @@
+{
+  "version": 1,
+  "units": "meters",
+  "upAxis": "Y (GLB)",
+  "forwardAxis": "+Z (GLB)",
+  "height": 1.43,
+  "hipsHeight": 0.79,
+  "humanoid": {
+    "Root": "Root",
+    "Hips": "Hips",
+    "Spine": "Spine",
+    "Chest": "Chest",
+    "Neck": "Neck",
+    "Head": "Head",
+    "Shoulder.L": "Shoulder.L",
+    "UpperArm.L": "UpperArm.L",
+    "LowerArm.L": "LowerArm.L",
+    "Hand.L": "Hand.L",
+    "Index.01.L": "Index.01.L",
+    "Index.02.L": "Index.02.L",
+    "Index.03.L": "Index.03.L",
+    "Middle.01.L": "Middle.01.L",
+    "Middle.02.L": "Middle.02.L",
+    "Middle.03.L": "Middle.03.L",
+    "Ring.01.L": "Ring.01.L",
+    "Ring.02.L": "Ring.02.L",
+    "Ring.03.L": "Ring.03.L",
+    "Little.01.L": "Little.01.L",
+    "Little.02.L": "Little.02.L",
+    "Little.03.L": "Little.03.L",
+    "Thumb.01.L": "Thumb.01.L",
+    "Thumb.02.L": "Thumb.02.L",
+    "Thumb.03.L": "Thumb.03.L",
+    "UpperLeg.L": "UpperLeg.L",
+    "LowerLeg.L": "LowerLeg.L",
+    "Foot.L": "Foot.L",
+    "Toes.L": "Toes.L",
+    "Eye.L": "Eye.L",
+    "Shoulder.R": "Shoulder.R",
+    "UpperArm.R": "UpperArm.R",
+    "LowerArm.R": "LowerArm.R",
+    "Hand.R": "Hand.R",
+    "Index.01.R": "Index.01.R",
+    "Index.02.R": "Index.02.R",
+    "Index.03.R": "Index.03.R",
+    "Middle.01.R": "Middle.01.R",
+    "Middle.02.R": "Middle.02.R",
+    "Middle.03.R": "Middle.03.R",
+    "Ring.01.R": "Ring.01.R",
+    "Ring.02.R": "Ring.02.R",
+    "Ring.03.R": "Ring.03.R",
+    "Little.01.R": "Little.01.R",
+    "Little.02.R": "Little.02.R",
+    "Little.03.R": "Little.03.R",
+    "Thumb.01.R": "Thumb.01.R",
+    "Thumb.02.R": "Thumb.02.R",
+    "Thumb.03.R": "Thumb.03.R",
+    "UpperLeg.R": "UpperLeg.R",
+    "LowerLeg.R": "LowerLeg.R",
+    "Foot.R": "Foot.R",
+    "Toes.R": "Toes.R",
+    "Eye.R": "Eye.R"
+  },
+  "hairChains": [
+    [
+      "Hair.Back.0.00.01",
+      "Hair.Back.0.00.02",
+      "Hair.Back.0.00.03"
+    ],
+    [
+      "Hair.Back.0.01.01",
+      "Hair.Back.0.01.02",
+      "Hair.Back.0.01.03"
+    ],
+    [
+      "Hair.Back.0.02.01",
+      "Hair.Back.0.02.02",
+      "Hair.Back.0.02.03"
+    ],
+    [
+      "Hair.Back.0.03.01",
+      "Hair.Back.0.03.02",
+      "Hair.Back.0.03.03"
+    ],
+    [
+      "Hair.Back.0.04.01",
+      "Hair.Back.0.04.02",
+      "Hair.Back.0.04.03"
+    ],
+    [
+      "Hair.Back.0.05.01",
+      "Hair.Back.0.05.02",
+      "Hair.Back.0.05.03"
+    ],
+    [
+      "Hair.Back.0.06.01",
+      "Hair.Back.0.06.02",
+      "Hair.Back.0.06.03"
+    ],
+    [
+      "Hair.Back.0.07.01",
+      "Hair.Back.0.07.02",
+      "Hair.Back.0.07.03"
+    ],
+    [
+      "Hair.Back.0.08.01",
+      "Hair.Back.0.08.02",
+      "Hair.Back.0.08.03"
+    ],
+    [
+      "Hair.Back.0.09.01",
+      "Hair.Back.0.09.02",
+      "Hair.Back.0.09.03"
+    ],
+    [
+      "Hair.Back.0.10.01",
+      "Hair.Back.0.10.02",
+      "Hair.Back.0.10.03"
+    ],
+    [
+      "Hair.Back.1.00.01",
+      "Hair.Back.1.00.02",
+      "Hair.Back.1.00.03"
+    ],
+    [
+      "Hair.Back.1.01.01",
+      "Hair.Back.1.01.02",
+      "Hair.Back.1.01.03"
+    ],
+    [
+      "Hair.Back.1.02.01",
+      "Hair.Back.1.02.02",
+      "Hair.Back.1.02.03"
+    ],
+    [
+      "Hair.Back.1.03.01",
+      "Hair.Back.1.03.02",
+      "Hair.Back.1.03.03"
+    ],
+    [
+      "Hair.Back.1.04.01",
+      "Hair.Back.1.04.02",
+      "Hair.Back.1.04.03"
+    ],
+    [
+      "Hair.Back.1.05.01",
+      "Hair.Back.1.05.02",
+      "Hair.Back.1.05.03"
+    ],
+    [
+      "Hair.Back.1.06.01",
+      "Hair.Back.1.06.02",
+      "Hair.Back.1.06.03"
+    ],
+    [
+      "Hair.Back.1.07.01",
+      "Hair.Back.1.07.02",
+      "Hair.Back.1.07.03"
+    ],
+    [
+      "Hair.Side.L.0.01",
+      "Hair.Side.L.0.02",
+      "Hair.Side.L.0.03"
+    ],
+    [
+      "Hair.Side.L.1.01",
+      "Hair.Side.L.1.02",
+      "Hair.Side.L.1.03"
+    ],
+    [
+      "Hair.Side.L.2.01",
+      "Hair.Side.L.2.02",
+      "Hair.Side.L.2.03"
+    ],
+    [
+      "Hair.Side.L.3.01",
+      "Hair.Side.L.3.02",
+      "Hair.Side.L.3.03"
+    ],
+    [
+      "Hair.Cheek.L.01",
+      "Hair.Cheek.L.02",
+      "Hair.Cheek.L.03"
+    ],
+    [
+      "Hair.Side.R.0.01",
+      "Hair.Side.R.0.02",
+      "Hair.Side.R.0.03"
+    ],
+    [
+      "Hair.Side.R.1.01",
+      "Hair.Side.R.1.02",
+      "Hair.Side.R.1.03"
+    ],
+    [
+      "Hair.Side.R.2.01",
+      "Hair.Side.R.2.02",
+      "Hair.Side.R.2.03"
+    ],
+    [
+      "Hair.Side.R.3.01",
+      "Hair.Side.R.3.02",
+      "Hair.Side.R.3.03"
+    ],
+    [
+      "Hair.Cheek.R.01",
+      "Hair.Cheek.R.02",
+      "Hair.Cheek.R.03"
+    ]
+  ],
+  "skirtChains": [
+    [
+      "Skirt.00.01",
+      "Skirt.00.02",
+      "Skirt.00.03"
+    ],
+    [
+      "Skirt.01.01",
+      "Skirt.01.02",
+      "Skirt.01.03"
+    ],
+    [
+      "Skirt.02.01",
+      "Skirt.02.02",
+      "Skirt.02.03"
+    ],
+    [
+      "Skirt.03.01",
+      "Skirt.03.02",
+      "Skirt.03.03"
+    ],
+    [
+      "Skirt.04.01",
+      "Skirt.04.02",
+      "Skirt.04.03"
+    ],
+    [
+      "Skirt.05.01",
+      "Skirt.05.02",
+      "Skirt.05.03"
+    ],
+    [
+      "Skirt.06.01",
+      "Skirt.06.02",
+      "Skirt.06.03"
+    ],
+    [
+      "Skirt.07.01",
+      "Skirt.07.02",
+      "Skirt.07.03"
+    ]
+  ],
+  "expressions": [
+    "Neutral",
+    "Blink",
+    "Smile",
+    "MouthOpen"
+  ],
+  "eyeLookBones": [
+    "Eye.L",
+    "Eye.R"
+  ],
+  "gripNodes": [
+    "Grip.L",
+    "Grip.R"
+  ],
+  "animations": [
+    "Idle",
+    "Walk",
+    "Sit",
+    "LieDown",
+    "HoldObject",
+    "EyeLook"
+  ],
+  "secondaryMotion": "Chains are skinned; runtime spring solver and capsule collision are not implemented.",
+  "status": "Review candidate. Extreme joint and cloth poses require further weight painting."
+}
