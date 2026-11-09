@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { WorldSceneProps } from '../../types/world';
+import type { WorldSceneProps } from '../../../types/world';
 import { useSchedule } from './ScheduleContext';
 import { discardSchedulePage, MAX_POSTED_SCHEDULES, postSchedulePage, schedulePageError, SCHEDULE_FULL_MESSAGE, type SchedulePage } from './schedule';
 import { BOOK_POSITION, FloorPaperBall, FlyingPaper, GLASS_POSITION, PostedPaper, type PaperFlight } from './SchedulePaper';

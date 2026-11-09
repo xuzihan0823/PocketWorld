@@ -27,6 +27,6 @@ test('standalone dev route includes the real cartridge but skips Three.js and GS
 });
 test('room bundle retains the shooter dynamic-import slot',()=>{
   const app=fs.readdirSync(assets).find(f=>/^App-.*\.js$/.test(f));assert.ok(app);
-  assert.ok(fs.readFileSync(path.join(assets,app),'utf8').includes('../../games/shooter/index.tsx'));
+  assert.ok(fs.readFileSync(path.join(assets,app),'utf8').includes('../../../games/shooter/index.tsx'));
   assert.ok([...walk(path.join(assets,app))].some(f=>f.includes('three-vendor')));
 });

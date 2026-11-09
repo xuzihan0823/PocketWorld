@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { WorldModelProps } from '../../types/world';
+import type { WorldModelProps } from '../../../types/world';
 import { CARTRIDGE_SLOT, cartridgeDragState, type CartridgePoint } from './cartridge-motion';
 
 interface Props {

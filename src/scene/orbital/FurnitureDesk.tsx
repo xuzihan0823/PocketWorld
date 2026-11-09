@@ -2,7 +2,7 @@ import React from 'react';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
 import { ObjectHandle } from './ObjectHandle';
 import { SoftBox, Tube } from './Primitives';
-import { ReactiveKeyboard } from './ReactiveKeyboard';
+import { ReactiveKeyboard } from './media/ReactiveKeyboard';
 import { FurnitureCylinder as Cylinder, FurnitureMotion, FURNITURE as C } from './FurnitureParts';
 import { FurnitureBook } from './FurnitureBooks';
 import { DRAWER_TRAVEL } from './drawerInteraction';

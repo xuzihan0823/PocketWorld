@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LibraryBooks } from './library/LibraryBooks';
-import { useSchedule } from './ScheduleContext';
+import { useSchedule } from './schedule/ScheduleContext';
 import { upholstery } from './Materials';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
 import { ObjectHandle } from './ObjectHandle';

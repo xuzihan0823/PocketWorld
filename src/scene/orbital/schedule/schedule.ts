@@ -1,4 +1,4 @@
-import type { ScheduleEntry } from '../../types/world';
+import type { ScheduleEntry } from '../../../types/world';
 
 export const SCHEDULE_KEY = 'pocketworld:schedule:notebook:v1';
 export const MAX_POSTED_SCHEDULES = 5;

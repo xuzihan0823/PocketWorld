@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { WorldFeatureAdapters } from '../../types/world';
+import type { WorldFeatureAdapters } from '../../../types/world';
 import { flattenSchedule, isScheduleEntry, isScheduleNotebook, migrateSchedule, SCHEDULE_KEY, type ScheduleNotebook } from './schedule';
 
 interface ScheduleContextValue {
