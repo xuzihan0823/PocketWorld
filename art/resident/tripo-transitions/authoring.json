@@ -1,0 +1,51 @@
+{
+  "source_sha256": "cf27f3a2780a1ac5f3472ee6721f85733ea083b1cc60df8cdb60360621482b7b",
+  "fps": 30,
+  "clips_seconds": {
+    "SitCycle": 9.0,
+    "LieCycle": 13.0
+  },
+  "bone_count": 103,
+  "corrections": {
+    "Sit_Contact_1": {
+      "vertices": 1192,
+      "max_world_offset": 0.03147716447710991
+    },
+    "Sit_Contact_2": {
+      "vertices": 1223,
+      "max_world_offset": 0.03131982311606407
+    },
+    "Sit_Contact_3": {
+      "vertices": 1213,
+      "max_world_offset": 0.02572629414498806
+    },
+    "Sit_Contact_4": {
+      "vertices": 1189,
+      "max_world_offset": 0.01518683135509491
+    },
+    "Sit_Contact_5": {
+      "vertices": 1851,
+      "max_world_offset": 0.0019740029238164425
+    },
+    "Recline_Contact_1": {
+      "vertices": 1053,
+      "max_world_offset": 0.003960458096116781
+    },
+    "Recline_Contact_2": {
+      "vertices": 1139,
+      "max_world_offset": 0.007743036840111017
+    },
+    "Recline_Contact_3": {
+      "vertices": 1098,
+      "max_world_offset": 0.007760645821690559
+    },
+    "Recline_Contact_4": {
+      "vertices": 1169,
+      "max_world_offset": 0.006530599668622017
+    },
+    "Recline_Contact_5": {
+      "vertices": 4897,
+      "max_world_offset": 0.06155126169323921
+    }
+  }
+}

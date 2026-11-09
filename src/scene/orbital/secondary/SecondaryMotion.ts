@@ -20,6 +20,7 @@ export class SecondaryMotion {
   readonly capsules: BodyCapsule[] = [];
   readonly joints: Joint[] = [];
   readonly fixedStep = STEP;
+  private rotationAllowance = { hair: 1, dress: 1 };
   steps = 0;
   resets = 0;
   private accumulator = 0;
@@ -108,6 +109,13 @@ export class SecondaryMotion {
     }
   }
 
+  // Contact clips can limit swing while a surface supports the fabric or hair.
+  // Set it during base animation sampling so the solver keeps its existing history.
+  setRotationAllowance(hair: number, dress: number) {
+    this.rotationAllowance.hair = clamp(hair, 0, 1);
+    this.rotationAllowance.dress = clamp(dress, 0, 1);
+  }
+
   // The mixer must run between restoring and capturing the base pose, including unkeyed bones.
   restoreBase() {
     for (const joint of this.joints) joint.bone.quaternion.copy(joint.base);
@@ -147,9 +155,10 @@ export class SecondaryMotion {
     this.direction.copy(joint.tail).sub(this.origin).normalize();
     if (this.direction.lengthSq() < .5) this.direction.copy(this.baseDirection);
     const angle = Math.acos(clamp(this.direction.dot(this.baseDirection), -1, 1));
-    if (angle > joint.limit) {
+    const limit = joint.limit * this.rotationAllowance[joint.part];
+    if (angle > limit) {
       this.swing.setFromUnitVectors(this.baseDirection, this.direction);
-      this.swing.slerp(this.identity, 1 - joint.limit / angle);
+      this.swing.slerp(this.identity, 1 - limit / angle);
       this.direction.copy(this.baseDirection).applyQuaternion(this.swing);
     }
     joint.tail.copy(this.origin).addScaledVector(this.direction, length);

@@ -1,5 +1,7 @@
 # 人物模型
 
+[连续坐卧验收模型](luna-tripo-transitions.glb) 保留 103 根骨骼与原四段动作，另外包含步行停稳至坐下再起身，以及经坐姿躺卧再站立两段连续动作。通过 `?dev=resident&asset=transitions` 预览，制作与正侧背视频见 [连续坐卧验收](../../../art/resident/tripo-transitions/README.md)。
+
 第二阶段独立测试模型为 [`luna-tripo-dynamics.glb`](luna-tripo-dynamics.glb)，沿用 103 根骨骼，已补齐肩腋局部开口、精修局部权重及坐卧裙发接触。包含 Walk、ArmsUp、Sit、LieDown 四段 Blender 测试动画及五个姿势修正形状键，共 18,659 个三角面、10,728,168 bytes。原顶点静态位置、原三角面、UV 和三张贴图保留。通过 `?dev=resident` 查看动态、碰撞与三视角近景；Windows 验收、精修前后对比及局限见 [第二阶段说明](../../../art/resident/tripo-dynamics/README.md)。简化碰撞仍可能局部穿模，主房间仍使用下述旧角色。
 
 新 Tripo 人物的头发和裙摆辅助绑定为 [`luna-tripo-secondary.glb`](luna-tripo-secondary.glb)，保留原人体骨架并新增 50 根辅助骨骼。可编辑 Blender 文件、诊断动作与局限见 [新模型绑定说明](../../../art/resident/tripo-secondary/README.md)。该资产尚未接入运行角色。

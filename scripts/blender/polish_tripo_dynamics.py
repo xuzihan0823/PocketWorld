@@ -447,7 +447,7 @@ def make_actions(state):
     return actions
 
 
-def bake_morph_channels(filepath, obj):
+def bake_morph_channels(filepath, obj, last_frames=None):
     """Bake the authored Key F-curves explicitly.
 
     Blender 5.2 NLA export can sample muted Key tracks as constants even when the
@@ -475,9 +475,11 @@ def bake_morph_channels(filepath, obj):
     for animation in doc['animations']:
         action = tracks[animation['name']]
         curves = {f.data_path: f for layer in action.layers for strip in layer.strips for bag in strip.channelbags for f in bag.fcurves}
-        frames = range(1, (37 if animation['name'] == 'Walk' else 121) + 1)
+        last = last_frames[animation['name']] if last_frames else (37 if animation['name'] == 'Walk' else 121)
+        frames = range(1, last + 1)
         times = accessor([(frame - 1) / 30 for frame in frames], True)
-        values = accessor([[curves[f'key_blocks["{name}"].value'].evaluate(frame) for name in names] for frame in frames])
+        channels = [curves.get(f'key_blocks["{name}"].value') for name in names]
+        values = accessor([[curve.evaluate(frame) if curve else 0. for curve in channels] for frame in frames])
         channel = next(c for c in animation['channels'] if c['target']['path'] == 'weights')
         channel['sampler'] = len(animation['samplers'])
         animation['samplers'].append({'input': times, 'output': values, 'interpolation': 'LINEAR'})
