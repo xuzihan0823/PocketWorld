@@ -130,3 +130,35 @@ test('切后台和瞬移会复位，两个实例互不影响', async () => {
   assert.ok(a.motion.snapshot().tails.flat().every(Number.isFinite));
   assert.deepEqual(b.motion.snapshot(), before);
 });
+
+test('GLB 姿势修正跟随实际动画，切换动作和停止后不残留', async () => {
+  const { gltf, mixer, motion } = await fixture(null);
+  let mesh; gltf.scene.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
+  assert.deepEqual(Object.keys(mesh.morphTargetDictionary), ['Axilla_Raise_1', 'Axilla_Raise_2', 'Axilla_Raise_3', 'Sit_Clearance', 'LieDown_Clearance']);
+  for (const [name, expected] of [['ArmsUp', [0, 0, 1, 0, 0]], ['Sit', [0, 0, 0, 1, 0]], ['LieDown', [0, 0, 0, 0, 1]], ['Walk', [0, 0, 0, 0, 0]]]) {
+    mixer.stopAllAction(); motion.reset();
+    const action = mixer.clipAction(gltf.animations.find(a => a.name === name)).reset().play();
+    mixer.update(0);
+    assert.ok(mesh.morphTargetInfluences.every(value => Math.abs(value) < 1e-6), `${name} starts neutral`);
+    motion.configure({ hair: false, dress: false, collisions: false });
+    for (let i = 0; i < 240; i++) {
+      motion.advance(1 / 120, dt => mixer.update(dt));
+      assert.ok(mesh.morphTargetInfluences.every(w => Number.isFinite(w) && w >= -1e-6 && w <= 1 + 1e-6));
+    }
+    expected.forEach((value, index) => assert.ok(Math.abs(mesh.morphTargetInfluences[index] - value) < 1e-5, `${name}: ${mesh.morphTargetInfluences}`));
+    motion.configure({ hair: true, dress: true, collisions: true });
+    motion.advance(1 / 60, () => {});
+    expected.forEach((value, index) => assert.ok(Math.abs(mesh.morphTargetInfluences[index] - value) < 1e-5));
+    if (name !== 'Walk') {
+      for (const time of [.4, 3.6]) {
+        action.time = time; mixer.update(0);
+        const transition = name === 'ArmsUp' ? [.5, .5, 0, 0, 0] : expected.map(value => value * .5);
+        transition.forEach((value, index) => assert.ok(Math.abs(mesh.morphTargetInfluences[index] - value) < 1e-5, `${name} at ${time}`));
+      }
+      action.time = 4; mixer.update(0);
+      assert.ok(mesh.morphTargetInfluences.every(value => Math.abs(value) < 1e-6), `${name} returns neutral`);
+    }
+  }
+  mixer.stopAllAction();
+  assert.ok(mesh.morphTargetInfluences.every(value => value === 0));
+});

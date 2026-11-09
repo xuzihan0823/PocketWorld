@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import os from 'node:os';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
-const out = path.resolve('art/resident/tripo-dynamics');
+const out = path.resolve(process.env.LAB_OUT || 'art/resident/tripo-dynamics/polish');
 await fs.mkdir(out, { recursive: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1200, height: 900 }, deviceScaleFactor: 1 });
@@ -32,7 +33,7 @@ try {
       return { pose, simulation, mesh: lab.meshAudit() };
     }, pose);
     poses.push(result);
-    assert.equal(result.mesh.bones, 103); assert.equal(result.mesh.triangles, 18525); assert.equal(result.mesh.finite, true);
+    assert.equal(result.mesh.bones, 103); assert.equal(result.mesh.triangles, 18659); assert.equal(result.mesh.finite, true);
     await page.screenshot({ path: path.join(out, `three-${pose.toLowerCase()}.png`) });
     if (['ArmsUp', 'Sit', 'LieDown'].includes(pose)) {
       await page.evaluate(() => window.residentAudit.camera('side'));
@@ -71,7 +72,7 @@ try {
   assert.equal(await recovery.getByLabel('身体往返移动').isChecked(), false);
   await recovery.getByRole('button', { name: '播放动作', exact: true }).waitFor();
   await recovery.close();
-  const report = { browser: 'Chromium WebGL on local Mac; no physical-device benchmark', poses, performance, errors, failedRequests, faviconWarnings,
+  const report = { browser: `${await browser.version()} on ${os.platform()} ${os.release()}; no physical-device benchmark`, poses, performance, errors, failedRequests, faviconWarnings,
     switches: 'hair, dress, collisions, static, movement, pause: passed', recovery: 'failed GLB fetch then retry: passed',
     reducedMotion: 'Rest, no autoplay, no movement or springs by default: passed', mobile: '390x844 responsive layout; simulated viewport' };
   await fs.writeFile(path.join(out, 'browser-validation.json'), JSON.stringify(report, null, 2) + '\n');
