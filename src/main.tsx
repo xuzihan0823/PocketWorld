@@ -6,7 +6,9 @@ import './styles.css';
 const params = new URLSearchParams(window.location.search);
 const devGame = params.get('dev');
 const directSki = params.get('game') === 'ski' || devGame === 'mario';
-const Entry = React.lazy<React.ComponentType>(() => devGame === 'shooter'
+const Entry = React.lazy<React.ComponentType>(() => devGame === 'resident'
+  ? import('./scene/orbital/secondary/ResidentLab')
+  : devGame === 'shooter'
   ? import('./games/shooter/dev')
   : directSki
     ? import('./components/computer/SkiStandalone')

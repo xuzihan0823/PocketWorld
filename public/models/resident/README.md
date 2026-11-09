@@ -1,5 +1,7 @@
 # 人物模型
 
+第二阶段独立测试模型为 [`luna-tripo-dynamics.glb`](luna-tripo-dynamics.glb)，沿用 103 根骨骼，修复裙发串权重与粘连，并包含 Walk、ArmsUp、Sit、LieDown 四段 Blender 测试动画。通过 `?dev=resident` 查看弹簧动态与身体碰撞；技术实现、验证、原版保留情况及腋下遗留问题见 [第二阶段说明](../../../art/resident/tripo-dynamics/README.md)。主房间仍使用下述旧角色。
+
 新 Tripo 人物的头发和裙摆辅助绑定为 [`luna-tripo-secondary.glb`](luna-tripo-secondary.glb)，保留原人体骨架并新增 50 根辅助骨骼。可编辑 Blender 文件、诊断动作与局限见 [新模型绑定说明](../../../art/resident/tripo-secondary/README.md)。该资产尚未接入运行角色。
 
 独立重建的白兔玩偶为 [`luna-bunny-refined.glb`](luna-bunny-refined.glb)，可编辑源文件、五视角预览及验证说明见 [白兔资产说明](../../../art/resident/refined/BUNNY.md)。该文件作为独立资产保存，等待人物重新绑定骨骼后再接入；下述人物与现有运行时不变。
