@@ -1,0 +1,43 @@
+{
+  "blender": "5.2.3 LTS",
+  "runtime_sha256": "430d3193da7cb16efc3585060757d3db7770f06ad2eee5c61840108ac05029b3",
+  "runtime_bytes": 1949264,
+  "runtime_meshes": 1,
+  "material_draw_calls": 9,
+  "triangles": 59672,
+  "vertices_with_uv_seams": 35474,
+  "boundary_edges_after_welding_uv_seams": 0,
+  "nonmanifold_edges_after_welding_uv_seams": 0,
+  "zero_area_faces": 0,
+  "bounds_blender_xyz_m": [
+    [
+      -0.07816150039434433,
+      -0.05750943347811699,
+      0.0
+    ],
+    [
+      0.07816150039434433,
+      0.06199999898672104,
+      0.28965407609939575
+    ]
+  ],
+  "contact_markers_blender_xyz_m": {
+    "Grip_Right": [
+      -0.052000001072883606,
+      0.0,
+      0.05400000140070915
+    ],
+    "Grip_Left": [
+      0.052000001072883606,
+      0.0,
+      0.05400000140070915
+    ],
+    "Support": [
+      0.0,
+      0.0,
+      0.004000000189989805
+    ]
+  },
+  "textures_embedded": true,
+  "roundtrip": "passed"
+}

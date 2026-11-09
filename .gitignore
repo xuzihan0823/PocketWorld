@@ -39,3 +39,6 @@ lerna-debug.log*
 # Local review evidence and linked dependencies
 node_modules
 .impeccable/review/
+art/resident/generated/
+*.blend1
+__pycache__/

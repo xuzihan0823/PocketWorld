@@ -3,6 +3,8 @@ from pathlib import Path
 import hashlib
 import json
 import math
+import argparse
+import sys
 import bpy
 import bmesh
 import numpy as np
@@ -10,7 +12,7 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'public/models/resident/luna.glb'
-OUTPUT = ROOT / 'art/resident'
+OUTPUT = ROOT / 'art/resident/generated/base-rig'
 SELECTION = json.loads(Path(__file__).with_name('luna-separation.json').read_text())
 
 
@@ -407,7 +409,8 @@ def add_check_animation(rig):
 def export_delivery(result):
     scene,rig,meshes,rabbit_root,bunny_parts=result
     scene.frame_set(1)
-    directory=ROOT/'public/models/resident'
+    directory=OUTPUT/'runtime'
+    directory.mkdir(parents=True,exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
     for obj in [rig]+meshes:obj.select_set(True)
     bpy.context.view_layer.objects.active=rig
@@ -428,6 +431,13 @@ def export_delivery(result):
 
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--output',type=Path,default=OUTPUT)
+    args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+    OUTPUT=args.output.resolve()
+    OUTPUT.mkdir(parents=True,exist_ok=True)
+    if any(OUTPUT.iterdir()):
+        raise FileExistsError(f'Refusing to overwrite an existing asset directory: {OUTPUT}')
     result=build()
     add_check_animation(result[1])
     export_delivery(result)

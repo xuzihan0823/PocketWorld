@@ -1,5 +1,33 @@
 # Luna 精细骨架与独立兔子
 
+## PR #23 参考图重建兔子
+
+`refined/luna-bunny-refined.blend` 是按照用户提供的五视角设定图重新建模的可编辑源文件。
+头、身体、耳朵、手脚、尾巴和配饰分别命名，参考图已打包在隐藏的 Reference 集合中。
+运行时资源为 `../../public/models/resident/luna-bunny-refined.glb`。
+正面、前侧、侧面、后侧和背面预览见 `refined/bunny-views.jpg`。
+
+新版还原了白色玩偶、粉色耳内与脚掌、棕色四芒星眼罩及完整绑带、六瓣黄色领饰和圆尾。
+布料使用粗糙材质与内嵌微表面法线贴图。高约 0.290 米，原点位于脚底，Blender 朝向 -Y，
+GLB 朝向 +Z。`Grip_Right`、`Grip_Left` 和 `Support` 是非渲染接触标记，供抱兔动作定位。
+当前共 59,672 个三角形，运行时合并为 1 个网格、9 个材质批次，GLB 约 1.86 MiB。
+
+已检查五个视角，并将 GLB 重新导入 Blender 验证。
+焊接导出时拆开的 UV 接缝后，开放边、非流形边和退化面均为零，握持点位置一致。
+输入参考图哈希、Blender 版本、导出参数与验证结果分别保存在 `refined/bunny-manifest.json`
+和 `refined/bunny-validation.json`。新版兔子的游戏挂接与人物手指接触仍待抱兔阶段验证。
+
+重建脚本写入独立生成目录，目标目录非空时拒绝覆盖。
+后续直接在 `.blend` 精修，再用导出脚本从该源文件导出。
+
+```sh
+blender --background --python scripts/blender/build_bunny.py -- --reference /path/to/reference.png --render
+blender --background art/resident/refined/luna-bunny-refined.blend --python scripts/blender/export_bunny.py -- --output /path/to/new-bunny.glb
+blender --background art/resident/refined/luna-bunny-refined.blend --python scripts/blender/validate_bunny.py -- --runtime public/models/resident/luna-bunny-refined.glb --report /path/to/validation.json
+```
+
+## PR #21 初版资产
+
 原始 `public/models/resident/luna.glb` 保持不变。本次另交付 Blender 源文件、
 有蒙皮的人物 GLB 和独立兔子 GLB，未切换应用当前的模型加载路径。
 
@@ -56,7 +84,9 @@ python3 scripts/blender/validate_luna_assets.py
 ```
 
 第二条命令需要 NumPy。构建脚本会核对源 GLB 哈希、在新场景处理副本，并写入
-本次交付路径；不会覆盖原始 `luna.glb`。`luna-separation.json` 保存针对该源文件
+`art/resident/generated/base-rig/`，GLB 位于其中的 `runtime/` 子目录。
+可通过 `-- --output /path/to/empty-directory` 指定空目录，非空目录会被拒绝。
+`luna-separation.json` 保存针对该源文件
 检查过的面选择，源文件或焊接拓扑改变后必须重新检查选择。
 
 `render_luna_review.py` 可在交付场景中生成预览，使用完应保留该场景供编辑。

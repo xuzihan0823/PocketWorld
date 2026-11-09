@@ -1,0 +1,23 @@
+{
+  "asset_version": "bunny-reference-v2",
+  "blender": "5.2.3 LTS",
+  "reference_sha256": "1fe716b1b95dcf40a377869f90543a13aa0936215fed5390e22f2f3290c4af86",
+  "export": {
+    "format": "GLB",
+    "selection_only": true,
+    "apply_modifiers": true,
+    "animations": false,
+    "y_up": true,
+    "textures": "embedded"
+  },
+  "dimensions_blender_xyz_m": [
+    0.15632300078868866,
+    0.11950943246483803,
+    0.28965407609939575
+  ],
+  "contact_markers": [
+    "Grip_Right",
+    "Grip_Left",
+    "Support"
+  ]
+}
