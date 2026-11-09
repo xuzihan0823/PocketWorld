@@ -26,6 +26,22 @@
 
 具体要求以目标工作区适用的 `AGENT.md`、`SPEC.md` 和当前用户指令为准，初始设计与当前实现的差异按任务明确处理。
 
+## 按任务选用 Three.js 技能
+
+本仓库分发 24 个独立的 `threejs-*` 技能。安装到项目后，在技能目录中按名称查找，加载本次任务直接需要的指导。仅安装项目文档维护技能时，沿用仓库规范和当前依赖的官方资料。
+
+PocketWorld 的 3D 主场景使用 React Three Fiber 与 Drei。涉及场景开发时，优先结合 `threejs-r3f` 核对组件、Canvas、渲染循环和资源生命周期，再按下面的范围选择相关技能。
+
+| 变更范围 | 相关技能 |
+| --- | --- |
+| 相机、坐标、家具布局与人物动作 | `threejs-scene`、`threejs-geometry`、`threejs-animation` |
+| 模型、贴图、材质、灯光与视觉效果 | `threejs-assets`、`threejs-materials`、`threejs-lighting`、`threejs-shaders`、`threejs-postprocessing` |
+| 点击、拖动、键盘、音频和 HTML 界面协同 | `threejs-interaction`、`threejs-audio`、`threejs-html`、`threejs-accessibility` |
+| 帧率、内存、渲染故障与交付验证 | `threejs-performance`、`threejs-debugging`、`threejs-testing`、`threejs-deployment` |
+| 新体验规划或专项能力 | `threejs-web` 及对应的产品展示、物理、粒子、空间数据、WebGPU、XR 技能 |
+
+核对当前依赖及实际调用链，保留项目已选的渲染与交互架构。专项技能中的技术方案按用户需求和项目约束选用，外部服务、依赖变更及发布操作遵循原有授权边界。涉及交互或接口变更时，同时按本技能维护相关规范、契约和 PR。
+
 ## 从真实入口识别影响
 
 优先使用 `rg --files` 找文件，再搜索接口或符号。目录迁移时重新查找这些符号及其引用。
