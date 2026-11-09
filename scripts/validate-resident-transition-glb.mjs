@@ -31,13 +31,13 @@ assert.equal(model.meshes.length, 1);
 assert.equal(model.meshes[0].primitives.length, 1);
 const geometry = model.meshes[0].primitives[0];
 assert.equal(model.accessors[geometry.indices].count / 3, 18659);
-assert.equal(geometry.targets.length, 15);
+assert.equal(geometry.targets.length, 49);
 assert.deepEqual(model.animations.map(a => a.name), ['Walk', 'ArmsUp', 'Sit', 'LieDown', 'SitCycle', 'LieCycle']);
 assert.ok(model.animations.every(a => a.channels.some(channel => channel.target.path === 'weights')));
 const validateBytes = validator.validateBytes ?? validator.default.validateBytes;
 const result = await validateBytes(new Uint8Array(current.bytes), { uri: 'luna-tripo-transitions.glb', maxIssues: 100 });
 assert.equal(result.issues.numErrors, 0);
-const report = { ...result, sha256: sha256(current.bytes), bones: 103, triangles: 18659, morphTargets: 15,
+const report = { ...result, sha256: sha256(current.bytes), bones: 103, triangles: 18659, morphTargets: 49,
   embeddedImagesByteIdentical: true, bytes: current.bytes.length };
 await fs.writeFile('art/resident/tripo-transitions/gltf-validation.json', JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({ errors: result.issues.numErrors, warnings: result.issues.numWarnings, bytes: report.bytes,

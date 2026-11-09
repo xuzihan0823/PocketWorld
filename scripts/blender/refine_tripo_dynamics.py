@@ -15,6 +15,72 @@ spec = importlib.util.spec_from_file_location('secondary_v1', Path(__file__).wit
 v1 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(v1)
 
+spec = importlib.util.spec_from_file_location('tripo_walk', Path(__file__).with_name('tripo_walk.py'))
+walk_gait = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(walk_gait)
+_walk_states = {}
+
+
+def repair_hair_islands(obj):
+    """Return disconnected collar/back fabric to the torso, across UV seams.
+
+    The main scalp/long-hair component is preserved. Small isolated islands
+    wholly below the neck were mislabeled by the old color-only face mask.
+    Closing patches already have body weights; keep their topology and UVs.
+    """
+    mesh = obj.data
+    positions = np.array([obj.matrix_world @ v.co for v in mesh.vertices])
+    hair = np.array([v.value for v in mesh.attributes['Secondary_Hair_Region'].data])
+    parent = list(range(len(positions)))
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    def union(a, b):
+        parent[find(a)] = find(b)
+    seams = {}
+    for i in np.flatnonzero(hair):
+        key = tuple(np.round(positions[i], 5))
+        if key in seams:
+            union(i, seams[key])
+        else:
+            seams[key] = i
+    for face in mesh.polygons:
+        ids = list(face.vertices)
+        if hair[ids].all():
+            for i in ids[1:]:
+                union(ids[0], i)
+    components = {}
+    for i in np.flatnonzero(hair):
+        components.setdefault(find(i), []).append(int(i))
+    repaired = []
+    for ids in components.values():
+        p = positions[ids]
+        if len(ids) > 100 or p[:, 2].min() < .60 or p[:, 2].max() > .78:
+            continue
+        for i in ids:
+            for group in list(mesh.vertices[i].groups):
+                obj.vertex_groups[group.group].remove([i])
+            upper = float(v1.smooth((positions[i, 2] - .63) / .07))
+            for name, amount in [('mixamorig:Spine1', 1-upper), ('mixamorig:Spine2', upper)]:
+                if amount > 1e-6:
+                    obj.vertex_groups[name].add([i], amount, 'REPLACE')
+            hair[i] = False
+            # Prior contact sculpts treated these vertices as loose hair.
+            if mesh.shape_keys:
+                for name in ['Sit_Clearance', 'LieDown_Clearance']:
+                    key = mesh.shape_keys.key_blocks.get(name)
+                    if key:
+                        key.data[i].co = mesh.shape_keys.reference_key.data[i].co
+        repaired.extend(ids)
+    mesh.attributes['Secondary_Hair_Region'].data.foreach_set('value', hair)
+    attr = mesh.attributes.get('Secondary_Back_Repair') or mesh.attributes.new('Secondary_Back_Repair', 'BOOLEAN', 'POINT')
+    selected = set(repaired)
+    attr.data.foreach_set('value', [i in selected for i in range(len(positions))])
+    return {'vertices': len(repaired), 'vertex_ids': sorted(repaired), 'hair_islands': len(components),
+            'remaining_hair_vertices': int(hair.sum()), 'patches_rebound': 0}
+
 
 def load_scene(path):
     with bpy.data.libraries.load(str(path), link=False) as (source, target):
@@ -156,11 +222,9 @@ def pose(arm, name, t):
     envelope = min(1., t / .8, (4 - t) / .8)
     envelope = float(v1.smooth(envelope))
     if name == 'Walk':
-        for side, sign in [('Left', 1), ('Right', -1)]:
-            swing = math.sin(t * math.tau / 1.2) * sign
-            rotate(f'mixamorig:{side}UpLeg', (1, 0, 0), swing * .38)
-            rotate(f'mixamorig:{side}Leg', (1, 0, 0), max(0, -swing) * .5)
-            rotate(f'mixamorig:{side}Arm', (1, 0, 0), -swing * .23)
+        if arm.as_pointer() not in _walk_states:
+            _walk_states[arm.as_pointer()] = walk_gait.setup(arm)
+        walk_gait.apply(_walk_states[arm.as_pointer()], t)
     elif name == 'ArmsUp':
         for side, sign in [('Left', 1), ('Right', -1)]:
             rotate(f'mixamorig:{side}Shoulder', (0, 1, 0), -sign * .12 * envelope)
@@ -195,7 +259,7 @@ def make_actions(arm, scene):
         action = bpy.data.actions.new(name)
         arm.animation_data.action = action
         last = 37 if name == 'Walk' else 121
-        for frame in range(1, last + 1, 3):
+        for frame in range(1, last + 1, 1 if name == 'Walk' else 3):
             pose(arm, name, (frame - 1) / 30)
             for bone in arm.pose.bones:
                 bone.keyframe_insert('rotation_quaternion', frame=frame, group=bone.name)
@@ -232,6 +296,7 @@ def build(workspace, source):
     source_obj = next(o for o in temporary.objects if o.type == 'MESH')
     bpy.context.window.scene = scene
     report = repair_surface(obj, source_obj)
+    report['hair_island_repair'] = repair_hair_islands(obj)
     for item in list(temporary.objects):
         bpy.data.objects.remove(item, do_unlink=True)
     bpy.data.scenes.remove(temporary)

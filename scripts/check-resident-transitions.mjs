@@ -58,7 +58,7 @@ try {
       const mesh = await page.evaluate(() => window.residentAudit.meshAudit());
       assert.equal(mesh.finite, true); assert.equal(mesh.bones, 103); assert.equal(mesh.triangles, 18659);
       const samples = [];
-      let maxHipsStep = 0, maxHeadStep = 0, maxMorphStep = 0, maxAngle = 0;
+      let maxHipsStep = 0, maxHeadStep = 0, maxMorphStep = 0, maxOriginalMorphStep = 0, maxAngle = 0;
       let previous;
       for (let frame = 0; frame < clip.seconds * fps; frame += 12) {
         // Time is stepped inside one live scene. Each image has exactly five
@@ -101,12 +101,13 @@ try {
           assert.ok(Math.abs(sample.time - time) < 1e-5, JSON.stringify({ clip: clip.name, time, got: sample.time }));
           assert.ok([...sample.hips, ...sample.head, ...sample.morphs].every(Number.isFinite));
           assert.ok(sample.morphs.every(value => value >= -1e-6 && value <= 1 + 1e-6));
-          assert.equal(sample.morphs.length, 15);
+          assert.equal(sample.morphs.length, 49);
           const distance = (a, b) => Math.hypot(...a.map((x, i) => x - b[i]));
           if (previous) {
             maxHipsStep = Math.max(maxHipsStep, distance(sample.hips, previous.hips));
             maxHeadStep = Math.max(maxHeadStep, distance(sample.head, previous.head));
             maxMorphStep = Math.max(maxMorphStep, ...sample.morphs.map((x, i) => Math.abs(x - previous.morphs[i])));
+            maxOriginalMorphStep = Math.max(maxOriginalMorphStep, ...sample.morphs.slice(0, 15).map((x, i) => Math.abs(x - previous.morphs[i])));
           }
           maxAngle = Math.max(maxAngle, angle);
           if (contacts) samples.push({ time, ...contacts });
@@ -126,7 +127,9 @@ try {
       assert.ok(Math.abs(finished.time - finished.duration) < 1e-5);
       assert.ok(Math.abs(finished.duration - clip.seconds) <= 1 / 30 + 1e-5);
       assert.ok(finished.morphs.every(value => Math.abs(value) < 1e-5));
-      assert.ok(maxHipsStep < .04 && maxHeadStep < .05 && maxMorphStep < .25,
+      // New walk targets are 0.1 s apart: 1/24 s changes their linear weights
+      // by 0.4167. Preserve the stricter bound on all original targets.
+      assert.ok(maxHipsStep < .04 && maxHeadStep < .05 && maxOriginalMorphStep < .25 && maxMorphStep < .43,
         JSON.stringify({ maxHipsStep, maxHeadStep, maxMorphStep }));
       assert.ok(enabled ? maxAngle > .02 : maxAngle < .002);
       const aggregate = side => Object.fromEntries(['hair', 'dress'].map(part => {
@@ -143,7 +146,7 @@ try {
     }
     assert.equal(globalFrame, expectedFrames);
   }
-  await page.evaluate(() => window.residentAudit.setPose('Walk', .3));
+  await page.evaluate(() => window.residentAudit.setPose('Rest', 0));
   assert.ok(await page.evaluate(() => window.residentAudit.cycleSample().morphs.every(value => value === 0)));
   assert.deepEqual(errors, []);
   const video = [];

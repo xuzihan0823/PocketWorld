@@ -94,7 +94,7 @@ for (const item of Object.values(after)) {
 let before, baselineSha256;
 if (process.env.BASELINE_GLB) {
   const old = await load(process.env.BASELINE_GLB); before = audit(old); baselineSha256 = old.sha256;
-  for (const clip of ['Walk', 'ArmsUp', 'Sit', 'LieDown']) {
+  for (const clip of ['ArmsUp', 'Sit', 'LieDown']) {
     const oldPose = old.select(clip), newPose = current.select(clip);
     for (const time of [.1, .4, .8, 1.1]) {
       oldPose(time); newPose(time);

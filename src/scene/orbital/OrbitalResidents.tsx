@@ -9,6 +9,7 @@ import { applyLibraryPose, carryResident, libraryCrouch } from './library/reside
 import { residentLibraryTarget } from './library/bookMotion';
 import { readingStand } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
+import { TripoResidentModel, TRIPO_SPEED, tripoRoomTest } from './secondary/TripoResidentModel';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 
 type Point = [number, number];
@@ -523,7 +524,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     } else {
       const task = drawerTask.current;
       let [dx, dz] = p.enabled && !task ? steer() : [0, 0];
-      let speed = 2.15;
+      let speed = tripoRoomTest() ? TRIPO_SPEED : 2.15;
       if (task) {
         task.elapsed += dt;
         root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 14));
@@ -537,7 +538,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (!task && !dx && !dz && (p.enabled || autonomous || libraryWalking) && s.path.length) {
         const waypoint = s.path[0];
         const distance = Math.hypot(waypoint[0] - root.position.x, waypoint[1] - root.position.z);
-        if (distance <= 2.15 * dt) { root.position.x = waypoint[0]; root.position.z = waypoint[1]; s.path.shift(); }
+        if (distance <= speed * dt) { root.position.x = waypoint[0]; root.position.z = waypoint[1]; s.path.shift(); }
         else { dx = (waypoint[0] - root.position.x) / distance; dz = (waypoint[1] - root.position.z) / distance; }
       }
       if (dx || dz) {
@@ -716,8 +717,9 @@ export function OrbitalResidents(props: ResidentsProps) {
       onPointerOver={e => { if (props.enabled) { e.stopPropagation(); props.onHover('resident', 'WASD 移动 · 空格跳跃 · 上划人物跳跃'); } }}
       onPointerOut={() => { if (props.enabled) props.onHover(null); }}>
       <group ref={hips} position={[0, HIP, 0]}>
-        <ResidentModel rig={rig} onFailure={props.library?.fail} position={[0, -HIP, 0]} />
+        {!tripoRoomTest() && <ResidentModel rig={rig} onFailure={props.library?.fail} position={[0, -HIP, 0]} />}
       </group>
+      {tripoRoomTest() && <TripoResidentModel root={resident} />}
     </group>
     <ObjectHandle id="pet" action="pet" hint="团子 · 轻抚 / 靠近按 E" world={petWorld} position={[CAT[0], 0, CAT[1]]} rotation={[0, 0.5, 0]}>
       <mesh position={[0, 0.04, 0]} castShadow receiveShadow><cylinderGeometry args={[0.37, 0.41, 0.08, 28]} /><meshStandardMaterial color="#d5c3aa" roughness={0.9} /></mesh>

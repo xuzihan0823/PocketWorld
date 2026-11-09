@@ -20,7 +20,7 @@ interface LabApi {
   render: () => void; setAutomatic: (automatic: boolean) => void;
   camera: (side: 'front' | 'side' | 'back' | 'threeQuarter', close?: boolean) => void;
   meshAudit: () => { finite: boolean; triangles: number; bones: number; vertices: number };
-  surfaceContacts: (withCycleCorrectives?: boolean) => Record<'hair' | 'dress', ContactSample>;
+  surfaceContacts: (withCycleCorrectives?: boolean, thighsOnly?: boolean) => Record<'hair' | 'dress', ContactSample>;
   cycleSample: () => { time: number; duration: number; hips: number[]; head: number[]; morphs: number[] };
   performance: () => { meanMs: number; maxMs: number; samples: number };
 }
@@ -155,7 +155,8 @@ export default function ResidentLab() {
         const contact = isCycle(activePose)
           ? THREE.MathUtils.smoothstep((values[targetIndices.Sit_Clearance] ?? 0) + (values[targetIndices.LieDown_Clearance] ?? 0), 0, .12)
           : 0;
-        motion.setRotationAllowance(1 - .96 * contact, 1 - .95 * contact);
+        const walking = activePose === 'Walk' || (activePose === 'SitCycle' && (action?.time ?? 0) < 2.1);
+        motion.setRotationAllowance(1 - .96 * contact, Math.min(1 - .95 * contact, walking ? .12 : 1));
       }
       function selectPose(name: Clip, at = 0) {
         motion.reset(); animation.stopAllAction();
@@ -189,7 +190,10 @@ export default function ResidentLab() {
         if (live.current.moving !== movingWas) {
           movingWas = live.current.moving; driftStart = time; driftOrigin = mover.position.x;
         }
-        if (movingWas && live.current.playing && !isCycle(activePose)) mover.position.x = driftOrigin + .14 * Math.sin((time - driftStart) * 2.2);
+        if (movingWas && live.current.playing && !isCycle(activePose)) {
+          if (activePose === 'Walk' && continuous) mover.position.z = .2 * time;
+          else mover.position.x = driftOrigin + .14 * Math.sin((time - driftStart) * 2.2);
+        }
       }
       function render() {
         floor.visible = grid.visible = !underside;
@@ -229,7 +233,7 @@ export default function ResidentLab() {
           }
           return { finite, vertices, triangles, bones: meshes[0].skeleton.bones.length };
         },
-        surfaceContacts: (withCycleCorrectives = true) => {
+        surfaceContacts: (withCycleCorrectives = true, thighsOnly = false) => {
           const sample = (): ContactSample => ({ vertices: 0, penetrating: 0, maxDepth: 0, minHeight: Infinity });
           const result = { hair: sample(), dress: sample() };
           const point = new THREE.Vector3(), axis = new THREE.Vector3(), closest = new THREE.Vector3();
@@ -238,7 +242,7 @@ export default function ResidentLab() {
             const influences = mesh.morphTargetInfluences ?? [];
             const saved: [number, number][] = [];
             if (!withCycleCorrectives) for (const [name, index] of Object.entries(mesh.morphTargetDictionary ?? {})) {
-              if (/^(Sit|Recline)_Contact_/.test(name)) { saved.push([index, influences[index]]); influences[index] = 0; }
+              if (/^(Sit|Recline|Walk|Approach)_Contact_/.test(name)) { saved.push([index, influences[index]]); influences[index] = 0; }
             }
             try {
               for (let i = 0; i < attributes.position.count; i++) {
@@ -253,6 +257,7 @@ export default function ResidentLab() {
                 mesh.getVertexPosition(i, point); mesh.localToWorld(point);
                 let depth = 0;
                 for (const c of motion.capsules) if (c.parts.includes(part)) {
+                  if (thighsOnly && !c.name.includes('大腿')) continue;
                   axis.copy(c.b).sub(c.a);
                   const t = THREE.MathUtils.clamp(closest.copy(point).sub(c.a).dot(axis) / Math.max(axis.lengthSq(), 1e-12), 0, 1);
                   closest.copy(c.a).addScaledVector(axis, t);

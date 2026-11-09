@@ -1,90 +1,61 @@
-# 连续坐卧动作与脚底接触精修
+# 新角色步行、停步与连续坐卧验收
 
-当前版本在两段连续坐卧动作中加入烘焙的双腿脚底固定，调整骨盆后移轨迹，并修复 GLB 骨骼动画与形状键相差一帧的问题。浅屈膝阶段重新分配接触修正采样，减少刚坐下时长发穿入身体。
+当前模型修复 SitCycle 前 2.1 秒与 Walk 的支撑脚滑动、大腿穿裙、背部悬浮布片和步态僵硬。保留 103 根骨骼、18,659 个三角面、静态位置、UV 与三张原贴图；将 259 个误分到头发的布料顶点归还躯干。沿用 feat/tripo-hair-dress-rig / PR #27。
 
-继续使用 `feat/tripo-hair-dress-rig` 和 PR #27，供审阅、不合并。主房间接入另行安排。保留原模型、第一版和[第二阶段工程](../tripo-dynamics/README.md)。上一轮连续动作及视频保存在提交 [186c526](https://github.com/xuzihan0823/PocketWorld/tree/186c526/art/resident/tripo-transitions)。
+## 动作修复
 
-## 资产与动作
+- 接近阶段以世界坐标落点烘焙双腿解析求解。四次摆脚区间为左 0.08–0.50、右 0.58–0.99、左 1.07–1.48、右 1.56–1.98 秒，其余时间该脚固定。最后一脚在 1.98 秒落稳，2.1 秒连续衔接原坐姿流程。
+- Walk 是 1.2 秒原地循环，匹配前进速度为 0.20 模型单位/秒。每脚 2/3 周期支撑、1/3 摆动，交接包含双脚支撑。接触边界对齐 30 fps 烘焙帧。宿主须按实际移动距离驱动动画。
+- 骨盆小幅上下起伏、约 ±2° 水平旋转，脊柱微量反转；脚踝起落俯仰；上臂内收约 16.6°，前臂自然微屈。
+- 大腿求解后的前摆角驱动 Dress_Front / Dress_Front_L / Dress_Front_R，另烘焙 34 个局部步行接触目标。只修正松散裙摆，接近动作两端形变归零。步行时运行时裙摆额外动态上限为原来的 12%，保留基础动作。
+- 几何接缝连接后识别出独立布料小片：259 个领口／背部／衣袖边缘顶点移出 Secondary_Hair_Region，权重回到 Spine2 / Spine1，清掉原先的头发接触形变。主要长发、头顶与刘海连通块保留。close_local_surfaces 补洞面使用身体顶点，未发现 Hair 权重，未删除或重绑这些面。
 
-- [Blender 工程](luna-tripo-transitions.blend)：103 根骨骼，六段骨骼与形状键 NLA，贴图打包。
-- [GLB](../../../public/models/resident/luna-tripo-transitions.glb)：一个 Skin、一个网格、18,659 个三角面、15 个形状目标、三张原贴图。
-- 103 根骨骼的静态矩阵和层级、静态顶点、三角面、UV、蒙皮权重与五个原修正目标保持一致。没有增加骨骼、缩小裙摆、删除发束或减面。
+## 视频与回读
 
-| 动作 | 时长 | 过程与脚底约束 |
-| --- | ---: | --- |
-| `SitCycle` | 9 秒 | 起步、停稳、坐下、坐稳、起身。2.1–9 秒固定脚踝及脚掌方向 |
-| `LieCycle` | 13 秒 | 站立、坐下、后躺、停留、返回坐姿、站起。0–2.9 秒、9.9–13 秒固定脚底；后躺时平滑释放 |
+[正面](walk-front.mp4) · [侧面](walk-side.mp4) · [背面](walk-back.mp4) · [侧面前后对比](before-after-side.mp4)
 
-双腿使用解析两段骨骼求解，结果逐帧烘焙为现有腿骨的旋转，不增加运行时 IK、辅助骨骼或约束。骨盆在坐下时逐步向后移动 0.14 模型单位，配合原降落轨迹。脚掌保持世界方向，膝盖向前弯曲；起身沿同一路径回落。坐垫参考位置随新的骨盆落点调整。
+前三段各 6 秒、30 fps、180 帧：前 2.4 秒接近停步，后 3.6 秒带匹配根位移的 Walk；左基础动作、右开启动态。前后对比左为 4edd62b 旧版、右为本轮。已完整解码并抽查 0.30、0.93、1.47 秒和 Walk 关键帧。现有 front.mp4 / side.mp4 / back.mp4 仍是上一轮完整 22 秒视频，本轮视频使用 walk- 前缀。
 
-本机 Blender 导出器将骨骼第 1 帧写在 glTF 的 1/30 秒，而 Key 曲线的第 1 帧写在 0 秒。制作脚本为两段连续动作建立独立时间访问器，将骨骼与形状键对齐到 0 秒，时长为准确的 9 / 13 秒。四段既有诊断动作保留。
+[120 Hz 步行回读](walk-validation.json) 检查导出 GLB 的实际插值、骨骼与 152 个脚底顶点。Walk 叠加匹配的前进位移，检测每次支撑区间的世界空间漂移。单位为模型单位，站立高度约 0.98。
 
-## 裙发接触
-
-仍使用十个连续动作接触目标。坐姿参数的采样点为 0.08 / 0.22 / 0.45 / 0.70 / 1.00，后躺为 0.20 / 0.40 / 0.60 / 0.80 / 1.00，相邻目标连续混合。局部胶囊留量为 0.005–0.006 模型单位；后躺末段保留托面留量。接触修正只改变动作中的局部形状，零权重恢复原静态外形。
-
-运行时沿用 120 Hz 固定步长、弹簧与八个身体胶囊。动作进入浅屈膝时开始收紧摆幅，接触参数从 0 增至 0.12 时平滑收紧到头发上限的 4%、裙摆的 5%，离开时恢复；保留模拟历史和独立开关。
-
-## Windows 验收
-
-[正面视频](front.mp4) · [侧面视频](side.mp4) · [背面视频](back.mp4)
-
-每段为 1152 × 720、24 fps、22 秒、528 帧。左侧基础动作与 Blender 修正，右侧开启裙发动态与碰撞；固定机位呈现完整两段动作。编码后完整解码，并抽查屈膝、坐姿、后躺中段与躺卧停留的正侧背关键帧。
-
-### 脚底固定
-
-[脚底回归记录](footplant-validation.json) 使用真实 GLB，在 60 fps 下覆盖烘焙关键帧之间的插值。脚底表面取站立时距离地面小于 0.005 的 152 个顶点；脚踝和脚趾取四个骨骼锚点。数值为模型单位，角色约高 0.98。
-
-| 接触区间的最大位移 | 186c526 | 当前 |
+| 项目 | SitCycle 0–2.1 s | Walk 两个循环 |
 | --- | ---: | ---: |
-| 坐起：脚踝／脚趾锚点 | 0.168630 | 0.0000601 |
-| 坐起：脚底表面 | 0.168688 | 0.0001118 |
-| 躺卧流程的站坐支撑：脚踝／脚趾锚点 | 0.168630 | 0.0000602 |
-| 躺卧流程的站坐支撑：脚底表面 | 0.168688 | 0.0001119 |
+| 采样数 | 253 | 289 |
+| 支撑脚踝最大漂移 | 0.000360 | 0.0000304 |
+| 支撑脚底表面最大漂移 | 0.000410 | 0.000143 |
+| 双脚同时离地超过 0.001 的采样数 | 0 | 0 |
+| 脚底最低点 | −0.000352 | −0.0000291 |
 
-当前脚底最低高度范围约 −0.000049 至 +0.0000002，为插值与浮点残差。该约束不覆盖前 2.1 秒诊断步行，也不把后躺伸腿锁在地面。踝部上方仍有原蒙皮的局部形变。
+Walk 循环首尾骨骼矩阵差最大 4.11e-8，形状权重差 4.77e-7。原坐起／躺卧支撑区间精度保持，见 [脚底回归](footplant-validation.json)；ArmsUp、Sit、LieDown 骨骼姿势样本与上一版一致。
 
-### 接触与完整性
+[浏览器步行接触](walk-browser-validation.json)：每帧检查实际裙摆顶点与左右大腿胶囊，基础／动态模式各覆盖 72 帧接近和 108 帧 Walk，穿入为 0。此结论限于两个近似大腿胶囊，不代表精确身体表面、所有衣物和自碰撞均无重叠。上衣与躯干近似胶囊仍有既存重叠。
 
-[本轮连续帧与接触记录](browser-validation.json)、[与上一轮对比](polish-comparison.json)。相同活动区间每 0.125 秒采样一次，统计实际变形网格穿入八个近似胶囊超过 0.001 的平均顶点数：
+[Blender 验证](blender-validation.json)：原骨架层级／静态矩阵、网格与 UV 保留，只有记录的 259 个顶点修改权重及关联旧头发修正。六段 NLA、49 个形状目标齐全。实际 GLB 回读 25,204 个导出顶点，在 22 个时刻与工程逐点比较，最大误差 6.56e-7，包含 0.92 / 1.46 秒。
 
-| 动作与模式 | 头发，上一轮 → 当前 | 裙摆，上一轮 → 当前 |
-| --- | ---: | ---: |
-| 坐下静态 | 8.33 → 4.00 | 0.06 → 0 |
-| 坐下动态 | 12.72 → 4.19 | 0.06 → 0 |
-| 躺卧静态 | 2.81 → 1.62 | 0 → 0 |
-| 躺卧动态 | 4.44 → 1.57 | 0 → 0 |
+[glTF Validator](gltf-validation.json)：0 errors、2 项既有 warnings（切线生成、蒙皮网格非根节点），三张贴图逐字节一致。清理小于 1e-6 的形状法线舍入噪声后，GLB 为 11,177,284 bytes，比上一版 14,135,024 bytes 小约 20.9%，位置形变不做近似。模型仍略高于建议 10 MB，源 4096² 贴图预算待处理。
 
-当前动态采样头发最大胶囊穿入深度为坐姿约 0.00599、躺卧约 0.00318；仍存在少量局部重叠。躺卧发束最低点约 +0.0199。此诊断不是精确身体表面、自碰撞或家具接触检测，不能据此宣称全模型无穿模。`browser-validation.json` 内的 before/after 专指同一新姿势移除／启用十个接触目标；跨版本比较以 `polish-comparison.json` 为准。
+Windows TypeScript、生产构建、八项原动态回归、步行与坐卧脚底回归通过。Chrome 完整 9 / 13 秒流程、暂停、重播、切换及形状清零通过，见 [完整流程回归](browser-validation.json)。完整坐卧动态采样裙摆重叠为 0；头发仍有少量胶囊重叠，最大约 0.00105。
 
-- Windows 11、Node 24.14.0、npm 11.12.0、Blender 5.2.3 LTS、Chrome 156。
-- [Blender 验收](blender-validation.json)：保存工程重载，六段 NLA、原静态网格／UV／权重／骨架保持；实际 GLB 导入后 25,207 个导出顶点在 13 个动作时刻与工程对照，最大表面误差约 `6.56e-7`。
-- [glTF 验收](gltf-validation.json)：0 errors、2 项既有 warnings（切线生成、蒙皮网格非根节点）；三张贴图逐字节不变。
-- 新增脚底回归检查时间原点、9/13 秒准确时长、脚底插值、起落连续性，并对照原四段动作的骨骼姿势采样。
-- 本机 `npm run build`（含 TypeScript）、原八项动态回归、`git diff --check` 通过。
-- Chrome 完整序列、结束停留、重播、暂停、切换、时刻范围、形状键清零通过；原入口另检查独立开关、加载失败重试、减少动态偏好和 390 × 844 模拟视口，见 [原入口记录](lab-validation.json)。
+## 实际房间测试
 
-GLB 为 14,135,024 bytes（13.48 MiB），比上一轮增加 62,772 bytes（0.45%）；Blender 为 10,379,172 bytes。应用依赖不增加，形状目标数量不增加。原 4096² 贴图和超 10 MB 的模型预算仍待正式接入前处理。
+用户已授权接入场景测试。启动应用后访问 `?resident=tripo`，在真实生活舱／观景舱测试新模型。沿用 WASD、点地寻路、转向与障碍处理，模型缩放 1.45，匹配速度 0.29 场景单位/秒；动画按障碍处理后的实际位移推进。[房间记录](room-validation.json) 与 [场景截图](room-walk.png) 验证了加载、移动和转向，页面无运行错误。
+
+此入口用于站立／步行测试；桌椅坐姿、床铺、搬书及抽屉手部动作尚未适配新骨架。默认入口继续使用原运行角色。实时启停与急转弯的平滑过渡还需和正式移动控制器联调；本轮锁脚指标针对交付 GLB 的 SitCycle 接近及匹配位移的 Walk。
 
 ## 复现
 
-在 `?dev=resident` 选择「打开连续坐卧验收」，或访问 `?dev=resident&asset=transitions`。Blender 中同时启用骨架与 Shape Keys 的一对同名 NLA 轨道。
+[GLB](../../../public/models/resident/luna-tripo-transitions.glb) · [Blender 工程](luna-tripo-transitions.blend) · [制作记录](authoring.json)
 
-通过 Blender Python 加载 [制作脚本](../../../scripts/blender/build_tripo_transitions.py)，调用 `build(workspace)`；再加载 [验收脚本](../../../scripts/blender/validate_tripo_transitions.py)，调用 `validate(workspace)`。源工程哈希校验继续指向保留的第二阶段工程。
+保留的第二阶段输入由脚本校验哈希；上一版可从提交 4edd62b 取出。通过 Blender Python 执行 scripts/blender/build_tripo_transitions.py，传入 `-- --workspace <项目绝对路径>`。共用步态在 tripo_walk.py，误绑修复在 refine_tripo_dynamics.py。
 
 ```powershell
+node scripts/check-resident-walk.mjs
 node scripts/check-resident-footplant.mjs
 node scripts/validate-resident-transition-glb.mjs
 node --test src/scene/orbital/secondary/secondary.test.mjs
 npm.cmd run build
-# 启动独立 Vite 预览后
-node scripts/check-resident-transitions.mjs
+# 启动独立预览、配置 LAB_URL 后
+node scripts/check-resident-transitions.mjs --audit-only
 ```
 
-脚底脚本的 `BASELINE_GLB` 可指向从 `186c526:public/models/resident/luna-tripo-transitions.glb` 提取的二进制文件以生成跨版本对比；不设置时仍校验当前版。`FOOTPLANT_OUT` 可指定报告路径。
-
-浏览器录制工具可由 `PLAYWRIGHT_MODULE`、`CHROME_PATH`、`FFMPEG_PATH`、`FFPROBE_PATH` 指定；`LAB_URL` 指定独立端口，`LAB_OUT` 和 `TRANSITION_FRAMES` 指定输出。原始帧默认在 Git 忽略的 `art/resident/generated/transition-frames`；只做数值检查可加 `--audit-only` 并另设 `LAB_OUT`。`GLTF_VALIDATOR_MODULE` 可指定现有 validator 模块，不必修改应用依赖。
-
-## 边界与后续
-
-本轮完成停稳后坐起脚底固定、早期裙发接触及连续动作时间轴对齐。肩腋近景原低面数折角与烘焙色斑、诊断步行的完整步态、手掌支撑、家具边缘和布料自碰撞仍待处理。坐垫与床面仍为定位参考。实体手机、Safari、正式房间性能、主场景接入另行验收。
+BASELINE_GLB 可指定上一版生成对比；GLTF_VALIDATOR_MODULE、PLAYWRIGHT_MODULE、CHROME_PATH 可复用本机工具。未增加应用依赖。实体手机、Safari、正式房间性能、精确布料自碰撞和家具接触未验收。

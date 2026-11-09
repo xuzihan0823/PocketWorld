@@ -20,6 +20,7 @@ SOURCE_HASH = 'cf27f3a2780a1ac5f3472ee6721f85733ea083b1cc60df8cdb60360621482b7b'
 FPS = 30
 CLIPS = {'SitCycle': 9., 'LieCycle': 13.}
 KNOTS = {'Sit': [0., .08, .22, .45, .7, 1.], 'Recline': [0., .2, .4, .6, .8, 1.]}
+WALK_SAMPLES = {'Walk': [i / 10 for i in range(12)], 'Approach': [i / 10 for i in range(22)]}
 
 
 def smooth(x):
@@ -89,12 +90,8 @@ def plant_feet(state, sit, recline):
 def basis(state, sit, recline, walk=None, offset=0.):
     arm = state['arm']
     if walk is not None:
-        # Fade the gait on at the first step and off across the last step.
-        polish.phase2.pose(arm, 'Walk', walk)
-        strength = section(walk, 0., .36) * (1 - section(walk, 1.44, 2.1))
-        for bone, rest in zip(arm.pose.bones, state['rest']):
-            bone.rotation_quaternion = rest.slerp(bone.rotation_quaternion, strength)
-        displacement = Vector((0, offset, 0))
+        polish.phase2.walk_gait.apply(state['gait'], walk, approach=True)
+        return
     else:
         for bone, rest, seated, supine in zip(arm.pose.bones, state['rest'], state['sit'], state['lie']):
             bone.rotation_quaternion = rest.slerp(seated, sit).slerp(supine, recline)
@@ -142,6 +139,58 @@ def weights(sit, recline, contacts):
 def set_keys(obj, values):
     for key in list(obj.data.shape_keys.key_blocks)[1:]:
         key.value = values.get(key.name, 0.)
+
+
+def walk_weights(kind, time):
+    samples = WALK_SAMPLES[kind]
+    t = time % 1.2 if kind == 'Walk' else min(2.1, max(0., time))
+    index = min(len(samples)-1, int((t + 1e-9)*10))
+    fraction = max(0., min(1., (t - samples[index])*10))
+    following = (index+1) % len(samples) if kind == 'Walk' else min(index+1, len(samples)-1)
+    return {f'{kind}_Contact_{index}': 1-fraction, f'{kind}_Contact_{following}': fraction} if following != index else {f'{kind}_Contact_{index}': 1.}
+
+
+def sculpt_walk(state):
+    obj, arm = state['obj'], state['arm']
+    positions, _, dress = polish.surface_data(obj)
+    # Only the loose skirt reaches the thighs. The attached bodice overlaps
+    # conservative torso capsules by design and must not be inflated.
+    dress &= positions[:, 2] < .56
+    groups, _, neighbors, _ = polish.body_graph(obj, positions, ~dress, np.zeros(len(dress), dtype=bool))
+    results = {}
+    for kind, samples in WALK_SAMPLES.items():
+        for index, time in enumerate(samples):
+            polish.phase2.walk_gait.apply(state['gait'], time, approach=kind == 'Approach')
+            set_keys(obj, {})
+            bpy.context.view_layer.update()
+            posed = polish.evaluated_coords(obj)
+            capsules = polish.body_capsules(arm)
+            target = polish.project_contacts(posed, dress, capsules, 'dress', clearance=.006)
+            delta = target-posed
+            if kind == 'Approach':
+                delta *= polish.phase2.walk_gait.smooth(time/.18) * (1-polish.phase2.walk_gait.smooth((time-1.85)/.25))
+            offsets = np.array([delta[ids].mean(0) for ids in groups])
+            for _ in range(2):
+                old = offsets.copy()
+                for i in neighbors:
+                    offsets[i] = .7*old[i] + .3*old[sorted(neighbors[i])].mean(0)
+            for i, ids in enumerate(groups):
+                delta[ids] = offsets[i]
+            target = polish.project_contacts(posed+delta, dress, capsules, 'dress', clearance=.005)
+            delta = target-posed
+            delta *= np.clip((.56-positions[:, 2])/.04, 0., 1.)[:, None]
+            if kind == 'Approach':
+                delta *= polish.phase2.walk_gait.smooth(time/.18) * (1-polish.phase2.walk_gait.smooth((time-1.85)/.25))
+            ids = np.flatnonzero(np.linalg.norm(delta, axis=1)>1e-6)
+            matrices = polish.skin_matrices(obj, arm)
+            local = np.linalg.solve(matrices[ids], delta[ids,:,None])[...,0]
+            key = obj.shape_key_add(name=f'{kind}_Contact_{index}', from_mix=False)
+            coordinates = np.array([v.co[:] for v in obj.data.shape_keys.reference_key.data])
+            coordinates[ids] += local
+            key.data.foreach_set('co', coordinates.flatten())
+            results[key.name] = {'vertices': len(ids), 'max_world_offset': float(np.linalg.norm(delta,axis=1).max())}
+    set_keys(obj,{})
+    return results
 
 
 def sculpt(state):
@@ -220,9 +269,16 @@ def author(state, name, duration):
     last = round(duration * FPS) + 1
     for frame in range(1, last + 1):
         t = (frame - 1) / FPS
-        sit, recline, walk, offset = timeline(name, t)
-        basis(state, sit, recline, walk, offset)
-        set_keys(obj, weights(sit, recline, True))
+        if name == 'Walk':
+            polish.phase2.walk_gait.apply(state['gait'], t)
+            values = walk_weights('Walk', t)
+        else:
+            sit, recline, walk, offset = timeline(name, t)
+            basis(state, sit, recline, walk, offset)
+            values = weights(sit, recline, True)
+            if walk is not None:
+                values.update(walk_weights('Approach', t))
+        set_keys(obj, values)
         for bone in arm.pose.bones:
             bone.keyframe_insert('rotation_quaternion', frame=frame, group=bone.name)
         arm.pose.bones['mixamorig:Hips'].keyframe_insert('location', frame=frame)
@@ -241,7 +297,7 @@ def author(state, name, duration):
 
 
 def prepare(workspace):
-    root = Path(workspace)
+    root = Path(workspace).resolve()
     source = root / 'art/resident/tripo-dynamics/luna-tripo-dynamics.blend'
     assert hashlib.sha256(source.read_bytes()).hexdigest() == SOURCE_HASH
     scene = polish.phase2.load_scene(source)
@@ -250,10 +306,14 @@ def prepare(workspace):
     arm = next(o for o in scene.objects if o.type == 'ARMATURE')
     obj = next(o for o in scene.objects if o.type == 'MESH')
     assert len(arm.data.bones) == 103 and len(obj.data.polygons) == 18659
+    repair = polish.phase2.repair_hair_islands(obj)
     for owner in [arm, obj.data.shape_keys]:
         owner.animation_data.action = None
         for track in owner.animation_data.nla_tracks:
             track.mute = True
+        for track in list(owner.animation_data.nla_tracks):
+            if track.name == 'Walk':
+                owner.animation_data.nla_tracks.remove(track)
     polish.phase2.pose(arm, 'Rest', 0.)
     rest = capture(arm)
     ankle = min((arm.matrix_world @ arm.pose.bones['mixamorig:' + side + 'Foot'].head).z for side in ['Left', 'Right'])
@@ -262,7 +322,8 @@ def prepare(workspace):
     sit = capture(arm)
     polish.phase2.pose(arm, 'LieDown', 2.)
     state = dict(root=root, scene=scene, obj=obj, arm=arm, rest=rest, sit=sit, lie=capture(arm),
-                 ankle=ankle, hip_space=hip_space)
+                 ankle=ankle, hip_space=hip_space, weight_repair=repair)
+    state['gait'] = polish.phase2.walk_gait.setup(arm)
     basis(state, 0., 0.)
     state['feet'] = {}
     for side in ['Left', 'Right']:
@@ -279,6 +340,9 @@ def export(state):
     root, scene, arm, obj = (state[k] for k in ['root', 'scene', 'arm', 'obj'])
     polish.phase2.pose(arm, 'Rest', 0.)
     arm['asset_version'] = 'tripo-continuous-review'
+    arm['walk_speed'] = polish.phase2.walk_gait.SPEED
+    arm['walk_period'] = polish.phase2.walk_gait.PERIOD
+    arm['walk_in_place'] = True
     set_keys(obj, {})
     scene.frame_set(1)
     bpy.ops.object.select_all(action='DESELECT')
@@ -300,6 +364,7 @@ def export(state):
     last_frames = dict(Walk=37, ArmsUp=121, Sit=121, LieDown=121,
                        **{name: round(duration * FPS) + 1 for name, duration in CLIPS.items()})
     align_cycle_times(runtime)
+    sparsify_morph_normals(runtime)
     polish.bake_morph_channels(runtime, obj, last_frames)
     polish.phase2.pose(arm, 'Rest', 0.)
     set_keys(obj, {})
@@ -307,6 +372,54 @@ def export(state):
     bpy.data.libraries.write(str(folder / 'luna-tripo-transitions.blend'), {scene},
                              path_remap='RELATIVE', fake_user=True, compress=True)
     return runtime
+
+
+def sparsify_morph_normals(filepath):
+    """Drop exporter roundoff (<1e-6) in morph normal deltas.
+
+    Blender otherwise writes ~17k numerical-noise normals per local target.
+    Position deltas, UVs, texture bytes and meaningful normals stay untouched.
+    The subsequent morph bake compacts the now-unreferenced buffer views.
+    """
+    data = filepath.read_bytes()
+    size = struct.unpack_from('<I', data, 12)[0]
+    doc = json.loads(data[20:20+size])
+    binary = bytearray(data[28+size:])
+    def read(view, dtype, count, offset=0):
+        start = doc['bufferViews'][view].get('byteOffset', 0) + offset
+        return np.frombuffer(binary, dtype=dtype, count=count, offset=start).copy()
+    def append(array):
+        binary.extend(b'\0' * (-len(binary) % 4))
+        view = len(doc['bufferViews'])
+        doc['bufferViews'].append({'buffer': 0, 'byteOffset': len(binary), 'byteLength': array.nbytes})
+        binary.extend(array.tobytes())
+        return view
+    for mesh in doc['meshes']:
+        for primitive in mesh['primitives']:
+            for target in primitive.get('targets', []):
+                if 'NORMAL' not in target:
+                    continue
+                a = doc['accessors'][target['NORMAL']]
+                values = np.zeros((a['count'], 3), dtype='<f4')
+                if 'bufferView' in a:
+                    values[:] = read(a['bufferView'], '<f4', a['count']*3, a.get('byteOffset',0)).reshape(-1,3)
+                if 'sparse' in a:
+                    s = a['sparse']; indices = s['indices']; val = s['values']
+                    ids = read(indices['bufferView'], {5121:'u1',5123:'<u2',5125:'<u4'}[indices['componentType']], s['count'], indices.get('byteOffset',0))
+                    values[ids] = read(val['bufferView'], '<f4', s['count']*3, val.get('byteOffset',0)).reshape(-1,3)
+                ids = np.flatnonzero(np.linalg.norm(values,axis=1)>1e-6).astype('<u2')
+                for key in ['bufferView','byteOffset','sparse']:
+                    a.pop(key,None)
+                if len(ids):
+                    a['sparse'] = {'count':len(ids), 'indices':{'bufferView':append(ids),'componentType':5123},
+                                   'values':{'bufferView':append(values[ids])}}
+    binary.extend(b'\0' * (-len(binary) % 4))
+    doc['buffers'][0]['byteLength'] = len(binary)
+    encoded = json.dumps(doc,separators=(',',':')).encode('utf-8')
+    encoded += b' ' * (-len(encoded)%4)
+    filepath.write_bytes(struct.pack('<III',0x46546c67,2,28+len(encoded)+len(binary))+
+                         struct.pack('<II',len(encoded),0x4e4f534a)+encoded+
+                         struct.pack('<II',len(binary),0x004e4942)+binary)
 
 
 def align_cycle_times(filepath):
@@ -319,9 +432,11 @@ def align_cycle_times(filepath):
     data = filepath.read_bytes()
     size = struct.unpack_from('<I', data, 12)[0]
     doc = json.loads(data[20:20 + size])
+    order = ['Walk', 'ArmsUp', 'Sit', 'LieDown', 'SitCycle', 'LieCycle']
+    doc['animations'].sort(key=lambda action: order.index(action['name']))
     binary = bytearray(data[28 + size:])
     for animation in doc['animations']:
-        if animation['name'] not in CLIPS:
+        if animation['name'] not in [*CLIPS, 'Walk']:
             continue
         inputs = sorted({sampler['input'] for sampler in animation['samplers']})
         times = {}
@@ -355,12 +470,16 @@ def align_cycle_times(filepath):
 def build(workspace):
     state = prepare(workspace)
     state['corrections'] = sculpt(state)
+    state['corrections'].update(sculpt_walk(state))
+    author(state, 'Walk', 1.2)
     for name, duration in CLIPS.items():
         author(state, name, duration)
     state['runtime'] = export(state)
     report = {'source_sha256': SOURCE_HASH, 'fps': FPS, 'clips_seconds': CLIPS,
               'bone_count': len(state['arm'].data.bones), 'corrections': state['corrections'],
               'contact_knots': KNOTS, 'baked_footplant': True,
+              'weight_repair': state['weight_repair'], 'walk_samples': WALK_SAMPLES,
+              'walk_speed': polish.phase2.walk_gait.SPEED,
               'cycle_bone_and_morph_time_origin': 0}
     (state['root'] / 'art/resident/tripo-transitions/authoring.json').write_text(
         json.dumps(report, indent=2) + '\n', encoding='utf-8')

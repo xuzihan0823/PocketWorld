@@ -57,7 +57,7 @@ def roundtrip(root, scene, arm, mesh):
             assert matches, ('Unmatched exported vertex', v.index)
             mapping.append(matches[0])
         errors = {}
-        for name, times in {'SitCycle': [0., 2.8, 3.5, 5., 6.5, 9.],
+        for name, times in {'Walk': [0., .15, .6, .92, 1.2], 'SitCycle': [0., .3, .92, 1.46, 2.1, 2.8, 3.5, 5., 6.5, 9.],
                             'LieCycle': [0., 1.3, 3.7, 5., 8.8, 11.5, 13.]}.items():
             for world, rig, obj in [(scene, arm, mesh), (imported, other_arm, other)]:
                 bpy.context.window.scene = world
@@ -102,12 +102,23 @@ def validate(workspace):
         assert all(tuple(a.vertices) == tuple(b.vertices) for a, b in zip(mesh.data.polygons, old_mesh.data.polygons))
         assert all(tuple(a.uv) == tuple(b.uv) for a, b in zip(mesh.data.uv_layers.active.data, old_mesh.data.uv_layers.active.data))
         assert list(mesh.vertex_groups.keys()) == list(old_mesh.vertex_groups.keys())
+        authoring = json.loads((out / 'authoring.json').read_text(encoding='utf-8'))
+        repaired = set(authoring['weight_repair']['vertex_ids'])
+        changed = set()
         for a, b in zip(mesh.data.vertices, old_mesh.data.vertices):
-            assert [(g.group, g.weight) for g in a.groups] == [(g.group, g.weight) for g in b.groups]
+            if [(g.group, g.weight) for g in a.groups] != [(g.group, g.weight) for g in b.groups]:
+                changed.add(a.index)
+                assert a.index in repaired
+                assert all(mesh.vertex_groups[g.group].name in ['mixamorig:Spine1', 'mixamorig:Spine2'] for g in a.groups)
+                assert not mesh.data.attributes['Secondary_Hair_Region'].data[a.index].value
+        assert changed == repaired
         keys = mesh.data.shape_keys
-        assert len(keys.key_blocks) == 16
+        assert len(keys.key_blocks) == 50
         for before in old_mesh.data.shape_keys.key_blocks:
-            assert np.array_equal(vector_data(before.data, 'co'), vector_data(keys.key_blocks[before.name].data, 'co'))
+            previous_values = vector_data(before.data, 'co').reshape(-1, 3)
+            current_values = vector_data(keys.key_blocks[before.name].data, 'co').reshape(-1, 3)
+            allowed = repaired if before.name in ['Sit_Clearance', 'LieDown_Clearance'] else set()
+            assert set(np.flatnonzero(np.any(previous_values != current_values, axis=1))).issubset(allowed)
         bpy.context.window.scene = scene
         frames = {'Walk': [1, 14, 37], 'ArmsUp': [1, 61, 121], 'Sit': [1, 61, 121], 'LieDown': [1, 61, 121],
                   'SitCycle': [1, 100, 150, 271], 'LieCycle': [1, 61, 121, 181, 271, 391]}
@@ -129,12 +140,15 @@ def validate(workspace):
                 assert all(0 <= v <= 1 for v in values.values())
                 playback[name].append({'frame': frame, 'hips': list(hip), 'morphs': values})
             if name in transitions.CLIPS:
-                assert not playback[name][0]['morphs'] and not playback[name][-1]['morphs']
+                assert not {k: v for k, v in playback[name][0]['morphs'].items() if k != 'Approach_Contact_0'}
+                assert not playback[name][-1]['morphs']
                 assert any(any('_Contact_' in key for key in item['morphs']) for item in playback[name]), (name, playback[name])
                 assert min(item['hips'][2] for item in playback[name]) < .35
         exported = roundtrip(root, scene, arm, mesh)
         report = {'platform': platform.platform(), 'blender': bpy.app.version_string, 'bones': 103,
-                  'original_geometry_uv_weights_and_correctives_unchanged': True,
+                  'original_geometry_uv_rest_bones_unchanged': True,
+                  'only_expected_back_weights_and_hair_correctives_changed': True,
+                  'repaired_back_vertices': len(repaired),
                   'source_and_saved_nla_tracks': list(frames), 'playback': playback, 'glb_roundtrip': exported,
                   'blend_sha256': hashlib.sha256((out / 'luna-tripo-transitions.blend').read_bytes()).hexdigest()}
         (out / 'blender-validation.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')

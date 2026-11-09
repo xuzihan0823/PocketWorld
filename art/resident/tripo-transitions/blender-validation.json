@@ -2,7 +2,9 @@
   "platform": "Windows-11-10.0.26200-SP0",
   "blender": "5.2.3 LTS",
   "bones": 103,
-  "original_geometry_uv_weights_and_correctives_unchanged": true,
+  "original_geometry_uv_rest_bones_unchanged": true,
+  "only_expected_back_weights_and_hair_correctives_changed": true,
+  "repaired_back_vertices": 259,
   "source_and_saved_nla_tracks": [
     "Walk",
     "ArmsUp",
@@ -18,27 +20,34 @@
         "hips": [
           0.0019119951175525784,
           -0.03250289335846901,
-          0.5372546911239624
+          0.5222547054290771
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       },
       {
         "frame": 14,
         "hips": [
-          0.0019119951175525784,
+          0.004210127983242273,
           -0.03250289335846901,
-          0.5372546911239624
+          0.5175601243972778
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_4": 0.6666666865348816,
+          "Walk_Contact_5": 0.3333333432674408
+        }
       },
       {
         "frame": 37,
         "hips": [
           0.0019119951175525784,
           -0.03250289335846901,
-          0.5372546911239624
+          0.5222547054290771
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       }
     ],
     "ArmsUp": [
@@ -49,7 +58,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       },
       {
         "frame": 61,
@@ -59,7 +70,8 @@
           0.5372546911239624
         ],
         "morphs": {
-          "Axilla_Raise_3": 1.0
+          "Axilla_Raise_3": 1.0,
+          "Walk_Contact_0": 1.0
         }
       },
       {
@@ -69,7 +81,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       }
     ],
     "Sit": [
@@ -80,7 +94,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       },
       {
         "frame": 61,
@@ -90,7 +106,8 @@
           0.32725468277931213
         ],
         "morphs": {
-          "Sit_Clearance": 1.0
+          "Sit_Clearance": 1.0,
+          "Walk_Contact_0": 1.0
         }
       },
       {
@@ -100,7 +117,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       }
     ],
     "LieDown": [
@@ -111,7 +130,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       },
       {
         "frame": 61,
@@ -121,7 +142,8 @@
           0.14725467562675476
         ],
         "morphs": {
-          "LieDown_Clearance": 1.0
+          "LieDown_Clearance": 1.0,
+          "Walk_Contact_0": 1.0
         }
       },
       {
@@ -131,7 +153,9 @@
           -0.03250289335846901,
           0.5372546911239624
         ],
-        "morphs": {}
+        "morphs": {
+          "Walk_Contact_0": 1.0
+        }
       }
     ],
     "SitCycle": [
@@ -142,7 +166,9 @@
           0.2174970954656601,
           0.5372546315193176
         ],
-        "morphs": {}
+        "morphs": {
+          "Approach_Contact_0": 1.0
+        }
       },
       {
         "frame": 100,
@@ -254,10 +280,19 @@
     ]
   },
   "glb_roundtrip": {
-    "vertices": 25207,
+    "vertices": 25204,
     "max_surface_error": 6.556510925292969e-07,
     "samples": {
+      "Walk:0.0": 4.76837158203125e-07,
+      "Walk:0.15": 4.172325134277344e-07,
+      "Walk:0.6": 4.76837158203125e-07,
+      "Walk:0.92": 4.172325134277344e-07,
+      "Walk:1.2": 4.76837158203125e-07,
       "SitCycle:0.0": 5.960464477539062e-07,
+      "SitCycle:0.3": 5.364418029785156e-07,
+      "SitCycle:0.92": 5.960464477539062e-07,
+      "SitCycle:1.46": 5.960464477539062e-07,
+      "SitCycle:2.1": 5.960464477539062e-07,
       "SitCycle:2.8": 6.556510925292969e-07,
       "SitCycle:3.5": 6.556510925292969e-07,
       "SitCycle:5.0": 4.76837158203125e-07,
@@ -272,5 +307,5 @@
       "LieCycle:13.0": 4.76837158203125e-07
     }
   },
-  "blend_sha256": "cfc81941f1e3b51ee413f556abbb74a801ec55bc92446feb18499d1ec159cdef"
+  "blend_sha256": "88ccf0b5ddb498e03fc2f036f73758257a8de6839edb90378bdadd905ee762eb"
 }

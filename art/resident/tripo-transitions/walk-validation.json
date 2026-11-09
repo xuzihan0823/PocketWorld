@@ -1,0 +1,80 @@
+{
+  "fps": 120,
+  "units": "model units; height approximately 0.98",
+  "walkRootSpeed": 0.2,
+  "stanceRatio": 0.6666666666666666,
+  "before": {
+    "sha256": "e1a0e08d4e7893f9cab66457f556a87bd5d92a12a84fa1e26b69866446bb908c",
+    "clips": {
+      "SitCycle": {
+        "samples": 253,
+        "supportFrames": 308,
+        "maxAnchorDrift": 0.2975077412430965,
+        "maxSoleDrift": 0.31728681877159826,
+        "minFloor": -0.003362649368630331,
+        "maxSupportHeight": 0.013374605918658957,
+        "airborneFrames": 101,
+        "maxAnchorStep": 0.008798200754337881,
+        "maxAt": {
+          "time": 1.5583333333333333,
+          "side": "Right"
+        }
+      },
+      "Walk": {
+        "samples": 289,
+        "supportFrames": 390,
+        "maxAnchorDrift": 0.20440516655091154,
+        "maxSoleDrift": 0.19721271657383196,
+        "minFloor": -0.0033626603717441493,
+        "maxSupportHeight": 0.01445424717512508,
+        "airborneFrames": 160,
+        "maxAnchorStep": 0.024054076946249687,
+        "maxAt": {
+          "time": 0.8,
+          "side": "Left"
+        }
+      },
+      "loop": {
+        "boneMatrixError": 0.03256670791565636,
+        "morphError": 0
+      }
+    }
+  },
+  "after": {
+    "sha256": "6e954c88189e19974b0d0442fcd1482f602ac3aae7de74e8cb0a4be77f9911f9",
+    "clips": {
+      "SitCycle": {
+        "samples": 253,
+        "supportFrames": 308,
+        "maxAnchorDrift": 0.0003596452408242704,
+        "maxSoleDrift": 0.0004102437936307045,
+        "minFloor": -0.0003516648839567276,
+        "maxSupportHeight": 0.00022864605154083377,
+        "airborneFrames": 0,
+        "maxAnchorStep": 0.006445978920318527,
+        "maxAt": {
+          "time": 1.05,
+          "side": "Left"
+        }
+      },
+      "Walk": {
+        "samples": 289,
+        "supportFrames": 390,
+        "maxAnchorDrift": 0.000030367313981813377,
+        "maxSoleDrift": 0.00014288902943033224,
+        "minFloor": -0.00002900906755008657,
+        "maxSupportHeight": 1.662025275606517e-7,
+        "airborneFrames": 0,
+        "maxAnchorStep": 0.007836717893111581,
+        "maxAt": {
+          "time": 1.1166666666666667,
+          "side": "Right"
+        }
+      },
+      "loop": {
+        "boneMatrixError": 4.102063180799753e-8,
+        "morphError": 4.768359223028167e-7
+      }
+    }
+  }
+}

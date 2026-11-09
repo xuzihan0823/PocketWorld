@@ -1,0 +1,27 @@
+{
+  "before": {
+    "position": [
+      0.25,
+      0,
+      0.5
+    ],
+    "clipTime": 0,
+    "moving": false,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.29
+  },
+  "after": {
+    "position": [
+      0.8072197729019125,
+      0,
+      0.06218446414849665
+    ],
+    "clipTime": 0.04360000002384003,
+    "moving": true,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.29
+  },
+  "errors": []
+}

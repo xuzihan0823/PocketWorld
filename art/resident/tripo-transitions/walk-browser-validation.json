@@ -1,0 +1,2562 @@
+{
+  "fps": 30,
+  "report": [
+    {
+      "clip": "SitCycle",
+      "mode": "static",
+      "frames": 72,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "samples": [
+        {
+          "time": 0,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34876512452831027
+        },
+        {
+          "time": 0.03333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3488075798778696
+        },
+        {
+          "time": 0.06666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.348777979725743
+        },
+        {
+          "time": 0.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485400273836731
+        },
+        {
+          "time": 0.13333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34927487152589864
+        },
+        {
+          "time": 0.16666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3504795508609919
+        },
+        {
+          "time": 0.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35080612487492036
+        },
+        {
+          "time": 0.23333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3511038179970289
+        },
+        {
+          "time": 0.26666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3514120454088695
+        },
+        {
+          "time": 0.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3511554640812531
+        },
+        {
+          "time": 0.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3510849830200472
+        },
+        {
+          "time": 0.36666666666666664,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3512715204854634
+        },
+        {
+          "time": 0.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3507200237510534
+        },
+        {
+          "time": 0.43333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.350040831220583
+        },
+        {
+          "time": 0.4666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34941619434114546
+        },
+        {
+          "time": 0.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34905861300136354
+        },
+        {
+          "time": 0.5333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490661383761912
+        },
+        {
+          "time": 0.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34949588003259924
+        },
+        {
+          "time": 0.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34953847310678954
+        },
+        {
+          "time": 0.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490352533700999
+        },
+        {
+          "time": 0.6666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3495557418263757
+        },
+        {
+          "time": 0.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3499571508519495
+        },
+        {
+          "time": 0.7333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35229251150226515
+        },
+        {
+          "time": 0.7666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3526713465956351
+        },
+        {
+          "time": 0.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3519823332564897
+        },
+        {
+          "time": 0.8333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3509271236488
+        },
+        {
+          "time": 0.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34948247651378145
+        },
+        {
+          "time": 0.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3477813069752532
+        },
+        {
+          "time": 0.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346091234391735
+        },
+        {
+          "time": 0.9666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3450255919826585
+        },
+        {
+          "time": 1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449192793588011
+        },
+        {
+          "time": 1.0333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34521714985143537
+        },
+        {
+          "time": 1.0666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3460749886317156
+        },
+        {
+          "time": 1.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34609363917911684
+        },
+        {
+          "time": 1.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3459636704163557
+        },
+        {
+          "time": 1.1666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3456850272778653
+        },
+        {
+          "time": 1.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3457712863366483
+        },
+        {
+          "time": 1.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3481589980622126
+        },
+        {
+          "time": 1.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34927206446599335
+        },
+        {
+          "time": 1.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3489283619441878
+        },
+        {
+          "time": 1.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3482299545064514
+        },
+        {
+          "time": 1.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34697440634160326
+        },
+        {
+          "time": 1.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3453881135564809
+        },
+        {
+          "time": 1.4333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34384492195464583
+        },
+        {
+          "time": 1.4666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34275433890177454
+        },
+        {
+          "time": 1.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34235002593946856
+        },
+        {
+          "time": 1.5333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3424087961504376
+        },
+        {
+          "time": 1.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3428752502306494
+        },
+        {
+          "time": 1.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34367811533768833
+        },
+        {
+          "time": 1.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34456917876813986
+        },
+        {
+          "time": 1.6666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34517544922482896
+        },
+        {
+          "time": 1.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3469279031004301
+        },
+        {
+          "time": 1.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3482766128904328
+        },
+        {
+          "time": 1.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3509725449693726
+        },
+        {
+          "time": 1.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35231225533581856
+        },
+        {
+          "time": 1.8333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3526233399652752
+        },
+        {
+          "time": 1.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35187759997594215
+        },
+        {
+          "time": 1.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3504726753634212
+        },
+        {
+          "time": 1.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3489194869477247
+        },
+        {
+          "time": 1.9666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3480101001866879
+        },
+        {
+          "time": 2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3484400528943034
+        },
+        {
+          "time": 2.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34882179037364014
+        },
+        {
+          "time": 2.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3488148199454416
+        },
+        {
+          "time": 2.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353727795363
+        },
+        {
+          "time": 2.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        },
+        {
+          "time": 2.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34866353626544877
+        }
+      ]
+    },
+    {
+      "clip": "Walk",
+      "mode": "static",
+      "frames": 108,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "samples": [
+        {
+          "time": 0,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3444021599253534
+        },
+        {
+          "time": 0.03333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34319062155830526
+        },
+        {
+          "time": 0.06666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3417346692560227
+        },
+        {
+          "time": 0.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401338086643804
+        },
+        {
+          "time": 0.13333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3388069430892683
+        },
+        {
+          "time": 0.16666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3373794570622539
+        },
+        {
+          "time": 0.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3359981262809097
+        },
+        {
+          "time": 0.23333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33480474056836473
+        },
+        {
+          "time": 0.26666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33485935384844123
+        },
+        {
+          "time": 0.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.337421040167346
+        },
+        {
+          "time": 0.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34161671481900563
+        },
+        {
+          "time": 0.36666666666666664,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34375336608891266
+        },
+        {
+          "time": 0.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34490583410280085
+        },
+        {
+          "time": 0.43333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3462112950157963
+        },
+        {
+          "time": 0.4666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34709785083467876
+        },
+        {
+          "time": 0.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3472347921217665
+        },
+        {
+          "time": 0.5333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346736630304912
+        },
+        {
+          "time": 0.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.345506465558415
+        },
+        {
+          "time": 0.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3444019628433237
+        },
+        {
+          "time": 0.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3432789714551772
+        },
+        {
+          "time": 0.6666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.342201013333932
+        },
+        {
+          "time": 0.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3408394809782561
+        },
+        {
+          "time": 0.7333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33929470616165996
+        },
+        {
+          "time": 0.7666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3376478446236146
+        },
+        {
+          "time": 0.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33602720774167927
+        },
+        {
+          "time": 0.8333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33518648786764393
+        },
+        {
+          "time": 0.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3351555541793084
+        },
+        {
+          "time": 0.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3374208386581379
+        },
+        {
+          "time": 0.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3416165069160314
+        },
+        {
+          "time": 0.9666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.343752001546718
+        },
+        {
+          "time": 1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449058364004145
+        },
+        {
+          "time": 1.0333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34621129154692765
+        },
+        {
+          "time": 1.0666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3470980354145488
+        },
+        {
+          "time": 1.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34723498117808915
+        },
+        {
+          "time": 1.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467368134619758
+        },
+        {
+          "time": 1.1666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3455066641885284
+        },
+        {
+          "time": 1.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3444021614396948
+        },
+        {
+          "time": 1.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34319062324192845
+        },
+        {
+          "time": 1.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34173467130792745
+        },
+        {
+          "time": 1.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401338109312837
+        },
+        {
+          "time": 1.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3388069449873364
+        },
+        {
+          "time": 1.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.337379459104198
+        },
+        {
+          "time": 1.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3359981282565562
+        },
+        {
+          "time": 1.4333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3348047422744321
+        },
+        {
+          "time": 1.4666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3348593536927258
+        },
+        {
+          "time": 1.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3374210359596099
+        },
+        {
+          "time": 1.5333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34161670816217293
+        },
+        {
+          "time": 1.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34375336475038154
+        },
+        {
+          "time": 1.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449058325805623
+        },
+        {
+          "time": 1.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34621129314831933
+        },
+        {
+          "time": 1.6666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3470978505432739
+        },
+        {
+          "time": 1.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34723479002854285
+        },
+        {
+          "time": 1.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467366319677334
+        },
+        {
+          "time": 1.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3455064672202123
+        },
+        {
+          "time": 1.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34440196455879346
+        },
+        {
+          "time": 1.8333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34327897258271534
+        },
+        {
+          "time": 1.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34220101520903734
+        },
+        {
+          "time": 1.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3408394825018773
+        },
+        {
+          "time": 1.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33929471004939854
+        },
+        {
+          "time": 1.9666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3376478463934162
+        },
+        {
+          "time": 2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33602720895379584
+        },
+        {
+          "time": 2.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3351864886125378
+        },
+        {
+          "time": 2.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33515555302945726
+        },
+        {
+          "time": 2.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33742083388392746
+        },
+        {
+          "time": 2.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3416164991558683
+        },
+        {
+          "time": 2.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3437519957189597
+        },
+        {
+          "time": 2.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449058345329458
+        },
+        {
+          "time": 2.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346211289679459
+        },
+        {
+          "time": 2.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34709803512315335
+        },
+        {
+          "time": 2.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3472349809013851
+        },
+        {
+          "time": 2.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467368148352017
+        },
+        {
+          "time": 2.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3455066658517807
+        },
+        {
+          "time": 2.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34440216295403675
+        },
+        {
+          "time": 2.433333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3431906249255515
+        },
+        {
+          "time": 2.466666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34173467335229135
+        },
+        {
+          "time": 2.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34013381319818736
+        },
+        {
+          "time": 2.533333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3388069468854048
+        },
+        {
+          "time": 2.566666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3373794611461419
+        },
+        {
+          "time": 2.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3359981302322025
+        },
+        {
+          "time": 2.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33480474398049953
+        },
+        {
+          "time": 2.6666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33485935353701035
+        },
+        {
+          "time": 2.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33742103175187527
+        },
+        {
+          "time": 2.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3416167015053419
+        },
+        {
+          "time": 2.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34375336341185025
+        },
+        {
+          "time": 2.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34490583105832395
+        },
+        {
+          "time": 2.8333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34621129128084227
+        },
+        {
+          "time": 2.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3470978502518695
+        },
+        {
+          "time": 2.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3472347897518515
+        },
+        {
+          "time": 2.933333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467366332444066
+        },
+        {
+          "time": 2.966666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3455064688834909
+        },
+        {
+          "time": 3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3444019660731368
+        },
+        {
+          "time": 3.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34327897362444415
+        },
+        {
+          "time": 3.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34220101673623227
+        },
+        {
+          "time": 3.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34083948443863543
+        },
+        {
+          "time": 3.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3392947122567274
+        },
+        {
+          "time": 3.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33764784874641046
+        },
+        {
+          "time": 3.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33602721126811236
+        },
+        {
+          "time": 3.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33518648980585053
+        },
+        {
+          "time": 3.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3351555529041184
+        },
+        {
+          "time": 3.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3374208296762189
+        },
+        {
+          "time": 3.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3416164923151659
+        },
+        {
+          "time": 3.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3437519943214248
+        },
+        {
+          "time": 3.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449058329243989
+        },
+        {
+          "time": 3.433333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3462112878119904
+        },
+        {
+          "time": 3.466666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3470980348317579
+        },
+        {
+          "time": 3.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3472349806246814
+        },
+        {
+          "time": 3.533333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467368161118972
+        },
+        {
+          "time": 3.566666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34550666751503334
+        }
+      ]
+    },
+    {
+      "clip": "SitCycle",
+      "mode": "dynamic",
+      "frames": 72,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "samples": [
+        {
+          "time": 0,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34876512452831027
+        },
+        {
+          "time": 0.03333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34854438021097006
+        },
+        {
+          "time": 0.06666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34740631570567015
+        },
+        {
+          "time": 0.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3458473385957342
+        },
+        {
+          "time": 0.13333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34644567797430686
+        },
+        {
+          "time": 0.16666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34713909445298385
+        },
+        {
+          "time": 0.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3482568607845712
+        },
+        {
+          "time": 0.23333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34838516909866796
+        },
+        {
+          "time": 0.26666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34837175920258034
+        },
+        {
+          "time": 0.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34848339022655644
+        },
+        {
+          "time": 0.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34858596912858164
+        },
+        {
+          "time": 0.36666666666666664,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486678948555847
+        },
+        {
+          "time": 0.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3487744074406647
+        },
+        {
+          "time": 0.43333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3488790388523549
+        },
+        {
+          "time": 0.4666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34834328856956387
+        },
+        {
+          "time": 0.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3474474559522066
+        },
+        {
+          "time": 0.5333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3472622217112217
+        },
+        {
+          "time": 0.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34674781260740295
+        },
+        {
+          "time": 0.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3467698610752937
+        },
+        {
+          "time": 0.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3464046934343832
+        },
+        {
+          "time": 0.6666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34680601160131086
+        },
+        {
+          "time": 0.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34638591944872643
+        },
+        {
+          "time": 0.7333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34795331956636366
+        },
+        {
+          "time": 0.7666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34936710337928434
+        },
+        {
+          "time": 0.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3489832058630279
+        },
+        {
+          "time": 0.8333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34802302772716087
+        },
+        {
+          "time": 0.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346576434721145
+        },
+        {
+          "time": 0.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3450106691858294
+        },
+        {
+          "time": 0.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34398735631968386
+        },
+        {
+          "time": 0.9666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34391840085652686
+        },
+        {
+          "time": 1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34345477555509196
+        },
+        {
+          "time": 1.0333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34198255048189796
+        },
+        {
+          "time": 1.0666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34171318105312243
+        },
+        {
+          "time": 1.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3425297961999877
+        },
+        {
+          "time": 1.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34363157165596164
+        },
+        {
+          "time": 1.1666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34334709128227126
+        },
+        {
+          "time": 1.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3423068517831839
+        },
+        {
+          "time": 1.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34422823780739953
+        },
+        {
+          "time": 1.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34600415792538475
+        },
+        {
+          "time": 1.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34706277420247855
+        },
+        {
+          "time": 1.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3465736501480721
+        },
+        {
+          "time": 1.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34538300256735077
+        },
+        {
+          "time": 1.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34390008813191986
+        },
+        {
+          "time": 1.4333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3424386348866779
+        },
+        {
+          "time": 1.4666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3412618160723878
+        },
+        {
+          "time": 1.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3406103297841427
+        },
+        {
+          "time": 1.5333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3405810180067262
+        },
+        {
+          "time": 1.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3410528927744513
+        },
+        {
+          "time": 1.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.341310503940517
+        },
+        {
+          "time": 1.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34175401263609767
+        },
+        {
+          "time": 1.6666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34253135221306286
+        },
+        {
+          "time": 1.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3441519404052984
+        },
+        {
+          "time": 1.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34539506568538825
+        },
+        {
+          "time": 1.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34769911876314163
+        },
+        {
+          "time": 1.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.349314933039077
+        },
+        {
+          "time": 1.8333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34908395525797953
+        },
+        {
+          "time": 1.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486333684867729
+        },
+        {
+          "time": 1.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34915520550503454
+        },
+        {
+          "time": 1.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3495231433636765
+        },
+        {
+          "time": 1.9666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3492157080520857
+        },
+        {
+          "time": 2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34985659529742585
+        },
+        {
+          "time": 2.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.350355417124374
+        },
+        {
+          "time": 2.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35041734712126354
+        },
+        {
+          "time": 2.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3498000430805599
+        },
+        {
+          "time": 2.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3493192458556693
+        },
+        {
+          "time": 2.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34902950713343767
+        },
+        {
+          "time": 2.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34883612165069094
+        },
+        {
+          "time": 2.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486966074438926
+        },
+        {
+          "time": 2.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485953395358519
+        },
+        {
+          "time": 2.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34852866517798037
+        },
+        {
+          "time": 2.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3484946145612003
+        },
+        {
+          "time": 2.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34845715230216173
+        }
+      ]
+    },
+    {
+      "clip": "Walk",
+      "mode": "dynamic",
+      "frames": 108,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "samples": [
+        {
+          "time": 0,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3444021599253534
+        },
+        {
+          "time": 0.03333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3422281509188866
+        },
+        {
+          "time": 0.06666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33981499432886886
+        },
+        {
+          "time": 0.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3381454355261106
+        },
+        {
+          "time": 0.13333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3367491207223478
+        },
+        {
+          "time": 0.16666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.335350263031377
+        },
+        {
+          "time": 0.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33398465714558384
+        },
+        {
+          "time": 0.23333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33270001599681154
+        },
+        {
+          "time": 0.26666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33243545197684904
+        },
+        {
+          "time": 0.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3345100900525395
+        },
+        {
+          "time": 0.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33732878886070045
+        },
+        {
+          "time": 0.36666666666666664,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34013659788575146
+        },
+        {
+          "time": 0.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430088593400623
+        },
+        {
+          "time": 0.43333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3439331102168816
+        },
+        {
+          "time": 0.4666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3445716983181261
+        },
+        {
+          "time": 0.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3447441534825346
+        },
+        {
+          "time": 0.5333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3443400398371602
+        },
+        {
+          "time": 0.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34355750551074893
+        },
+        {
+          "time": 0.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430722391732644
+        },
+        {
+          "time": 0.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3417160537798042
+        },
+        {
+          "time": 0.6666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401833764141311
+        },
+        {
+          "time": 0.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3387054732105072
+        },
+        {
+          "time": 0.7333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33745858800395245
+        },
+        {
+          "time": 0.7666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3362075145004751
+        },
+        {
+          "time": 0.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3346881198166023
+        },
+        {
+          "time": 0.8333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3337140298594453
+        },
+        {
+          "time": 0.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3333418691792045
+        },
+        {
+          "time": 0.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33415389298782666
+        },
+        {
+          "time": 0.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33779971874458337
+        },
+        {
+          "time": 0.9666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34013887284407196
+        },
+        {
+          "time": 1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34301813825085914
+        },
+        {
+          "time": 1.0333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3439512770556338
+        },
+        {
+          "time": 1.0666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3445766294058271
+        },
+        {
+          "time": 1.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3447398400790136
+        },
+        {
+          "time": 1.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3443301342133552
+        },
+        {
+          "time": 1.1666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34354488673392164
+        },
+        {
+          "time": 1.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3429561076594752
+        },
+        {
+          "time": 1.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34107498424031574
+        },
+        {
+          "time": 1.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3390104244459003
+        },
+        {
+          "time": 1.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3375140351402268
+        },
+        {
+          "time": 1.3333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3366015129920123
+        },
+        {
+          "time": 1.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33561709651801824
+        },
+        {
+          "time": 1.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33429161757099
+        },
+        {
+          "time": 1.4333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33283227780983216
+        },
+        {
+          "time": 1.4666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3323816774677013
+        },
+        {
+          "time": 1.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3343842821901081
+        },
+        {
+          "time": 1.5333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33717577806439614
+        },
+        {
+          "time": 1.5666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34010672884259807
+        },
+        {
+          "time": 1.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34301860232817105
+        },
+        {
+          "time": 1.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34395113864493965
+        },
+        {
+          "time": 1.6666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34457596016838893
+        },
+        {
+          "time": 1.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3447403849331631
+        },
+        {
+          "time": 1.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34433233994216356
+        },
+        {
+          "time": 1.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34354836798000293
+        },
+        {
+          "time": 1.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34307153859197076
+        },
+        {
+          "time": 1.8333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3417176371576054
+        },
+        {
+          "time": 1.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401845467758434
+        },
+        {
+          "time": 1.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3387055640342182
+        },
+        {
+          "time": 1.9333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3374581884319794
+        },
+        {
+          "time": 1.9666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33620727467168504
+        },
+        {
+          "time": 2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33468809687519585
+        },
+        {
+          "time": 2.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3337141324494212
+        },
+        {
+          "time": 2.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3333419525843241
+        },
+        {
+          "time": 2.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33415392488073314
+        },
+        {
+          "time": 2.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33779971106969336
+        },
+        {
+          "time": 2.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34013887263484976
+        },
+        {
+          "time": 2.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430181326847716
+        },
+        {
+          "time": 2.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34395127248507595
+        },
+        {
+          "time": 2.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3445766298611023
+        },
+        {
+          "time": 2.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3447398416541869
+        },
+        {
+          "time": 2.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34433013632962295
+        },
+        {
+          "time": 2.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3435448890904703
+        },
+        {
+          "time": 2.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34295610937313825
+        },
+        {
+          "time": 2.433333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34107498714031736
+        },
+        {
+          "time": 2.466666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33901042800418296
+        },
+        {
+          "time": 2.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3375140376690968
+        },
+        {
+          "time": 2.533333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33660151423090906
+        },
+        {
+          "time": 2.566666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3356170978168747
+        },
+        {
+          "time": 2.6,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3342916194300757
+        },
+        {
+          "time": 2.6333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33283227988165603
+        },
+        {
+          "time": 2.6666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3323816779170659
+        },
+        {
+          "time": 2.7,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3343842788440067
+        },
+        {
+          "time": 2.7333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3371757752939178
+        },
+        {
+          "time": 2.7666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401067276834152
+        },
+        {
+          "time": 2.8,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430186008530598
+        },
+        {
+          "time": 2.8333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3439511372632743
+        },
+        {
+          "time": 2.8666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3445759591722972
+        },
+        {
+          "time": 2.9,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34474038359250375
+        },
+        {
+          "time": 2.933333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34433233892979415
+        },
+        {
+          "time": 2.966666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.343548367590353
+        },
+        {
+          "time": 3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430715399431253
+        },
+        {
+          "time": 3.033333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34171763943928124
+        },
+        {
+          "time": 3.066666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401845501516586
+        },
+        {
+          "time": 3.1,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3387055666997214
+        },
+        {
+          "time": 3.1333333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3374581899911309
+        },
+        {
+          "time": 3.1666666666666665,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3362072762508752
+        },
+        {
+          "time": 3.2,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33468809891669166
+        },
+        {
+          "time": 3.2333333333333334,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3337141336991868
+        },
+        {
+          "time": 3.2666666666666666,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3333419532025839
+        },
+        {
+          "time": 3.3,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3341539221016755
+        },
+        {
+          "time": 3.3333333333333335,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3377997068138565
+        },
+        {
+          "time": 3.3666666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3401388713994332
+        },
+        {
+          "time": 3.4,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3430181313224846
+        },
+        {
+          "time": 3.433333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34395127100890455
+        },
+        {
+          "time": 3.466666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34457662882380297
+        },
+        {
+          "time": 3.5,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3447398403203643
+        },
+        {
+          "time": 3.533333333333333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3443301353530132
+        },
+        {
+          "time": 3.566666666666667,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34354488874805783
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

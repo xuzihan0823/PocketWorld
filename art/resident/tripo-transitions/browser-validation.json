@@ -31,12 +31,12 @@
       "contactSamples": 36,
       "maxHipsStep": 0.012807343272057195,
       "maxHeadStep": 0.01461234605332993,
-      "maxMorphStep": 0.2252855615765358,
+      "maxMorphStep": 0.4166670764489888,
       "maxAngle": 0.0018805206252495996,
       "before": {
         "hair": {
-          "meanPenetrating": 67.88888888888889,
-          "maxDepth": 0.028335943988990857,
+          "meanPenetrating": 29.86111111111111,
+          "maxDepth": 0.021618323945168487,
           "minHeight": 0.3414078240866086
         },
         "dress": {
@@ -62,21 +62,21 @@
           "time": 2.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 148,
-              "maxDepth": 0.026611952052847863,
+              "vertices": 6114,
+              "penetrating": 76,
+              "maxDepth": 0.021618323945168487,
               "minHeight": 0.5688455150249668
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 9,
               "maxDepth": 0.0067391027307833265,
-              "minHeight": 0.35327975872973316
+              "minHeight": 0.3532797596359668
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087860629255582,
               "minHeight": 0.5688455150249668
@@ -85,7 +85,7 @@
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.35327975872973316
+              "minHeight": 0.3532797596359668
             }
           }
         },
@@ -93,9 +93,9 @@
           "time": 2.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 149,
-              "maxDepth": 0.027702573313141604,
+              "vertices": 6114,
+              "penetrating": 73,
+              "maxDepth": 0.019463733410443364,
               "minHeight": 0.5651996006715347
             },
             "dress": {
@@ -107,7 +107,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087859901744892,
               "minHeight": 0.5651996006715347
@@ -124,9 +124,9 @@
           "time": 3,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.028330786285520455,
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.016927106012197726,
               "minHeight": 0.5555546253292567
             },
             "dress": {
@@ -138,7 +138,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785911793611,
               "minHeight": 0.5555546253292567
@@ -155,9 +155,9 @@
           "time": 3.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 161,
-              "maxDepth": 0.027852071842913287,
+              "vertices": 6114,
+              "penetrating": 69,
+              "maxDepth": 0.014131631688298694,
               "minHeight": 0.5384490173538363
             },
             "dress": {
@@ -169,7 +169,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858369401403,
               "minHeight": 0.5384490173538363
@@ -186,9 +186,9 @@
           "time": 3.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.025788134979316635,
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.011209750656414635,
               "minHeight": 0.5140845015955527
             },
             "dress": {
@@ -200,7 +200,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087857720941854,
               "minHeight": 0.5140845015955527
@@ -217,9 +217,9 @@
           "time": 3.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 150,
-              "maxDepth": 0.022016320062235376,
+              "vertices": 6114,
+              "penetrating": 59,
+              "maxDepth": 0.008287121204128903,
               "minHeight": 0.48386815470412237
             },
             "dress": {
@@ -231,7 +231,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087857221169477,
               "minHeight": 0.48386815470412237
@@ -248,9 +248,9 @@
           "time": 3.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 139,
-              "maxDepth": 0.016883823533871675,
+              "vertices": 6114,
+              "penetrating": 54,
+              "maxDepth": 0.005489499568799315,
               "minHeight": 0.4502037442011115
             },
             "dress": {
@@ -262,7 +262,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856814442325,
               "minHeight": 0.4502037442011115
@@ -279,9 +279,9 @@
           "time": 3.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 93,
-              "maxDepth": 0.011127472131417099,
+              "vertices": 6114,
+              "penetrating": 34,
+              "maxDepth": 0.0029496372312994915,
               "minHeight": 0.4162229135030286
             },
             "dress": {
@@ -293,7 +293,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856469423104,
               "minHeight": 0.4162229135030286
@@ -310,9 +310,9 @@
           "time": 3.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 39,
-              "maxDepth": 0.005653482537398773,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010087856171344736,
               "minHeight": 0.3853562829657965
             },
             "dress": {
@@ -324,7 +324,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856171344736,
               "minHeight": 0.3853562829657965
@@ -341,9 +341,9 @@
           "time": 3.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 7,
-              "maxDepth": 0.001244590278856518,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010087855924667544,
               "minHeight": 0.36083680025885223
             },
             "dress": {
@@ -355,7 +355,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855924667544,
               "minHeight": 0.36083680025885223
@@ -372,7 +372,7 @@
           "time": 4,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855762312137,
               "minHeight": 0.3454560661299882
@@ -386,7 +386,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855762312137,
               "minHeight": 0.3454560661299882
@@ -403,7 +403,7 @@
           "time": 4.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -417,7 +417,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -434,7 +434,7 @@
           "time": 4.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -448,7 +448,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -465,7 +465,7 @@
           "time": 4.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -479,7 +479,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -496,7 +496,7 @@
           "time": 4.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -510,7 +510,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -527,7 +527,7 @@
           "time": 4.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -541,7 +541,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -558,7 +558,7 @@
           "time": 4.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -572,7 +572,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -589,7 +589,7 @@
           "time": 4.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -603,7 +603,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -620,7 +620,7 @@
           "time": 5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -634,7 +634,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -651,7 +651,7 @@
           "time": 5.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -665,7 +665,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -682,7 +682,7 @@
           "time": 5.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -696,7 +696,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -713,7 +713,7 @@
           "time": 5.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -727,7 +727,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -744,7 +744,7 @@
           "time": 5.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -758,7 +758,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -775,7 +775,7 @@
           "time": 5.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -789,7 +789,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -806,7 +806,7 @@
           "time": 5.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -820,7 +820,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855718270075,
               "minHeight": 0.3414078240866086
@@ -837,7 +837,7 @@
           "time": 5.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855744244784,
               "minHeight": 0.34378855362770805
@@ -851,7 +851,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855744244784,
               "minHeight": 0.34378855362770805
@@ -868,7 +868,7 @@
           "time": 6,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855883844019,
               "minHeight": 0.356892575460718
@@ -882,7 +882,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855883844019,
               "minHeight": 0.356892575460718
@@ -899,9 +899,9 @@
           "time": 6.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 33,
-              "maxDepth": 0.004662432673271058,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010087856117193608,
               "minHeight": 0.3798327997651143
             },
             "dress": {
@@ -913,7 +913,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856117193608,
               "minHeight": 0.3798327997651143
@@ -930,9 +930,9 @@
           "time": 6.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 79,
-              "maxDepth": 0.009983359044931694,
+              "vertices": 6114,
+              "penetrating": 28,
+              "maxDepth": 0.0024840278472848185,
               "minHeight": 0.4096992828569026
             },
             "dress": {
@@ -944,7 +944,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856407319934,
               "minHeight": 0.4096992828569026
@@ -961,9 +961,9 @@
           "time": 6.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 129,
-              "maxDepth": 0.01575008532113794,
+              "vertices": 6114,
+              "penetrating": 50,
+              "maxDepth": 0.004958421345950571,
               "minHeight": 0.4433238586565975
             },
             "dress": {
@@ -975,7 +975,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856741310477,
               "minHeight": 0.4433238586565975
@@ -992,9 +992,9 @@
           "time": 6.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 147,
-              "maxDepth": 0.02108657930887783,
+              "vertices": 6114,
+              "penetrating": 59,
+              "maxDepth": 0.007712663445640332,
               "minHeight": 0.4773353218386355
             },
             "dress": {
@@ -1006,7 +1006,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087857132739242,
               "minHeight": 0.4773353218386355
@@ -1023,9 +1023,9 @@
           "time": 6.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 159,
-              "maxDepth": 0.025169838853710796,
+              "vertices": 6114,
+              "penetrating": 67,
+              "maxDepth": 0.010621238208228426,
               "minHeight": 0.5084569551171898
             },
             "dress": {
@@ -1037,7 +1037,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785761393939,
               "minHeight": 0.5084569551171898
@@ -1054,9 +1054,9 @@
           "time": 6.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.027573972845160975,
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.0135532365549954,
               "minHeight": 0.534118935230213
             },
             "dress": {
@@ -1068,7 +1068,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858233581229,
               "minHeight": 0.534118935230213
@@ -1085,9 +1085,9 @@
           "time": 6.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.028335943988990857,
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.016382986811681675,
               "minHeight": 0.5527030490297701
             },
             "dress": {
@@ -1099,7 +1099,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858966516192,
               "minHeight": 0.5527030490297701
@@ -1116,9 +1116,9 @@
           "time": 7,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 153,
-              "maxDepth": 0.027888126826128727,
+              "vertices": 6114,
+              "penetrating": 73,
+              "maxDepth": 0.018984953772942327,
               "minHeight": 0.5638462039426646
             },
             "dress": {
@@ -1130,7 +1130,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087859746647498,
               "minHeight": 0.5638462039426646
@@ -1147,21 +1147,21 @@
           "time": 7.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 150,
-              "maxDepth": 0.02683986965700826,
+              "vertices": 6114,
+              "penetrating": 75,
+              "maxDepth": 0.02122503727064485,
               "minHeight": 0.5685031133987957
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 5,
               "maxDepth": 0.006443563223518835,
-              "minHeight": 0.3536838800992204
+              "minHeight": 0.3536838810410217
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008786049322849,
               "minHeight": 0.5685031133987957
@@ -1170,7 +1170,7 @@
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.3536838800992204
+              "minHeight": 0.3536838810410217
             }
           }
         }
@@ -1187,8 +1187,8 @@
       "maxAngle": 0.0017332791001206205,
       "before": {
         "hair": {
-          "meanPenetrating": 28.876404494382022,
-          "maxDepth": 0.02829630641693795,
+          "meanPenetrating": 14.224719101123595,
+          "maxDepth": 0.020814221272655288,
           "minHeight": -0.014551166677391949
         },
         "dress": {
@@ -1214,9 +1214,9 @@
           "time": 1,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 150,
-              "maxDepth": 0.027068222516602774,
+              "vertices": 6114,
+              "penetrating": 75,
+              "maxDepth": 0.020814221272655288,
               "minHeight": 0.5680133134332985
             },
             "dress": {
@@ -1228,7 +1228,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858016434928,
               "minHeight": 0.5680133134332985
@@ -1245,9 +1245,9 @@
           "time": 1.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 156,
-              "maxDepth": 0.02804214797487912,
+              "vertices": 6114,
+              "penetrating": 73,
+              "maxDepth": 0.0184871261390405,
               "minHeight": 0.562150900433199
             },
             "dress": {
@@ -1259,7 +1259,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087857429404018,
               "minHeight": 0.562150900433199
@@ -1276,9 +1276,9 @@
           "time": 1.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.02829630641693795,
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.015830981032824043,
               "minHeight": 0.5495795102326556
             },
             "dress": {
@@ -1290,7 +1290,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785961154321,
               "minHeight": 0.5495795102326556
@@ -1307,9 +1307,9 @@
           "time": 1.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.027236129979054145,
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.012971176792221407,
               "minHeight": 0.5295325434698117
             },
             "dress": {
@@ -1321,7 +1321,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858902136579,
               "minHeight": 0.5295325434698117
@@ -1338,9 +1338,9 @@
           "time": 1.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 158,
-              "maxDepth": 0.024489673592225755,
+              "vertices": 6114,
+              "penetrating": 66,
+              "maxDepth": 0.010033283930997554,
               "minHeight": 0.5026271796133398
             },
             "dress": {
@@ -1352,7 +1352,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087855170711757,
               "minHeight": 0.5026271796133398
@@ -1369,9 +1369,9 @@
           "time": 1.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 142,
-              "maxDepth": 0.02008941349268568,
+              "vertices": 6114,
+              "penetrating": 54,
+              "maxDepth": 0.007146325494644203,
               "minHeight": 0.4706494576563541
             },
             "dress": {
@@ -1383,7 +1383,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087854638578392,
               "minHeight": 0.4706494576563541
@@ -1400,9 +1400,9 @@
           "time": 1.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 116,
-              "maxDepth": 0.014602593119317171,
+              "vertices": 6114,
+              "penetrating": 46,
+              "maxDepth": 0.0044375892633214745,
               "minHeight": 0.4364634883018115
             },
             "dress": {
@@ -1414,7 +1414,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785466375256,
               "minHeight": 0.4364634883018115
@@ -1431,9 +1431,9 @@
           "time": 1.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 71,
-              "maxDepth": 0.008855644557565254,
+              "vertices": 6114,
+              "penetrating": 25,
+              "maxDepth": 0.002032896868149392,
               "minHeight": 0.4033092695787186
             },
             "dress": {
@@ -1445,7 +1445,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087854186112966,
               "minHeight": 0.4033092695787186
@@ -1462,9 +1462,9 @@
           "time": 2,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 21,
-              "maxDepth": 0.0037133832095950017,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010087853726147566,
               "minHeight": 0.3745513063773516
             },
             "dress": {
@@ -1476,7 +1476,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087853726147566,
               "minHeight": 0.3745513063773516
@@ -1493,7 +1493,7 @@
           "time": 2.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785664829072,
               "minHeight": 0.3534700908600635
@@ -1507,7 +1507,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785664829072,
               "minHeight": 0.3534700908600635
@@ -1524,7 +1524,7 @@
           "time": 2.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785386741498,
               "minHeight": 0.34255171292377307
@@ -1538,7 +1538,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785386741498,
               "minHeight": 0.34255171292377307
@@ -1555,7 +1555,7 @@
           "time": 2.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1569,7 +1569,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1586,7 +1586,7 @@
           "time": 2.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1600,7 +1600,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1617,7 +1617,7 @@
           "time": 2.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1631,7 +1631,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1648,7 +1648,7 @@
           "time": 2.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1662,7 +1662,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1679,7 +1679,7 @@
           "time": 2.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1693,7 +1693,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -1710,7 +1710,7 @@
           "time": 3,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010062922282727121,
               "minHeight": 0.3411200289974006
@@ -1724,7 +1724,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010062922282727121,
               "minHeight": 0.3411200289974006
@@ -1741,7 +1741,7 @@
           "time": 3.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.00099660897185809,
               "minHeight": 0.33949135128754765
@@ -1755,7 +1755,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.00099660897185809,
               "minHeight": 0.33949135128754765
@@ -1772,7 +1772,7 @@
           "time": 3.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009805231760234012,
               "minHeight": 0.3350696885172251
@@ -1786,7 +1786,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009805231760234012,
               "minHeight": 0.3350696885172251
@@ -1803,7 +1803,7 @@
           "time": 3.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009588555921264674,
               "minHeight": 0.32592834365237777
@@ -1817,7 +1817,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009588555921264674,
               "minHeight": 0.32592834365237777
@@ -1834,7 +1834,7 @@
           "time": 3.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009324223996172235,
               "minHeight": 0.3102373425599673
@@ -1848,7 +1848,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009324223996172235,
               "minHeight": 0.3102373425599673
@@ -1865,7 +1865,7 @@
           "time": 3.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.0026752441187906477,
               "minHeight": 0.2866708822183657
@@ -1879,7 +1879,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009020081438557148,
               "minHeight": 0.2866708822183657
@@ -1896,7 +1896,7 @@
           "time": 3.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 21,
               "maxDepth": 0.004146015846274387,
               "minHeight": 0.25439763350305317
@@ -1910,7 +1910,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.00086855863945412,
               "minHeight": 0.25439763350305317
@@ -1927,7 +1927,7 @@
           "time": 3.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.0049965366461068375,
               "minHeight": 0.2149016899787045
@@ -1941,7 +1941,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008329852576687072,
               "minHeight": 0.2149016899787045
@@ -1958,7 +1958,7 @@
           "time": 4,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 26,
               "maxDepth": 0.005088933036666167,
               "minHeight": 0.17158954920641947
@@ -1972,7 +1972,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007962243260107582,
               "minHeight": 0.17158954920641947
@@ -1989,7 +1989,7 @@
           "time": 4.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.004394888220360663,
               "minHeight": 0.12743542371978753
@@ -2003,7 +2003,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.00075929953136019,
               "minHeight": 0.12743542371978753
@@ -2020,7 +2020,7 @@
           "time": 4.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.003043029494394889,
               "minHeight": 0.087135159141656
@@ -2034,7 +2034,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007233170945405085,
               "minHeight": 0.087135159141656
@@ -2051,7 +2051,7 @@
           "time": 4.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0012523883225396305,
               "minHeight": 0.05419419734831148
@@ -2065,7 +2065,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006894331596743464,
               "minHeight": 0.05429047106206159
@@ -2082,7 +2082,7 @@
           "time": 4.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006588510325658131,
               "minHeight": 0.029820448865168544
@@ -2096,7 +2096,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006588510325658131,
               "minHeight": 0.04326480143886109
@@ -2113,7 +2113,7 @@
           "time": 4.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006329236249700554,
               "minHeight": 0.013537326769712461
@@ -2127,7 +2127,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006329236249700554,
               "minHeight": 0.041901043335434145
@@ -2144,7 +2144,7 @@
           "time": 4.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006128442018857316,
               "minHeight": -0.001075054616573122
@@ -2158,7 +2158,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006128442018857316,
               "minHeight": 0.043737396748809464
@@ -2175,7 +2175,7 @@
           "time": 4.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005998697867834607,
               "minHeight": -0.011174028048581464
@@ -2189,7 +2189,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005998697867834607,
               "minHeight": 0.02870076796985071
@@ -2206,7 +2206,7 @@
           "time": 5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2220,7 +2220,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2237,7 +2237,7 @@
           "time": 5.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2251,7 +2251,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2268,7 +2268,7 @@
           "time": 5.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2282,7 +2282,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2299,7 +2299,7 @@
           "time": 5.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2313,7 +2313,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2330,7 +2330,7 @@
           "time": 5.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2344,7 +2344,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2361,7 +2361,7 @@
           "time": 5.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2375,7 +2375,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2392,7 +2392,7 @@
           "time": 5.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2406,7 +2406,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2423,7 +2423,7 @@
           "time": 5.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2437,7 +2437,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2454,7 +2454,7 @@
           "time": 6,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2468,7 +2468,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2485,7 +2485,7 @@
           "time": 6.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2499,7 +2499,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2516,7 +2516,7 @@
           "time": 6.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2530,7 +2530,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2547,7 +2547,7 @@
           "time": 6.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2561,7 +2561,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2578,7 +2578,7 @@
           "time": 6.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2592,7 +2592,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2609,7 +2609,7 @@
           "time": 6.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2623,7 +2623,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2640,7 +2640,7 @@
           "time": 6.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2654,7 +2654,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2671,7 +2671,7 @@
           "time": 6.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2685,7 +2685,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2702,7 +2702,7 @@
           "time": 7,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2716,7 +2716,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2733,7 +2733,7 @@
           "time": 7.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2747,7 +2747,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2764,7 +2764,7 @@
           "time": 7.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2778,7 +2778,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2795,7 +2795,7 @@
           "time": 7.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2809,7 +2809,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2826,7 +2826,7 @@
           "time": 7.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2840,7 +2840,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2857,7 +2857,7 @@
           "time": 7.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2871,7 +2871,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2888,7 +2888,7 @@
           "time": 7.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": -0.014551166677391949
@@ -2902,7 +2902,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952252112677858,
               "minHeight": 0.019926013222761756
@@ -2919,7 +2919,7 @@
           "time": 7.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005969639474789415,
               "minHeight": -0.013301433021035248
@@ -2933,7 +2933,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005969639474789415,
               "minHeight": 0.02319814947105903
@@ -2950,7 +2950,7 @@
           "time": 8,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006066660456216302,
               "minHeight": -0.0060081828400243365
@@ -2964,7 +2964,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006066660456216302,
               "minHeight": 0.04173123579339403
@@ -2981,7 +2981,7 @@
           "time": 8.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006241104063712394,
               "minHeight": 0.008491884763689615
@@ -2995,7 +2995,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006241104063712394,
               "minHeight": 0.04242826765454371
@@ -3012,7 +3012,7 @@
           "time": 8.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006478897738727493,
               "minHeight": 0.02244551510633251
@@ -3026,7 +3026,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006478897738727493,
               "minHeight": 0.04212743668117609
@@ -3043,7 +3043,7 @@
           "time": 8.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006767437360258657,
               "minHeight": 0.043422679306235425
@@ -3057,7 +3057,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006767437360258657,
               "minHeight": 0.047079201101398155
@@ -3074,7 +3074,7 @@
           "time": 8.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.0023671603514858475,
               "minHeight": 0.07293452797860686
@@ -3088,7 +3088,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007094190399198341,
               "minHeight": 0.07293452797860686
@@ -3105,7 +3105,7 @@
           "time": 8.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 20,
               "maxDepth": 0.003923722669170845,
               "minHeight": 0.11059048450735379
@@ -3119,7 +3119,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007447276585865539,
               "minHeight": 0.11059048450735379
@@ -3136,7 +3136,7 @@
           "time": 8.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.00489603458471807,
               "minHeight": 0.15392937294269493
@@ -3150,7 +3150,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007814177476282158,
               "minHeight": 0.15392937294269493
@@ -3167,7 +3167,7 @@
           "time": 8.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 26,
               "maxDepth": 0.00512655773982271,
               "minHeight": 0.1978174766751632
@@ -3181,7 +3181,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008183703092748962,
               "minHeight": 0.1978174766751632
@@ -3198,7 +3198,7 @@
           "time": 9,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.004576886171843694,
               "minHeight": 0.23932435791752824
@@ -3212,7 +3212,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008545420235877565,
               "minHeight": 0.23932435791752824
@@ -3229,7 +3229,7 @@
           "time": 9.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 13,
               "maxDepth": 0.0033252009278853627,
               "minHeight": 0.2749945843716754
@@ -3243,7 +3243,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008889463009399481,
               "minHeight": 0.2749945843716754
@@ -3260,7 +3260,7 @@
           "time": 9.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0015888949658265303,
               "minHeight": 0.3017395147300926
@@ -3274,7 +3274,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009206597572693972,
               "minHeight": 0.3017395147300926
@@ -3291,7 +3291,7 @@
           "time": 9.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009487993955417592,
               "minHeight": 0.320512853467939
@@ -3305,7 +3305,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009487993955417592,
               "minHeight": 0.320512853467939
@@ -3322,7 +3322,7 @@
           "time": 9.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009725240560546355,
               "minHeight": 0.33212919232613525
@@ -3336,7 +3336,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009725240560546355,
               "minHeight": 0.33212919232613525
@@ -3353,7 +3353,7 @@
           "time": 9.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000990905581860664,
               "minHeight": 0.3381649734300627
@@ -3367,7 +3367,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000990905581860664,
               "minHeight": 0.3381649734300627
@@ -3384,7 +3384,7 @@
           "time": 9.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010032016579281308,
               "minHeight": 0.3406842771627436
@@ -3398,7 +3398,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010032016579281308,
               "minHeight": 0.3406842771627436
@@ -3415,7 +3415,7 @@
           "time": 9.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010085729747680502,
               "minHeight": 0.3413857003791138
@@ -3429,7 +3429,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010085729747680502,
               "minHeight": 0.3413857003791138
@@ -3446,7 +3446,7 @@
           "time": 10,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3460,7 +3460,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3477,7 +3477,7 @@
           "time": 10.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3491,7 +3491,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3508,7 +3508,7 @@
           "time": 10.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3522,7 +3522,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3539,7 +3539,7 @@
           "time": 10.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785651863922,
               "minHeight": 0.34140813182630364
@@ -3553,7 +3553,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785651863922,
               "minHeight": 0.34140813182630364
@@ -3570,7 +3570,7 @@
           "time": 10.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785651863922,
               "minHeight": 0.34140813182630364
@@ -3584,7 +3584,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008785651863922,
               "minHeight": 0.34140813182630364
@@ -3601,7 +3601,7 @@
           "time": 10.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3615,7 +3615,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856518639152,
               "minHeight": 0.34140813182630364
@@ -3632,7 +3632,7 @@
           "time": 10.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087853867422059,
               "minHeight": 0.342551732408322
@@ -3646,7 +3646,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087853867422059,
               "minHeight": 0.342551732408322
@@ -3663,7 +3663,7 @@
           "time": 10.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856648291482,
               "minHeight": 0.3534701725166507
@@ -3677,7 +3677,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087856648291482,
               "minHeight": 0.3534701725166507
@@ -3694,9 +3694,9 @@
           "time": 11,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 21,
-              "maxDepth": 0.0037133834787098155,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010087853726295018,
               "minHeight": 0.3745513062775529
             },
             "dress": {
@@ -3708,7 +3708,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087853726295018,
               "minHeight": 0.3745513062775529
@@ -3725,9 +3725,9 @@
           "time": 11.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 71,
-              "maxDepth": 0.008855650942686234,
+              "vertices": 6114,
+              "penetrating": 25,
+              "maxDepth": 0.002032896868150273,
               "minHeight": 0.4033093290271983
             },
             "dress": {
@@ -3739,7 +3739,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087854186115255,
               "minHeight": 0.4033093290271983
@@ -3756,9 +3756,9 @@
           "time": 11.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 116,
-              "maxDepth": 0.014602605287168072,
+              "vertices": 6114,
+              "penetrating": 46,
+              "maxDepth": 0.004437589263324791,
               "minHeight": 0.4364636189801002
             },
             "dress": {
@@ -3770,7 +3770,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087854663756446,
               "minHeight": 0.4364636189801002
@@ -3787,9 +3787,9 @@
           "time": 11.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 142,
-              "maxDepth": 0.020089425839855256,
+              "vertices": 6114,
+              "penetrating": 54,
+              "maxDepth": 0.007146325494648893,
               "minHeight": 0.4706496490252898
             },
             "dress": {
@@ -3801,7 +3801,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087854638574367,
               "minHeight": 0.4706496490252898
@@ -3818,9 +3818,9 @@
           "time": 11.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 158,
-              "maxDepth": 0.02448967359222531,
+              "vertices": 6114,
+              "penetrating": 66,
+              "maxDepth": 0.010033283930997255,
               "minHeight": 0.5026271794569085
             },
             "dress": {
@@ -3832,7 +3832,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858308969327,
               "minHeight": 0.5026271794569085
@@ -3849,9 +3849,9 @@
           "time": 11.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.027236128216318926,
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.012971176792222046,
               "minHeight": 0.5295325896005619
             },
             "dress": {
@@ -3863,7 +3863,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858902137897,
               "minHeight": 0.5295325896005619
@@ -3880,9 +3880,9 @@
           "time": 11.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 160,
-              "maxDepth": 0.028296296995874652,
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.01583098103282657,
               "minHeight": 0.549579572395951
             },
             "dress": {
@@ -3894,7 +3894,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087859611546401,
               "minHeight": 0.549579572395951
@@ -3911,9 +3911,9 @@
           "time": 11.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 156,
-              "maxDepth": 0.028042129266575372,
+              "vertices": 6114,
+              "penetrating": 73,
+              "maxDepth": 0.01848712613904375,
               "minHeight": 0.5621509491342159
             },
             "dress": {
@@ -3925,7 +3925,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087857429403602,
               "minHeight": 0.5621509491342159
@@ -3942,9 +3942,9 @@
           "time": 12,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 150,
-              "maxDepth": 0.02706822094476912,
+              "vertices": 6114,
+              "penetrating": 75,
+              "maxDepth": 0.020814221272654407,
               "minHeight": 0.5680133151819614
             },
             "dress": {
@@ -3956,7 +3956,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010087858016434997,
               "minHeight": 0.5680133151819614
@@ -3978,30 +3978,30 @@
       "contactSamples": 36,
       "maxHipsStep": 0.012807343272057195,
       "maxHeadStep": 0.01461234605332993,
-      "maxMorphStep": 0.2252855615765358,
-      "maxAngle": 0.4082356262239197,
+      "maxMorphStep": 0.4166670764489888,
+      "maxAngle": 0.48869255391065247,
       "before": {
         "hair": {
-          "meanPenetrating": 66.33333333333333,
-          "maxDepth": 0.0373135644658767,
-          "minHeight": 0.3409075554354362
+          "meanPenetrating": 28.52777777777778,
+          "maxDepth": 0.02314301342176784,
+          "minHeight": 0.3409075555106347
         },
         "dress": {
           "meanPenetrating": 0.6944444444444444,
-          "maxDepth": 0.006668502007702151,
-          "minHeight": 0.13817437122486492
+          "maxDepth": 0.0066685024541876525,
+          "minHeight": 0.13817437122486054
         }
       },
       "after": {
         "hair": {
-          "meanPenetrating": 4.194444444444445,
-          "maxDepth": 0.005990984815243593,
-          "minHeight": 0.3409075554354362
+          "meanPenetrating": 2.5555555555555554,
+          "maxDepth": 0.0010266674405477669,
+          "minHeight": 0.3409075555106347
         },
         "dress": {
           "meanPenetrating": 0,
           "maxDepth": 0,
-          "minHeight": 0.13817437122486492
+          "minHeight": 0.13817437122486054
         }
       },
       "samples": [
@@ -4009,30 +4009,30 @@
           "time": 2.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 169,
-              "maxDepth": 0.0373135644658767,
-              "minHeight": 0.5682987834051191
+              "vertices": 6114,
+              "penetrating": 76,
+              "maxDepth": 0.02314301342176784,
+              "minHeight": 0.5685278772966347
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 5,
-              "maxDepth": 0.006668502007702151,
-              "minHeight": 0.355047401731469
+              "maxDepth": 0.0066685024541876525,
+              "minHeight": 0.3550524037250182
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 27,
-              "maxDepth": 0.005990984815243593,
-              "minHeight": 0.5682987834051191
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010189377225001475,
+              "minHeight": 0.5685278772966347
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.355047401731469
+              "minHeight": 0.3550524037250182
             }
           }
         },
@@ -4040,30 +4040,30 @@
           "time": 2.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 138,
-              "maxDepth": 0.02250621159414805,
-              "minHeight": 0.5659869094547139
+              "vertices": 6114,
+              "penetrating": 69,
+              "maxDepth": 0.018773551012521865,
+              "minHeight": 0.5660238301486471
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 5,
-              "maxDepth": 0.005130063726962404,
-              "minHeight": 0.35355033415075304
+              "maxDepth": 0.00513006373059037,
+              "minHeight": 0.35354844078983794
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009911698004018282,
-              "minHeight": 0.5659869094547139
+              "maxDepth": 0.0009929902995577389,
+              "minHeight": 0.5660238301486471
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.35355033415075304
+              "minHeight": 0.35354844078983794
             }
           }
         },
@@ -4071,30 +4071,30 @@
           "time": 3,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 163,
-              "maxDepth": 0.035509087581272074,
-              "minHeight": 0.5549001659585701
+              "vertices": 6114,
+              "penetrating": 67,
+              "maxDepth": 0.01790241038280748,
+              "minHeight": 0.5549186164593192
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 2,
-              "maxDepth": 0.0034884596594193518,
-              "minHeight": 0.3406898902010286
+              "maxDepth": 0.003488459661066076,
+              "minHeight": 0.340688752346774
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 4,
-              "maxDepth": 0.002890376559221558,
-              "minHeight": 0.5549001659585701
+              "vertices": 6114,
+              "penetrating": 0,
+              "maxDepth": 0.0009904593580284463,
+              "minHeight": 0.5549186164593192
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.3406898902010286
+              "minHeight": 0.340688752346774
             }
           }
         },
@@ -4102,30 +4102,30 @@
           "time": 3.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 167,
-              "maxDepth": 0.0348397438737173,
-              "minHeight": 0.5379112277202341
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.0151091401303214,
+              "minHeight": 0.5378992000758178
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 2,
-              "maxDepth": 0.001855748733133697,
-              "minHeight": 0.321624269369462
+              "maxDepth": 0.0018557487334288358,
+              "minHeight": 0.3216242072867316
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0026584385476190672,
-              "minHeight": 0.5379112277202341
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010254791725585535,
+              "minHeight": 0.5378992000758178
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.321624269369462
+              "minHeight": 0.3216242072867316
             }
           }
         },
@@ -4133,30 +4133,30 @@
           "time": 3.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 164,
-              "maxDepth": 0.03304969122585676,
-              "minHeight": 0.5130697540878818
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.012187585992005964,
+              "minHeight": 0.513072610589705
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
-              "maxDepth": 0.0002545577510439448,
-              "minHeight": 0.2966712568398251
+              "maxDepth": 0.0002545577510594532,
+              "minHeight": 0.2966712615388725
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.002925376163773495,
-              "minHeight": 0.5130697540878818
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010266674405477669,
+              "minHeight": 0.513072610589705
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.2966712568398251
+              "minHeight": 0.2966712615388725
             }
           }
         },
@@ -4164,30 +4164,30 @@
           "time": 3.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 157,
-              "maxDepth": 0.02931059587791801,
-              "minHeight": 0.4828987645279501
+              "vertices": 6114,
+              "penetrating": 62,
+              "maxDepth": 0.009272639725565912,
+              "minHeight": 0.4828997802307761
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.2673596030406771
+              "minHeight": 0.26735960304944945
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.003161081185151522,
-              "minHeight": 0.4828987645279501
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010250813483624055,
+              "minHeight": 0.4828997802307761
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.2673596030406771
+              "minHeight": 0.26735960304944945
             }
           }
         },
@@ -4195,30 +4195,30 @@
           "time": 3.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 146,
-              "maxDepth": 0.024232976262737436,
-              "minHeight": 0.4493852088357458
+              "vertices": 6114,
+              "penetrating": 52,
+              "maxDepth": 0.006483298232269397,
+              "minHeight": 0.44938517960381325
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.23537852385556782
+              "minHeight": 0.2353785238472373
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.002285003419819978,
-              "minHeight": 0.4493852088357458
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010245851656489266,
+              "minHeight": 0.44938517960381325
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.23537852385556782
+              "minHeight": 0.2353785238472373
             }
           }
         },
@@ -4226,30 +4226,30 @@
           "time": 3.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 131,
-              "maxDepth": 0.01854928342535707,
-              "minHeight": 0.41554919845061256
+              "vertices": 6114,
+              "penetrating": 44,
+              "maxDepth": 0.00394662506110946,
+              "minHeight": 0.4155491612233442
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.2041795756080887
+              "minHeight": 0.20417957560466626
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0028692828809229604,
-              "minHeight": 0.41554919845061256
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010246838266853922,
+              "minHeight": 0.4155491612233442
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.2041795756080887
+              "minHeight": 0.20417957560466626
             }
           }
         },
@@ -4257,30 +4257,30 @@
           "time": 3.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 82,
-              "maxDepth": 0.013132305686314051,
-              "minHeight": 0.3848376487337388
+              "vertices": 6114,
+              "penetrating": 14,
+              "maxDepth": 0.0017904472444054964,
+              "minHeight": 0.38483765843607426
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1766548791676104
+              "minHeight": 0.1766548791668624
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0027961796576858808,
-              "minHeight": 0.3848376487337388
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.001024568640652035,
+              "minHeight": 0.38483765843607426
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1766548791676104
+              "minHeight": 0.1766548791668624
             }
           }
         },
@@ -4288,30 +4288,30 @@
           "time": 3.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 53,
-              "maxDepth": 0.00873429911539976,
-              "minHeight": 0.3604475931705634
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010243558601901043,
+              "minHeight": 0.3604475938854645
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.15525995852333468
+              "minHeight": 0.1552599585233846
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0024938968831906966,
-              "minHeight": 0.3604475931705634
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010243558601901043,
+              "minHeight": 0.3604475938854645
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.15525995852333468
+              "minHeight": 0.1552599585233846
             }
           }
         },
@@ -4319,30 +4319,30 @@
           "time": 4,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 41,
-              "maxDepth": 0.005871582437955172,
-              "minHeight": 0.34516442709877637
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.00102222654933877,
+              "minHeight": 0.34516442692424765
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.14202213961436647
+              "minHeight": 0.14202213961436472
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.002157437604079576,
-              "minHeight": 0.34516442709877637
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.00102222654933877,
+              "minHeight": 0.34516442692424765
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.14202213961436647
+              "minHeight": 0.14202213961436472
             }
           }
         },
@@ -4350,30 +4350,30 @@
           "time": 4.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 7,
-              "maxDepth": 0.0024210841928985136,
-              "minHeight": 0.3412401790089363
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010182253302450858,
+              "minHeight": 0.34124017783057525
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1384268597857433
+              "minHeight": 0.13842685978576166
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010182253310939068,
-              "minHeight": 0.3412401790089363
+              "maxDepth": 0.0010182253302450858,
+              "minHeight": 0.34124017783057525
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1384268597857433
+              "minHeight": 0.13842685978576166
             }
           }
         },
@@ -4381,30 +4381,30 @@
           "time": 4.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001004327793573595,
-              "minHeight": 0.34095044297498917
+              "maxDepth": 0.0010043277942493878,
+              "minHeight": 0.34095044314579254
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13817437122486492
+              "minHeight": 0.13817437122486054
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001004327793573595,
-              "minHeight": 0.34095044297498917
+              "maxDepth": 0.0010043277942493878,
+              "minHeight": 0.34095044314579254
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13817437122486492
+              "minHeight": 0.13817437122486054
             }
           }
         },
@@ -4412,30 +4412,30 @@
           "time": 4.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009995937399346067,
-              "minHeight": 0.3409075554354362
+              "maxDepth": 0.0009995937402783386,
+              "minHeight": 0.3409075555106347
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13825121720814687
+              "minHeight": 0.13825121720813782
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009995937399346067,
-              "minHeight": 0.3409075554354362
+              "maxDepth": 0.0009995937402783386,
+              "minHeight": 0.3409075555106347
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13825121720814687
+              "minHeight": 0.13825121720813782
             }
           }
         },
@@ -4443,30 +4443,30 @@
           "time": 4.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010050665409862825,
-              "minHeight": 0.3411975651950734
+              "maxDepth": 0.0010050665409920626,
+              "minHeight": 0.34119756518839867
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13831492502158088
+              "minHeight": 0.13831492502157686
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010050665409862825,
-              "minHeight": 0.3411975651950734
+              "maxDepth": 0.0010050665409920626,
+              "minHeight": 0.34119756518839867
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13831492502158088
+              "minHeight": 0.13831492502157686
             }
           }
         },
@@ -4474,30 +4474,30 @@
           "time": 4.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001009454057497354,
-              "minHeight": 0.3415657568375769
+              "maxDepth": 0.0010094540574465405,
+              "minHeight": 0.3415657568382199
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13829304047329896
+              "minHeight": 0.138293040473299
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001009454057497354,
-              "minHeight": 0.3415657568375769
+              "maxDepth": 0.0010094540574465405,
+              "minHeight": 0.3415657568382199
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13829304047329896
+              "minHeight": 0.138293040473299
             }
           }
         },
@@ -4505,30 +4505,30 @@
           "time": 4.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010099398651485375,
-              "minHeight": 0.3416089226257845
+              "maxDepth": 0.0010099398651315164,
+              "minHeight": 0.3416089226279256
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827410233564363
+              "minHeight": 0.13827410233564405
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010099398651485375,
-              "minHeight": 0.3416089226257845
+              "maxDepth": 0.0010099398651315164,
+              "minHeight": 0.3416089226279256
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827410233564363
+              "minHeight": 0.13827410233564405
             }
           }
         },
@@ -4536,30 +4536,30 @@
           "time": 4.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010091017597900903,
-              "minHeight": 0.34147617778327494
+              "maxDepth": 0.0010091017597924842,
+              "minHeight": 0.3414761777839227
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827326960564096
+              "minHeight": 0.13827326960564093
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010091017597900903,
-              "minHeight": 0.34147617778327494
+              "maxDepth": 0.0010091017597924842,
+              "minHeight": 0.3414761777839227
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827326960564096
+              "minHeight": 0.13827326960564093
             }
           }
         },
@@ -4567,30 +4567,30 @@
           "time": 5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010086670631810554,
-              "minHeight": 0.3412454677602673
+              "maxDepth": 0.0010086670631844416,
+              "minHeight": 0.3412454677595864
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827565760694138
+              "minHeight": 0.13827565760694133
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010086670631810554,
-              "minHeight": 0.3412454677602673
+              "maxDepth": 0.0010086670631844416,
+              "minHeight": 0.3412454677595864
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827565760694138
+              "minHeight": 0.13827565760694133
             }
           }
         },
@@ -4598,30 +4598,30 @@
           "time": 5.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010086780615165963,
-              "minHeight": 0.34128499236433063
+              "maxDepth": 0.001008678061517318,
+              "minHeight": 0.3412849923638065
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827627651171012
+              "minHeight": 0.1382762765117101
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010086780615165963,
-              "minHeight": 0.34128499236433063
+              "maxDepth": 0.001008678061517318,
+              "minHeight": 0.3412849923638065
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827627651171012
+              "minHeight": 0.1382762765117101
             }
           }
         },
@@ -4629,30 +4629,30 @@
           "time": 5.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087690336722938,
-              "minHeight": 0.3413943367103373
+              "maxDepth": 0.00100876903367203,
+              "minHeight": 0.34139433670915825
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827614191894402
+              "minHeight": 0.13827614191894388
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087690336722938,
-              "minHeight": 0.3413943367103373
+              "maxDepth": 0.00100876903367203,
+              "minHeight": 0.34139433670915825
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827614191894402
+              "minHeight": 0.13827614191894388
             }
           }
         },
@@ -4660,30 +4660,30 @@
           "time": 5.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087998217772065,
-              "minHeight": 0.34142032584199905
+              "maxDepth": 0.001008799821777033,
+              "minHeight": 0.3414203258420379
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827605001739118
+              "minHeight": 0.1382760500173912
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087998217772065,
-              "minHeight": 0.34142032584199905
+              "maxDepth": 0.001008799821777033,
+              "minHeight": 0.3414203258420379
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.13827605001739118
+              "minHeight": 0.1382760500173912
             }
           }
         },
@@ -4691,10 +4691,10 @@
           "time": 5.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087936226467753,
-              "minHeight": 0.3414157856556661
+              "maxDepth": 0.0010087936226467545,
+              "minHeight": 0.34141578565569963
             },
             "dress": {
               "vertices": 5622,
@@ -4705,10 +4705,10 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087936226467753,
-              "minHeight": 0.3414157856556661
+              "maxDepth": 0.0010087936226467545,
+              "minHeight": 0.34141578565569963
             },
             "dress": {
               "vertices": 5622,
@@ -4722,30 +4722,30 @@
           "time": 5.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001008785728483605,
-              "minHeight": 0.34140699978918343
+              "maxDepth": 0.0010087857284836396,
+              "minHeight": 0.3414069997891875
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.138276052338966
+              "minHeight": 0.13827605233896606
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001008785728483605,
-              "minHeight": 0.34140699978918343
+              "maxDepth": 0.0010087857284836396,
+              "minHeight": 0.3414069997891875
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.138276052338966
+              "minHeight": 0.13827605233896606
             }
           }
         },
@@ -4753,30 +4753,30 @@
           "time": 5.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087840959112915,
-              "minHeight": 0.34140320998125323
+              "maxDepth": 0.0010087840959113054,
+              "minHeight": 0.3414032099812382
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1382760543130995
+              "minHeight": 0.1382760543130994
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.0010087840959112915,
-              "minHeight": 0.34140320998125323
+              "maxDepth": 0.0010087840959113054,
+              "minHeight": 0.3414032099812382
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.1382760543130995
+              "minHeight": 0.1382760543130994
             }
           }
         },
@@ -4784,30 +4784,30 @@
           "time": 5.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001000152173747125,
-              "minHeight": 0.34396487299151235
+              "maxDepth": 0.001000152173747132,
+              "minHeight": 0.34396487299147305
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.14015940342926855
+              "minHeight": 0.14015940342926864
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
-              "maxDepth": 0.001000152173747125,
-              "minHeight": 0.34396487299151235
+              "maxDepth": 0.001000152173747132,
+              "minHeight": 0.34396487299147305
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.14015940342926855
+              "minHeight": 0.14015940342926864
             }
           }
         },
@@ -4815,30 +4815,30 @@
           "time": 6,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009929662491927407,
-              "minHeight": 0.3575280570449865
+              "maxDepth": 0.0009929662491927477,
+              "minHeight": 0.3575280570449859
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.15157581849441953
+              "minHeight": 0.15157581849441965
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009929662491927407,
-              "minHeight": 0.3575280570449865
+              "maxDepth": 0.0009929662491927477,
+              "minHeight": 0.3575280570449859
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.15157581849441953
+              "minHeight": 0.15157581849441965
             }
           }
         },
@@ -4846,30 +4846,30 @@
           "time": 6.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009926332025497545,
-              "minHeight": 0.3806416366022423
+              "maxDepth": 0.0009926332025497822,
+              "minHeight": 0.3806416366022422
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.17165709061297232
+              "minHeight": 0.1716570906129723
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009926332025497545,
-              "minHeight": 0.3806416366022423
+              "maxDepth": 0.0009926332025497822,
+              "minHeight": 0.3806416366022422
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.17165709061297232
+              "minHeight": 0.1716570906129723
             }
           }
         },
@@ -4877,30 +4877,30 @@
           "time": 6.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 23,
-              "maxDepth": 0.0024285972532286093,
-              "minHeight": 0.41085786509738664
+              "vertices": 6114,
+              "penetrating": 16,
+              "maxDepth": 0.0016939721042715586,
+              "minHeight": 0.41085786509738653
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.19836263280486102
+              "minHeight": 0.19836263280486094
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009924909163270892,
-              "minHeight": 0.41085786509738664
+              "maxDepth": 0.0009924909163271031,
+              "minHeight": 0.41085786509738653
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.19836263280486102
+              "minHeight": 0.19836263280486094
             }
           }
         },
@@ -4908,30 +4908,30 @@
           "time": 6.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 87,
-              "maxDepth": 0.007777542308124309,
+              "vertices": 6114,
+              "penetrating": 41,
+              "maxDepth": 0.003935325383266602,
               "minHeight": 0.44483681903362005
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.22891219031810947
+              "minHeight": 0.22891219031810936
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009925016858234603,
+              "maxDepth": 0.0009925016858234326,
               "minHeight": 0.44483681903362005
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.22891219031810947
+              "minHeight": 0.22891219031810936
             }
           }
         },
@@ -4939,30 +4939,30 @@
           "time": 6.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 122,
-              "maxDepth": 0.013208513738235436,
-              "minHeight": 0.4791193681818087
+              "vertices": 6114,
+              "penetrating": 52,
+              "maxDepth": 0.006695696434496898,
+              "minHeight": 0.47911936818180884
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.26058481995941396
+              "minHeight": 0.2605848199594139
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009923306675534288,
-              "minHeight": 0.4791193681818087
+              "minHeight": 0.47911936818180884
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.26058481995941396
+              "minHeight": 0.2605848199594139
             }
           }
         },
@@ -4970,30 +4970,30 @@
           "time": 6.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 138,
-              "maxDepth": 0.017389433448327128,
-              "minHeight": 0.5103634895097914
+              "vertices": 6114,
+              "penetrating": 60,
+              "maxDepth": 0.009614607575948425,
+              "minHeight": 0.5103634895097909
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0.00007226675150302786,
-              "minHeight": 0.29077565580971115
+              "minHeight": 0.290775655809711
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009932928861565646,
-              "minHeight": 0.5103634895097914
+              "maxDepth": 0.0009932928861565507,
+              "minHeight": 0.5103634895097909
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.29077565580971115
+              "minHeight": 0.290775655809711
             }
           }
         },
@@ -5001,30 +5001,30 @@
           "time": 6.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 143,
-              "maxDepth": 0.019854024638597634,
-              "minHeight": 0.5359728807412971
+              "vertices": 6114,
+              "penetrating": 64,
+              "maxDepth": 0.012554647220815132,
+              "minHeight": 0.5359728807412959
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 2,
               "maxDepth": 0.001662749868848623,
-              "minHeight": 0.316998947006674
+              "minHeight": 0.3169989470066742
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.000994674043532394,
-              "minHeight": 0.5359728807412971
+              "maxDepth": 0.0009946740435324009,
+              "minHeight": 0.5359728807412959
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.316998947006674
+              "minHeight": 0.3169989470066742
             }
           }
         },
@@ -5032,30 +5032,30 @@
           "time": 6.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 141,
-              "maxDepth": 0.020583286368340444,
-              "minHeight": 0.5543432176167102
+              "vertices": 6114,
+              "penetrating": 67,
+              "maxDepth": 0.015374953441821736,
+              "minHeight": 0.5543432176167103
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 2,
               "maxDepth": 0.0032834924750249003,
-              "minHeight": 0.33758458059422436
+              "minHeight": 0.3375845805942243
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009956628458306152,
-              "minHeight": 0.5543432176167102
+              "minHeight": 0.5543432176167103
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.33758458059422436
+              "minHeight": 0.3375845805942243
             }
           }
         },
@@ -5063,30 +5063,30 @@
           "time": 7,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 134,
-              "maxDepth": 0.01996585210204052,
-              "minHeight": 0.5651777119986142
+              "vertices": 6114,
+              "penetrating": 69,
+              "maxDepth": 0.01792656281244888,
+              "minHeight": 0.5651777119986141
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 2,
               "maxDepth": 0.00491962234835195,
-              "minHeight": 0.3519265956333011
+              "minHeight": 0.3519265956333012
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
-              "maxDepth": 0.0009960596603537514,
-              "minHeight": 0.5651777119986142
+              "maxDepth": 0.0009960596603537583,
+              "minHeight": 0.5651777119986141
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.3519265956333011
+              "minHeight": 0.3519265956333012
             }
           }
         },
@@ -5094,30 +5094,30 @@
           "time": 7.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 130,
-              "maxDepth": 0.02011221980054819,
-              "minHeight": 0.5694777765187017
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.020112219800548038,
+              "minHeight": 0.5694777765187014
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 5,
               "maxDepth": 0.006494919426239476,
-              "minHeight": 0.35281730917652465
+              "minHeight": 0.352817320830727
             }
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009944332616403095,
-              "minHeight": 0.5694777765187017
+              "minHeight": 0.5694777765187014
             },
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.35281730917652465
+              "minHeight": 0.352817320830727
             }
           }
         }
@@ -5134,8 +5134,8 @@
       "maxAngle": 0.12647613240544922,
       "before": {
         "hair": {
-          "meanPenetrating": 28.89887640449438,
-          "maxDepth": 0.035632112787031704,
+          "meanPenetrating": 13.730337078651685,
+          "maxDepth": 0.020016489125084982,
           "minHeight": -0.017485209703422402
         },
         "dress": {
@@ -5146,8 +5146,8 @@
       },
       "after": {
         "hair": {
-          "meanPenetrating": 1.5730337078651686,
-          "maxDepth": 0.0031794108875715377,
+          "meanPenetrating": 1.1685393258426966,
+          "maxDepth": 0.0010461907495159448,
           "minHeight": 0.019918376523655645
         },
         "dress": {
@@ -5161,9 +5161,9 @@
           "time": 1,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 138,
-              "maxDepth": 0.02229009300490097,
+              "vertices": 6114,
+              "penetrating": 75,
+              "maxDepth": 0.020016489125084982,
               "minHeight": 0.5686427274951675
             },
             "dress": {
@@ -5175,7 +5175,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010021932684662962,
               "minHeight": 0.5686427274951675
@@ -5192,9 +5192,9 @@
           "time": 1.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 158,
-              "maxDepth": 0.02774534813334054,
+              "vertices": 6114,
+              "penetrating": 73,
+              "maxDepth": 0.01879246300009481,
               "minHeight": 0.5623223102624559
             },
             "dress": {
@@ -5206,7 +5206,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010461907495159448,
               "minHeight": 0.5623223102624559
@@ -5223,9 +5223,9 @@
           "time": 1.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 167,
-              "maxDepth": 0.035632112787031704,
+              "vertices": 6114,
+              "penetrating": 71,
+              "maxDepth": 0.01683382414037122,
               "minHeight": 0.5485972111509988
             },
             "dress": {
@@ -5237,9 +5237,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0031794108875715377,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010263529178522537,
               "minHeight": 0.5485972111509988
             },
             "dress": {
@@ -5254,9 +5254,9 @@
           "time": 1.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 166,
-              "maxDepth": 0.03433722117644715,
+              "vertices": 6114,
+              "penetrating": 70,
+              "maxDepth": 0.013923984723107949,
               "minHeight": 0.5286847091010535
             },
             "dress": {
@@ -5268,9 +5268,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0023750018282280155,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010189945613283333,
               "minHeight": 0.5286847091010535
             },
             "dress": {
@@ -5285,9 +5285,9 @@
           "time": 1.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 164,
-              "maxDepth": 0.03166671794568326,
+              "vertices": 6114,
+              "penetrating": 68,
+              "maxDepth": 0.011020011165877412,
               "minHeight": 0.5018161237866023
             },
             "dress": {
@@ -5299,9 +5299,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.00314681717375849,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010237595975534294,
               "minHeight": 0.5018161237866023
             },
             "dress": {
@@ -5316,9 +5316,9 @@
           "time": 1.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 151,
-              "maxDepth": 0.027397107120459143,
+              "vertices": 6114,
+              "penetrating": 57,
+              "maxDepth": 0.00813541075563861,
               "minHeight": 0.46976302799368763
             },
             "dress": {
@@ -5330,9 +5330,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0027959935022871737,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010248636457065238,
               "minHeight": 0.46976302799368763
             },
             "dress": {
@@ -5347,9 +5347,9 @@
           "time": 1.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 136,
-              "maxDepth": 0.021983304343727524,
+              "vertices": 6114,
+              "penetrating": 46,
+              "maxDepth": 0.005432627230622829,
               "minHeight": 0.43570272714332603
             },
             "dress": {
@@ -5361,9 +5361,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.002627424114695423,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010248695033625507,
               "minHeight": 0.43570272714332603
             },
             "dress": {
@@ -5378,9 +5378,9 @@
           "time": 1.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 110,
-              "maxDepth": 0.016301820932076425,
+              "vertices": 6114,
+              "penetrating": 30,
+              "maxDepth": 0.0030310058347266383,
               "minHeight": 0.40269964392577845
             },
             "dress": {
@@ -5392,9 +5392,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.00288993517635696,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010246499671729067,
               "minHeight": 0.40269964392577845
             },
             "dress": {
@@ -5409,9 +5409,9 @@
           "time": 2,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 65,
-              "maxDepth": 0.011211101241226172,
+              "vertices": 6114,
+              "penetrating": 5,
+              "maxDepth": 0.0010578759589689735,
               "minHeight": 0.37408686259647556
             },
             "dress": {
@@ -5423,9 +5423,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.002692883764351575,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010244794351948402,
               "minHeight": 0.37408686259647556
             },
             "dress": {
@@ -5440,9 +5440,9 @@
           "time": 2.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 52,
-              "maxDepth": 0.0074507466350080195,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010244029769860136,
               "minHeight": 0.3531210987420506
             },
             "dress": {
@@ -5454,9 +5454,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 8,
-              "maxDepth": 0.0024234394831996325,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010244029769860136,
               "minHeight": 0.3531210987420506
             },
             "dress": {
@@ -5471,9 +5471,9 @@
           "time": 2.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 39,
-              "maxDepth": 0.005096909865149692,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010218397812441216,
               "minHeight": 0.3422946666677238
             },
             "dress": {
@@ -5485,9 +5485,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 7,
-              "maxDepth": 0.0018594825128179157,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010218397812441216,
               "minHeight": 0.3422946666677238
             },
             "dress": {
@@ -5502,7 +5502,7 @@
           "time": 2.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001012810473410522,
               "minHeight": 0.3411437489494563
@@ -5516,7 +5516,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001012810473410522,
               "minHeight": 0.3411437489494563
@@ -5533,7 +5533,7 @@
           "time": 2.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010006177858278079,
               "minHeight": 0.34091552744847203
@@ -5547,7 +5547,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010006177858278079,
               "minHeight": 0.34091552744847203
@@ -5564,7 +5564,7 @@
           "time": 2.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010012743491417744,
               "minHeight": 0.34095995972323023
@@ -5578,7 +5578,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010012743491417744,
               "minHeight": 0.34095995972323023
@@ -5595,7 +5595,7 @@
           "time": 2.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001007334459906195,
               "minHeight": 0.34136049912669636
@@ -5609,7 +5609,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001007334459906195,
               "minHeight": 0.34136049912669636
@@ -5626,7 +5626,7 @@
           "time": 2.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010099994297374654,
               "minHeight": 0.3416035339928985
@@ -5640,7 +5640,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010099994297374654,
               "minHeight": 0.3416035339928985
@@ -5657,7 +5657,7 @@
           "time": 3,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010217507377531729,
               "minHeight": 0.3410915623809015
@@ -5671,7 +5671,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010217507377531729,
               "minHeight": 0.3410915623809015
@@ -5688,9 +5688,9 @@
           "time": 3.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 7,
-              "maxDepth": 0.0025962318040489082,
+              "vertices": 6114,
+              "penetrating": 4,
+              "maxDepth": 0.0010064339116247142,
               "minHeight": 0.3393438876610338
             },
             "dress": {
@@ -5702,7 +5702,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010064339116247142,
               "minHeight": 0.3393438876610338
@@ -5719,7 +5719,7 @@
           "time": 3.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009914256277730182,
               "minHeight": 0.3351493664436564
@@ -5733,7 +5733,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009914256277730182,
               "minHeight": 0.3351493664436564
@@ -5750,7 +5750,7 @@
           "time": 3.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000971451191136119,
               "minHeight": 0.3265852191448585
@@ -5764,7 +5764,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000971451191136119,
               "minHeight": 0.3265852191448585
@@ -5781,7 +5781,7 @@
           "time": 3.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009469206273615555,
               "minHeight": 0.3116299227268437
@@ -5795,7 +5795,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009469206273615555,
               "minHeight": 0.3116299227268437
@@ -5812,7 +5812,7 @@
           "time": 3.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 6,
               "maxDepth": 0.001914022111075185,
               "minHeight": 0.2884038513396253
@@ -5826,7 +5826,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009176496574219567,
               "minHeight": 0.2884038513396253
@@ -5843,7 +5843,7 @@
           "time": 3.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 13,
               "maxDepth": 0.0034238037084050356,
               "minHeight": 0.2568016014183591
@@ -5857,7 +5857,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008851723477820289,
               "minHeight": 0.2568016014183591
@@ -5874,7 +5874,7 @@
           "time": 3.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 20,
               "maxDepth": 0.0042984268835190645,
               "minHeight": 0.21871212500329112
@@ -5888,7 +5888,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.00085029152375031,
               "minHeight": 0.21871212500329112
@@ -5905,7 +5905,7 @@
           "time": 4,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 20,
               "maxDepth": 0.004392765398805849,
               "minHeight": 0.17672670311335945
@@ -5919,7 +5919,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008138524836849223,
               "minHeight": 0.17672670311335945
@@ -5936,7 +5936,7 @@
           "time": 4.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 17,
               "maxDepth": 0.0036773734480039545,
               "minHeight": 0.13385919875245741
@@ -5950,7 +5950,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000776859184922131,
               "minHeight": 0.13385919875245741
@@ -5967,7 +5967,7 @@
           "time": 4.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.002288585719425744,
               "minHeight": 0.09524379978724483
@@ -5981,7 +5981,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007406966486681391,
               "minHeight": 0.09524379978724483
@@ -5998,7 +5998,7 @@
           "time": 4.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007066444481721168,
               "minHeight": 0.06377015820925219
@@ -6012,7 +6012,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007066444481721168,
               "minHeight": 0.06386988492618961
@@ -6029,7 +6029,7 @@
           "time": 4.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000676067397129762,
               "minHeight": 0.04052742913643252
@@ -6043,7 +6043,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000676067397129762,
               "minHeight": 0.05427288717536968
@@ -6060,7 +6060,7 @@
           "time": 4.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006500510557924319,
               "minHeight": 0.022688444115614454
@@ -6074,7 +6074,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006500510557924319,
               "minHeight": 0.0537058872031474
@@ -6091,9 +6091,9 @@
           "time": 4.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 3,
-              "maxDepth": 0.002076153371526328,
+              "vertices": 6114,
+              "penetrating": 0,
+              "maxDepth": 0.0006299466010573698,
               "minHeight": 0.005612265244048488
             },
             "dress": {
@@ -6105,7 +6105,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006299466010573698,
               "minHeight": 0.05375993042260989
@@ -6122,9 +6122,9 @@
           "time": 4.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 30,
-              "maxDepth": 0.003949410024017198,
+              "vertices": 6114,
+              "penetrating": 0,
+              "maxDepth": 0.000615187618376048,
               "minHeight": -0.004597732730934224
             },
             "dress": {
@@ -6136,9 +6136,9 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 1,
-              "maxDepth": 0.0010404536959753852,
+              "vertices": 6114,
+              "penetrating": 0,
+              "maxDepth": 0.000615187618376048,
               "minHeight": 0.028696765108683187
             },
             "dress": {
@@ -6153,9 +6153,9 @@
           "time": 5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 3,
-              "maxDepth": 0.0027387280471235995,
+              "vertices": 6114,
+              "penetrating": 0,
+              "maxDepth": 0.0005972165192138501,
               "minHeight": -0.010088840967336851
             },
             "dress": {
@@ -6167,7 +6167,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005972165192138501,
               "minHeight": 0.019918376523655645
@@ -6184,7 +6184,7 @@
           "time": 5.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005815209210854183,
               "minHeight": -0.015188403555539194
@@ -6198,7 +6198,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005815209210854183,
               "minHeight": 0.019920203679026718
@@ -6215,7 +6215,7 @@
           "time": 5.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005908688218492705,
               "minHeight": -0.017485209703422402
@@ -6229,7 +6229,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005908688218492705,
               "minHeight": 0.01993167542770579
@@ -6246,7 +6246,7 @@
           "time": 5.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005958224241845375,
               "minHeight": -0.017209138274159513
@@ -6260,7 +6260,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005958224241845375,
               "minHeight": 0.01993070094662288
@@ -6277,7 +6277,7 @@
           "time": 5.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005961071927938974,
               "minHeight": -0.01539567068202261
@@ -6291,7 +6291,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005961071927938974,
               "minHeight": 0.019926295334444236
@@ -6308,7 +6308,7 @@
           "time": 5.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005954685583635932,
               "minHeight": -0.014263712638635547
@@ -6322,7 +6322,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005954685583635932,
               "minHeight": 0.019924971527018106
@@ -6339,7 +6339,7 @@
           "time": 5.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005951764539903898,
               "minHeight": -0.014076243521179201
@@ -6353,7 +6353,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005951764539903898,
               "minHeight": 0.019925559067244036
@@ -6370,7 +6370,7 @@
           "time": 5.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005951651426166979,
               "minHeight": -0.014355432340824793
@@ -6384,7 +6384,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005951651426166979,
               "minHeight": 0.019926066154707198
@@ -6401,7 +6401,7 @@
           "time": 6,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952097044862673,
               "minHeight": -0.014578373938913038
@@ -6415,7 +6415,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952097044862673,
               "minHeight": 0.019926124031531708
@@ -6432,7 +6432,7 @@
           "time": 6.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000595228869378614,
               "minHeight": -0.014613389323343875
@@ -6446,7 +6446,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000595228869378614,
               "minHeight": 0.01992604240219903
@@ -6463,7 +6463,7 @@
           "time": 6.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952287455690611,
               "minHeight": -0.014572702869131331
@@ -6477,7 +6477,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952287455690611,
               "minHeight": 0.019926002444779174
@@ -6494,7 +6494,7 @@
           "time": 6.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952254896377726,
               "minHeight": -0.014546402851307939
@@ -6508,7 +6508,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952254896377726,
               "minHeight": 0.01992600402542599
@@ -6525,7 +6525,7 @@
           "time": 6.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952242776060684,
               "minHeight": -0.014544343425863557
@@ -6539,7 +6539,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952242776060684,
               "minHeight": 0.019926012010017924
@@ -6556,7 +6556,7 @@
           "time": 6.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952243781452704,
               "minHeight": -0.014549345007077285
@@ -6570,7 +6570,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952243781452704,
               "minHeight": 0.019926014470757845
@@ -6587,7 +6587,7 @@
           "time": 6.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246202462069,
               "minHeight": -0.014551857097566153
@@ -6601,7 +6601,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246202462069,
               "minHeight": 0.01992601387381407
@@ -6618,7 +6618,7 @@
           "time": 6.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246920010937,
               "minHeight": -0.014551817242932821
@@ -6632,7 +6632,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246920010937,
               "minHeight": 0.019926013231640078
@@ -6649,7 +6649,7 @@
           "time": 7,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246772508857,
               "minHeight": -0.01455128375406219
@@ -6663,7 +6663,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246772508857,
               "minHeight": 0.019926013118641915
@@ -6680,7 +6680,7 @@
           "time": 7.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246598520186,
               "minHeight": -0.014551082971448522
@@ -6694,7 +6694,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246598520186,
               "minHeight": 0.019926013192582945
@@ -6711,7 +6711,7 @@
           "time": 7.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246561011301,
               "minHeight": -0.014551111498931983
@@ -6725,7 +6725,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246561011301,
               "minHeight": 0.019926013237138416
@@ -6742,7 +6742,7 @@
           "time": 7.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246576836767,
               "minHeight": -0.014551161656652808
@@ -6756,7 +6756,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246576836767,
               "minHeight": 0.01992601323941388
@@ -6773,7 +6773,7 @@
           "time": 7.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246588702345,
               "minHeight": -0.014551175098550041
@@ -6787,7 +6787,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246588702345,
               "minHeight": 0.01992601323255704
@@ -6804,7 +6804,7 @@
           "time": 7.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246590231608,
               "minHeight": -0.014551170521453593
@@ -6818,7 +6818,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246590231608,
               "minHeight": 0.01992601322987223
@@ -6835,7 +6835,7 @@
           "time": 7.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246588791371,
               "minHeight": -0.014551166246582526
@@ -6849,7 +6849,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005952246588791371,
               "minHeight": 0.019926013230134727
@@ -6866,7 +6866,7 @@
           "time": 7.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005799755889738592,
               "minHeight": -0.015067557495333098
@@ -6880,7 +6880,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005799755889738592,
               "minHeight": 0.0231942749076366
@@ -6897,7 +6897,7 @@
           "time": 8,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005880904767061046,
               "minHeight": -0.012563632100954548
@@ -6911,7 +6911,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0005880904767061046,
               "minHeight": 0.032630046914281646
@@ -6928,7 +6928,7 @@
           "time": 8.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006054922548444919,
               "minHeight": -0.002465089371318782
@@ -6942,7 +6942,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006054922548444919,
               "minHeight": 0.03058870444067341
@@ -6959,7 +6959,7 @@
           "time": 8.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006293172922655285,
               "minHeight": 0.01174718947619571
@@ -6973,7 +6973,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006293172922655285,
               "minHeight": 0.03097750574997842
@@ -6990,7 +6990,7 @@
           "time": 8.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0012228407775103749,
               "minHeight": 0.033780854321589594
@@ -7004,7 +7004,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006582102163211895,
               "minHeight": 0.037308780757420924
@@ -7021,7 +7021,7 @@
           "time": 8.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.003068634600686057,
               "minHeight": 0.06470331896881139
@@ -7035,7 +7035,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0006908943464799602,
               "minHeight": 0.06470331896881139
@@ -7052,7 +7052,7 @@
           "time": 8.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.004581942259533449,
               "minHeight": 0.10402973889297806
@@ -7066,7 +7066,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007263339440517214,
               "minHeight": 0.10402973889297806
@@ -7083,7 +7083,7 @@
           "time": 8.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 27,
               "maxDepth": 0.0055239445028313315,
               "minHeight": 0.14854791254788507
@@ -7097,7 +7097,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0007631592797388564,
               "minHeight": 0.14854791254788507
@@ -7114,7 +7114,7 @@
           "time": 8.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 33,
               "maxDepth": 0.0057462578298129105,
               "minHeight": 0.1940069826036429
@@ -7128,7 +7128,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008004329270233645,
               "minHeight": 0.1940069826036429
@@ -7145,7 +7145,7 @@
           "time": 9,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 27,
               "maxDepth": 0.005214473669796427,
               "minHeight": 0.23703987168847593
@@ -7159,7 +7159,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008375485632806448,
               "minHeight": 0.23703987168847593
@@ -7176,7 +7176,7 @@
           "time": 9.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 23,
               "maxDepth": 0.003998952058939645,
               "minHeight": 0.27292887568585655
@@ -7190,7 +7190,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0008725934790644527,
               "minHeight": 0.27292887568585655
@@ -7207,7 +7207,7 @@
           "time": 9.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 8,
               "maxDepth": 0.0023076337021140196,
               "minHeight": 0.3006900448351717
@@ -7221,7 +7221,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009052101830616943,
               "minHeight": 0.3006900448351717
@@ -7238,7 +7238,7 @@
           "time": 9.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009347892792019377,
               "minHeight": 0.3202826390631818
@@ -7252,7 +7252,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009347892792019377,
               "minHeight": 0.3202826390631818
@@ -7269,7 +7269,7 @@
           "time": 9.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009602610264604211,
               "minHeight": 0.33253367649639926
@@ -7283,7 +7283,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009602610264604211,
               "minHeight": 0.33253367649639926
@@ -7300,7 +7300,7 @@
           "time": 9.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000979378666407217,
               "minHeight": 0.3385570567498053
@@ -7314,7 +7314,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000979378666407217,
               "minHeight": 0.3385570567498053
@@ -7331,7 +7331,7 @@
           "time": 9.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009926570882540786,
               "minHeight": 0.3410412630432019
@@ -7345,7 +7345,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009926570882540786,
               "minHeight": 0.3410412630432019
@@ -7362,7 +7362,7 @@
           "time": 9.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001003312153269105,
               "minHeight": 0.3416409250704369
@@ -7376,7 +7376,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001003312153269105,
               "minHeight": 0.3416409250704369
@@ -7393,7 +7393,7 @@
           "time": 10,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010193041811600093,
               "minHeight": 0.3414022182122246
@@ -7407,7 +7407,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010193041811600093,
               "minHeight": 0.3414022182122246
@@ -7424,7 +7424,7 @@
           "time": 10.125,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010114653966244794,
               "minHeight": 0.34155485689405674
@@ -7438,7 +7438,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010114653966244794,
               "minHeight": 0.34155485689405674
@@ -7455,7 +7455,7 @@
           "time": 10.25,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010068144963855663,
               "minHeight": 0.34169542020398885
@@ -7469,7 +7469,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010068144963855663,
               "minHeight": 0.34169542020398885
@@ -7486,7 +7486,7 @@
           "time": 10.375,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010076658835902128,
               "minHeight": 0.3412035143511741
@@ -7500,7 +7500,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010076658835902128,
               "minHeight": 0.3412035143511741
@@ -7517,7 +7517,7 @@
           "time": 10.5,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008876996003355,
               "minHeight": 0.3409425121109735
@@ -7531,7 +7531,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001008876996003355,
               "minHeight": 0.3409425121109735
@@ -7548,7 +7548,7 @@
           "time": 10.625,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001009048645854528,
               "minHeight": 0.34118161317920326
@@ -7562,7 +7562,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.001009048645854528,
               "minHeight": 0.34118161317920326
@@ -7579,7 +7579,7 @@
           "time": 10.75,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010107133764306123,
               "minHeight": 0.34267021645849316
@@ -7593,7 +7593,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 4,
               "maxDepth": 0.0010107133764306123,
               "minHeight": 0.34267021645849316
@@ -7610,7 +7610,7 @@
           "time": 10.875,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009937230263156946,
               "minHeight": 0.354026324042681
@@ -7624,7 +7624,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009937230263156946,
               "minHeight": 0.354026324042681
@@ -7641,7 +7641,7 @@
           "time": 11,
           "before": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000992536541444447,
               "minHeight": 0.3752688481719708
@@ -7655,7 +7655,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.000992536541444447,
               "minHeight": 0.3752688481719708
@@ -7672,9 +7672,9 @@
           "time": 11.125,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 10,
-              "maxDepth": 0.0016894741011706238,
+              "vertices": 6114,
+              "penetrating": 6,
+              "maxDepth": 0.0012877843348638035,
               "minHeight": 0.4044023086315819
             },
             "dress": {
@@ -7686,7 +7686,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009924259051940498,
               "minHeight": 0.4044023086315819
@@ -7703,9 +7703,9 @@
           "time": 11.25,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 73,
-              "maxDepth": 0.006605926911741125,
+              "vertices": 6114,
+              "penetrating": 35,
+              "maxDepth": 0.0034538465536496712,
               "minHeight": 0.4379151253165137
             },
             "dress": {
@@ -7717,7 +7717,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009925158499363637,
               "minHeight": 0.4379151253165137
@@ -7734,9 +7734,9 @@
           "time": 11.375,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 116,
-              "maxDepth": 0.012191187022748372,
+              "vertices": 6114,
+              "penetrating": 50,
+              "maxDepth": 0.006127796294171706,
               "minHeight": 0.472389753317342
             },
             "dress": {
@@ -7748,7 +7748,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009926712351775377,
               "minHeight": 0.472389753317342
@@ -7765,9 +7765,9 @@
           "time": 11.5,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 138,
-              "maxDepth": 0.016689429514108456,
+              "vertices": 6114,
+              "penetrating": 60,
+              "maxDepth": 0.009024297881666962,
               "minHeight": 0.5045241908372762
             },
             "dress": {
@@ -7779,7 +7779,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009926896615118017,
               "minHeight": 0.5045241908372762
@@ -7796,9 +7796,9 @@
           "time": 11.625,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 143,
-              "maxDepth": 0.019509657134759828,
+              "vertices": 6114,
+              "penetrating": 64,
+              "maxDepth": 0.01197191951487006,
               "minHeight": 0.531411205136389
             },
             "dress": {
@@ -7810,7 +7810,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009942104853122302,
               "minHeight": 0.531411205136389
@@ -7827,9 +7827,9 @@
           "time": 11.75,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 142,
-              "maxDepth": 0.020549545480152462,
+              "vertices": 6114,
+              "penetrating": 67,
+              "maxDepth": 0.014824603365972716,
               "minHeight": 0.5512755310704239
             },
             "dress": {
@@ -7841,7 +7841,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009956118867152364,
               "minHeight": 0.5512755310704239
@@ -7858,9 +7858,9 @@
           "time": 11.875,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 137,
-              "maxDepth": 0.020152816832457527,
+              "vertices": 6114,
+              "penetrating": 69,
+              "maxDepth": 0.01744032757343658,
               "minHeight": 0.5635501228232571
             },
             "dress": {
@@ -7872,7 +7872,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009958894601342014,
               "minHeight": 0.5635501228232571
@@ -7889,8 +7889,8 @@
           "time": 12,
           "before": {
             "hair": {
-              "vertices": 6381,
-              "penetrating": 131,
+              "vertices": 6114,
+              "penetrating": 71,
               "maxDepth": 0.019710544859437337,
               "minHeight": 0.5690597229082455
             },
@@ -7903,7 +7903,7 @@
           },
           "after": {
             "hair": {
-              "vertices": 6381,
+              "vertices": 6114,
               "penetrating": 0,
               "maxDepth": 0.0009951916227185081,
               "minHeight": 0.5690597229082455
@@ -7919,46 +7919,6 @@
       ]
     }
   ],
-  "video": [
-    {
-      "file": "front.mp4",
-      "codec_name": "h264",
-      "width": 1152,
-      "height": 720,
-      "avg_frame_rate": "24/1",
-      "duration": "22.000000",
-      "nb_frames": "528",
-      "side_data_list": [
-        {}
-      ],
-      "bytes": 1845539
-    },
-    {
-      "file": "side.mp4",
-      "codec_name": "h264",
-      "width": 1152,
-      "height": 720,
-      "avg_frame_rate": "24/1",
-      "duration": "22.000000",
-      "nb_frames": "528",
-      "side_data_list": [
-        {}
-      ],
-      "bytes": 1781351
-    },
-    {
-      "file": "back.mp4",
-      "codec_name": "h264",
-      "width": 1152,
-      "height": 720,
-      "avg_frame_rate": "24/1",
-      "duration": "22.000000",
-      "nb_frames": "528",
-      "side_data_list": [
-        {}
-      ],
-      "bytes": 1658422
-    }
-  ],
+  "video": [],
   "errors": []
 }
