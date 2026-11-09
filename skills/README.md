@@ -26,10 +26,10 @@ npx --yes skills add xuzihan0823/PocketWorld --skill '*' --agent codex claude-co
 npx --yes skills add xuzihan0823/PocketWorld --skill threejs-r3f threejs-scene threejs-interaction --agent codex --yes
 ```
 
-技能源文件位于 `skills/project-doc-maintenance/`。在源码工作区中也可以使用本地目录安装，以验证尚未合并的版本。
+技能源文件统一位于 `skills/`，每个技能目录包含自己的 `SKILL.md` 和所需参考资料。在源码工作区中也可以使用本地目录安装整个集合，以验证尚未合并的版本。
 
 ```sh
-npx --yes skills add ./skills/project-doc-maintenance --agent codex --yes
+npx --yes skills add ./skills --skill '*' --agent codex --yes
 ```
 
 安装来源、目标工具及选项遵循 [Skills CLI](https://github.com/vercel-labs/skills/blob/main/docs/commands.md)，技能目录布局遵循其 [分发规范](https://github.com/vercel-labs/skills/blob/main/docs/creating-skills.md)。
