@@ -1,5 +1,7 @@
 # 人物模型
 
+新 Tripo 人物的头发和裙摆辅助绑定为 [`luna-tripo-secondary.glb`](luna-tripo-secondary.glb)，保留原人体骨架并新增 50 根辅助骨骼。可编辑 Blender 文件、诊断动作与局限见 [新模型绑定说明](../../../art/resident/tripo-secondary/README.md)。该资产尚未接入运行角色。
+
 独立重建的白兔玩偶为 [`luna-bunny-refined.glb`](luna-bunny-refined.glb)，可编辑源文件、五视角预览及验证说明见 [白兔资产说明](../../../art/resident/refined/BUNNY.md)。该文件作为独立资产保存，等待人物重新绑定骨骼后再接入；下述人物与现有运行时不变。
 
 当前加载 `luna.glb`，来自用户提供的第二份 `6cb81bde21fa41dfd6b5eb54ed689b2d.glb`。第一份 `d77395cbacc8a6722685cf2d2225500d.glb` 仅用于对比，原始文件保持不变。

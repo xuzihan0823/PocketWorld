@@ -1,6 +1,7 @@
 """Add secondary bones to the supplied Tripo rig without rebuilding its body."""
 import argparse
 import hashlib
+import heapq
 import json
 import math
 from pathlib import Path
@@ -49,9 +50,10 @@ def segment_mesh(obj):
     blue = shared_colors[:, 2] - shared_colors[:, 0]
     face = (z < .895) & (z > .80) & (np.abs(x) < .051) & (y < -.055)
     hair = (z > .565) & (blue > .105) & ~face
-    dress = ((z > .342) & (z < .636)
-             & (np.abs(x) < .171 - .12 * np.maximum(z - .40, 0))
-             & (blue > -.035) & ~hair)
+    skirt_envelope = ((z > .342) & (z < .636)
+                      & (np.abs(x) < .171 - .12 * np.maximum(z - .40, 0)))
+    outside_legs = (z > .39) | (np.abs(x) > .105) | (y < -.062) | (y > .047)
+    dress = skirt_envelope & ((blue > -.035) | outside_legs) & ~hair
     neighbours = [set() for _ in points]
     for edge in mesh.edges:
         a, b = weld[list(edge.vertices)]
@@ -84,8 +86,8 @@ def chain_layout():
     for sector, name in enumerate(sectors):
         angle = sector * math.tau / len(sectors)
         chains[f'Dress_{name}'] = [(math.sin(angle) * rx, -math.cos(angle) * ry, height)
-                                  for rx, ry, height in [(.074, .053, .635), (.105, .071, .54),
-                                                         (.133, .088, .445), (.154, .106, .35)]]
+                                  for rx, ry, height in [(.083, .055, .565), (.12, .08, .49),
+                                                         (.142, .097, .42), (.154, .106, .35)]]
     return chains
 
 
@@ -127,6 +129,25 @@ def vertical_weights(points, height):
     return [(len(points) - 1, 1.)]
 
 
+def boundary_distance(points, neighbours, mask):
+    distance = np.full(len(points), np.inf)
+    queue = []
+    for i in np.flatnonzero(mask):
+        if any(not mask[j] for j in neighbours[i]):
+            distance[i] = 0.
+            heapq.heappush(queue, (0., int(i)))
+    while queue:
+        value, i = heapq.heappop(queue)
+        if value != distance[i]:
+            continue
+        for j in neighbours[i]:
+            candidate = value + float(np.linalg.norm(points[i] - points[j]))
+            if mask[j] and candidate < distance[j]:
+                distance[j] = candidate
+                heapq.heappush(queue, (candidate, j))
+    return distance
+
+
 def assign_weights(obj, chains, segmentation):
     coords, points, weld, hair, dress, neighbours = segmentation
     original_names = [group.name for group in obj.vertex_groups]
@@ -146,6 +167,8 @@ def assign_weights(obj, chains, segmentation):
     dress_chains = [name for name in chains if name.startswith('Dress_')]
     result = np.zeros((len(points), len(names)))
     result[:, :len(original_names)] = shared
+    hair_border = boundary_distance(points, neighbours, hair)
+    dress_border = boundary_distance(points, neighbours, dress)
     for index in np.where(hair | dress)[0]:
         point = points[index]
         weights = {}
@@ -171,7 +194,7 @@ def assign_weights(obj, chains, segmentation):
             sector = angle / math.tau * len(dress_chains)
             left = int(sector)
             blend = sector - left
-            root = float(smooth((.636 - point[2]) / .045))
+            root = float(smooth((.636 - point[2]) / .10))
             weights['mixamorig:Hips'] = 1 - root
             for offset, fraction in [(0, 1 - blend), (1, blend)]:
                 name = dress_chains[(left + offset) % len(dress_chains)]
@@ -183,6 +206,26 @@ def assign_weights(obj, chains, segmentation):
             for j, value in enumerate(shared[index]):
                 if value > 0:
                     weights[original_names[j]] = weights.get(original_names[j], 0) + value * (1 - attach)
+        # This retopology welds some strands and hem vertices to the body. Fade at those joins.
+        border = hair_border[index] if hair[index] else dress_border[index]
+        transition = float(smooth(border / (.025 if hair[index] else .018)))
+        if not hair[index] and point[2] >= .40:
+            transition = 1.
+        if hair[index] and point[2] >= .84:
+            transition = 1.
+        attachment = {}
+        for j, value in enumerate(shared[index]):
+            name = original_names[j]
+            if 'Hand' in name or 'ForeArm' in name or (not hair[index] and ('Arm' in name or 'Shoulder' in name)):
+                name = 'mixamorig:Spine2' if hair[index] else 'mixamorig:Hips'
+            attachment[name] = attachment.get(name, 0.) + float(value)
+        weights = {name: value * transition for name, value in weights.items()}
+        for name, value in attachment.items():
+            weights[name] = weights.get(name, 0.) + value * (1 - transition)
+        for name in list(weights):
+            if 'Hand' in name or 'ForeArm' in name or (not hair[index] and ('Arm' in name or 'Shoulder' in name)):
+                destination = 'mixamorig:Spine2' if hair[index] else 'mixamorig:Hips'
+                weights[destination] = weights.get(destination, 0.) + weights.pop(name)
         selected = sorted(((name, weight) for name, weight in weights.items() if weight > 1e-7),
                           key=lambda item: item[1], reverse=True)[:4]
         total = sum(value for _, value in selected)
@@ -245,9 +288,10 @@ def make_checks(armature, scene, chains):
                     rotate_world(armature, f'mixamorig:{side}Leg', (1, 0, 0), math.pi / 2 * envelope)
                 for chain, points in chains.items():
                     if chain.startswith('Dress_'):
-                        rotate_world(armature, f'{chain}_01', (1, 0, 0), -1.25 * envelope)
-                        rotate_world(armature, f'{chain}_02', (1, 0, 0), .20 * envelope)
-                        rotate_world(armature, f'{chain}_03', (1, 0, 0), .15 * envelope)
+                        front = (1 - chains[chain][0][1] / .055) * .5
+                        rotate_world(armature, f'{chain}_01', (1, 0, 0), -(1.1 + .35 * front) * envelope)
+                        rotate_world(armature, f'{chain}_02', (1, 0, 0), .18 * envelope)
+                        rotate_world(armature, f'{chain}_03', (1, 0, 0), .25 * envelope)
             for bone in armature.pose.bones:
                 if bone.name.startswith(PREFIXES) or any(part in bone.name for part in ['Head', 'UpLeg', 'Leg']):
                     bone.keyframe_insert('rotation_quaternion', frame=frame, group=bone.name)
@@ -282,7 +326,10 @@ def build(source, editable, runtime):
         armature = next(o for o in scene.objects if o.type == 'ARMATURE')
         assert len(armature.data.bones) == 53
         obj.name = 'Tripo_Resident'
+        obj.data.name = 'Tripo_Resident_Surface'
+        obj.data.materials[0].name = 'Tripo_Resident_Material'
         armature.name = 'Tripo_Resident_Rig'
+        armature.data.name = 'Tripo_Resident_Armature'
         segmentation = segment_mesh(obj)
         chains = chain_layout()
         add_bones(armature, chains)
