@@ -1,5 +1,5 @@
 import { Group, MathUtils } from 'three';
-import { chairFacing, chairFront, type ChairPose } from '../chairPose';
+import { SEAT_SWIVEL, chairFacing, chairFront, type ChairPose } from '../chairPose';
 import { TRIPO_SPEED } from '../secondary/residentMode';
 
 export type ChairPhase = 'APPROACH' | 'ALIGN' | 'TURN' | 'SIT_DOWN' | 'SEATED_IDLE' | 'STAND_UP' | 'EXIT';
@@ -23,6 +23,7 @@ export class ChairSeating {
   private path: Point[] = [];
   private exitRequested = false;
   private onSeated?: () => void;
+  private exitFace = false;
   private yaw = 0;
   private x = 0;
   private z = 0;
@@ -32,6 +33,7 @@ export class ChairSeating {
     this.path = path.map(p => [...p]);
     this.onSeated = onSeated;
     this.exitRequested = false;
+    this.exitFace = false;
     this.bound = false;
     this.yaw = chairFacing(pose); this.x = pose.x; this.z = pose.z;
     pose.vx = pose.vz = pose.spin = pose.drop = 0;
@@ -42,7 +44,8 @@ export class ChairSeating {
   private change(phase: ChairPhase) { this.phase = phase; this.elapsed = 0; }
   requestExit() {
     if (!this.phase) return;
-    if (this.phase === 'APPROACH' || this.phase === 'ALIGN') this.phase = null;
+    if (this.phase === 'APPROACH') { this.phase = null; this.onSeated = undefined; }
+    else if (this.phase === 'ALIGN') { this.exitFace = true; this.onSeated = undefined; this.change('EXIT'); }
     else if (this.phase === 'SEATED_IDLE') this.change('STAND_UP');
     else this.exitRequested = true;
   }
@@ -56,7 +59,7 @@ export class ChairSeating {
     pose.vx = pose.vz = pose.spin = pose.drop = 0;
     // Equivalent rigid binding in the chair's coordinates. No reparenting jump.
     if (this.bound) { this.x = pose.x; this.z = pose.z; this.yaw = chairFacing(pose); }
-    const anchor: ChairPose = { ...pose, x: this.x, z: this.z, yaw: this.yaw - Math.PI + .2 };
+    const anchor: ChairPose = { ...pose, x: this.x, z: this.z, yaw: this.yaw - Math.PI - SEAT_SWIVEL };
     const rootPoint = chairFront(anchor, OFFICE_CHAIR.rootAhead);
     const move = (target: Point, speed: number, face = true) => {
       const from: Point = [actor.position.x, actor.position.z];
@@ -103,7 +106,7 @@ export class ChairSeating {
       if (this.elapsed > .65) this.bound = false;
       if (this.elapsed >= SIT_TIME) { this.clipTime = 7.5; this.change('EXIT'); }
     } else if (this.phase === 'EXIT') {
-      if (move(chairFront(anchor, OFFICE_CHAIR.approachAhead), .25, false)) this.phase = null;
+      if (move(chairFront(anchor, OFFICE_CHAIR.approachAhead), .25, this.exitFace)) this.phase = null;
     }
     if (this.bound) { actor.position.set(rootPoint[0], 0, rootPoint[1]); actor.rotation.y = this.yaw; }
     actor.userData.posture = this.phase === 'SEATED_IDLE' ? 'chair' : this.phase === 'STAND_UP' ? 'standing-up' : 'standing';

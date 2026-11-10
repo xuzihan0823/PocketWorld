@@ -263,11 +263,11 @@ export function OrbitalResidents(props: ResidentsProps) {
         p.onHover('chair', '走近椅子…');
         return false;
       }
-      if (newChair && chairSeating.current.active) { stand(); return false; }
+      if (newChair && chairSeating.current.active) stand();
       if (action.kind === 'stand' || action.kind === 'wake') { cancelApproach(); perform(); return true; }
       const pose = CHAIR_POSES[p.sceneId];
       const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : [point[0], point[2]];
-      if (s.posture === 'standing' && !s.exiting && s.lift === 0 && s.velocity <= 0
+      if (!chairSeating.current.active && s.posture === 'standing' && !s.exiting && s.lift === 0 && s.velocity <= 0
         && action.objectId !== 'chair' && action.objectId !== 'bed'
         && Math.hypot(root.position.x - target[0], root.position.z - target[1]) <= 1.15) {
         cancelApproach(); perform(); return true;
@@ -290,7 +290,7 @@ export function OrbitalResidents(props: ResidentsProps) {
           }
         }
       }
-      if (!s.exiting && !approach.current.chairTarget) planApproach();
+      if (!s.exiting && !chairSeating.current.active && !approach.current.chairTarget) planApproach();
       p.onHover(action.objectId, action.objectId === 'chair' ? '走到椅子正面入座…' : '走近后进行交互…');
       return false;
     };
@@ -326,7 +326,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const p = current.current;
-      if (event.code === 'Escape' && newChair && chairSeating.current.active) { stand(); return; }
+      if (event.code === 'Escape' && newChair && chairSeating.current.active) { event.preventDefault(); event.stopPropagation(); stand(); return; }
       if (event.code === 'Escape' && approach.current) { cancelApproach(); return; }
       const target = event.target as HTMLElement | null;
       if (!p.enabled || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || (target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) return;
@@ -415,6 +415,24 @@ export function OrbitalResidents(props: ResidentsProps) {
       drawerTask.current = null;
       if (p.drawerInteraction.current) p.drawerInteraction.current.busy = false;
     }
+    const cat = pet.current;
+    cat.time += dt;
+    const value = p.objects.pet?.value ?? 0;
+    if (value > cat.value) cat.happy = 2.2;
+    cat.value = value; cat.happy = Math.max(0, cat.happy - dt);
+    const happy = cat.happy > 0;
+    if (petBody.current) petBody.current.position.y = 0.09 + (happy && !p.reducedMotion ? Math.sin((2.2 - cat.happy) * 9) ** 2 * 0.08 : 0);
+    if (petHead.current) {
+      petHead.current.rotation.z = happy && !p.reducedMotion ? Math.sin(cat.time * 9) * 0.12 : 0;
+      const direction = Math.atan2(root.position.x - CAT[0], root.position.z - CAT[1]) - 0.5;
+      petHead.current.rotation.y = THREE.MathUtils.damp(petHead.current.rotation.y, clamp(Math.atan2(Math.sin(direction), Math.cos(direction)), -0.7, 0.7), 5, dt);
+    }
+    if (petTail.current) petTail.current.rotation.z = p.reducedMotion ? 0.15 : Math.sin(cat.time * (happy ? 10 : 2.2)) * (happy ? 0.5 : 0.2);
+    if (sparks.current) {
+      sparks.current.visible = happy;
+      sparks.current.children.forEach((child, i) => { child.position.set(Math.sin(i * 2.1) * 0.22, 0.7 + (p.reducedMotion ? 0.1 : ((2.2 - cat.happy + i * 0.25) % 1.1) * 0.45), Math.cos(i * 2.1) * 0.15); child.scale.setScalar(Math.min(1, cat.happy * 3) * 0.7); });
+    }
+
     const library = p.library, flow = library?.flow.current;
     const libraryActive = !!flow && flow.phase !== 'idle';
     const libraryWalking = !!flow && ['approach', 'align', 'recenter', 'leaving'].includes(flow.phase);
@@ -439,10 +457,21 @@ export function OrbitalResidents(props: ResidentsProps) {
       const seating = chairSeating.current;
       const previousPhase = seating.phase;
       seating.update(root, pose, dt, (from, to) => clearSegment(from, to, room.boxes));
+      if (seating.travel > 0) {
+        s.gait += seating.travel / TRIPO_SPEED * Math.PI * 2 / 1.2;
+        while (s.gait >= s.stepGait) {
+          roomAudio.playFootstep({ foot: (s.stepCount++ & 1) as 0 | 1, surface: 'wood' });
+          s.stepGait += Math.PI;
+        }
+      }
       s.path = []; s.wanted = 'standing'; s.posture = 'standing'; s.sit = 0; s.lie = 0; s.exiting = false;
       if (previousPhase !== seating.phase) {
         const hints = { APPROACH: '走近椅子…', ALIGN: '小步对齐…', TURN: '转身入座…', SIT_DOWN: '坐下…', SEATED_IDLE: 'E · 自然起身', STAND_UP: '起身…', EXIT: '离开椅子…' };
         p.onHover(seating.phase ? 'chair' : null, seating.phase ? hints[seating.phase] : undefined);
+      }
+      if (!seating.active) {
+        if (approach.current) planApproach();
+        else if (s.external && p.walkTarget) s.path = route([root.position.x, root.position.z], [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
       }
       return;
     }
@@ -709,23 +738,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '推回抽屉' : '后退拉开抽屉') : '坐下'}` : '';
     if (!drawerTask.current && (nearby !== s.nearby || hint !== s.nearbyHint)) { s.nearby = nearby; s.nearbyHint = hint; p.onHover(nearby || null, hint || undefined); }
 
-    const cat = pet.current;
-    cat.time += dt;
-    const value = p.objects.pet?.value ?? 0;
-    if (value > cat.value) cat.happy = 2.2;
-    cat.value = value; cat.happy = Math.max(0, cat.happy - dt);
-    const happy = cat.happy > 0;
-    if (petBody.current) petBody.current.position.y = 0.09 + (happy && !p.reducedMotion ? Math.sin((2.2 - cat.happy) * 9) ** 2 * 0.08 : 0);
-    if (petHead.current) {
-      petHead.current.rotation.z = happy && !p.reducedMotion ? Math.sin(cat.time * 9) * 0.12 : 0;
-      const direction = Math.atan2(root.position.x - CAT[0], root.position.z - CAT[1]) - 0.5;
-      petHead.current.rotation.y = THREE.MathUtils.damp(petHead.current.rotation.y, clamp(Math.atan2(Math.sin(direction), Math.cos(direction)), -0.7, 0.7), 5, dt);
-    }
-    if (petTail.current) petTail.current.rotation.z = p.reducedMotion ? 0.15 : Math.sin(cat.time * (happy ? 10 : 2.2)) * (happy ? 0.5 : 0.2);
-    if (sparks.current) {
-      sparks.current.visible = happy;
-      sparks.current.children.forEach((child, i) => { child.position.set(Math.sin(i * 2.1) * 0.22, 0.7 + (p.reducedMotion ? 0.1 : ((2.2 - cat.happy + i * 0.25) % 1.1) * 0.45), Math.cos(i * 2.1) * 0.15); child.scale.setScalar(Math.min(1, cat.happy * 3) * 0.7); });
-    }
+
   });
 
   const characterDown = (event: ThreeEvent<PointerEvent>) => {
