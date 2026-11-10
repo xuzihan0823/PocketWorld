@@ -8,10 +8,10 @@ import { roomAudio } from '../audioEngine';
 import { Cosmos, SUN_DIRECTION } from './Cosmos';
 import { HabitatShell } from './HabitatShell';
 import { HabitatFurniture } from './HabitatFurniture';
-import { MediaObjects } from './MediaObjects';
+import { MediaObjects } from './media/MediaObjects';
 import { FeatureSurfaces } from './FeatureSurfaces';
-import { ScheduleProvider } from './ScheduleContext';
-import { ScheduleSurfaces } from './ScheduleSurfaces';
+import { ScheduleProvider } from './schedule/ScheduleContext';
+import { ScheduleSurfaces } from './schedule/ScheduleSurfaces';
 import { OrbitalResidents } from './OrbitalResidents';
 import type { DrawerInteraction } from './drawerInteraction';
 

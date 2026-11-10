@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { GameCartridgeProps, GameId } from '../../types/game';
-import type { MusicDisc } from '../../types/interactable';
-import type { WorldAction, WorldSceneProps } from '../../types/world';
-import { roomAudio } from '../audioEngine';
-import { ObjectHandle } from './ObjectHandle';
-import { SoftBox } from './Primitives';
+import type { GameCartridgeProps, GameId } from '../../../types/game';
+import type { MusicDisc } from '../../../types/interactable';
+import type { WorldAction, WorldSceneProps } from '../../../types/world';
+import { roomAudio } from '../../audioEngine';
+import { ObjectHandle } from '../ObjectHandle';
+import { SoftBox } from '../Primitives';
 import { ComputerScreen } from './ComputerScreen';
 import { CartridgePickup } from './CartridgePickup';
 import { CARTRIDGE_SLOT as SLOT, cartridgePosition, cartridgeTransferPoint } from './cartridge-motion';
@@ -15,7 +15,7 @@ import { CARTRIDGE_SLOT as SLOT, cartridgePosition, cartridgeTransferPoint } fro
 type Point = [number, number, number];
 const PLAYER: Point = [-0.35, 1.2, -2.25];
 const PLATTER: Point = [-0.48, 1.295, -2.25];
-const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridgeProps> }>('../../games/*/index.tsx');
+const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridgeProps> }>('../../../games/*/index.tsx');
 const gameNames: Record<GameId, string> = { mario: '奶娃滑雪大冒险', shooter: '团团魔法录' };
 const gameColors: Record<GameId, string> = { mario: '#cb795a', shooter: '#8b72b3' };
 // Six accessible records per shelf; the physical end tabs turn through the collection.
@@ -146,7 +146,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
       setLoadError({ game, text });
       latest.current.onFeatureError(text);
     };
-    const loader = gameModules[`../../games/${game}/index.tsx`];
+    const loader = gameModules[`../../../games/${game}/index.tsx`];
     if (!loader) setLoadError({ game, text: `《${gameNames[game]}》尚未接入。卡带接口已预留，拔出即可返回。` });
     else loader().then(module => {
       if (cancelled) return;

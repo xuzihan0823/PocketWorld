@@ -1,4 +1,4 @@
-import type { GameId } from '../../types/game';
+import type { GameId } from '../../../types/game';
 
 export type CartridgePoint = [number, number, number];
 export const CARTRIDGE_SLOT: CartridgePoint = [2.26, 1.27, -2.05];

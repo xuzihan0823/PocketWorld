@@ -65,9 +65,9 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
       if (name === '@react-three/drei') return { Html: 'Html' };
       if (name === '@react-three/fiber') return { useFrame() {} };
       if (name === 'three') return {};
-      if (name === '../audioEngine') return { roomAudio: { cancelPreparedMusic() {} } };
-      if (name === './ObjectHandle') return { ObjectHandle: 'ObjectHandle' };
-      if (name === './Primitives') return { SoftBox: 'SoftBox' };
+      if (name === '../../audioEngine') return { roomAudio: { cancelPreparedMusic() {} } };
+      if (name === '../ObjectHandle') return { ObjectHandle: 'ObjectHandle' };
+      if (name === '../Primitives') return { SoftBox: 'SoftBox' };
       if (name === './ComputerScreen') return { ComputerScreen: 'ComputerScreen' };
       if (name === './CartridgePickup') return { CartridgePickup: 'CartridgePickup' };
       if (name === './cartridge-motion') return cartridgeMotion;
@@ -117,8 +117,8 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
 for (const [name, options] of [
   ['empty computer', {}],
   ['missing cartridge module', { game: 'mario' }],
-  ['loading cartridge', { game: 'mario', modules: { '../../games/mario/index.tsx': () => new Promise(() => {}) } }],
-  ['failed cartridge import', { game: 'mario', modules: { '../../games/mario/index.tsx': () => Promise.reject(new Error('load failed')) } }],
+  ['loading cartridge', { game: 'mario', modules: { '../../../games/mario/index.tsx': () => new Promise(() => {}) } }],
+  ['failed cartridge import', { game: 'mario', modules: { '../../../games/mario/index.tsx': () => Promise.reject(new Error('load failed')) } }],
 ]) {
   test(`Escape leaves the ${name} and clears game selection`, async () => {
     const view = mount(options);
@@ -137,7 +137,7 @@ for (const [name, options] of [
 }
 
 test('a mounted game retains Escape for its own pause menu; the physical exit still works', async () => {
-  const view = mount({ game: 'mario', modules: { '../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
+  const view = mount({ game: 'mario', modules: { '../../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
   try {
     await view.settle();
     let gameEscapes = 0;
@@ -153,7 +153,7 @@ test('a mounted game retains Escape for its own pause menu; the physical exit st
 
 for (const action of ['game-pause', 'game-slot']) {
   test(`Escape leaves a mounted game after the physical ${action} control disables its input`, async () => {
-    const view = mount({ game: 'mario', modules: { '../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
+    const view = mount({ game: 'mario', modules: { '../../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
     try {
       await view.settle();
       view.find(node => node.props?.id === action).props.world.onAction({ objectId: action });
@@ -166,7 +166,7 @@ for (const action of ['game-pause', 'game-slot']) {
 }
 
 test('resuming with the physical pause control hands Escape back to the game', async () => {
-  const view = mount({ game: 'mario', modules: { '../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
+  const view = mount({ game: 'mario', modules: { '../../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
   try {
     await view.settle();
     for (let i = 0; i < 2; i++) {
@@ -179,7 +179,7 @@ test('resuming with the physical pause control hands Escape back to the game', a
 });
 
 test('a cartridge render failure restores the Escape exit', async () => {
-  const view = mount({ game: 'mario', modules: { '../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
+  const view = mount({ game: 'mario', modules: { '../../../games/mario/index.tsx': () => Promise.resolve({ default: () => null }) } });
   try {
     await view.settle();
     view.find(node => node.type?.name === 'ScreenBoundary').props.onError();
@@ -223,7 +223,7 @@ test('other keys, other focused objects and disposal do not retain the computer 
 
 test('narrow cartridge uses one stable game through collapse, expand, rotation and visibility changes', async () => {
   const Game = () => null;
-  const view = mount({ game: 'shooter', width: 390, height: 844, modules: { '../../games/shooter/index.tsx': () => Promise.resolve({ default: Game }) } });
+  const view = mount({ game: 'shooter', width: 390, height: 844, modules: { '../../../games/shooter/index.tsx': () => Promise.resolve({ default: Game }) } });
   try {
     await view.settle();
     const host = () => view.find(node => node.type === 'ComputerScreen');
@@ -248,7 +248,7 @@ test('narrow cartridge uses one stable game through collapse, expand, rotation a
 
 test('desktop explicitly expands and resumes embedded without replacing the cartridge component', async () => {
   const Game = () => null;
-  const view = mount({ game: 'shooter', modules: { '../../games/shooter/index.tsx': () => Promise.resolve({ default: Game }) } });
+  const view = mount({ game: 'shooter', modules: { '../../../games/shooter/index.tsx': () => Promise.resolve({ default: Game }) } });
   try {
     await view.settle();
     const host = () => view.find(node => node.type === 'ComputerScreen');

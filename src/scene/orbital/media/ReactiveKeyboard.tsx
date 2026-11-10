@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { KEYBOARD_KEYS, subscribePhysicalKeyboard } from './keyboard-input';
 import type { KeyboardPressState } from './keyboard-input';
-import { surface } from './Primitives';
+import { surface } from '../Primitives';
 
 const REST = .042, TRAVEL = .012, CAP_HEIGHT = .022;
 function createLegends() {

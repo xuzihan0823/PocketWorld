@@ -17,7 +17,7 @@ npm run build
 
 ## 终端文字清晰度
 
-电脑聚焦后由 scene/orbital/ComputerScreen.tsx 将实体屏幕四角投影成整像素的 4:3 二维区域。游戏 DOM 以区域实际宽高直接布局，移除原来的 scale(.46) 和 CSS 透视缩放链；像素场景仍由独立 Canvas 绘制。转场或失焦时隐藏同一屏幕并暂停，不切换渲染分支重新挂载游戏。
+电脑聚焦后由 scene/orbital/media/ComputerScreen.tsx 将实体屏幕四角投影成整像素的 4:3 二维区域。游戏 DOM 以区域实际宽高直接布局，移除原来的 scale(.46) 和 CSS 透视缩放链；像素场景仍由独立 Canvas 绘制。转场或失焦时隐藏同一屏幕并暂停，不切换渲染分支重新挂载游戏。
 
 近景镜头同时容纳卡带和卡槽，并随视口宽高比调整。卡带拖动限制在显示器前方和桌面上方；插入、拔出、归位均沿避开机身的分段路径运动。卡带运动期间隐藏 DOM 屏幕覆盖层，避免遮住屏幕前方的实体卡带。
 
@@ -27,7 +27,7 @@ npm run build
 
 电脑下方的键盘支持真实键盘联动：按住时对应键帽下压并变暖色，松开回弹。支持多键同时按下，WASD 与方向键有浅绿底色，空格、修饰键、数字和常用功能键均有对应位置。该反馈只观察捕获阶段的按键事件，不拦截游戏控制；失焦、隐藏和离开页面自动清空。
 
-实现位于 scene/orbital/ReactiveKeyboard.tsx 与 keyboard-input.ts；77 个键帽使用实例化绘制，标识来自一张本地生成图集，没有新增网络资源或依赖。
+实现位于 scene/orbital/media/ReactiveKeyboard.tsx 与 keyboard-input.ts；77 个键帽使用实例化绘制，标识来自一张本地生成图集，没有新增网络资源或依赖。
 
 ## 职业与操作
 
@@ -61,8 +61,8 @@ npm run build
 - `survival/pixel-art.ts` / `WeaponGlyph.tsx` / `render.ts`：共用像素图案与场景绘制。
 - `audio.ts`：受控 Web Audio 发射、命中、暴击、拾取、冲刺和切换音效。
 - `dev.tsx` / `dev.css`：正式 Vite 独立沙盒。
-- `../../scene/orbital/screen-layout.test.mjs`：7 项屏幕投影与放大布局测试，覆盖透视内接、窗口裁剪、非法投影及四种视口。
-- `../../scene/orbital/media-exit.test.mjs`：13 项电脑退出与展示状态测试，覆盖收起保留、窄屏自动放大、失焦、隐藏和拔卡。
+- `../../scene/orbital/media/screen-layout.test.mjs`：7 项屏幕投影与放大布局测试，覆盖透视内接、窗口裁剪、非法投影及四种视口。
+- `../../scene/orbital/media/media-exit.test.mjs`：13 项电脑退出与展示状态测试，覆盖收起保留、窄屏自动放大、失焦、隐藏和拔卡。
 - `integration.test.mjs`：生产产物依赖图检查，验证主入口、独立调试页和动态卡带插槽。
 - `survival/engine.test.mjs`：33 项模拟测试，含普通十分钟模拟、五职业分别锁定后的满级十分钟压力模拟及专属效果。
 - `survival/combat-regressions.test.mjs` / `collision.test.mjs`：34 项战斗回归与 2 项首次接触几何测试，新增近战加成范围出手和星灵契约弹组瞄准检查；已有碰撞修复见 [修复验收](./survival/PR7修复验收.md)。
@@ -70,16 +70,8 @@ npm run build
 - `survival/input.test.mjs`：4 项组件事件回归，覆盖其他手指结束不打断摇杆、松开摇杆保留键盘输入，以及外层停用清理；使用 hooks 与指针捕获替身。
 - `survival/render-qa.mjs`：用同一生产绘制代码离线生成预览，需工具环境提供 @napi-rs/canvas。
 
-`survival/build-preview.mjs` 默认复用项目依赖，也可传入包含 node_modules 的工具目录（需 esbuild、React 18、React DOM 18）。它生成独立离线 HTML 与引擎测试包；输出在忽略的 survival/dist/ 中，保留原 HTML 文件名方便既有链接继续使用。生成物不提交。Node.js 24 环境中可运行：
+在项目根目录使用 Node.js 24 运行 `npm test`，统一入口自动构建生产产物、生成生存引擎测试包并执行全部回归。
 
-```powershell
-node src/games/shooter/survival/build-preview.mjs
-npm run build
-node --test src/games/shooter/audio.test.mjs src/games/shooter/survival/input.test.mjs src/games/shooter/survival/engine.test.mjs src/games/shooter/survival/combat-regressions.test.mjs src/games/shooter/survival/collision.test.mjs src/scene/orbital/screen-layout.test.mjs src/scene/orbital/keyboard-input.test.mjs src/scene/orbital/cartridge-motion.test.mjs src/scene/orbital/media-exit.test.mjs src/games/shooter/integration.test.mjs
-node -e 'require("esbuild").buildSync({entryPoints:["src/games/shooter/engine.ts"],bundle:true,platform:"node",format:"cjs",outfile:"src/games/shooter/survival/dist/pinball-engine.cjs"})'
-node src/games/shooter/engine.test.mjs src/games/shooter/survival/dist/pinball-engine.cjs
-```
+需要独立离线预览时，运行 `node src/games/shooter/survival/build-preview.mjs`。该脚本复用项目依赖，也可传入包含 node_modules 的工具目录，需要 esbuild、React 18 和 React DOM 18。预览 HTML 与引擎测试包生成在被 Git 忽略的 `survival/dist/` 中。
 
 房间中宽度不超过 720px 或高度不超过 480px 时，装入卡带自动放大到可用视口中的 4:3 区域。桌面提供「放大游戏」；「回到电脑」保留并暂停本局，重新放大后点击继续。只有「拔出卡带」结束装载。窄屏菜单可纵向滚动，职业每局固定，三种兵装与秘术随展示模式保持。
-
-原弹球实现保留在 pinball.tsx 与根层 engine.ts / render.ts / shooter.css 等文件中，不由当前入口加载。
