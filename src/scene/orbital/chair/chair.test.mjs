@@ -68,6 +68,7 @@ test('the preserved SitCycle plants real sole vertices and the contact correctio
   const room = new THREE.Group(), actor = new THREE.Group(); room.add(actor); actor.add(m.gltf.scene); m.gltf.scene.scale.setScalar(1.45);
   Object.assign(poses.CHAIR_POSES.habitat, pose()); actor.position.z = OFFICE_CHAIR.rootAhead;
   const sample = m.select('SitCycle'), originalGeometry = m.mesh.geometry, originalUV = originalGeometry.attributes.uv.array.slice();
+  m.gltf.scene.scale.setScalar(1.45); // select() restores GLB TRS; test the actual room scale.
   const contact = new ChairContact(m.mesh, actor), seating = new ChairSeating();
   let min = Infinity, max = -Infinity, contacts = 0;
   const soles = [];
@@ -100,6 +101,7 @@ test('alternating turn steps preserve limb lengths and keep the support ankle pl
   const m = await loadAsset('public/models/resident/luna-tripo-transitions.glb');
   const room = new THREE.Group(), actor = new THREE.Group(); room.add(actor); actor.add(m.gltf.scene); m.gltf.scene.scale.setScalar(1.45);
   actor.rotation.y = Math.PI; const sample = m.select('SitCycle'); sample(9); room.updateMatrixWorld(true);
+  m.gltf.scene.scale.setScalar(1.45); room.updateMatrixWorld(true);
   const body = new ImportedPose(m.gltf.scene);
   const turn = new turnModule.TurnFootPlant(m.gltf.scene, actor), seating = new ChairSeating();
   seating.phase = 'TURN'; seating.turnFrom = Math.PI; seating.turnAngle = -Math.PI;

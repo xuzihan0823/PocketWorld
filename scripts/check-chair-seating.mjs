@@ -8,7 +8,7 @@ const { chromium } = await import(process.env.PW_MODULE ? pathToFileURL(process.
 const output = path.resolve(process.env.CHAIR_OUTPUT || 'chair-review.local');
 await fs.mkdir(output, { recursive: true });
 const port = Number(process.env.CHAIR_PORT || 8964);
-const server = await createServer({ root: process.cwd(), server: { host: '127.0.0.1', port, strictPort: true }, logLevel: 'error' });
+const server = await createServer({ root: process.cwd(), cacheDir: path.join(output, 'vite-cache'), server: { host: '127.0.0.1', port, strictPort: true }, logLevel: 'error' });
 await server.listen();
 let browser, page;
 try {
@@ -21,7 +21,7 @@ try {
   await page.goto(`http://127.0.0.1:${port}/?resident=tripo`);
   await page.waitForFunction(() => window.tripoRoomAudit);
   const setup = async () => { await page.evaluate(async () => {
-    const url = performance.getEntriesByType('resource').map(e => e.name).find(n => n.includes('/.vite/deps/@react-three_fiber.js'));
+    const url = performance.getEntriesByType('resource').map(e => e.name).find(n => n.includes('@react-three_fiber.js'));
     const fiber = await import(url), store = [...fiber._roots.values()][0].store, state = store.getState();
     const actor = state.scene.getObjectByName('OrbitalResidents_habitat').getObjectByName('OrbitalResident');
     const chair = state.scene.getObjectByName('Furniture_habitat').getObjectByName('OfficeChair');

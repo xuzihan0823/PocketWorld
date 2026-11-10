@@ -4,7 +4,8 @@ import { TRIPO_SPEED } from '../secondary/residentMode';
 
 export type ChairPhase = 'APPROACH' | 'ALIGN' | 'TURN' | 'SIT_DOWN' | 'SEATED_IDLE' | 'STAND_UP' | 'EXIT';
 export const OFFICE_CHAIR = { seatHeight: .37, seatWidth: .47, seatDepth: .44, rootAhead: .29, approachAhead: .76 };
-export const SIT_TIME = 1.7;
+export const SIT_TIME = 1.8;
+export const RISE_TIME = 1.7;
 type Point = [number, number];
 const smooth = (t: number) => { t = MathUtils.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
 const difference = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
@@ -91,7 +92,8 @@ export class ChairSeating {
       actor.rotation.y = this.turnFrom + this.turnAngle * smooth(Math.min(1, this.turnProgress * 1.5));
       if (this.turnProgress === 1) { this.clipTime = 2.4; this.change('SIT_DOWN'); }
     } else if (this.phase === 'SIT_DOWN') {
-      this.clipTime = 2.4 + Math.min(SIT_TIME, this.elapsed);
+      // Keep the legacy contact envelope separate from the authored clip's clock.
+      this.clipTime = 2.4 + 1.7 * Math.min(1, this.elapsed / SIT_TIME);
       if (this.elapsed >= SIT_TIME) {
         this.clipTime = 4.1; this.bound = true; this.change('SEATED_IDLE');
         if (!this.exitRequested) this.onSeated?.();
@@ -101,10 +103,10 @@ export class ChairSeating {
       this.clipTime = 4.1;
       if (this.exitRequested) this.change('STAND_UP');
     } else if (this.phase === 'STAND_UP') {
-      this.clipTime = 5.8 + Math.min(SIT_TIME, this.elapsed);
+      this.clipTime = 5.8 + Math.min(RISE_TIME, this.elapsed);
       // Release after the pelvis has left the cushion, while retaining the same ground transform.
       if (this.elapsed > .65) this.bound = false;
-      if (this.elapsed >= SIT_TIME) { this.clipTime = 7.5; this.change('EXIT'); }
+      if (this.elapsed >= RISE_TIME) { this.clipTime = 7.5; this.change('EXIT'); }
     } else if (this.phase === 'EXIT') {
       if (move(chairFront(anchor, OFFICE_CHAIR.approachAhead), .25, this.exitFace)) this.phase = null;
     }

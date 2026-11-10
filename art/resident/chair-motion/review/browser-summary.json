@@ -1,0 +1,46 @@
+[
+  {
+    "mode": "old",
+    "view": "front",
+    "errors": [],
+    "samples": 406,
+    "firstSitAt": 0.3801999999284744,
+    "hipDrop": 0.32713227868080136,
+    "hipBackward": 0.2929000649928719,
+    "maximumTorsoLean": 3.7302714354640054,
+    "ankleDriftDuringSit": 0.00008705839948077817
+  },
+  {
+    "mode": "old",
+    "view": "side",
+    "errors": [],
+    "samples": 405,
+    "firstSitAt": 0.3793000000715256,
+    "hipDrop": 0.32713227868080136,
+    "hipBackward": 0.2929000649928719,
+    "maximumTorsoLean": 3.7302714354640045,
+    "ankleDriftDuringSit": 0.00008706415739479784
+  },
+  {
+    "mode": "new",
+    "view": "front",
+    "errors": [],
+    "samples": 418,
+    "firstSitAt": 0.37989999997615814,
+    "hipDrop": 0.2870192974805832,
+    "hipBackward": 0.29199999539951793,
+    "maximumTorsoLean": 11.712486962407926,
+    "ankleDriftDuringSit": 0.0000764945621092843
+  },
+  {
+    "mode": "new",
+    "view": "side",
+    "errors": [],
+    "samples": 414,
+    "firstSitAt": 0.38039999997615814,
+    "hipDrop": 0.2870192974805832,
+    "hipBackward": 0.29199999539951793,
+    "maximumTorsoLean": 11.71248696240792,
+    "ankleDriftDuringSit": 0.0000764945621090368
+  }
+]

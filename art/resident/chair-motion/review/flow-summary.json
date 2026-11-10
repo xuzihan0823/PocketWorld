@@ -1,0 +1,134 @@
+{
+  "seated": {
+    "phase": "SEATED_IDLE",
+    "clipTime": 4.1,
+    "turnProgress": 1,
+    "bound": true,
+    "position": [
+      1.4644939590884967,
+      0,
+      -0.10963757551454023
+    ],
+    "yaw": 3.0915926535897933,
+    "soles": {
+      "Left": 8.34137205967954e-8,
+      "Right": -1.1714698943050047e-8
+    },
+    "knees": {
+      "Left": 94.77133967826039,
+      "Right": 94.77132477255758
+    },
+    "pelvisSurfaceMin": 0.37400000000000005,
+    "skirtSurfaceMin": 0.37400000000000005,
+    "chairPosition": [
+      1.45,
+      0,
+      0.18
+    ],
+    "audit": {
+      "position": [
+        1.4644939590884967,
+        0,
+        -0.10963757551454023
+      ],
+      "clipTime": 0.6929600403933828,
+      "moving": false,
+      "bones": 103,
+      "modelScale": 1.45,
+      "clipSpeed": 0.3625
+    }
+  },
+  "noScoot": {
+    "phase": "SEATED_IDLE",
+    "clipTime": 4.1,
+    "turnProgress": 1,
+    "bound": true,
+    "position": [
+      1.4644939590884967,
+      0,
+      -0.10963757551454023
+    ],
+    "yaw": 3.0915926535897933,
+    "soles": {
+      "Left": 8.34137205967954e-8,
+      "Right": -1.1714698943050047e-8
+    },
+    "knees": {
+      "Left": 94.77133967826039,
+      "Right": 94.77132477255758
+    },
+    "pelvisSurfaceMin": 0.37400000000000005,
+    "skirtSurfaceMin": 0.37400000000000005,
+    "chairPosition": [
+      1.45,
+      0,
+      0.18
+    ],
+    "audit": {
+      "position": [
+        1.4644939590884967,
+        0,
+        -0.10963757551454023
+      ],
+      "clipTime": 1.0785660564467312,
+      "moving": false,
+      "bones": 103,
+      "modelScale": 1.45,
+      "clipSpeed": 0.3625
+    }
+  },
+  "floorExit": "STANDING",
+  "cancelled": "STANDING",
+  "interruptedSit": "STANDING",
+  "touch": {
+    "phase": "SEATED_IDLE",
+    "clipTime": 4.1,
+    "turnProgress": 1,
+    "bound": true,
+    "position": [
+      1.4644939590884967,
+      0,
+      -0.10963757551454023
+    ],
+    "yaw": 3.0915926535897933,
+    "soles": {
+      "Left": 8.34137205967954e-8,
+      "Right": -1.1714698943050047e-8
+    },
+    "knees": {
+      "Left": 94.77133967826039,
+      "Right": 94.77132477255758
+    },
+    "pelvisSurfaceMin": 0.37400000000000005,
+    "skirtSurfaceMin": 0.37400000000000005,
+    "chairPosition": [
+      1.45,
+      0,
+      0.18
+    ],
+    "audit": {
+      "position": [
+        1.4644939590884967,
+        0,
+        -0.10963757551454023
+      ],
+      "clipTime": 0.6934478088549282,
+      "moving": false,
+      "bones": 103,
+      "modelScale": 1.45,
+      "clipSpeed": 0.3625
+    }
+  },
+  "phases": [
+    "APPROACH",
+    "ALIGN",
+    "TURN",
+    "SIT_DOWN",
+    "SEATED_IDLE",
+    "STAND_UP",
+    "EXIT",
+    "STANDING"
+  ],
+  "errors": [],
+  "resourceErrors": []
+}

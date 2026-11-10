@@ -5,6 +5,7 @@ type Part = 'hair' | 'dress';
 interface Joint {
   bone: Bone; part: Part; base: Quaternion; tailLocal: Vector3; tail: Vector3;
   velocity: Vector3; previous: Vector3; limit: number; radius: number;
+  contactAllowance: number;
 }
 export interface BodyCapsule {
   name: string; bone: Bone; localA: Vector3; localB: Vector3;
@@ -65,7 +66,7 @@ export class SecondaryMotion {
       this.joints.push({ bone, part, base: bone.quaternion.clone(), tailLocal, tail: new Vector3(),
         previous: new Vector3(), velocity: new Vector3(),
         limit: (part === 'hair' ? (depth === 1 ? 18 : 28) : (depth === 1 ? 10 : 16)) * Math.PI / 180,
-        radius: (part === 'hair' ? .009 : .008) * this.scale });
+        radius: (part === 'hair' ? .009 : .008) * this.scale, contactAllowance: 1 });
     }
     if (this.joints.length !== 50) throw new Error(`需要 50 根裙发骨骼，实际为 ${this.joints.length}`);
     this.joints.sort((a, b) => this.depth(a.bone) - this.depth(b.bone));
@@ -116,6 +117,11 @@ export class SecondaryMotion {
     this.rotationAllowance.dress = clamp(dress, 0, 1);
   }
 
+  /** Limit only supported chains; free hems/fringe keep their inertia and solver history. */
+  setChainAllowance(prefix: string, allowance: number) {
+    for (const joint of this.joints) if (joint.bone.name.startsWith(prefix)) joint.contactAllowance = clamp(allowance, 0, 1);
+  }
+
   // The mixer must run between restoring and capturing the base pose, including unkeyed bones.
   restoreBase() {
     for (const joint of this.joints) joint.bone.quaternion.copy(joint.base);
@@ -155,7 +161,7 @@ export class SecondaryMotion {
     this.direction.copy(joint.tail).sub(this.origin).normalize();
     if (this.direction.lengthSq() < .5) this.direction.copy(this.baseDirection);
     const angle = Math.acos(clamp(this.direction.dot(this.baseDirection), -1, 1));
-    const limit = joint.limit * this.rotationAllowance[joint.part];
+    const limit = joint.limit * this.rotationAllowance[joint.part] * joint.contactAllowance;
     if (angle > limit) {
       this.swing.setFromUnitVectors(this.baseDirection, this.direction);
       this.swing.slerp(this.identity, 1 - limit / angle);
