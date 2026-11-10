@@ -1,0 +1,124 @@
+{
+  "baselineCommit": "186c526a0a4c7e4f42d00c1740de0479898907c8",
+  "baselineSource": "Committed browser-validation.json, Windows Chrome 156, identical sample intervals",
+  "currentSource": "browser-validation.json from this refinement",
+  "metric": "Skinned vertices with depth >0.001 inside eight approximate body capsules; not exact body mesh intersection",
+  "comparisons": [
+    {
+      "clip": "SitCycle",
+      "mode": "static",
+      "contactSamples": 36,
+      "previous": {
+        "hair": {
+          "meanPenetrating": 8.333333333333334,
+          "maxDepth": 0.009294898554447081,
+          "minHeight": 0.3414078240866086
+        },
+        "dress": {
+          "meanPenetrating": 0.05555555555555555,
+          "maxDepth": 0.0017142331846479175,
+          "minHeight": 0.1383014212917907
+        }
+      },
+      "current": {
+        "hair": {
+          "meanPenetrating": 4,
+          "maxDepth": 0.0010087860629255582,
+          "minHeight": 0.3414078240866086
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.1383014212917907
+        }
+      }
+    },
+    {
+      "clip": "LieCycle",
+      "mode": "static",
+      "contactSamples": 89,
+      "previous": {
+        "hair": {
+          "meanPenetrating": 2.808988764044944,
+          "maxDepth": 0.006184759065753137,
+          "minHeight": 0.019926013222761756
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.029157395197855495
+        }
+      },
+      "current": {
+        "hair": {
+          "meanPenetrating": 1.6179775280898876,
+          "maxDepth": 0.0010087859611546401,
+          "minHeight": 0.019926013222761756
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.031078839866677026
+        }
+      }
+    },
+    {
+      "clip": "SitCycle",
+      "mode": "dynamic",
+      "contactSamples": 36,
+      "previous": {
+        "hair": {
+          "meanPenetrating": 12.722222222222221,
+          "maxDepth": 0.019165468546739513,
+          "minHeight": 0.3406696422241697
+        },
+        "dress": {
+          "meanPenetrating": 0.05555555555555555,
+          "maxDepth": 0.0016489972011338866,
+          "minHeight": 0.13825073102023402
+        }
+      },
+      "current": {
+        "hair": {
+          "meanPenetrating": 4.194444444444445,
+          "maxDepth": 0.005990984815243593,
+          "minHeight": 0.3409075554354362
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.13817437122486492
+        }
+      }
+    },
+    {
+      "clip": "LieCycle",
+      "mode": "dynamic",
+      "contactSamples": 89,
+      "previous": {
+        "hair": {
+          "meanPenetrating": 4.438202247191011,
+          "maxDepth": 0.016382709314317775,
+          "minHeight": 0.019918382535969923
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.025928108936539046
+        }
+      },
+      "current": {
+        "hair": {
+          "meanPenetrating": 1.5730337078651686,
+          "maxDepth": 0.0031794108875715377,
+          "minHeight": 0.019918376523655645
+        },
+        "dress": {
+          "meanPenetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.028730343227668778
+        }
+      }
+    }
+  ]
+}

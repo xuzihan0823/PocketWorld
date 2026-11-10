@@ -1,0 +1,2964 @@
+{
+  "fps": 30,
+  "report": [
+    {
+      "clip": "SitCycle",
+      "mode": "static",
+      "frames": 72,
+      "meanPenetrating": 0,
+      "maxDepth": 0.000707674588159124,
+      "maxWalkingSecondaryAngleDegrees": 0.06674931792348053,
+      "samples": [
+        {
+          "time": 0,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34876495372344263
+        },
+        {
+          "time": 0.03333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3488152342121378
+        },
+        {
+          "time": 0.06666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34886126381116106
+        },
+        {
+          "time": 0.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34865152040276537
+        },
+        {
+          "time": 0.13333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35275974752910466
+        },
+        {
+          "time": 0.16666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35385453557423685
+        },
+        {
+          "time": 0.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3538079471229684
+        },
+        {
+          "time": 0.23333333333333334,
+          "maxAngleDegrees": 0.052404077263026844,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35310418798448834
+        },
+        {
+          "time": 0.26666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3549806193725074
+        },
+        {
+          "time": 0.3,
+          "maxAngleDegrees": 0.06507007870264879,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3547540718864944
+        },
+        {
+          "time": 0.3333333333333333,
+          "maxAngleDegrees": 0.06674931792348053,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3536827181271255
+        },
+        {
+          "time": 0.36666666666666664,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3525172592485207
+        },
+        {
+          "time": 0.4,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35103021733578105
+        },
+        {
+          "time": 0.43333333333333335,
+          "maxAngleDegrees": 0.051545732137203815,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35013125490389707
+        },
+        {
+          "time": 0.4666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34884273041432706
+        },
+        {
+          "time": 0.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3471490235016164
+        },
+        {
+          "time": 0.5333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346881509014647
+        },
+        {
+          "time": 0.5666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3460820835507558
+        },
+        {
+          "time": 0.6,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3493377823333799
+        },
+        {
+          "time": 0.6333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35306126554635886
+        },
+        {
+          "time": 0.6666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3529848733361414
+        },
+        {
+          "time": 0.7,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3527804720128218
+        },
+        {
+          "time": 0.7333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35732458553025104
+        },
+        {
+          "time": 0.7666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3573800865765244
+        },
+        {
+          "time": 0.8,
+          "maxAngleDegrees": 0.06000748072611587,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35575517762925846
+        },
+        {
+          "time": 0.8333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3540881952983689
+        },
+        {
+          "time": 0.8666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3522995813469363
+        },
+        {
+          "time": 0.9,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3509978956920327
+        },
+        {
+          "time": 0.9333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34955228192963683
+        },
+        {
+          "time": 0.9666666666666667,
+          "maxAngleDegrees": 0.049534808315762596,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34798934475795185
+        },
+        {
+          "time": 1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34684434594029495
+        },
+        {
+          "time": 1.0333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34531130847079594
+        },
+        {
+          "time": 1.0666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34503620176759625
+        },
+        {
+          "time": 1.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34717135352732253
+        },
+        {
+          "time": 1.1333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3470467308667751
+        },
+        {
+          "time": 1.1666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346631003205521
+        },
+        {
+          "time": 1.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35202792485500384
+        },
+        {
+          "time": 1.2333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35286367019285264
+        },
+        {
+          "time": 1.2666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3521485115994587
+        },
+        {
+          "time": 1.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35063488508992396
+        },
+        {
+          "time": 1.3333333333333333,
+          "maxAngleDegrees": 0.059939963804202655,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485972304757613
+        },
+        {
+          "time": 1.3666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3473057736510818
+        },
+        {
+          "time": 1.4,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3464218799969631
+        },
+        {
+          "time": 1.4333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34526271638771877
+        },
+        {
+          "time": 1.4666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34397065110433594
+        },
+        {
+          "time": 1.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3433974198604435
+        },
+        {
+          "time": 1.5333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0.000707674588159124,
+          "minHeight": 0.34273435819538345
+        },
+        {
+          "time": 1.5666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3423091610198889
+        },
+        {
+          "time": 1.6,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34514169776114745
+        },
+        {
+          "time": 1.6333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3453917199253835
+        },
+        {
+          "time": 1.6666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449014660999734
+        },
+        {
+          "time": 1.7,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34838535518040803
+        },
+        {
+          "time": 1.7333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3533245415589137
+        },
+        {
+          "time": 1.7666666666666666,
+          "maxAngleDegrees": 0.04921173618193872,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35468588682596724
+        },
+        {
+          "time": 1.8,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3542158861149592
+        },
+        {
+          "time": 1.8333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35271288163506465
+        },
+        {
+          "time": 1.8666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3520546812759068
+        },
+        {
+          "time": 1.9,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3513449463338614
+        },
+        {
+          "time": 1.9333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3501434659174691
+        },
+        {
+          "time": 1.9666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490271911376077
+        },
+        {
+          "time": 2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490579485096647
+        },
+        {
+          "time": 2.033333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3489249724867365
+        },
+        {
+          "time": 2.066666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.348797986071448
+        },
+        {
+          "time": 2.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633184519841
+        },
+        {
+          "time": 2.1333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.1666666666666665,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.2333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.2666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.3333333333333335,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        },
+        {
+          "time": 2.3666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486633176511675
+        }
+      ]
+    },
+    {
+      "clip": "Walk",
+      "mode": "static",
+      "frames": 108,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "maxWalkingSecondaryAngleDegrees": 0.06038439599184321,
+      "samples": [
+        {
+          "time": 0,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34583252130490816
+        },
+        {
+          "time": 0.03333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3435244634931263
+        },
+        {
+          "time": 0.06666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34125842546062896
+        },
+        {
+          "time": 0.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33907469894096776
+        },
+        {
+          "time": 0.13333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3388641735665085
+        },
+        {
+          "time": 0.16666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34280832767656
+        },
+        {
+          "time": 0.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34598747814978764
+        },
+        {
+          "time": 0.23333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485649463078826
+        },
+        {
+          "time": 0.26666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35013947017483726
+        },
+        {
+          "time": 0.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35860698971412297
+        },
+        {
+          "time": 0.3333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35947035583071135
+        },
+        {
+          "time": 0.36666666666666664,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3603123161425013
+        },
+        {
+          "time": 0.4,
+          "maxAngleDegrees": 0.05767043923010872,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3590313744193874
+        },
+        {
+          "time": 0.43333333333333335,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35659744544550676
+        },
+        {
+          "time": 0.4666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3541694456171895
+        },
+        {
+          "time": 0.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35212084127731225
+        },
+        {
+          "time": 0.5333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35017805367618854
+        },
+        {
+          "time": 0.5666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34825833055337935
+        },
+        {
+          "time": 0.6,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34579691712733696
+        },
+        {
+          "time": 0.6333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34351248612827645
+        },
+        {
+          "time": 0.6666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3412704092156643
+        },
+        {
+          "time": 0.7,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3391102637564446
+        },
+        {
+          "time": 0.7333333333333333,
+          "maxAngleDegrees": 0.049778493275559735,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33892227221440413
+        },
+        {
+          "time": 0.7666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34288718512016614
+        },
+        {
+          "time": 0.8,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3460847075096669
+        },
+        {
+          "time": 0.8333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34867760624660643
+        },
+        {
+          "time": 0.8666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3502640926250298
+        },
+        {
+          "time": 0.9,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3587399099600066
+        },
+        {
+          "time": 0.9333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3596074900642062
+        },
+        {
+          "time": 0.9666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.36044943747054564
+        },
+        {
+          "time": 1,
+          "maxAngleDegrees": 0.06038430955993187,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3591643102751681
+        },
+        {
+          "time": 1.0333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3567221828769663
+        },
+        {
+          "time": 1.0666666666666667,
+          "maxAngleDegrees": 0.05473513290997397,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3542821734422764
+        },
+        {
+          "time": 1.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3522181544880211
+        },
+        {
+          "time": 1.1333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35025697057738636
+        },
+        {
+          "time": 1.1666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3483164645555732
+        },
+        {
+          "time": 1.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3458325248377248
+        },
+        {
+          "time": 1.2333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3435244667897231
+        },
+        {
+          "time": 1.2666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34125844659606785
+        },
+        {
+          "time": 1.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3390747020592235
+        },
+        {
+          "time": 1.3333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.338864173850349
+        },
+        {
+          "time": 1.3666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3428083212876763
+        },
+        {
+          "time": 1.4,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3459874734606746
+        },
+        {
+          "time": 1.4333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.348564944036005
+        },
+        {
+          "time": 1.4666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35013946775826144
+        },
+        {
+          "time": 1.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3586069861483609
+        },
+        {
+          "time": 1.5333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35947035416601386
+        },
+        {
+          "time": 1.5666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.36031231486827564
+        },
+        {
+          "time": 1.6,
+          "maxAngleDegrees": 0.05767035674422539,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35903137624088066
+        },
+        {
+          "time": 1.6333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35659744892089484
+        },
+        {
+          "time": 1.6666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35416944908722764
+        },
+        {
+          "time": 1.7,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3521208170434833
+        },
+        {
+          "time": 1.7333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3501780564485255
+        },
+        {
+          "time": 1.7666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34825830609002045
+        },
+        {
+          "time": 1.8,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3457969204571224
+        },
+        {
+          "time": 1.8333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3435124605398997
+        },
+        {
+          "time": 1.8666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34127041929726026
+        },
+        {
+          "time": 1.9,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3391102935539736
+        },
+        {
+          "time": 1.9333333333333333,
+          "maxAngleDegrees": 0.0497785527572658,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3389222677251117
+        },
+        {
+          "time": 1.9666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34288717936355184
+        },
+        {
+          "time": 2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34608470327593005
+        },
+        {
+          "time": 2.033333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34867759143671306
+        },
+        {
+          "time": 2.066666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35026407752607
+        },
+        {
+          "time": 2.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35873990776596376
+        },
+        {
+          "time": 2.1333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3596074889303172
+        },
+        {
+          "time": 2.1666666666666665,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.36044943801839724
+        },
+        {
+          "time": 2.2,
+          "maxAngleDegrees": 0.06038439599184321,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3591643137750647
+        },
+        {
+          "time": 2.2333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35672218636405995
+        },
+        {
+          "time": 2.2666666666666666,
+          "maxAngleDegrees": 0.054735054603626605,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35428217692943886
+        },
+        {
+          "time": 2.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35221815743454504
+        },
+        {
+          "time": 2.3333333333333335,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.350256973374964
+        },
+        {
+          "time": 2.3666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3483164673026153
+        },
+        {
+          "time": 2.4,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3458325283701022
+        },
+        {
+          "time": 2.433333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34352447008631987
+        },
+        {
+          "time": 2.466666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3412584498325454
+        },
+        {
+          "time": 2.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33907470517747934
+        },
+        {
+          "time": 2.533333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33886417413418957
+        },
+        {
+          "time": 2.566666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34280831489879493
+        },
+        {
+          "time": 2.6,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3459874687715616
+        },
+        {
+          "time": 2.6333333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485649417641279
+        },
+        {
+          "time": 2.6666666666666665,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35013946534168605
+        },
+        {
+          "time": 2.7,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3586069825826011
+        },
+        {
+          "time": 2.7333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35947035250131776
+        },
+        {
+          "time": 2.7666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3603123135940502
+        },
+        {
+          "time": 2.8,
+          "maxAngleDegrees": 0.05767027418238646,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.359031378062374
+        },
+        {
+          "time": 2.8333333333333335,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35659745239628293
+        },
+        {
+          "time": 2.8666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35416945255726556
+        },
+        {
+          "time": 2.9,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35212081996810896
+        },
+        {
+          "time": 2.933333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3501780592184821
+        },
+        {
+          "time": 2.966666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3482583088074124
+        },
+        {
+          "time": 3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3457969239572717
+        },
+        {
+          "time": 3.033333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34351246380279427
+        },
+        {
+          "time": 3.066666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3412704224994933
+        },
+        {
+          "time": 3.1,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3391102966384757
+        },
+        {
+          "time": 3.1333333333333333,
+          "maxAngleDegrees": 0.04977848156078896,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3389222679767472
+        },
+        {
+          "time": 3.1666666666666665,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.342887172945062
+        },
+        {
+          "time": 3.2,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3460846985606095
+        },
+        {
+          "time": 3.2333333333333334,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34867758914275837
+        },
+        {
+          "time": 3.2666666666666666,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35026409799591834
+        },
+        {
+          "time": 3.3,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35873990418839247
+        },
+        {
+          "time": 3.3333333333333335,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35960748734801307
+        },
+        {
+          "time": 3.3666666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3604494367441222
+        },
+        {
+          "time": 3.4,
+          "maxAngleDegrees": 0.060384352824189,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35916431602114945
+        },
+        {
+          "time": 3.433333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35672218985115367
+        },
+        {
+          "time": 3.466666666666667,
+          "maxAngleDegrees": 0.05473497624389747,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3542821804166016
+        },
+        {
+          "time": 3.5,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3522181603810692
+        },
+        {
+          "time": 3.533333333333333,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35025697617113943
+        },
+        {
+          "time": 3.566666666666667,
+          "maxAngleDegrees": 0.04842218514088268,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34831647004965727
+        }
+      ]
+    },
+    {
+      "clip": "SitCycle",
+      "mode": "dynamic",
+      "frames": 72,
+      "meanPenetrating": 0,
+      "maxDepth": 0.000037122322208392455,
+      "maxWalkingSecondaryAngleDegrees": 8.960065602132637,
+      "samples": [
+        {
+          "time": 0,
+          "maxAngleDegrees": 0.9392639857641965,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3487649677726166
+        },
+        {
+          "time": 0.03333333333333333,
+          "maxAngleDegrees": 1.1366748745052462,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34852674033096875
+        },
+        {
+          "time": 0.06666666666666667,
+          "maxAngleDegrees": 1.5539614546065668,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34747273066486617
+        },
+        {
+          "time": 0.1,
+          "maxAngleDegrees": 2.4025134523512706,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34653486569250325
+        },
+        {
+          "time": 0.13333333333333333,
+          "maxAngleDegrees": 3.2290093169105796,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3504785052413809
+        },
+        {
+          "time": 0.16666666666666666,
+          "maxAngleDegrees": 2.896067756968067,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3536939929967049
+        },
+        {
+          "time": 0.2,
+          "maxAngleDegrees": 3.3127946856359745,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3553543978923968
+        },
+        {
+          "time": 0.23333333333333334,
+          "maxAngleDegrees": 4.648714614670159,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35550891228800136
+        },
+        {
+          "time": 0.26666666666666666,
+          "maxAngleDegrees": 5.445009600291835,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35485640649003136
+        },
+        {
+          "time": 0.3,
+          "maxAngleDegrees": 5.3217987870845835,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3540068225944321
+        },
+        {
+          "time": 0.3333333333333333,
+          "maxAngleDegrees": 6.719864737498721,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.352743508355155
+        },
+        {
+          "time": 0.36666666666666664,
+          "maxAngleDegrees": 7.553708698631337,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35100398240547287
+        },
+        {
+          "time": 0.4,
+          "maxAngleDegrees": 8.433154615732755,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3499113283132403
+        },
+        {
+          "time": 0.43333333333333335,
+          "maxAngleDegrees": 8.959979665714693,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3489747968785956
+        },
+        {
+          "time": 0.4666666666666667,
+          "maxAngleDegrees": 8.960065008647222,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34761650475446937
+        },
+        {
+          "time": 0.5,
+          "maxAngleDegrees": 8.960065004362542,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34670109503422436
+        },
+        {
+          "time": 0.5333333333333333,
+          "maxAngleDegrees": 8.960064999152262,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3449429652782069
+        },
+        {
+          "time": 0.5666666666666667,
+          "maxAngleDegrees": 8.960022988409872,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3442631829198573
+        },
+        {
+          "time": 0.6,
+          "maxAngleDegrees": 8.960065235915662,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3471871246943236
+        },
+        {
+          "time": 0.6333333333333333,
+          "maxAngleDegrees": 8.96006546031608,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3505532545401967
+        },
+        {
+          "time": 0.6666666666666666,
+          "maxAngleDegrees": 8.960065561828612,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3506842776657658
+        },
+        {
+          "time": 0.7,
+          "maxAngleDegrees": 8.96006557024992,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3510266887165746
+        },
+        {
+          "time": 0.7333333333333333,
+          "maxAngleDegrees": 8.96006553824016,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3542594710856328
+        },
+        {
+          "time": 0.7666666666666667,
+          "maxAngleDegrees": 8.960065504026414,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35376164397171717
+        },
+        {
+          "time": 0.8,
+          "maxAngleDegrees": 8.96006549800291,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3531376987014071
+        },
+        {
+          "time": 0.8333333333333334,
+          "maxAngleDegrees": 8.960065526301465,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3519959152824518
+        },
+        {
+          "time": 0.8666666666666667,
+          "maxAngleDegrees": 8.960065567193459,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35094866009695197
+        },
+        {
+          "time": 0.9,
+          "maxAngleDegrees": 8.960065595322137,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35078565324696964
+        },
+        {
+          "time": 0.9333333333333333,
+          "maxAngleDegrees": 8.960065602132637,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3501634136564905
+        },
+        {
+          "time": 0.9666666666666667,
+          "maxAngleDegrees": 8.960065595277674,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.348187312886338
+        },
+        {
+          "time": 1,
+          "maxAngleDegrees": 8.960065586518734,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34471553112267306
+        },
+        {
+          "time": 1.0333333333333334,
+          "maxAngleDegrees": 8.960065582755245,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3434635953522998
+        },
+        {
+          "time": 1.0666666666666667,
+          "maxAngleDegrees": 8.960065584429735,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3434255471079478
+        },
+        {
+          "time": 1.1,
+          "maxAngleDegrees": 8.960065588378733,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34325037266727826
+        },
+        {
+          "time": 1.1333333333333333,
+          "maxAngleDegrees": 8.960065591618262,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34365659991518993
+        },
+        {
+          "time": 1.1666666666666667,
+          "maxAngleDegrees": 8.960065592989158,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.345139103055666
+        },
+        {
+          "time": 1.2,
+          "maxAngleDegrees": 8.960065592488325,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34791695531913547
+        },
+        {
+          "time": 1.2333333333333334,
+          "maxAngleDegrees": 8.96006559041822,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3505852558055405
+        },
+        {
+          "time": 1.2666666666666666,
+          "maxAngleDegrees": 8.96006558721778,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3502408253320231
+        },
+        {
+          "time": 1.3,
+          "maxAngleDegrees": 8.96006558345462,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3496702319760832
+        },
+        {
+          "time": 1.3333333333333333,
+          "maxAngleDegrees": 8.960065579136389,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3484201365697924
+        },
+        {
+          "time": 1.3666666666666667,
+          "maxAngleDegrees": 8.960065574133607,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.346856623415163
+        },
+        {
+          "time": 1.4,
+          "maxAngleDegrees": 8.96006556854025,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3453718371557146
+        },
+        {
+          "time": 1.4333333333333333,
+          "maxAngleDegrees": 8.960023150645018,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34437339078188073
+        },
+        {
+          "time": 1.4666666666666666,
+          "maxAngleDegrees": 8.960013914809439,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34352850017877073
+        },
+        {
+          "time": 1.5,
+          "maxAngleDegrees": 8.960065552596529,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34284345115889525
+        },
+        {
+          "time": 1.5333333333333334,
+          "maxAngleDegrees": 8.96006554971304,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34174130613958026
+        },
+        {
+          "time": 1.5666666666666667,
+          "maxAngleDegrees": 8.960065548618703,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3400440176432288
+        },
+        {
+          "time": 1.6,
+          "maxAngleDegrees": 8.960065549170514,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34014802612472417
+        },
+        {
+          "time": 1.6333333333333333,
+          "maxAngleDegrees": 8.960065550412576,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34179238448625626
+        },
+        {
+          "time": 1.6666666666666667,
+          "maxAngleDegrees": 8.960065551701383,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3443801031219449
+        },
+        {
+          "time": 1.7,
+          "maxAngleDegrees": 8.960065553045405,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3443434989598505
+        },
+        {
+          "time": 1.7333333333333334,
+          "maxAngleDegrees": 8.960065554705237,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3497058642095141
+        },
+        {
+          "time": 1.7666666666666666,
+          "maxAngleDegrees": 8.96006555699473,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35132556403356596
+        },
+        {
+          "time": 1.8,
+          "maxAngleDegrees": 8.960065559812092,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3525533162597362
+        },
+        {
+          "time": 1.8333333333333333,
+          "maxAngleDegrees": 8.960065562550138,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35416171437789773
+        },
+        {
+          "time": 1.8666666666666667,
+          "maxAngleDegrees": 8.960065564418606,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3535087153879092
+        },
+        {
+          "time": 1.9,
+          "maxAngleDegrees": 8.960065564957388,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3530653998476604
+        },
+        {
+          "time": 1.9333333333333333,
+          "maxAngleDegrees": 8.960065564047747,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3522507825878649
+        },
+        {
+          "time": 1.9666666666666666,
+          "maxAngleDegrees": 8.960065561683658,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3504772718155483
+        },
+        {
+          "time": 2,
+          "maxAngleDegrees": 8.960065558956362,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490741553065592
+        },
+        {
+          "time": 2.033333333333333,
+          "maxAngleDegrees": 8.960065558925741,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0.000037122322208392455,
+          "minHeight": 0.348862200087396
+        },
+        {
+          "time": 2.066666666666667,
+          "maxAngleDegrees": 8.960065564922045,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34902071753607106
+        },
+        {
+          "time": 2.1,
+          "maxAngleDegrees": 8.960065576163482,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34842196423819455
+        },
+        {
+          "time": 2.1333333333333333,
+          "maxAngleDegrees": 9.398805845707974,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3480443081536125
+        },
+        {
+          "time": 2.1666666666666665,
+          "maxAngleDegrees": 10.24064727365252,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34786870289317584
+        },
+        {
+          "time": 2.2,
+          "maxAngleDegrees": 11.03803449039909,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3477991428123004
+        },
+        {
+          "time": 2.2333333333333334,
+          "maxAngleDegrees": 11.407318756655894,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3477922002983927
+        },
+        {
+          "time": 2.2666666666666666,
+          "maxAngleDegrees": 11.693880389358393,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3478331350382188
+        },
+        {
+          "time": 2.3,
+          "maxAngleDegrees": 11.412519496061613,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3479178045947071
+        },
+        {
+          "time": 2.3333333333333335,
+          "maxAngleDegrees": 10.46636887284031,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3480408088605684
+        },
+        {
+          "time": 2.3666666666666667,
+          "maxAngleDegrees": 8.95230604197033,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34819125194799727
+        }
+      ]
+    },
+    {
+      "clip": "Walk",
+      "mode": "dynamic",
+      "frames": 108,
+      "meanPenetrating": 0,
+      "maxDepth": 0,
+      "maxWalkingSecondaryAngleDegrees": 8.960065591035832,
+      "samples": [
+        {
+          "time": 0,
+          "maxAngleDegrees": 0.034239655750109094,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34583253239178663
+        },
+        {
+          "time": 0.03333333333333333,
+          "maxAngleDegrees": 5.760024607121411,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34211214567636705
+        },
+        {
+          "time": 0.06666666666666667,
+          "maxAngleDegrees": 8.960002730748764,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33971032792238043
+        },
+        {
+          "time": 0.1,
+          "maxAngleDegrees": 8.960064982350854,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33762921689351916
+        },
+        {
+          "time": 0.13333333333333333,
+          "maxAngleDegrees": 8.960064985984534,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33757394470750335
+        },
+        {
+          "time": 0.16666666666666666,
+          "maxAngleDegrees": 8.96002319719818,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3414753505466423
+        },
+        {
+          "time": 0.2,
+          "maxAngleDegrees": 8.960023199021544,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34540008514956766
+        },
+        {
+          "time": 0.23333333333333334,
+          "maxAngleDegrees": 8.96006558540208,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34800854558600053
+        },
+        {
+          "time": 0.26666666666666666,
+          "maxAngleDegrees": 8.960065588611805,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3486179117635563
+        },
+        {
+          "time": 0.3,
+          "maxAngleDegrees": 8.960065590189872,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35680199763651677
+        },
+        {
+          "time": 0.3333333333333333,
+          "maxAngleDegrees": 8.96006559071888,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3596904974011925
+        },
+        {
+          "time": 0.36666666666666664,
+          "maxAngleDegrees": 8.960065590695429,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3581623667594066
+        },
+        {
+          "time": 0.4,
+          "maxAngleDegrees": 8.960065590052572,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35634388773856723
+        },
+        {
+          "time": 0.43333333333333335,
+          "maxAngleDegrees": 8.960065588241433,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35373635835874506
+        },
+        {
+          "time": 0.4666666666666667,
+          "maxAngleDegrees": 8.960065585483681,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3512968674447415
+        },
+        {
+          "time": 0.5,
+          "maxAngleDegrees": 8.960065583865708,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35046569311778153
+        },
+        {
+          "time": 0.5333333333333333,
+          "maxAngleDegrees": 8.960065585142463,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.349186943311797
+        },
+        {
+          "time": 0.5666666666666667,
+          "maxAngleDegrees": 8.96006558750981,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34749391131346336
+        },
+        {
+          "time": 0.6,
+          "maxAngleDegrees": 8.960065586368566,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34519776769802357
+        },
+        {
+          "time": 0.6333333333333333,
+          "maxAngleDegrees": 8.960065579234927,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3421404418133415
+        },
+        {
+          "time": 0.6666666666666666,
+          "maxAngleDegrees": 8.960065568804104,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33923561540055835
+        },
+        {
+          "time": 0.7,
+          "maxAngleDegrees": 8.960065559946951,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3368940398943147
+        },
+        {
+          "time": 0.7333333333333333,
+          "maxAngleDegrees": 8.96001046883207,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33813034536027187
+        },
+        {
+          "time": 0.7666666666666667,
+          "maxAngleDegrees": 8.960065556332816,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34110078526464416
+        },
+        {
+          "time": 0.8,
+          "maxAngleDegrees": 8.960065561423061,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34480168839432934
+        },
+        {
+          "time": 0.8333333333333334,
+          "maxAngleDegrees": 8.960065568837816,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.347931823447344
+        },
+        {
+          "time": 0.8666666666666667,
+          "maxAngleDegrees": 8.960065576614639,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490503935407256
+        },
+        {
+          "time": 0.9,
+          "maxAngleDegrees": 8.960065583112588,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3567504630907516
+        },
+        {
+          "time": 0.9333333333333333,
+          "maxAngleDegrees": 8.96006558728472,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35982081929171755
+        },
+        {
+          "time": 0.9666666666666667,
+          "maxAngleDegrees": 8.96006558922518,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35822596187134775
+        },
+        {
+          "time": 1,
+          "maxAngleDegrees": 8.96006558951884,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3564775013481168
+        },
+        {
+          "time": 1.0333333333333334,
+          "maxAngleDegrees": 8.960065588319122,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3538696645576812
+        },
+        {
+          "time": 1.0666666666666667,
+          "maxAngleDegrees": 8.960065585760237,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3513217728309362
+        },
+        {
+          "time": 1.1,
+          "maxAngleDegrees": 8.960065583460809,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35043263678455266
+        },
+        {
+          "time": 1.1333333333333333,
+          "maxAngleDegrees": 8.960065583559834,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490705515962526
+        },
+        {
+          "time": 1.1666666666666667,
+          "maxAngleDegrees": 8.960065585573748,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3473958800442063
+        },
+        {
+          "time": 1.2,
+          "maxAngleDegrees": 8.960065585887115,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3452743779453694
+        },
+        {
+          "time": 1.2333333333333334,
+          "maxAngleDegrees": 8.960065581516929,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34227283353393695
+        },
+        {
+          "time": 1.2666666666666666,
+          "maxAngleDegrees": 8.960065573677728,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33918247835271487
+        },
+        {
+          "time": 1.3,
+          "maxAngleDegrees": 8.960065566178116,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33680449400926626
+        },
+        {
+          "time": 1.3333333333333333,
+          "maxAngleDegrees": 8.96001048083941,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3369228118338771
+        },
+        {
+          "time": 1.3666666666666667,
+          "maxAngleDegrees": 8.960065561995883,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34129859764940434
+        },
+        {
+          "time": 1.4,
+          "maxAngleDegrees": 8.960065566152055,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3453977707512323
+        },
+        {
+          "time": 1.4333333333333333,
+          "maxAngleDegrees": 8.960065572601957,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3478743117505636
+        },
+        {
+          "time": 1.4666666666666666,
+          "maxAngleDegrees": 8.960065579563603,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34851426760488646
+        },
+        {
+          "time": 1.5,
+          "maxAngleDegrees": 8.960065585342145,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35681433787299144
+        },
+        {
+          "time": 1.5333333333333334,
+          "maxAngleDegrees": 8.960065588931196,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3597152474265086
+        },
+        {
+          "time": 1.5666666666666667,
+          "maxAngleDegrees": 8.960065590553729,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35815640475420835
+        },
+        {
+          "time": 1.6,
+          "maxAngleDegrees": 8.960065591034853,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.356345149546197
+        },
+        {
+          "time": 1.6333333333333333,
+          "maxAngleDegrees": 8.960065590564804,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35373492655241645
+        },
+        {
+          "time": 1.6666666666666667,
+          "maxAngleDegrees": 8.960065588909535,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3512979362986555
+        },
+        {
+          "time": 1.7,
+          "maxAngleDegrees": 8.960065587169083,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3504667981734434
+        },
+        {
+          "time": 1.7333333333333334,
+          "maxAngleDegrees": 8.96006558705898,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34918742971516953
+        },
+        {
+          "time": 1.7666666666666666,
+          "maxAngleDegrees": 8.960065588050872,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.347495036135748
+        },
+        {
+          "time": 1.8,
+          "maxAngleDegrees": 8.960065586701639,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3451980047388339
+        },
+        {
+          "time": 1.8333333333333333,
+          "maxAngleDegrees": 8.960065580447836,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34214048522063156
+        },
+        {
+          "time": 1.8666666666666667,
+          "maxAngleDegrees": 8.96006557094066,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3392352600432935
+        },
+        {
+          "time": 1.9,
+          "maxAngleDegrees": 8.960065562212828,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3368937717468973
+        },
+        {
+          "time": 1.9333333333333333,
+          "maxAngleDegrees": 8.960010468797542,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33813035814581593
+        },
+        {
+          "time": 1.9666666666666666,
+          "maxAngleDegrees": 8.960065556947496,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34110089571844265
+        },
+        {
+          "time": 2,
+          "maxAngleDegrees": 8.960065561184779,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3448016988849163
+        },
+        {
+          "time": 2.033333333333333,
+          "maxAngleDegrees": 8.960065568150986,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3479317610308218
+        },
+        {
+          "time": 2.066666666666667,
+          "maxAngleDegrees": 8.960065575902236,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490503642885627
+        },
+        {
+          "time": 2.1,
+          "maxAngleDegrees": 8.960065582626415,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35675045050743365
+        },
+        {
+          "time": 2.1333333333333333,
+          "maxAngleDegrees": 8.960065587056375,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35982081957716017
+        },
+        {
+          "time": 2.1666666666666665,
+          "maxAngleDegrees": 8.960065589166222,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.358225964193814
+        },
+        {
+          "time": 2.2,
+          "maxAngleDegrees": 8.960065589556951,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35647750561574626
+        },
+        {
+          "time": 2.2333333333333334,
+          "maxAngleDegrees": 8.960065588434436,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3538696693246747
+        },
+        {
+          "time": 2.2666666666666666,
+          "maxAngleDegrees": 8.96006558592539,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3513217771753834
+        },
+        {
+          "time": 2.3,
+          "maxAngleDegrees": 8.960065583610813,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35043263669436114
+        },
+        {
+          "time": 2.3333333333333335,
+          "maxAngleDegrees": 8.960065583640294,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490705543956588
+        },
+        {
+          "time": 2.3666666666666667,
+          "maxAngleDegrees": 8.960065585591664,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34739588396581944
+        },
+        {
+          "time": 2.4,
+          "maxAngleDegrees": 8.960065585891513,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34527438009722045
+        },
+        {
+          "time": 2.433333333333333,
+          "maxAngleDegrees": 8.960065581547711,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3422728388222077
+        },
+        {
+          "time": 2.466666666666667,
+          "maxAngleDegrees": 8.960065573733429,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3391824838279234
+        },
+        {
+          "time": 2.5,
+          "maxAngleDegrees": 8.960065566233654,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3368044971520275
+        },
+        {
+          "time": 2.533333333333333,
+          "maxAngleDegrees": 8.96001048083941,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.33692281050124084
+        },
+        {
+          "time": 2.566666666666667,
+          "maxAngleDegrees": 8.960065562002073,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3412985899911743
+        },
+        {
+          "time": 2.6,
+          "maxAngleDegrees": 8.960065566139841,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3453977629540635
+        },
+        {
+          "time": 2.6333333333333333,
+          "maxAngleDegrees": 8.9600655725829,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34787430477747705
+        },
+        {
+          "time": 2.6666666666666665,
+          "maxAngleDegrees": 8.960065579547967,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3485142638271548
+        },
+        {
+          "time": 2.7,
+          "maxAngleDegrees": 8.960065585333187,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3568143231453057
+        },
+        {
+          "time": 2.7333333333333334,
+          "maxAngleDegrees": 8.960065588928101,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3597152437454534
+        },
+        {
+          "time": 2.7666666666666666,
+          "maxAngleDegrees": 8.960065590553567,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3581564052915954
+        },
+        {
+          "time": 2.8,
+          "maxAngleDegrees": 8.960065591035832,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3563451487213034
+        },
+        {
+          "time": 2.8333333333333335,
+          "maxAngleDegrees": 8.960065590566922,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3537349264544481
+        },
+        {
+          "time": 2.8666666666666667,
+          "maxAngleDegrees": 8.960065588912304,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3512979350055143
+        },
+        {
+          "time": 2.9,
+          "maxAngleDegrees": 8.960065587171037,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35046680500890637
+        },
+        {
+          "time": 2.933333333333333,
+          "maxAngleDegrees": 8.96006558706012,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34918743442230693
+        },
+        {
+          "time": 2.966666666666667,
+          "maxAngleDegrees": 8.960065588051036,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3474950401317762
+        },
+        {
+          "time": 3,
+          "maxAngleDegrees": 8.960065586701639,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3451980076332359
+        },
+        {
+          "time": 3.033333333333333,
+          "maxAngleDegrees": 8.960065580448324,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3421404895648835
+        },
+        {
+          "time": 3.066666666666667,
+          "maxAngleDegrees": 8.960065570941962,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3392352646812925
+        },
+        {
+          "time": 3.1,
+          "maxAngleDegrees": 8.960065562213806,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3368937750668893
+        },
+        {
+          "time": 3.1333333333333333,
+          "maxAngleDegrees": 8.96001046879738,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3381303548607961
+        },
+        {
+          "time": 3.1666666666666665,
+          "maxAngleDegrees": 8.960065556947333,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34110088995365423
+        },
+        {
+          "time": 3.2,
+          "maxAngleDegrees": 8.960065561184129,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34480169240390335
+        },
+        {
+          "time": 3.2333333333333334,
+          "maxAngleDegrees": 8.96006556815066,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34793174853757414
+        },
+        {
+          "time": 3.2666666666666666,
+          "maxAngleDegrees": 8.960065575902236,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3490503614764141
+        },
+        {
+          "time": 3.3,
+          "maxAngleDegrees": 8.960065582626088,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3567504353211254
+        },
+        {
+          "time": 3.3333333333333335,
+          "maxAngleDegrees": 8.960065587056537,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35982081690559786
+        },
+        {
+          "time": 3.3666666666666667,
+          "maxAngleDegrees": 8.960065589166058,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3582259640633837
+        },
+        {
+          "time": 3.4,
+          "maxAngleDegrees": 8.96006558955679,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.356477505401012
+        },
+        {
+          "time": 3.433333333333333,
+          "maxAngleDegrees": 8.960065588434436,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35386966957750654
+        },
+        {
+          "time": 3.466666666666667,
+          "maxAngleDegrees": 8.96006558592539,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3513217753078922
+        },
+        {
+          "time": 3.5,
+          "maxAngleDegrees": 8.960065583610977,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.35043264290799814
+        },
+        {
+          "time": 3.533333333333333,
+          "maxAngleDegrees": 8.960065583640782,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.34907055945373483
+        },
+        {
+          "time": 3.566666666666667,
+          "maxAngleDegrees": 8.960065585591503,
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0,
+          "minHeight": 0.3473958878619091
+        }
+      ]
+    }
+  ],
+  "video": [
+    {
+      "file": "walk-front.mp4",
+      "codec_name": "h264",
+      "width": 1400,
+      "height": 820,
+      "avg_frame_rate": "30/1",
+      "duration": "6.000000",
+      "nb_frames": "180",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "file": "walk-side.mp4",
+      "codec_name": "h264",
+      "width": 1400,
+      "height": 820,
+      "avg_frame_rate": "30/1",
+      "duration": "6.000000",
+      "nb_frames": "180",
+      "side_data_list": [
+        {}
+      ]
+    },
+    {
+      "file": "walk-back.mp4",
+      "codec_name": "h264",
+      "width": 1400,
+      "height": 820,
+      "avg_frame_rate": "30/1",
+      "duration": "6.000000",
+      "nb_frames": "180",
+      "side_data_list": [
+        {}
+      ]
+    }
+  ],
+  "errors": []
+}
