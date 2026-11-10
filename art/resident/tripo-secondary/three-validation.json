@@ -1,0 +1,39 @@
+{
+  "ready": true,
+  "bones": 103,
+  "meshes": 1,
+  "hair": 26,
+  "dress": 24,
+  "triangles": 18525,
+  "independentClone": true,
+  "textures": 4,
+  "rest": {
+    "pose": "rest",
+    "finite": true,
+    "max": 0.9793087177606397
+  },
+  "poses": [
+    {
+      "pose": "rest",
+      "finite": true,
+      "max": 0.9793087177606397
+    },
+    {
+      "pose": "hair",
+      "finite": true,
+      "max": 0.9793235664934645
+    },
+    {
+      "pose": "walk",
+      "finite": true,
+      "max": 0.9793087177606397
+    },
+    {
+      "pose": "sit",
+      "finite": true,
+      "max": 0.9793087177606397
+    }
+  ],
+  "errors": [],
+  "renderer": "Google Chrome WebGL; local Three.js r169"
+}
