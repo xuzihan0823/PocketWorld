@@ -1,0 +1,52 @@
+{
+  "before": {
+    "position": [
+      0.25,
+      0,
+      0.5
+    ],
+    "clipTime": 0,
+    "moving": false,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "moving": {
+    "position": [
+      0.6631945606912026,
+      0,
+      0.17534713088548223
+    ],
+    "clipTime": 0.24960000002384353,
+    "moving": true,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "turning": {
+    "position": [
+      0.5045410752681903,
+      0,
+      -0.026575486925625866
+    ],
+    "clipTime": 0.9579999999999992,
+    "moving": true,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "stopped": {
+    "position": [
+      0.5045410752681903,
+      0,
+      -0.026575486925625866
+    ],
+    "clipTime": 0.9579999999999992,
+    "moving": false,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "distance": 0.5254800000086437,
+  "errors": []
+}

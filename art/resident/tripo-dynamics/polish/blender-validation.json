@@ -1,0 +1,174 @@
+{
+  "platform": "Windows-11-10.0.26200-SP0",
+  "blender": "5.2.3 LTS",
+  "bones": 103,
+  "new_bones": 0,
+  "bone_matrices_and_parents_unchanged": true,
+  "original_triangles_preserved": 18525,
+  "added_triangles": 134,
+  "triangles": 18659,
+  "original_positions_uv_unchanged": true,
+  "embedded_images_byte_identical": true,
+  "weight_conflicts": 0,
+  "unweighted": 0,
+  "max_influences": 4,
+  "correctives": 5,
+  "saved_blend_nla_roundtrip": {
+    "Walk": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "ArmsUp": [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    "Sit": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    "LieDown": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "baseline_poses": {
+    "Walk": {
+      "max_edge_ratio": 2.117133855819702,
+      "p99_edge_ratio": 1.0588499307632446,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 129,
+          "max_projection": 0.0251042228192091
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 639,
+          "max_projection": 0.031520117074251175
+        }
+      }
+    },
+    "ArmsUp": {
+      "max_edge_ratio": 3.9672341346740723,
+      "p99_edge_ratio": 1.5136526823043823,
+      "long_stretched_edges": 5,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 401,
+          "max_projection": 0.02636689692735672
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 350,
+          "max_projection": 0.028128687292337418
+        }
+      }
+    },
+    "Sit": {
+      "max_edge_ratio": 2.7256574630737305,
+      "p99_edge_ratio": 1.4665656089782715,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 124,
+          "max_projection": 0.0251042228192091
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 559,
+          "max_projection": 0.02812868356704712
+        }
+      }
+    },
+    "LieDown": {
+      "max_edge_ratio": 1.5646283626556396,
+      "p99_edge_ratio": 1.1778656244277954,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 128,
+          "max_projection": 0.025011325255036354
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 350,
+          "max_projection": 0.028128596022725105
+        }
+      }
+    }
+  },
+  "refined_poses": {
+    "Walk": {
+      "max_edge_ratio": 2.117133855819702,
+      "p99_edge_ratio": 1.0608813762664795,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 129,
+          "max_projection": 0.025104228407144547
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 639,
+          "max_projection": 0.03152012452483177
+        }
+      }
+    },
+    "ArmsUp": {
+      "max_edge_ratio": 3.2617716789245605,
+      "p99_edge_ratio": 1.586408019065857,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 401,
+          "max_projection": 0.026366882026195526
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 350,
+          "max_projection": 0.028128696605563164
+        }
+      }
+    },
+    "Sit": {
+      "max_edge_ratio": 2.557917833328247,
+      "p99_edge_ratio": 1.4809038639068604,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 0,
+          "max_projection": 0.0
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 0,
+          "max_projection": 0.0
+        }
+      }
+    },
+    "LieDown": {
+      "max_edge_ratio": 2.442070245742798,
+      "p99_edge_ratio": 1.2268548011779785,
+      "long_stretched_edges": 0,
+      "capsule_surface_contacts": {
+        "hair": {
+          "penetrating_vertices_over_1mm": 0,
+          "max_projection": 0.0
+        },
+        "dress": {
+          "penetrating_vertices_over_1mm": 0,
+          "max_projection": 0.0
+        }
+      }
+    }
+  },
+  "roundtrip_rest_error": 3.203749656677246e-07,
+  "roundtrip_pose_error": 4.76837158203125e-07,
+  "runtime_bytes": 10728168,
+  "sha256": "b2c590bcd4c36b4cffb4785ca4cc3029922492b1abc1a2be17efd7acdefdf7d6"
+}

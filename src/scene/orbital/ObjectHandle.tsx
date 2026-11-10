@@ -58,6 +58,7 @@ export function ObjectHandle({ id, action, hint, world, drag, payload, children,
     onPointerOver={e => { e.stopPropagation(); world.onHover(id, hint); }}
     onPointerOut={() => { if (!held.current) world.onHover(null); }}
     onPointerDown={down} onPointerUp={up}
+    onClick={event => event.stopPropagation()}
     onPointerMove={event => {
       if (!held.current || !drag || !movable.current) return;
       event.stopPropagation();

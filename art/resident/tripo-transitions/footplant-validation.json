@@ -1,0 +1,96 @@
+{
+  "fps": 60,
+  "soleSelectionRestHeight": 0.005,
+  "metric": "World-space ankle/toe anchors and actual sole vertices during planted intervals. Unit is model units; character height is approximately 0.98.",
+  "sha256": "5e1da819d580426618934abf4fc29acc9b92264fff2d9bacf20565a255272ec6",
+  "baselineSha256": "c641835ee063df6d3b2c67498cea5820321f8c279274897d4095b9727d7816ca",
+  "before": {
+    "SitCycle": {
+      "samples": 415,
+      "supportIntervals": [
+        [
+          2.1,
+          9
+        ]
+      ],
+      "maxAnkleAndToeDrift": 0.00006009760082050567,
+      "maxDriftTime": 6.583333333333333,
+      "maxSoleVertexDrift": 0.00011179561343144209,
+      "maxFootRotationRadians": 0.0003760913770696145,
+      "maxFrameStep": 0.020843016215289348,
+      "soleMinHeightRange": [
+        -0.00004891937317814886,
+        1.520620216058767e-7
+      ],
+      "soleVertices": 152
+    },
+    "LieCycle": {
+      "samples": 362,
+      "supportIntervals": [
+        [
+          0,
+          2.9
+        ],
+        [
+          9.9,
+          13
+        ]
+      ],
+      "maxAnkleAndToeDrift": 0.000060143735517890764,
+      "maxDriftTime": 11.483333333333333,
+      "maxSoleVertexDrift": 0.00011183844919922307,
+      "maxFootRotationRadians": 0.0003596039203312719,
+      "maxFrameStep": 0.008957932419947703,
+      "soleMinHeightRange": [
+        -0.000048962276172324684,
+        1.0718989981619957e-7
+      ],
+      "soleVertices": 152
+    }
+  },
+  "after": {
+    "SitCycle": {
+      "samples": 415,
+      "supportIntervals": [
+        [
+          2.1,
+          9
+        ]
+      ],
+      "maxAnkleAndToeDrift": 0.00006004460747353386,
+      "maxDriftTime": 6.583333333333333,
+      "maxSoleVertexDrift": 0.00011014104337759985,
+      "maxFootRotationRadians": 0.0004426747592711051,
+      "maxFrameStep": 0.020843016215289348,
+      "soleMinHeightRange": [
+        -0.00004891937317814886,
+        1.520620216058767e-7
+      ],
+      "soleVertices": 152
+    },
+    "LieCycle": {
+      "samples": 362,
+      "supportIntervals": [
+        [
+          0,
+          2.9
+        ],
+        [
+          9.9,
+          13
+        ]
+      ],
+      "maxAnkleAndToeDrift": 0.000060034766639360876,
+      "maxDriftTime": 11.483333333333333,
+      "maxSoleVertexDrift": 0.00011012729058521642,
+      "maxFootRotationRadians": 0.00043855828929615834,
+      "maxFrameStep": 0.008957931061359446,
+      "soleMinHeightRange": [
+        -0.00004888499049416828,
+        1.405052522221765e-7
+      ],
+      "soleVertices": 152
+    }
+  },
+  "legacyBonePoseSamplesUnchanged": true
+}

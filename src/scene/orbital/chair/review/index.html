@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketWorld · 椅子交互第二阶段验收</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#ecf0e9;color:#263e3c;font:16px/1.75 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1120px;margin:auto;padding:48px 24px 80px}h1{font-size:34px;letter-spacing:-.03em;line-height:1.3;margin:10px 0 20px}h2{font-size:22px;margin:32px 0 12px}p{max-width:880px}.eyebrow{letter-spacing:.16em;font-size:12px;color:#607a70}.card{background:#fafbf7;padding:24px;border:1px solid #d5dfd3;border-radius:16px;margin:20px 0}.pill{display:inline-block;background:#dce8dc;padding:4px 12px;border-radius:30px;font-size:13px;margin-right:7px}video,img{width:100%;display:block;border-radius:10px;background:#18232b}.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}.caption{font-size:13px;color:#61706a;margin-top:8px}table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:10px 12px;border-bottom:1px solid #dce3d8;text-align:left}a{color:#275f58}code{font-size:13px}footer{font-size:13px;color:#61706a;margin-top:36px}@media(max-width:720px){.pair{grid-template-columns:1fr}main{padding:24px 16px}h1{font-size:28px}.card{padding:16px}table{font-size:12px}}
+</style>
+<main>
+<div class="eyebrow">POCKETWORLD / CHAIR / PHASE 02 · 2026-11-10</div>
+<h1>走近，转身，坐稳，再自然起身。</h1>
+<p>第二阶段已经形成可重复验收的入座流程。生活舱使用为 1.419 高角色重新配套的五爪五轮办公椅，保留原 103 骨架、权重、UV、纹理与 Walk。开发入口 <code>?resident=tripo</code>。</p>
+<span class="pill">238 项回归通过</span><span class="pill">浏览器实际录屏</span><span class="pill">原角色资产未改</span>
+<section class="card"><h2 style="margin-top:0">A · 默认场景走近与坐下</h2>
+<video controls preload="metadata" poster="approach-seated.png" src="approach.mp4"></video>
+<div class="caption">实际鼠标点击椅子，12.67 秒。APPROACH → ALIGN → TURN → SIT_DOWN → SEATED_IDLE。物品 click 已接管输入，不再被地面行走覆盖。</div></section>
+<section class="card"><h2 style="margin-top:0">B · 正面与侧面重复起坐</h2>
+<div class="pair"><div><video controls preload="metadata" poster="front-seated.png" src="front.mp4"></video><div class="caption">正面，11.63 秒：按 E 起身、走出，再按 E 对齐转身入座。</div></div><div><video controls preload="metadata" poster="side-seated.png" src="side.mp4"></video><div class="caption">侧面，11.63 秒：检查抬臀、双脚支撑、裙摆铺展和后发。</div></div></div>
+<p class="caption">三段视频均为运行中 WebGL Canvas 录制，1280×888 / 30 fps，已完整解码并检查关键帧。近景仅调整相机，角色和椅子的运动来自实际控制器。</p></section>
+<section class="card"><h2 style="margin-top:0">接触与姿态</h2><div class="pair"><img src="front-seated.png" alt="正面坐稳与膝盖、双脚"><img src="side-seated.png" alt="侧面椅面、裙摆与后发接触"></div>
+<table><tr><th>检查项</th><th>结果</th></tr>
+<tr><td>座面 / 蒙皮支撑区域</td><td>椅面高 0.370，臀/裙布支撑表面最低约 0.374；3143 个座面区域表面采样通过。</td></tr>
+<tr><td>脚底</td><td>坐稳约 0；浏览器全流程最低 −0.000267，坐下/起身最低 −0.000071。</td></tr>
+<tr><td>膝盖与转身</td><td>坐姿屈曲约 102.44°，沿角色前向求解；交替支撑、抬脚、收步，骨段长度不变。</td></tr>
+<tr><td>臀部与世界变换</td><td>由 SitCycle 髋膝协调下降，外层根节点 Y 始终为 0；坐稳按椅子局部锚点绑定。</td></tr>
+<tr><td>裙摆 / 后发</td><td>裙骨先沿椅面展开，再处理残余表面接触；靠背约束后发。CPU 采样、可见表面和阴影同步。</td></tr>
+<tr><td>脚与轮胎</td><td>坐稳足部对五个轮胎几何的顶点采样穿入数为 0。</td></tr>
+</table><p class="caption">数值单位为场景单位。臀部被裙装遮挡，因此结合蒙皮表面回读与侧视画面检查，骨盆骨中心不作为接触面。</p></section>
+<section class="card"><h2 style="margin-top:0">交互验证</h2>
+<p>鼠标默认布局入座、E 起身和再次入座、坐姿方向键隔离、坐着点击地面后起身继续行走、Esc 取消后重试、坐下过程中 E 取消、390px 触摸及减少动态效果均已通过。测试中页面运行异常与资源请求失败均为 0。</p>
+<p>TypeScript、生产构建与全部 238 项测试通过。原 GLB 和 Blender 文件 SHA256 与交接基线逐字节一致；没有新增运行依赖。</p>
+<p><a href="browser.json">浏览器原始采样</a> · <a href="verification.json">验收汇总与资产指纹</a> · <a href="touch-390.png">390px 触摸截图</a> · <a href="https://github.com/xuzihan0823/PocketWorld/pull/33">PR #33</a></p></section>
+<section class="card"><h2 style="margin-top:0">阶段反思与边界</h2>
+<p>入口事件归属、身体动画与外层根节点控制、接触修正的执行顺序需要分别明确。此次修复了不变关键帧造成的 IK 累积，以及走停姿态融合造成的脚底下沉。仅提高椅面或整体移动角色，无法得到稳定的坐起接触。</p>
+<p>裙布目前使用确定性的姿态与表面接触约束，仍保留原模型细褶的硬折；尚无完整布料自碰撞。后发碰撞为靠背近似。实体手机、Safari 与长期性能尚未验证。</p>
+<p>坐姿呼吸和头肩生命感、脚蹬地前进、惯性滑行、轮组动画及后退转向留给后续阶段。本阶段以可重复坐稳和起身交付。</p></section>
+<footer>分支 codex/chair-stage2 · main 基线 a7cf978 · 已验收角色 2a49851（PR #27）· 主工作区与旧步态分支保持原状。PR #33 供审阅，未合并 main。</footer>
+</main></html>
