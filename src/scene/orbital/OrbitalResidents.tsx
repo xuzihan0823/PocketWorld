@@ -11,6 +11,7 @@ import { readingStand } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { TripoResidentModel, TRIPO_SPEED, tripoRoomTest } from './secondary/TripoResidentModel';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
+import { ChairSeating, OFFICE_CHAIR } from './chair/ChairSeating';
 
 type Point = [number, number];
 type Box = [number, number, number, number];
@@ -167,6 +168,8 @@ export function OrbitalResidents(props: ResidentsProps) {
   const drawerTask = useRef<{ action: WorldAction; target: Point; elapsed: number } | null>(null);
   const drawerExtension = useRef(0);
   const approach = useRef<Approach | null>(null);
+  const chairSeating = useRef(new ChairSeating());
+  const newChair = tripoRoomTest() && props.sceneId === 'habitat';
   const strideAmount = useRef(0);
   const libraryNav = useRef('');
   const touch = useRef<{ id: number; x: number; y: number; target: EventTarget | null } | null>(null);
@@ -201,6 +204,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   };
   const stand = () => {
     const s = state.current;
+    if (newChair && chairSeating.current.active) chairSeating.current.requestExit();
     if (current.current.objects.bed?.active && !s.dismissedBed) { s.dismissedBed = true; act('bed', 'wake'); }
     if (current.current.objects.chair?.active && !s.dismissedChair) { s.dismissedChair = true; act('chair', 'stand'); }
     s.wanted = 'standing';
@@ -246,6 +250,20 @@ export function OrbitalResidents(props: ResidentsProps) {
     const request: NonNullable<WorldModelProps['onApproach']> = (point, action, perform) => {
       const root = resident.current, p = current.current, s = state.current;
       if (!root || drawerTask.current || action.sceneId !== p.sceneId) return false;
+      if (newChair && action.objectId === 'chair') {
+        const seating = chairSeating.current, pose = CHAIR_POSES[p.sceneId];
+        if (action.kind === 'stand' || seating.active) { stand(); return true; }
+        if (!p.drawerEnabled || s.posture !== 'standing' || s.lift > 0) return false;
+        const entry = chairFront(pose, OFFICE_CHAIR.approachAhead);
+        const boxes = obstacles(room, pose);
+        const path = free(entry, boxes) ? route([root.position.x, root.position.z], entry, boxes) : [];
+        if (!path.length) { p.onHover('chair', '椅子前方空间不足'); return false; }
+        cancelApproach(); keys.current.clear(); jump.current = false;
+        seating.begin(root, pose, path, perform);
+        p.onHover('chair', '走近椅子…');
+        return false;
+      }
+      if (newChair && chairSeating.current.active) { stand(); return false; }
       if (action.kind === 'stand' || action.kind === 'wake') { cancelApproach(); perform(); return true; }
       const pose = CHAIR_POSES[p.sceneId];
       const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : [point[0], point[2]];
@@ -308,6 +326,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const p = current.current;
+      if (event.code === 'Escape' && newChair && chairSeating.current.active) { stand(); return; }
       if (event.code === 'Escape' && approach.current) { cancelApproach(); return; }
       const target = event.target as HTMLElement | null;
       if (!p.enabled || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || (target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) return;
@@ -318,7 +337,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (event.repeat || drawerTask.current) return;
       if (approach.current) cancelApproach();
       if (event.code === 'KeyE') {
-        if (state.current.posture !== 'standing' || p.objects.bed?.active || p.objects.chair?.active) stand();
+        if (chairSeating.current.active || state.current.posture !== 'standing' || p.objects.bed?.active || p.objects.chair?.active) stand();
         else {
           const id = state.current.nearby;
           if (id) act(id, id === 'book-01' ? 'inspect' : id === 'pet' ? 'pet' : id === 'bed' ? 'sleep' : id === 'desk-drawer' ? (p.objects[id]?.open ? 'close' : 'open') : 'sit');
@@ -329,6 +348,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         jump.current = true;
       }
       else {
+        if (newChair && chairSeating.current.active) return;
         const scooting = p.sceneId === 'habitat' && state.current.posture === 'chair' && !state.current.exiting;
         if (!scooting) stand();
         if (state.current.external) { state.current.external = false; p.onArrive(); }
@@ -415,6 +435,17 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (!p.objects.chair?.active) s.dismissedChair = false;
     const wanted: Posture = p.sceneId === 'habitat' && p.objects.bed?.active && !s.dismissedBed ? 'bed' : p.objects.chair?.active && !s.dismissedChair ? 'chair' : 'standing';
     const pose = CHAIR_POSES[p.sceneId];
+    if (newChair && chairSeating.current.active) {
+      const seating = chairSeating.current;
+      const previousPhase = seating.phase;
+      seating.update(root, pose, dt, (from, to) => clearSegment(from, to, room.boxes));
+      s.path = []; s.wanted = 'standing'; s.posture = 'standing'; s.sit = 0; s.lie = 0; s.exiting = false;
+      if (previousPhase !== seating.phase) {
+        const hints = { APPROACH: '走近椅子…', ALIGN: '小步对齐…', TURN: '转身入座…', SIT_DOWN: '坐下…', SEATED_IDLE: 'E · 自然起身', STAND_UP: '起身…', EXIT: '离开椅子…' };
+        p.onHover(seating.phase ? 'chair' : null, seating.phase ? hints[seating.phase] : undefined);
+      }
+      return;
+    }
     const pending = approach.current;
     if (pending) {
       pending.elapsed += dt;

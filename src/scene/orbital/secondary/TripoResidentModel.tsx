@@ -4,11 +4,11 @@ import { useGLTF } from '@react-three/drei';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
 import { SecondaryMotion } from './SecondaryMotion';
+import { TRIPO_SCALE, TRIPO_SPEED } from './residentMode';
+import type { ChairSeating } from '../chair/ChairSeating';
+import { TurnFootPlant } from '../chair/TurnFootPlant';
 
-export const TRIPO_SCALE = 1.45;
-export const TRIPO_SPEED = .25 * TRIPO_SCALE;
-const roomTest = new URLSearchParams(window.location.search).get('resident') === 'tripo';
-export const tripoRoomTest = () => roomTest;
+export { TRIPO_SCALE, TRIPO_SPEED, tripoRoomTest } from './residentMode';
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-tripo-transitions.glb`;
 interface RoomAudit {
   snapshot: () => { position: number[]; clipTime: number; moving: boolean; bones: number; modelScale: number; clipSpeed: number };
@@ -19,7 +19,7 @@ function Loaded({ root }: { root: RefObject<THREE.Group> }) {
   const gltf = useGLTF(MODEL);
   const asset = useMemo(() => clone(gltf.scene), [gltf.scene]);
   const state = useRef<{ mixer: THREE.AnimationMixer; walk: THREE.AnimationAction; idle: THREE.AnimationAction;
-    motion: SecondaryMotion; previous: THREE.Vector3; phase: number; moving: boolean }>();
+    motion: SecondaryMotion; turn: TurnFootPlant; previous: THREE.Vector3; phase: number; moving: boolean; walkWeight: number }>();
   useEffect(() => {
     asset.traverse(o => { if (o instanceof THREE.Mesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; } });
     // Construct capsule references at bind pose before sampling a clip.
@@ -29,7 +29,8 @@ function Loaded({ root }: { root: RefObject<THREE.Group> }) {
     const idle = mixer.clipAction(gltf.animations.find(a => a.name === 'SitCycle')!);
     walk.play(); idle.play(); idle.time = 9; idle.paused = true; walk.paused = true;
     walk.weight = 0; idle.weight = 1; mixer.update(0);
-    state.current = { mixer, walk, idle, motion, previous: root.current!.position.clone(), phase: 0, moving: false };
+    asset.updateWorldMatrix(true, true);
+    state.current = { mixer, walk, idle, motion, turn: new TurnFootPlant(asset, root.current!), previous: root.current!.position.clone(), phase: 0, moving: false, walkWeight: 0 };
     let bones = 0;
     asset.traverse(o => { if (o instanceof THREE.Bone) bones++; });
     const api: RoomAudit = { snapshot: () => ({ position: root.current!.position.toArray(), clipTime: state.current!.phase,
@@ -47,15 +48,20 @@ function Loaded({ root }: { root: RefObject<THREE.Group> }) {
     if (!s || !actor) return;
     const distance = Math.hypot(actor.position.x-s.previous.x, actor.position.z-s.previous.z);
     s.previous.copy(actor.position);
-    s.moving = distance > .00001 && actor.userData.grounded !== false;
+    const seating = actor.userData.chairSeating as ChairSeating | undefined;
+    const walkingPhase = !seating?.phase || ['APPROACH', 'ALIGN', 'EXIT'].includes(seating.phase);
+    s.moving = walkingPhase && actor.userData.posture === 'standing' && distance > .00001 && actor.userData.grounded !== false;
     if (s.moving) s.phase = (s.phase + distance / TRIPO_SPEED) % 1.2;
+    s.walkWeight = THREE.MathUtils.damp(s.walkWeight, s.moving ? 1 : 0, 18, Math.min(delta, .05));
+    if (seating?.sitting) s.walkWeight = 0;
     s.motion.advance(Math.min(delta, .05), () => {
       s.walk.time = s.phase;
-      s.walk.weight = s.moving ? 1 : 0;
-      s.idle.weight = s.moving ? 0 : 1;
-      s.idle.time = 9;
+      s.walk.weight = s.walkWeight;
+      s.idle.weight = 1 - s.walkWeight;
+      s.idle.time = seating?.sitting ? seating.clipTime : 9;
       s.mixer.update(0);
-      s.motion.setRotationAllowance(s.moving ? .32 : 1, s.moving ? .12 : 1);
+      s.turn.apply(seating);
+      s.motion.setRotationAllowance(seating?.sitting ? .2 : s.moving ? .32 : 1, seating?.sitting ? .08 : s.moving ? .12 : 1);
     });
   });
   return <primitive object={asset} scale={TRIPO_SCALE} />;

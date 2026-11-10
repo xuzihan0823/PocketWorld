@@ -10,6 +10,8 @@ import { FurnitureBookcase } from './FurnitureBooks';
 import { Bedding } from './Bedding';
 import { ReusableAsset } from './ReusableAsset';
 import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
+import { OfficeChair } from './chair/OfficeChair';
+import { tripoRoomTest } from './secondary/residentMode';
 
 function FurnitureBed({ world }: { world: WorldModelProps }) {
   const state = world.objects.bed ?? CLOSED_OBJECT;
@@ -113,7 +115,7 @@ export const HabitatFurniture: React.FC<WorldModelProps> = world => {
         <Cylinder radius={0.045} height={0.59} position={[0, 0.31, 0]} color={C.brass} />
         <Cylinder radius={0.25} height={0.035} position={[0, 0.018, 0]} color={C.ink} />
       </group>
-    </> : <><FurnitureBed world={world} /><FurnitureChair world={world} /></>}
+    </> : <><FurnitureBed world={world} />{tripoRoomTest() ? <OfficeChair world={world} /> : <FurnitureChair world={world} />}</>}
     <FurnitureLamp world={world} />
     <FurniturePlant world={world} observatory={observatory} />
     <FurnitureHatch />
