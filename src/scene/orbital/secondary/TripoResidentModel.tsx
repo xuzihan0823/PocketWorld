@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { SecondaryMotion } from './SecondaryMotion';
 
 export const TRIPO_SCALE = 1.45;
-export const TRIPO_SPEED = .2 * TRIPO_SCALE;
+export const TRIPO_SPEED = .25 * TRIPO_SCALE;
 const roomTest = new URLSearchParams(window.location.search).get('resident') === 'tripo';
 export const tripoRoomTest = () => roomTest;
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-tripo-transitions.glb`;
@@ -55,7 +55,7 @@ function Loaded({ root }: { root: RefObject<THREE.Group> }) {
       s.idle.weight = s.moving ? 0 : 1;
       s.idle.time = 9;
       s.mixer.update(0);
-      s.motion.setRotationAllowance(1, s.moving ? .12 : 1);
+      s.motion.setRotationAllowance(s.moving ? .32 : 1, s.moving ? .12 : 1);
     });
   });
   return <primitive object={asset} scale={TRIPO_SCALE} />;

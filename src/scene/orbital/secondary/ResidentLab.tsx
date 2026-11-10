@@ -156,7 +156,9 @@ export default function ResidentLab() {
           ? THREE.MathUtils.smoothstep((values[targetIndices.Sit_Clearance] ?? 0) + (values[targetIndices.LieDown_Clearance] ?? 0), 0, .12)
           : 0;
         const walking = activePose === 'Walk' || (activePose === 'SitCycle' && (action?.time ?? 0) < 2.1);
-        motion.setRotationAllowance(1 - .96 * contact, Math.min(1 - .95 * contact, walking ? .12 : 1));
+        motion.setRotationAllowance(
+          Math.min(1 - .96 * contact, walking ? .32 : 1),
+          Math.min(1 - .95 * contact, walking ? .12 : 1));
       }
       function selectPose(name: Clip, at = 0) {
         motion.reset(); animation.stopAllAction();
@@ -191,7 +193,7 @@ export default function ResidentLab() {
           movingWas = live.current.moving; driftStart = time; driftOrigin = mover.position.x;
         }
         if (movingWas && live.current.playing && !isCycle(activePose)) {
-          if (activePose === 'Walk' && continuous) mover.position.z = .2 * time;
+          if (activePose === 'Walk' && continuous) mover.position.z = .25 * time;
           else mover.position.x = driftOrigin + .14 * Math.sin((time - driftStart) * 2.2);
         }
       }
@@ -222,7 +224,15 @@ export default function ResidentLab() {
           head: head.getWorldPosition(new THREE.Vector3()).toArray(),
           morphs: [...(meshes[0].morphTargetInfluences ?? [])],
         }),
-        camera: (side, close) => { setCamera(side, close); render(); },
+        camera: (side, close) => {
+          setCamera(side, close);
+          if (activePose === 'Walk' && continuous) {
+            camera.position.z += mover.position.z;
+            controls.target.z += mover.position.z;
+            controls.update();
+          }
+          render();
+        },
         performance: () => ({ meanMs: stats.reduce((a, b) => a + b, 0) / Math.max(1, stats.length), maxMs: Math.max(0, ...stats), samples: stats.length }),
         meshAudit: () => {
           const v = new THREE.Vector3(); let finite = true, vertices = 0, triangles = 0;

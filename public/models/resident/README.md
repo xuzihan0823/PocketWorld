@@ -1,6 +1,6 @@
 # 人物模型
 
-[新角色连续动作 GLB](luna-tripo-transitions.glb) 保留 103 根骨骼、六段动画和原静态外形。本轮修复 SitCycle 前 2.1 秒与 Walk：交替脚底固定、步幅匹配、骨盆与踝部过渡、前裙摆避让，以及 259 个误绑头发的背部／领口布料顶点。49 个形状目标，11,177,284 bytes，原贴图逐字节保留。独立预览 `?dev=resident&asset=transitions`；实际房间步行测试 `?resident=tripo`。验证与限制见 [当前说明](../../../art/resident/tripo-transitions/README.md)。
+[新角色连续动作 GLB](luna-tripo-transitions.glb) 保留 103 根骨骼、六段动画、49 个形状目标和原静态外形。当前步态为 0.25 模型单位/秒、7/12 支撑比，已修正屈膝常驻、足滚转、对侧摆臂、手指及步宽；259 个肩背误分头发顶点按邻近身体权重修复，步行头发旋转配额收紧为 0.32。GLB 为 11,344,460 bytes，原贴图逐字节保留。独立预览 `?dev=resident&asset=transitions`；实际房间步行测试 `?resident=tripo`，速度 0.3625 场景单位/秒。验证与限制见 [当前说明](../../../art/resident/tripo-transitions/README.md)。
 第二阶段独立测试模型为 [`luna-tripo-dynamics.glb`](luna-tripo-dynamics.glb)，沿用 103 根骨骼，已补齐肩腋局部开口、精修局部权重及坐卧裙发接触。包含 Walk、ArmsUp、Sit、LieDown 四段 Blender 测试动画及五个姿势修正形状键，共 18,659 个三角面、10,728,168 bytes。原顶点静态位置、原三角面、UV 和三张贴图保留。通过 `?dev=resident` 查看动态、碰撞与三视角近景；Windows 验收、精修前后对比及局限见 [第二阶段说明](../../../art/resident/tripo-dynamics/README.md)。简化碰撞仍可能局部穿模，主房间仍使用下述旧角色。
 
 新 Tripo 人物的头发和裙摆辅助绑定为 [`luna-tripo-secondary.glb`](luna-tripo-secondary.glb)，保留原人体骨架并新增 50 根辅助骨骼。可编辑 Blender 文件、诊断动作与局限见 [新模型绑定说明](../../../art/resident/tripo-secondary/README.md)。该资产尚未接入运行角色。

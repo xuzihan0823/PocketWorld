@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 import platform
+import argparse
+import sys
 
 import bpy
 import numpy as np
@@ -109,9 +111,27 @@ def validate(workspace):
             if [(g.group, g.weight) for g in a.groups] != [(g.group, g.weight) for g in b.groups]:
                 changed.add(a.index)
                 assert a.index in repaired
-                assert all(mesh.vertex_groups[g.group].name in ['mixamorig:Spine1', 'mixamorig:Spine2'] for g in a.groups)
+                assert all(mesh.vertex_groups[g.group].name in ['mixamorig:Hips', 'mixamorig:Spine', 'mixamorig:Spine1', 'mixamorig:Spine2',
+                    'mixamorig:LeftShoulder', 'mixamorig:RightShoulder', 'mixamorig:LeftArm', 'mixamorig:RightArm'] for g in a.groups)
                 assert not mesh.data.attributes['Secondary_Hair_Region'].data[a.index].value
         assert changed == repaired
+        # A whitelist alone cannot detect a shoulder seam pinned to Spine2.
+        # Check the actual copied weights against the untouched source skin.
+        positions = np.array([old_mesh.matrix_world @ v.co for v in old_mesh.data.vertices])
+        body = np.array([not h.value and not d.value for h, d in zip(
+            old_mesh.data.attributes['Secondary_Hair_Region'].data,
+            old_mesh.data.attributes['Secondary_Dress_Region'].data)])
+        body_ids = np.flatnonzero(body)
+        for i in authoring['weight_repair']['nearest_body_vertex_ids']:
+            distances = np.linalg.norm(positions[body_ids]-positions[i], axis=1)
+            donor = int(body_ids[np.argmin(distances)])
+            assert distances.min() < .015
+            expected = {old_mesh.vertex_groups[w.group].name: w.weight for w in old_mesh.data.vertices[donor].groups
+                        if not old_mesh.vertex_groups[w.group].name.startswith(('Hair_', 'Dress_')) and w.weight > 0.}
+            total = sum(expected.values())
+            actual = {mesh.vertex_groups[w.group].name: w.weight for w in mesh.data.vertices[i].groups}
+            assert actual.keys() == expected.keys()
+            assert max(abs(actual[n]-w/total) for n, w in expected.items()) < 1e-6, i
         keys = mesh.data.shape_keys
         assert len(keys.key_blocks) == 50
         for before in old_mesh.data.shape_keys.key_blocks:
@@ -149,6 +169,7 @@ def validate(workspace):
                   'original_geometry_uv_rest_bones_unchanged': True,
                   'only_expected_back_weights_and_hair_correctives_changed': True,
                   'repaired_back_vertices': len(repaired),
+                  'nearest_body_weights_verified': authoring['weight_repair']['nearest_body_copied'],
                   'source_and_saved_nla_tracks': list(frames), 'playback': playback, 'glb_roundtrip': exported,
                   'blend_sha256': hashlib.sha256((out / 'luna-tripo-transitions.blend').read_bytes()).hexdigest()}
         (out / 'blender-validation.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
@@ -159,3 +180,10 @@ def validate(workspace):
             for item in list(temporary.objects):
                 bpy.data.objects.remove(item, do_unlink=True)
             bpy.data.scenes.remove(temporary)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--workspace', required=True)
+    args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
+    print(json.dumps(validate(Path(args.workspace).resolve()), indent=2))

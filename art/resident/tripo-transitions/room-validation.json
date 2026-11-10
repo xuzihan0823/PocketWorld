@@ -9,19 +9,56 @@
     "moving": false,
     "bones": 103,
     "modelScale": 1.45,
-    "clipSpeed": 0.29
+    "clipSpeed": 0.3625
   },
-  "after": {
+  "moving": {
     "position": [
-      0.8072197729019125,
+      0.6618833748544206,
       0,
-      0.06218446414849665
+      0.17637734832866817
     ],
-    "clipTime": 0.04360000002384003,
+    "clipTime": 0.2450000000000026,
     "moving": true,
     "bones": 103,
     "modelScale": 1.45,
-    "clipSpeed": 0.29
+    "clipSpeed": 0.3625
   },
+  "stopped": {
+    "position": [
+      0.714159783842366,
+      0,
+      0.1353030269809969
+    ],
+    "clipTime": 0.4284000000953704,
+    "moving": false,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "turned": {
+    "position": [
+      0.5331550592083185,
+      0,
+      -0.09506662255324716
+    ],
+    "clipTime": 0.036600000143053035,
+    "moving": true,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "after": {
+    "position": [
+      0.5331550592083185,
+      0,
+      -0.09506662255324716
+    ],
+    "clipTime": 0.036600000143053035,
+    "moving": false,
+    "bones": 103,
+    "modelScale": 1.45,
+    "clipSpeed": 0.3625
+  },
+  "travel": 0.5238125000000013,
   "errors": []
 }

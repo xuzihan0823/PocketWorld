@@ -48,136 +48,136 @@
       "max_world_offset": 0.06155126169323921
     },
     "Walk_Contact_0": {
-      "vertices": 212,
-      "max_world_offset": 0.0009708207217045128
+      "vertices": 266,
+      "max_world_offset": 0.0009708121651783586
     },
     "Walk_Contact_1": {
-      "vertices": 167,
-      "max_world_offset": 0.0009708232246339321
+      "vertices": 199,
+      "max_world_offset": 0.006106694228947163
     },
     "Walk_Contact_2": {
-      "vertices": 199,
-      "max_world_offset": 0.0031094851437956095
+      "vertices": 129,
+      "max_world_offset": 0.0009708139696158469
     },
     "Walk_Contact_3": {
       "vertices": 129,
-      "max_world_offset": 0.0009708188008517027
+      "max_world_offset": 0.0009708256111480296
     },
     "Walk_Contact_4": {
       "vertices": 129,
-      "max_world_offset": 0.0009708175202831626
+      "max_world_offset": 0.0009708224097266793
     },
     "Walk_Contact_5": {
-      "vertices": 167,
-      "max_world_offset": 0.0009708232246339321
+      "vertices": 129,
+      "max_world_offset": 0.0009708160650916398
     },
     "Walk_Contact_6": {
-      "vertices": 220,
-      "max_world_offset": 0.0009708207217045128
+      "vertices": 189,
+      "max_world_offset": 0.0018229633569717407
     },
     "Walk_Contact_7": {
-      "vertices": 230,
-      "max_world_offset": 0.0012105799978598952
+      "vertices": 233,
+      "max_world_offset": 0.0078098406083881855
     },
     "Walk_Contact_8": {
-      "vertices": 233,
-      "max_world_offset": 0.0045241801999509335
+      "vertices": 212,
+      "max_world_offset": 0.0009708166471682489
     },
     "Walk_Contact_9": {
-      "vertices": 233,
-      "max_world_offset": 0.0009708189172670245
+      "vertices": 212,
+      "max_world_offset": 0.0019008696544915438
     },
     "Walk_Contact_10": {
       "vertices": 212,
-      "max_world_offset": 0.002036857418715954
+      "max_world_offset": 0.0025785816833376884
     },
     "Walk_Contact_11": {
       "vertices": 212,
-      "max_world_offset": 0.0011140716960653663
+      "max_world_offset": 0.0019334880635142326
     },
     "Approach_Contact_0": {
       "vertices": 0,
       "max_world_offset": 0.0
     },
     "Approach_Contact_1": {
-      "vertices": 151,
-      "max_world_offset": 0.0005857055075466633
+      "vertices": 119,
+      "max_world_offset": 0.0005857069045305252
     },
     "Approach_Contact_2": {
-      "vertices": 129,
-      "max_world_offset": 0.0009708149009384215
+      "vertices": 206,
+      "max_world_offset": 0.0009708117577247322
     },
     "Approach_Contact_3": {
-      "vertices": 129,
-      "max_world_offset": 0.0009708183351904154
+      "vertices": 245,
+      "max_world_offset": 0.0012069137301295996
     },
     "Approach_Contact_4": {
-      "vertices": 129,
-      "max_world_offset": 0.0009708173456601799
+      "vertices": 245,
+      "max_world_offset": 0.0012840896379202604
     },
     "Approach_Contact_5": {
-      "vertices": 167,
-      "max_world_offset": 0.000970821303781122
+      "vertices": 231,
+      "max_world_offset": 0.0009708144352771342
     },
     "Approach_Contact_6": {
-      "vertices": 280,
-      "max_world_offset": 0.00303590577095747
+      "vertices": 129,
+      "max_world_offset": 0.0009708222351036966
     },
     "Approach_Contact_7": {
       "vertices": 212,
-      "max_world_offset": 0.0009708303259685636
+      "max_world_offset": 0.0009708168799988925
     },
     "Approach_Contact_8": {
-      "vertices": 212,
-      "max_world_offset": 0.0009708175202831626
+      "vertices": 233,
+      "max_world_offset": 0.0031994518358260393
     },
     "Approach_Contact_9": {
-      "vertices": 233,
-      "max_world_offset": 0.0009708150173537433
+      "vertices": 253,
+      "max_world_offset": 0.004986092448234558
     },
     "Approach_Contact_10": {
-      "vertices": 233,
-      "max_world_offset": 0.0017789342673495412
+      "vertices": 260,
+      "max_world_offset": 0.008712331764400005
     },
     "Approach_Contact_11": {
-      "vertices": 263,
-      "max_world_offset": 0.018283484503626823
+      "vertices": 233,
+      "max_world_offset": 0.004481174051761627
     },
     "Approach_Contact_12": {
-      "vertices": 224,
-      "max_world_offset": 0.0009708207217045128
+      "vertices": 212,
+      "max_world_offset": 0.002509618643671274
     },
     "Approach_Contact_13": {
-      "vertices": 192,
-      "max_world_offset": 0.0009708236320875585
+      "vertices": 212,
+      "max_world_offset": 0.000970819965004921
     },
     "Approach_Contact_14": {
-      "vertices": 196,
-      "max_world_offset": 0.001047738827764988
+      "vertices": 241,
+      "max_world_offset": 0.0024607928935438395
     },
     "Approach_Contact_15": {
-      "vertices": 199,
-      "max_world_offset": 0.005192673299461603
+      "vertices": 241,
+      "max_world_offset": 0.010566862300038338
     },
     "Approach_Contact_16": {
-      "vertices": 199,
-      "max_world_offset": 0.010127443820238113
+      "vertices": 245,
+      "max_world_offset": 0.001953426981344819
     },
     "Approach_Contact_17": {
-      "vertices": 129,
-      "max_world_offset": 0.0009708196157589555
+      "vertices": 219,
+      "max_world_offset": 0.0009708196739666164
     },
     "Approach_Contact_18": {
-      "vertices": 194,
-      "max_world_offset": 0.0009708208963274956
+      "vertices": 129,
+      "max_world_offset": 0.0009708189172670245
     },
     "Approach_Contact_19": {
-      "vertices": 212,
-      "max_world_offset": 0.0009145963122136891
+      "vertices": 220,
+      "max_world_offset": 0.0009145778603851795
     },
     "Approach_Contact_20": {
-      "vertices": 137,
-      "max_world_offset": 0.00030817350489087403
+      "vertices": 149,
+      "max_world_offset": 0.00036283928784541786
     },
     "Approach_Contact_21": {
       "vertices": 0,
@@ -468,7 +468,269 @@
     ],
     "hair_islands": 20,
     "remaining_hair_vertices": 7335,
-    "patches_rebound": 0
+    "patches_rebound": 0,
+    "nearest_body_copied": 259,
+    "nearest_body_vertex_ids": [
+      4712,
+      4713,
+      4714,
+      4763,
+      4764,
+      4765,
+      4766,
+      7358,
+      7359,
+      7360,
+      7362,
+      7363,
+      7364,
+      7365,
+      7366,
+      7367,
+      7371,
+      7372,
+      7373,
+      7374,
+      7396,
+      7397,
+      7398,
+      7401,
+      7410,
+      7411,
+      7416,
+      7417,
+      7422,
+      7423,
+      7424,
+      7457,
+      7458,
+      7459,
+      7614,
+      7615,
+      7616,
+      7617,
+      7618,
+      7619,
+      7737,
+      7738,
+      7739,
+      7740,
+      7741,
+      7742,
+      7746,
+      7872,
+      7873,
+      7874,
+      7876,
+      7877,
+      7903,
+      7904,
+      7905,
+      7912,
+      7913,
+      7914,
+      7915,
+      7938,
+      7939,
+      7940,
+      7941,
+      7942,
+      7943,
+      7944,
+      7945,
+      7946,
+      8030,
+      8031,
+      8032,
+      8036,
+      8037,
+      8038,
+      8039,
+      8040,
+      8041,
+      8042,
+      8071,
+      8072,
+      8073,
+      8125,
+      8126,
+      8127,
+      8128,
+      8129,
+      8130,
+      8134,
+      8135,
+      8136,
+      8166,
+      8167,
+      8168,
+      8189,
+      8190,
+      8191,
+      8192,
+      8193,
+      8194,
+      8195,
+      8217,
+      8218,
+      8219,
+      8220,
+      8221,
+      8222,
+      8223,
+      8224,
+      8225,
+      8226,
+      8227,
+      8228,
+      8229,
+      8230,
+      8231,
+      8232,
+      8239,
+      8240,
+      8241,
+      8245,
+      8246,
+      8247,
+      8248,
+      8249,
+      8250,
+      8251,
+      8252,
+      8257,
+      8258,
+      8259,
+      8262,
+      8276,
+      8277,
+      8278,
+      10733,
+      10734,
+      10735,
+      10736,
+      11620,
+      11621,
+      11622,
+      11623,
+      11629,
+      11630,
+      11631,
+      11695,
+      11696,
+      11697,
+      11699,
+      11700,
+      11701,
+      11702,
+      11703,
+      11704,
+      11728,
+      11729,
+      11730,
+      11731,
+      11746,
+      11747,
+      11748,
+      11749,
+      11750,
+      11752,
+      11753,
+      11754,
+      11761,
+      11762,
+      11763,
+      11767,
+      11768,
+      11769,
+      11770,
+      11781,
+      11782,
+      11783,
+      11786,
+      12011,
+      12012,
+      12013,
+      12023,
+      12024,
+      12025,
+      12044,
+      12045,
+      12046,
+      12047,
+      12048,
+      12052,
+      12053,
+      12054,
+      12062,
+      12063,
+      12064,
+      12068,
+      12069,
+      12070,
+      12142,
+      12143,
+      12144,
+      12155,
+      12156,
+      12157,
+      12188,
+      12189,
+      12190,
+      12393,
+      12394,
+      12395,
+      12396,
+      17840,
+      17841,
+      17842,
+      17843,
+      18312,
+      18313,
+      18314,
+      18322,
+      18323,
+      18324,
+      22145,
+      22146,
+      22147,
+      22214,
+      22215,
+      22216,
+      22217,
+      22218,
+      22224,
+      22225,
+      22226,
+      22701,
+      22702,
+      22703,
+      22940,
+      22941,
+      22942,
+      23006,
+      23007,
+      23008,
+      23009,
+      23012,
+      23013,
+      23027,
+      23028,
+      23029,
+      23030,
+      23056,
+      23057,
+      23058,
+      23065,
+      23066,
+      23067,
+      23068,
+      23103,
+      23104,
+      23105,
+      23109,
+      23110
+    ]
   },
   "walk_samples": {
     "Walk": [
@@ -510,6 +772,6 @@
       2.1
     ]
   },
-  "walk_speed": 0.2,
+  "walk_speed": 0.25,
   "cycle_bone_and_morph_time_origin": 0
 }

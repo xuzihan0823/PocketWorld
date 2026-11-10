@@ -31,6 +31,15 @@ def repair_hair_islands(obj):
     mesh = obj.data
     positions = np.array([obj.matrix_world @ v.co for v in mesh.vertices])
     hair = np.array([v.value for v in mesh.attributes['Secondary_Hair_Region'].data])
+    dress = np.array([v.value for v in mesh.attributes['Secondary_Dress_Region'].data])
+    body_ids = np.flatnonzero(~hair & ~dress)
+    # Snapshot donors before changing any mask or weights. Coincident shoulder
+    # seams must follow the same shoulder/arm blend as the surrounding skin.
+    body_weights = {
+        int(i): {obj.vertex_groups[g.group].name: g.weight for g in mesh.vertices[i].groups
+                 if not obj.vertex_groups[g.group].name.startswith(('Hair_', 'Dress_')) and g.weight > 0.}
+        for i in body_ids
+    }
     parent = list(range(len(positions)))
     def find(i):
         while parent[i] != i:
@@ -54,7 +63,7 @@ def repair_hair_islands(obj):
     components = {}
     for i in np.flatnonzero(hair):
         components.setdefault(find(i), []).append(int(i))
-    repaired = []
+    repaired, copied = [], []
     for ids in components.values():
         p = positions[ids]
         if len(ids) > 100 or p[:, 2].min() < .60 or p[:, 2].max() > .78:
@@ -62,8 +71,17 @@ def repair_hair_islands(obj):
         for i in ids:
             for group in list(mesh.vertices[i].groups):
                 obj.vertex_groups[group.group].remove([i])
-            upper = float(v1.smooth((positions[i, 2] - .63) / .07))
-            for name, amount in [('mixamorig:Spine1', 1-upper), ('mixamorig:Spine2', upper)]:
+            distances = np.linalg.norm(positions[body_ids]-positions[i], axis=1)
+            nearest = int(np.argmin(distances))
+            weights = body_weights[int(body_ids[nearest])] if distances[nearest] < .015 else {}
+            if weights:
+                total = sum(weights.values())
+                weights = {name: amount/total for name, amount in weights.items()}
+                copied.append(i)
+            else:
+                upper = float(v1.smooth((positions[i, 2] - .63) / .07))
+                weights = {'mixamorig:Spine1': 1-upper, 'mixamorig:Spine2': upper}
+            for name, amount in weights.items():
                 if amount > 1e-6:
                     obj.vertex_groups[name].add([i], amount, 'REPLACE')
             hair[i] = False
@@ -79,7 +97,8 @@ def repair_hair_islands(obj):
     selected = set(repaired)
     attr.data.foreach_set('value', [i in selected for i in range(len(positions))])
     return {'vertices': len(repaired), 'vertex_ids': sorted(repaired), 'hair_islands': len(components),
-            'remaining_hair_vertices': int(hair.sum()), 'patches_rebound': 0}
+            'remaining_hair_vertices': int(hair.sum()), 'patches_rebound': 0,
+            'nearest_body_copied': len(copied), 'nearest_body_vertex_ids': sorted(copied)}
 
 
 def load_scene(path):
