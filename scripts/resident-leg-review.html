@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#e8edf3}canvas{display:block}</style>
+<script type="module">
+import * as THREE from '/node_modules/three/build/three.module.js';
+import {GLTFLoader} from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(420,720);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+document.body.append(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#e8edf3');
+const halfWidth=.62*(420/720)/2;
+const camera=new THREE.OrthographicCamera(-halfWidth,halfWidth,.62/2,-.62/2,.01,10);
+camera.position.set(0,.28,3);camera.lookAt(0,.28,0);
+scene.add(new THREE.HemisphereLight('#f5f9ff','#9596a5',2.6));
+const light=new THREE.DirectionalLight('#fff3e7',2.8);light.position.set(1,2,3);scene.add(light);
+const fill=new THREE.DirectionalLight('#c8e0ff',1.6);fill.position.set(-2,1,-1);scene.add(fill);
+const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-1,0,0),new THREE.Vector3(1,0,0)]),new THREE.LineBasicMaterial({color:'#aab8ca'}));scene.add(line);
+let current;const models={};
+const vec=()=>new THREE.Vector3();
+const load=async(url)=>{
+ if(models[url])return models[url];
+ const gltf=await new GLTFLoader().loadAsync(url);let mesh;gltf.scene.traverse(o=>{if(o.isSkinnedMesh){mesh=o;o.frustumCulled=false}});
+ gltf.scene.updateMatrixWorld(true);
+ const mixer=new THREE.AnimationMixer(gltf.scene),material=mesh.material;
+ const bone=n=>mesh.skeleton.bones.find(b=>b.name.replace(/[^\w]/g,'')==='mixamorig'+n);
+ const defaults=[];gltf.scene.traverse(o=>defaults.push([o,o.position.clone(),o.quaternion.clone(),o.scale.clone()]));
+ models[url]={gltf,mesh,mixer,bone,material,defaults};return models[url];
+};
+window.audit=async(url,clip='Rest',time=0,options={})=>{
+ const model=await load(url),{gltf,mesh,mixer,bone}=model;
+ if(current)scene.remove(current);current=gltf.scene;scene.add(current);
+ mixer.stopAllAction();for(const [o,p,q,s]of model.defaults){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s)}mesh.morphTargetInfluences?.fill(0);
+ if(clip!=='Rest'){const action=mixer.clipAction(gltf.animations.find(a=>a.name===clip));action.reset().setLoop(THREE.LoopOnce,1);action.clampWhenFinished=true;action.play();action.time=time;mixer.update(0)}
+ gltf.scene.updateMatrixWorld(true);mesh.skeleton.update();
+ mesh.material=options.clay?new THREE.MeshStandardMaterial({color:'#b9c6d5',roughness:1}):model.material;
+ if(options.side){camera.position.set(3,.28,0);camera.lookAt(0,.28,0)}else{camera.position.set(0,.28,3);camera.lookAt(0,.28,0)}
+ camera.updateMatrixWorld();renderer.render(scene,camera);
+ const canvas=document.createElement('canvas');canvas.width=420;canvas.height=780;const ctx=canvas.getContext('2d');
+ ctx.fillStyle='#e8edf3';ctx.fillRect(0,0,420,780);ctx.drawImage(renderer.domElement,0,40);
+ ctx.fillStyle='#263d52';ctx.font='bold 17px Microsoft YaHei';ctx.fillText(options.title||clip+' '+time.toFixed(2)+' s',14,25);
+ const world=n=>bone(n).getWorldPosition(vec());
+ const screen=p=>{const q=p.clone().project(camera);return [(q.x+1)*210,(1-q.y)*360+40]};
+ const results={};
+ for(const side of ['Left','Right']){
+   const [hip,knee,ankle]=['UpLeg','Leg','Foot'].map(n=>world(side+n));
+   const axis=ankle.clone().sub(hip).normalize();const pole=knee.clone().sub(hip);pole.addScaledVector(axis,-pole.dot(axis)).normalize();
+   const v=(hip.y-knee.y)/(hip.y-ankle.y);const lineX=THREE.MathUtils.lerp(hip.x,ankle.x,v);
+   results[side]={hip:hip.toArray(),knee:knee.toArray(),ankle:ankle.toArray(),pole:pole.toArray(),kneeOffsetX:knee.x-lineX,flexion:THREE.MathUtils.radToDeg(knee.clone().sub(hip).angleTo(ankle.clone().sub(knee)))};
+   if(options.overlay){
+     ctx.strokeStyle='#087b87';ctx.lineWidth=2;ctx.beginPath();[hip,knee,ankle].forEach((p,i)=>{const [x,y]=screen(p);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+     [hip,knee,ankle].forEach((p,i)=>{const [x,y]=screen(p);ctx.beginPath();ctx.arc(x,y,i===1?5:4,0,Math.PI*2);ctx.fillStyle=i===1?'#ffb73d':'#ffffff';ctx.fill();ctx.strokeStyle='#087b87';ctx.stroke()});
+     ctx.setLineDash([4,4]);ctx.strokeStyle='#5887c3';ctx.beginPath();const a=screen(knee),b=screen(knee.clone().addScaledVector(pole,.06));ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();ctx.setLineDash([]);
+   }
+ }
+ ctx.font='14px Microsoft YaHei';ctx.fillStyle='#37536e';ctx.fillText(options.overlay?'关节中心 / 骨骼连线 / 虚线=弯曲方向':'固定正面正交 · 皮肤表面',14,775);
+ if(options.clay)mesh.material.dispose();mesh.material=model.material;
+ return {image:canvas.toDataURL('image/png').split(',')[1],joints:results};
+};
+window.ready=true;
+</script>

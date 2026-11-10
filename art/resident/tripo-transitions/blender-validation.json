@@ -2,8 +2,11 @@
   "platform": "Windows-11-10.0.26200-SP0",
   "blender": "5.2.3 LTS",
   "bones": 103,
-  "original_geometry_uv_rest_bones_unchanged": true,
-  "only_expected_back_weights_and_hair_correctives_changed": true,
+  "topology_uv_rest_bones_and_feet_unchanged": true,
+  "bounded_leg_shape_vertices": 552,
+  "bounded_knee_weight_vertices": 251,
+  "max_lateral_shape_offset": 0.005286660045385361,
+  "only_expected_shoulder_and_knee_weights_changed": true,
   "repaired_back_vertices": 259,
   "nearest_body_weights_verified": 259,
   "source_and_saved_nla_tracks": [
@@ -281,7 +284,7 @@
     ]
   },
   "glb_roundtrip": {
-    "vertices": 25204,
+    "vertices": 25206,
     "max_surface_error": 7.152557373046875e-07,
     "samples": {
       "Walk:0.0": 6.854534149169922e-07,
@@ -308,5 +311,5 @@
       "LieCycle:13.0": 4.76837158203125e-07
     }
   },
-  "blend_sha256": "472e18acb4ef167a3aeac93708855afdd5d5ac98311330645b861e49e4b1de0a"
+  "blend_sha256": "45d251d59803e570d7339ca85a567309a09092d6e49ec90c2fdeae356a7b7dbe"
 }

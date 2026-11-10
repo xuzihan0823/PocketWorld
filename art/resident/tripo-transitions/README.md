@@ -1,59 +1,60 @@
-# 新角色步态形态、肩部权重与后发验收
+# 新角色腿型、步态与裙发验收
 
-当前 `luna-tripo-transitions.glb` 已完成步态精修，保留 103 根骨骼、18,659 个三角面、静态网格、UV、三张原贴图和 49 个形状目标。沿用 `feat/tripo-hair-dress-rig` / PR #27；对比基线为 `fe8bf8c`。
+当前版本在 `941173f` 的步态与肩发修复基础上，局部修正正面膝周和小腿形体、膝部蒙皮与停步弯曲平面。保留 103 根骨骼、18,659 个三角面、UV、三张原贴图、49 个形状目标，以及已有足部滚转和肩发修复。沿用 `feat/tripo-hair-dress-rig` / PR #27。
 
-## 当前动作
+## 正面腿型诊断
 
-- Walk：1.2 秒周期，速度 0.25 模型单位/秒；支撑占 7/12（21/36 帧），双支撑占 16.7%。左右脚各向内收 0.015。所有支撑边界对齐 30 fps。
-- SitCycle 前 2.1 秒：摆脚区间为左 3/30–15/30、右 17/30–29/30、左 31/30–44/30、右 46/30–59/30 秒；初始位移 0.28，最后一脚在 59/30 秒落稳。脚宽保留原值，2.1 秒连续接入坐姿。
-- 骨盆起伏由脚相对髋部的伸展量决定，单腿承重中期升高；加入 0.009 横向重心转移、骨盆转动及胸椎反向补偿。同侧手脚前后位移相关系数约 −0.946，保持对侧摆臂。
-- 足滚转分抬跟、勾脚尖、落地放平三段；约 +16° / −11.3°，摆动到 88% 时提前到达落点。原模型脚尖距踝约 0.089，因此抬脚补偿由任务单的示例 0.058 调整为 0.092，并加入最高 0.0045 的插值余量；中段抬脚峰值仍为 0.032。
-- 双肩和上臂内收、前臂相位滞后；手腕和五指镜像微屈。接近动作末端平滑归零，ArmsUp / Sit / LieDown 原骨骼矩阵样本保持。
-- 重烘焙 34 个 Walk / Approach 接触修正。步行头发旋转配额为 0.32，裙摆为 0.12；没有修改 SecondaryMotion 求解器或第二阶段 GLB。
+原 `walk-front.mp4` 前 2.4 秒是 SitCycle 接近停步，后 3.6 秒是 Walk；完整视频的 2.20 / 2.60 / 3.20 秒分别对应 SitCycle 2.20、Walk 0.20 / 0.80 秒。本轮用固定正交相机比较，取消原透视和俯视造成的比例变化。
 
-## 肩背修复
+| 检查项 | 证据与结论 | 本轮处理 |
+| --- | --- | --- |
+| 基础网格 | Rest 与停止态都有膝周内收、小腿肚偏外的轮廓。灰模中同样存在，表面转折明显大于真实骨骼连线转折。 | 在高度 0.10–0.40 的腿部皮肤区域调整 552 个顶点；膝周向外、小腿肚向内，平滑衰减，最大横移 0.005287。同步所有形状目标的基础偏移。 |
+| 默认 / 停止姿态 | 原停止姿态与 Rest 的腿部基本相同，没有额外的大腿内旋动画；绑定膝盖相对髋踝正面连线内偏约 0.004226。 | 保存原绑定骨骼，停止及坐起支撑求解改为与步行一致的前向弯曲平面。实际生活舱 idle 采用 SitCycle 末帧，也继承该修正。 |
+| 关节位置 | 关节中心按骨骼 head 读取；皮肤膝盖轮廓不作为关节中心。原绑定位置有轻微内偏，但不足以解释屈膝时明显的表面折转。 | 髋、膝、踝的绑定位置和骨段长度保持；不为贴合皮肤轮廓改绑骨架。 |
+| 动画旋转 | Walk 0.20 / 0.80 的髋膝踝正面基本共线，摆腿膝弯约 44.86°。120 Hz 全周期最大正面偏离仅 0.0000271。 | Walk 全部骨骼矩阵、膝屈曲角、脚踝轨迹与上一版完全一致；步宽、速度、支撑比和足滚转不变。 |
+| IK / 蒙皮 | 使用离线两段骨求解，导出无运行时 IK 约束。Walk 前向 pole 正常；停步原先回到偏内的 rest pole。膝周的原始形体和权重过渡会放大皮肤折转。 | 修正停步 pole，并在膝盖上下 0.045 范围重分配 251 个顶点的同侧大腿/小腿权重，给前侧髌骨小幅大腿偏重，保留其余影响与总权重。 |
 
-259 个原误分头发的顶点重新匹配最近的非头发、非裙摆身体顶点，距离小于 0.015 时复制权重并归一化。该资产的 259 点均找到身体邻点；左肩 4712 等点改为跟随 Shoulder/Arm 混合权重。
+[修正前：Rest / 停止 / 双侧屈膝叠骨](front-diagnosis-before.png) · [修正后同机位](front-diagnosis-after.png) · [皮肤前后对比](front-surface-comparison.png) · [无贴图灰模](front-clay-comparison.png)
 
-实际身体邻点还包含 Spine 和 Hips 的小权重，所以验证在躯干及肩臂白名单之外，逐点核对原始身体邻点权重，防止把同样合法但错误的 Spine2 绑定当作修复通过。保留网格和贴图；近景仍可能看见原贴图色斑，未将其重绘。
+黄点是实际膝关节中心，青线是髋—膝—踝连线，虚线表示求解后的弯曲方向在画面的投影。Rest 仍显示原绑定骨架，停止态显示前向 pole 求解后的骨架。皮肤与关节允许有合理偏移，未把两者强制重合。
 
-[肩部近景（左旧右新）](shoulder-repair-comparison.png) · [背发侧面对比](back-repair-comparison.png)
+[正面正交视频：左旧右新](front-orthographic.mp4) · [同一视频叠加关节](front-orthographic-joints.mp4)
 
-## 数值验收
+两段均为 6 秒 / 30 fps / 180 帧，沿用原视频完整时间轴。骨骼和表面在同一真实 GLB 中采样；这两段隔离裙发动力学以观察腿部，带动力学的三视角视频另列如下。
 
-[120 Hz 实际 GLB 回读](walk-validation.json)，模型高约 0.98，单位为模型单位：
+## 验证
 
-| 指标 | SitCycle 前 2.1 秒 | Walk 两周期 |
-| --- | ---: | ---: |
-| 样本数 | 253 | 289 |
-| 支撑脚踝最大漂移 | 0.000108 | 0.000192 |
-| 支撑脚底最大漂移 | 0.000174 | 0.000213 |
-| 脚底最低点 | −0.000108 | −0.000191 |
-| 双脚同时离地超过 0.001 | 0 | 0 |
+- [腿部回读](leg-validation.json)：120 Hz 下 Walk 全骨骼矩阵最大差、脚踝轨迹最大差及膝屈曲角最大差均为 0。停止膝关节正面内偏由 0.0042264 降至 2.01e-8。
+- 同一条腿内的小腿中段与膝周表面中线横向差：停止态约 0.009462 → 0.00199；两个屈膝关键帧约 0.00862–0.01020 → 0.00176–0.00263。该几何量用于对照转折趋势，不替代外观判断，也不把表面中线当成骨骼中心。
+- [120 Hz 脚底](walk-validation.json)：SitCycle / Walk 支撑脚底最大漂移 0.000174 / 0.000213；最低点 −0.000108 / −0.000191；双脚同时离地采样数均为 0。足滚转约 +15.98° / −11.33°；支撑中期膝弯仍约 4.94°。
+- [坐卧及旧动作](footplant-validation.json)：足底支撑通过，ArmsUp / Sit / LieDown 骨骼矩阵样本与 941173f 一致。
+- [Blender 回读](blender-validation.json)：25,206 个导出顶点 / 22 个时刻，最大表面误差 7.16e-7；552 个形体修改点和 251 个膝权重点均在限定范围；高度 ≤0.10 的脚部原坐标及权重保留，拓扑、UV、绑定骨骼不变；原 259 个肩背复制权重点仍逐点通过。
+- [glTF](gltf-validation.json)：0 errors、2 个既有 warnings（生成切线、蒙皮网格非根节点）。三张原贴图逐字节一致，GLB 11,346,500 bytes，比 941173f 增加 2,040 bytes；导出顶点因属性拆分增加 2 个，原三角面不变。
+- [完整浏览器动作](browser-validation.json)：9 / 13 秒坐卧、暂停、重播、形状清零和切回真实 Rest 通过。验收页现在恢复 glTF 局部 TRS，避免 `Skeleton.pose()` 对带坐标转换父节点的根骨造成额外转向。
+- [步行动态](walk-browser-validation.json)：静态 / 动态各 180 帧，大腿胶囊穿入数为 0（深度阈值 0.001）；单节裙发最大偏角约 8.9601°。
+- [正交录制](leg-render-validation.json)：两段视频完整解码、帧数、时长及页面异常检查通过。关键帧和全周期已检查；灰模用于排除贴图阴影误导。
+- `node --test src/scene/orbital/secondary/secondary.test.mjs`：8/8 通过。`npm run build`（含 TypeScript）通过，保留既有 Three.js 大包提示。
+- [实际生活舱](room-validation.json)：移动、转向、停步通过，移动距离约 0.525，无页面错误。[场景截图](room-walk.png)。
 
-单腿支撑中期左右膝角均约 4.94°（要求小于 12°）；Walk 首尾骨骼矩阵误差 1.39e-7 以内，形状权重误差 4.77e-7。
+## 保留的步态与肩发功能
 
-- [坐卧脚底及旧动作回归](footplant-validation.json)：通过，与 fe8bf8c 的 ArmsUp / Sit / LieDown 骨骼矩阵样本相同。
-- [浏览器逐帧步行检查](walk-browser-validation.json)：基础与动态各 72 帧接近、108 帧 Walk；深度超过 0.001 的大腿胶囊穿入计数为 0。基础接近最大重叠 0.000708，动态接近 0.0000372，Walk 为 0。
-- 步行时单节辅助骨骼最大动态偏角从约 28° 降为 8.9601°；这是关节局部偏角，不等于整条发束在世界空间中的角度。
-- [Blender 验证](blender-validation.json)：25,204 个导出顶点、22 个时刻回读，最大表面误差 7.16e-7；259 个复制权重点逐点验证。
-- [glTF 验证](gltf-validation.json)：0 errors、2 个既有 warnings（生成切线、蒙皮网格非根节点）；三张贴图逐字节一致。GLB 为 11,344,460 bytes，比 fe8bf8c 增加 167,176 bytes（约 1.50%）。
-- 原动态 8 项单测、TypeScript 和生产构建全部通过。构建仍有既有 Three.js 大包提示。
-- [完整流程](browser-validation.json)：9 / 13 秒坐卧、暂停、重播、切换及形状清零通过。坐卧头发仍有少量近似胶囊重叠，最大约 0.00105。
+Walk 周期 1.2 秒、速度 0.25 模型单位/秒、支撑比 7/12；左右脚各内收 0.015 的上一轮设置保持。足滚转为抬跟、勾脚尖、落地放平三段，包含 0.0045 插值余量。保留骨盆重心转移、对侧摆臂、收臂与放松手指。
 
-## 视频与场景
+SitCycle 前 2.1 秒的四步摆脚边界仍对齐 30 fps，2.1 秒接入停稳、2.4 秒后坐下。49 个修正目标包含 34 个 Walk / Approach 接触形状，已按本轮表面与支撑求解重烘焙。
 
-[侧面前后对比](before-after-side.mp4) · [正面](walk-front.mp4) · [侧面](walk-side.mp4) · [背面](walk-back.mp4)
+原 259 个肩背误分头发点仍按最近身体顶点复制权重，左肩跟随 Shoulder / Arm 混合权重。头发 / 裙摆步行动力学配额仍为 0.32 / 0.12，SecondaryMotion 求解器保持。[肩部近景](shoulder-repair-comparison.png)。
 
-四段视频均为 6 秒、30 fps、180 帧。前 2.4 秒为接近停步，后 3.6 秒为匹配实际根位移的 Walk。三视角左为关闭裙发及碰撞的基础动作、右为开启动态；前后对比左为 fe8bf8c、右为当前版，均开启动态。Walk 镜头跟随角色，旧版只作相同的取景改动。全部视频完整解码通过并抽查关键帧。根目录旧 front.mp4 / side.mp4 / back.mp4 是历史 22 秒坐卧视频。
+[当前正面](walk-front.mp4) · [当前侧面](walk-side.mp4) · [当前背面](walk-back.mp4) 均已重录，左为基础动作、右为开启裙发动态；这三段沿用上一轮透视取景。`before-after-side.mp4` / `back-repair-comparison.png` 保留为 fe8bf8c → 941173f 的上一轮肩发历史对比。
 
-实际入口 `?resident=tripo` 已验证移动、停步及转向，无页面异常；缩放 1.45，匹配速度为 0.3625 场景单位/秒。[截图](room-walk.png) · [场景结果](room-validation.json)。默认入口继续使用原角色；家具交互、新骨架动作融合与急转弯接触尚待适配。
+实际入口 `?resident=tripo` 使用缩放 1.45、速度 0.3625，按实测移动距离推进 Walk。独立验收入口 `?dev=resident&asset=transitions`；默认应用入口仍使用原角色。
 
 ## 复现与边界
 
 ```powershell
 blender -b -t 4 --python-exit-code 1 --python scripts/blender/build_tripo_transitions.py -- --workspace <项目绝对路径>
 blender -b -t 4 --python-exit-code 1 --python scripts/blender/validate_tripo_transitions.py -- --workspace <项目绝对路径>
+# BASELINE_GLB 指向 941173f 的 luna-tripo-transitions.glb
+node scripts/check-resident-legs.mjs
 node scripts/check-resident-walk.mjs
 node scripts/check-resident-footplant.mjs
 node scripts/validate-resident-transition-glb.mjs
@@ -61,10 +62,11 @@ node --test src/scene/orbital/secondary/secondary.test.mjs
 npm.cmd run build
 node scripts/check-resident-transitions.mjs --audit-only
 node scripts/record-resident-walk.mjs
+node scripts/record-resident-leg-review.mjs
 ```
 
-浏览器脚本用 `LAB_URL` 指定当前预览，`BASELINE_URL` 指定 fe8bf8c 预览，`PLAYWRIGHT_MODULE` / `CHROME_PATH` 指定本机工具；`WALK_FRAMES` 可指定中间帧目录。旧版取景 API 需和当前版一样按 mover.position.z 平移 Walk 镜头。`BASELINE_GLB` 可供坐卧回归比较旧动作矩阵，`GLTF_VALIDATOR_MODULE` 可指定验证器。没有新增应用依赖。
+浏览器脚本用 `LAB_URL` 指定当前实验室，`REVIEW_ORIGIN` 指定正交录制的本地 Vite origin（默认 8950）；`PLAYWRIGHT_MODULE` / `CHROME_PATH` 指定工具路径，`LEG_FRAMES` / `WALK_FRAMES` 指定中间帧目录，`GLTF_VALIDATOR_MODULE` 指定验证器。未新增应用依赖。
 
 [GLB](../../../public/models/resident/luna-tripo-transitions.glb) · [Blender 工程](luna-tripo-transitions.blend) · [制作记录](authoring.json)
 
-接触检查使用近似身体胶囊，不代表精确布料自碰撞或任意姿势均不穿模。文件仍超建议 10 MB，原 4096² 贴图预算、实体手机、Safari 和正式场景长期性能尚未验收。
+本轮修正限定于腿部正面轮廓与屈伸。原贴图的膝部明暗、网格本身的低多边形细节保留。胶囊检查不代表精确布料自碰撞；坐卧头发仍有约 0.00105 的近似重叠。新骨架家具动作、实时启停及急转融合、GLB / 4096² 贴图预算、实体手机、Safari 和长期性能仍待验收。

@@ -99,22 +99,48 @@ def validate(workspace):
         for a, b in zip(arm.data.bones, old_arm.data.bones):
             assert a.matrix_local == b.matrix_local
             assert (a.parent.name if a.parent else '') == (b.parent.name if b.parent else '')
-        assert np.array_equal(vector_data(mesh.data.vertices, 'co'), vector_data(old_mesh.data.vertices, 'co'))
+        authoring = json.loads((out / 'authoring.json').read_text(encoding='utf-8'))
+        leg = authoring['leg_repair']
+        leg_shapes, leg_weights = set(leg['shape_vertex_ids']), set(leg['weight_vertex_ids'])
+        old_coords = vector_data(old_mesh.data.vertices, 'co').reshape(-1, 3)
+        new_coords = vector_data(mesh.data.vertices, 'co').reshape(-1, 3)
+        delta = new_coords - old_coords
+        assert set(np.flatnonzero(np.any(delta != 0, axis=1))) == leg_shapes
+        bpy.context.window.scene = old
+        bpy.context.view_layer.update()
+        old_world = np.array([old_mesh.matrix_world @ v.co for v in old_mesh.data.vertices])
+        bpy.context.window.scene = scene
+        bpy.context.view_layer.update()
+        new_world = np.array([mesh.matrix_world @ v.co for v in mesh.data.vertices])
+        world_delta = new_world - old_world
+        assert np.abs(world_delta[:, 1:]).max() < 1e-6
+        assert np.abs(world_delta[:, 0]).max() <= .010001
+        assert all(.10 < old_world[i, 2] < .40 for i in leg_shapes)
+        assert not np.any(delta[old_world[:, 2] <= .10])
         assert len(mesh.data.polygons) == len(old_mesh.data.polygons) == 18659
         assert all(tuple(a.vertices) == tuple(b.vertices) for a, b in zip(mesh.data.polygons, old_mesh.data.polygons))
         assert all(tuple(a.uv) == tuple(b.uv) for a, b in zip(mesh.data.uv_layers.active.data, old_mesh.data.uv_layers.active.data))
         assert list(mesh.vertex_groups.keys()) == list(old_mesh.vertex_groups.keys())
-        authoring = json.loads((out / 'authoring.json').read_text(encoding='utf-8'))
         repaired = set(authoring['weight_repair']['vertex_ids'])
         changed = set()
         for a, b in zip(mesh.data.vertices, old_mesh.data.vertices):
             if [(g.group, g.weight) for g in a.groups] != [(g.group, g.weight) for g in b.groups]:
                 changed.add(a.index)
-                assert a.index in repaired
-                assert all(mesh.vertex_groups[g.group].name in ['mixamorig:Hips', 'mixamorig:Spine', 'mixamorig:Spine1', 'mixamorig:Spine2',
-                    'mixamorig:LeftShoulder', 'mixamorig:RightShoulder', 'mixamorig:LeftArm', 'mixamorig:RightArm'] for g in a.groups)
+                assert a.index in repaired | leg_weights
+                if a.index in leg_weights:
+                    side = 'Left' if old_world[a.index, 0] > 0 else 'Right'
+                    allowed = {'mixamorig:' + side + n for n in ['Leg', 'UpLeg']}
+                    before_w = {mesh.vertex_groups[g.group].name: g.weight for g in b.groups}
+                    after_w = {mesh.vertex_groups[g.group].name: g.weight for g in a.groups}
+                    assert sum(before_w.get(n, 0.) for n in allowed) >= .95
+                    assert abs(sum(before_w.values()) - sum(after_w.values())) < 1e-6
+                    assert {n: w for n, w in before_w.items() if n not in allowed} == {n: w for n, w in after_w.items() if n not in allowed}
+                    assert .23 < old_world[a.index, 2] < .33
+                else:
+                    assert all(mesh.vertex_groups[g.group].name in ['mixamorig:Hips', 'mixamorig:Spine', 'mixamorig:Spine1', 'mixamorig:Spine2',
+                        'mixamorig:LeftShoulder', 'mixamorig:RightShoulder', 'mixamorig:LeftArm', 'mixamorig:RightArm'] for g in a.groups)
                 assert not mesh.data.attributes['Secondary_Hair_Region'].data[a.index].value
-        assert changed == repaired
+        assert changed == repaired | leg_weights
         # A whitelist alone cannot detect a shoulder seam pinned to Spine2.
         # Check the actual copied weights against the untouched source skin.
         positions = np.array([old_mesh.matrix_world @ v.co for v in old_mesh.data.vertices])
@@ -138,7 +164,9 @@ def validate(workspace):
             previous_values = vector_data(before.data, 'co').reshape(-1, 3)
             current_values = vector_data(keys.key_blocks[before.name].data, 'co').reshape(-1, 3)
             allowed = repaired if before.name in ['Sit_Clearance', 'LieDown_Clearance'] else set()
-            assert set(np.flatnonzero(np.any(previous_values != current_values, axis=1))).issubset(allowed)
+            assert set(np.flatnonzero(np.any(previous_values != current_values, axis=1))).issubset(allowed | leg_shapes)
+            check = sorted(set(range(len(delta))) - allowed)
+            assert np.abs(current_values[check] - previous_values[check] - delta[check]).max() < 1e-7
         bpy.context.window.scene = scene
         frames = {'Walk': [1, 14, 37], 'ArmsUp': [1, 61, 121], 'Sit': [1, 61, 121], 'LieDown': [1, 61, 121],
                   'SitCycle': [1, 100, 150, 271], 'LieCycle': [1, 61, 121, 181, 271, 391]}
@@ -166,8 +194,10 @@ def validate(workspace):
                 assert min(item['hips'][2] for item in playback[name]) < .35
         exported = roundtrip(root, scene, arm, mesh)
         report = {'platform': platform.platform(), 'blender': bpy.app.version_string, 'bones': 103,
-                  'original_geometry_uv_rest_bones_unchanged': True,
-                  'only_expected_back_weights_and_hair_correctives_changed': True,
+                  'topology_uv_rest_bones_and_feet_unchanged': True,
+                  'bounded_leg_shape_vertices': len(leg_shapes), 'bounded_knee_weight_vertices': len(leg_weights),
+                  'max_lateral_shape_offset': float(np.abs(world_delta[:, 0]).max()),
+                  'only_expected_shoulder_and_knee_weights_changed': True,
                   'repaired_back_vertices': len(repaired),
                   'nearest_body_weights_verified': authoring['weight_repair']['nearest_body_copied'],
                   'source_and_saved_nla_tracks': list(frames), 'playback': playback, 'glb_roundtrip': exported,

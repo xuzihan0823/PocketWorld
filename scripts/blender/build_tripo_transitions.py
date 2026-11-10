@@ -16,6 +16,10 @@ spec = importlib.util.spec_from_file_location('polish', Path(__file__).with_name
 polish = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(polish)
 
+spec = importlib.util.spec_from_file_location('leg_shape', Path(__file__).with_name('tripo_leg_shape.py'))
+leg_shape = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(leg_shape)
+
 SOURCE_HASH = 'cf27f3a2780a1ac5f3472ee6721f85733ea083b1cc60df8cdb60360621482b7b'
 FPS = 30
 CLIPS = {'SitCycle': 9., 'LieCycle': 13.}
@@ -67,7 +71,7 @@ def plant_feet(state, sit, recline):
     for side in ['Left', 'Right']:
         thigh, shin, foot = [arm.pose.bones['mixamorig:' + side + suffix]
                              for suffix in ['UpLeg', 'Leg', 'Foot']]
-        anchor, orientation, rest_pole = state['feet'][side]
+        anchor, orientation = state['feet'][side]
         goal = anchor.lerp(foot.head, release)
         foot_rotation = orientation.slerp(foot.matrix.to_quaternion(), release)
         hip, knee, ankle = thigh.head.copy(), shin.head.copy(), foot.head.copy()
@@ -78,7 +82,10 @@ def plant_feet(state, sit, recline):
         reach = min(upper + lower - 1e-8, max(abs(upper - lower) + 1e-8, distance))
         along = (upper * upper - lower * lower + reach * reach) / (2 * reach)
         height = math.sqrt(max(0., upper * upper - along * along))
-        preferred = rest_pole.lerp(forward.normalized(), section(sit, 0., .2))
+        # The bind knee is mildly medial (about 17 degrees of pole azimuth).
+        # Keep the stopped solve in the same forward bend plane as walking,
+        # rather than returning to that medial pole at the final approach key.
+        preferred = forward.normalized()
         pole = preferred - axis * preferred.dot(axis)
         pole.normalize()
         target_knee = hip + axis * along + pole * height
@@ -307,6 +314,7 @@ def prepare(workspace):
     obj = next(o for o in scene.objects if o.type == 'MESH')
     assert len(arm.data.bones) == 103 and len(obj.data.polygons) == 18659
     repair = polish.phase2.repair_hair_islands(obj)
+    leg_repair = leg_shape.repair(obj, arm)
     for owner in [arm, obj.data.shape_keys]:
         owner.animation_data.action = None
         for track in owner.animation_data.nla_tracks:
@@ -322,17 +330,14 @@ def prepare(workspace):
     sit = capture(arm)
     polish.phase2.pose(arm, 'LieDown', 2.)
     state = dict(root=root, scene=scene, obj=obj, arm=arm, rest=rest, sit=sit, lie=capture(arm),
-                 ankle=ankle, hip_space=hip_space, weight_repair=repair)
+                 ankle=ankle, hip_space=hip_space, weight_repair=repair, leg_repair=leg_repair)
     state['gait'] = polish.phase2.walk_gait.setup(arm)
     basis(state, 0., 0.)
     state['feet'] = {}
     for side in ['Left', 'Right']:
         thigh, shin, foot = [arm.pose.bones['mixamorig:' + side + suffix]
                              for suffix in ['UpLeg', 'Leg', 'Foot']]
-        axis = (foot.head - thigh.head).normalized()
-        pole = shin.head - thigh.head
-        pole = (pole - axis * pole.dot(axis)).normalized()
-        state['feet'][side] = (foot.head.copy(), foot.matrix.to_quaternion(), pole)
+        state['feet'][side] = (foot.head.copy(), foot.matrix.to_quaternion())
     return state
 
 
@@ -479,6 +484,7 @@ def build(workspace):
               'bone_count': len(state['arm'].data.bones), 'corrections': state['corrections'],
               'contact_knots': KNOTS, 'baked_footplant': True,
               'weight_repair': state['weight_repair'], 'walk_samples': WALK_SAMPLES,
+              'leg_repair': state['leg_repair'],
               'walk_speed': polish.phase2.walk_gait.SPEED,
               'cycle_bone_and_morph_time_origin': 0}
     (state['root'] / 'art/resident/tripo-transitions/authoring.json').write_text(

@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { load } from './resident-glb-loader.mjs';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
@@ -148,6 +149,10 @@ try {
   }
   await page.evaluate(() => window.residentAudit.setPose('Rest', 0));
   assert.ok(await page.evaluate(() => window.residentAudit.cycleSample().morphs.every(value => value === 0)));
+  const stored = await load('public/models/resident/luna-tripo-transitions.glb'); stored.rest();
+  const expectedHips = stored.bone('Hips').getWorldPosition(stored.bone('Hips').position.clone()).toArray();
+  const restoredHips = await page.evaluate(() => window.residentAudit.cycleSample().hips);
+  assert.ok(restoredHips.every((value, i) => Math.abs(value - expectedHips[i]) < 1e-6), 'Rest must match the stored glTF transforms');
   assert.deepEqual(errors, []);
   const video = [];
   if (capture) for (const view of views) {

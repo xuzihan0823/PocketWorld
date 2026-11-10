@@ -19,12 +19,22 @@ export async function load(file) {
   const gltf = await new GLTFLoader().parseAsync(buffer.buffer, '');
   let mesh; gltf.scene.traverse(o => { if (o.isSkinnedMesh) mesh = o; });
   const mixer = new THREE.AnimationMixer(gltf.scene);
+  const defaults = [];
+  gltf.scene.traverse(o => defaults.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]));
+  function rest() {
+    mixer.stopAllAction();
+    // Skeleton.pose() assumes an untransformed non-bone parent. This asset
+    // has an axis-conversion node; restore stored local TRS for a true rest.
+    for (const [o, p, q, s] of defaults) { o.position.copy(p); o.quaternion.copy(q); o.scale.copy(s); }
+    mesh.morphTargetInfluences?.fill(0);
+    gltf.scene.updateMatrixWorld(true); mesh.skeleton.update();
+  }
   const bone = name => mesh.skeleton.bones.find(b => b.name.replace(/[^\w]/g, '') === 'mixamorig' + name);
   function select(name) {
-    mixer.stopAllAction(); mesh.skeleton.pose();
+    rest();
     const action = mixer.clipAction(gltf.animations.find(a => a.name === name));
     action.reset().setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; action.play();
     return time => { action.time = time; mixer.update(0); gltf.scene.updateMatrixWorld(true); mesh.skeleton.update(); };
   }
-  return { gltf, mesh, bone, select, sha256: crypto.createHash('sha256').update(bytes).digest('hex') };
+  return { gltf, mesh, bone, select, rest, sha256: crypto.createHash('sha256').update(bytes).digest('hex') };
 }

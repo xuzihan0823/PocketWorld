@@ -5170,7 +5170,7 @@
               "vertices": 5622,
               "penetrating": 5,
               "maxDepth": 0.006087197853143295,
-              "minHeight": 0.35402388305140853
+              "minHeight": 0.3540272376680643
             }
           },
           "after": {
@@ -5184,7 +5184,7 @@
               "vertices": 5622,
               "penetrating": 0,
               "maxDepth": 0,
-              "minHeight": 0.35402388305140853
+              "minHeight": 0.3540272376680643
             }
           }
         },
@@ -7153,7 +7153,7 @@
             "dress": {
               "vertices": 5622,
               "penetrating": 0,
-              "maxDepth": 0.0003739768390050302,
+              "maxDepth": 0.00037397683900552287,
               "minHeight": 0.08897983523742968
             }
           },

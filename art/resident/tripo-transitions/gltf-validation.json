@@ -2,7 +2,7 @@
   "uri": "luna-tripo-transitions.glb",
   "mimeType": "model/gltf-binary",
   "validatorVersion": "2.0.0-dev.3.10",
-  "validatedAt": "2026-11-10T05:42:21.821Z",
+  "validatedAt": "2026-11-10T09:07:09.035Z",
   "issues": {
     "numErrors": 0,
     "numWarnings": 2,
@@ -104,7 +104,7 @@
         "pointer": "/buffers/0",
         "mimeType": "application/gltf-buffer",
         "storage": "glb",
-        "byteLength": 10987604
+        "byteLength": 10989180
       },
       {
         "pointer": "/images/0",
@@ -149,16 +149,16 @@
     "hasTextures": true,
     "hasDefaultScene": true,
     "drawCallCount": 1,
-    "totalVertexCount": 25204,
+    "totalVertexCount": 25206,
     "totalTriangleCount": 18659,
     "maxUVs": 1,
     "maxInfluences": 4,
     "maxAttributes": 5
   },
-  "sha256": "c641835ee063df6d3b2c67498cea5820321f8c279274897d4095b9727d7816ca",
+  "sha256": "5e1da819d580426618934abf4fc29acc9b92264fff2d9bacf20565a255272ec6",
   "bones": 103,
   "triangles": 18659,
   "morphTargets": 49,
   "embeddedImagesByteIdentical": true,
-  "bytes": 11344460
+  "bytes": 11346500
 }

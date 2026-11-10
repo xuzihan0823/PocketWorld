@@ -126,6 +126,8 @@ export default function ResidentLab() {
       if (cancelled) { disposeScene(gltf.scene); return; }
       asset = gltf.scene;
       const mover = new THREE.Group(); mover.add(asset); scene.add(mover);
+      const restTransforms: [THREE.Object3D, THREE.Vector3, THREE.Quaternion, THREE.Vector3][] = [];
+      asset.traverse(object => restTransforms.push([object, object.position.clone(), object.quaternion.clone(), object.scale.clone()]));
       const meshes: THREE.SkinnedMesh[] = [];
       asset.traverse(object => { if (object instanceof THREE.SkinnedMesh) { object.frustumCulled = false; meshes.push(object); } });
       mixer = new THREE.AnimationMixer(asset);
@@ -162,7 +164,12 @@ export default function ResidentLab() {
       }
       function selectPose(name: Clip, at = 0) {
         motion.reset(); animation.stopAllAction();
-        for (const mesh of meshes) mesh.skeleton.pose();
+        // Preserve the glTF axis-conversion parents when returning to Rest.
+        // Skeleton.pose() alone applies bind-world matrices as root-local TRS.
+        for (const [object, position, quaternion, scale] of restTransforms) {
+          object.position.copy(position); object.quaternion.copy(quaternion); object.scale.copy(scale);
+        }
+        for (const mesh of meshes) mesh.morphTargetInfluences?.fill(0);
         mover.position.set(0, 0, 0); time = 0; driftStart = 0; driftOrigin = 0;
         movingWas = live.current.moving;
         action = name === 'Rest' ? undefined : animation.clipAction(clips.get(name)!);
