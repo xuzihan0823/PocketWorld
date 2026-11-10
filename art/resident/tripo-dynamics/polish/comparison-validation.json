@@ -1,0 +1,393 @@
+{
+  "platform": "win32 10.0.26200",
+  "browser": "156.0.8078.75",
+  "description": "Held at clip time 2 s, no body translation; static disables all three runtime switches; dynamic settles for 2 s. Corrective morphs remain part of both base poses.",
+  "contactMetric": "Mesh vertices, skin-influence classification, depth over 0.001 against the eight approximate body capsules. This is not an exact body-surface or cloth self-collision test.",
+  "reports": [
+    {
+      "variant": "before",
+      "pose": "ArmsUp",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 410,
+          "maxDepth": 0.026272389632720956
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 16,
+          "maxDepth": 0.009100225032561818
+        }
+      },
+      "simulation": {
+        "steps": 254,
+        "resets": 4,
+        "maxAngle": 0.0008451265617186771,
+        "maxSpeed": 0,
+        "penetration": 0.0010276513400440182,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "before",
+      "pose": "ArmsUp",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 410,
+          "maxDepth": 0.02627239433443311
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 16,
+          "maxDepth": 0.009100224253700141
+        }
+      },
+      "simulation": {
+        "steps": 495,
+        "resets": 6,
+        "maxAngle": 0.012615676142073214,
+        "maxSpeed": 4.497229547143655e-9,
+        "penetration": 6.938893903907228e-18,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "before",
+      "pose": "Sit",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 130,
+          "maxDepth": 0.024703139893272035
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 225,
+          "maxDepth": 0.01897478560157753
+        }
+      },
+      "simulation": {
+        "steps": 736,
+        "resets": 8,
+        "maxAngle": 0.0014502292144905997,
+        "maxSpeed": 0,
+        "penetration": 0.002393347070553109,
+        "contactBone": "Dress_Front_L_03",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "before",
+      "pose": "Sit",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 130,
+          "maxDepth": 0.024703140325213348
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 217,
+          "maxDepth": 0.016284395129148133
+        }
+      },
+      "simulation": {
+        "steps": 977,
+        "resets": 10,
+        "maxAngle": 0.06765679049593437,
+        "maxSpeed": 1.2323745691885677e-9,
+        "penetration": 2.0736815042887713e-12,
+        "contactBone": "Dress_Back_L_01",
+        "contactBody": "骨盆"
+      }
+    },
+    {
+      "variant": "before",
+      "pose": "LieDown",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 129,
+          "maxDepth": 0.02466420864810608
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 16,
+          "maxDepth": 0.009100224773160241
+        }
+      },
+      "simulation": {
+        "steps": 1218,
+        "resets": 12,
+        "maxAngle": 0.0008451265617186771,
+        "maxSpeed": 0,
+        "penetration": 0.0010276517808943814,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "before",
+      "pose": "LieDown",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6371,
+          "penetrating": 129,
+          "maxDepth": 0.02466420053413466
+        },
+        "dress": {
+          "vertices": 5621,
+          "penetrating": 16,
+          "maxDepth": 0.009100223956868388
+        }
+      },
+      "simulation": {
+        "steps": 1459,
+        "resets": 14,
+        "maxAngle": 0.012615628088047979,
+        "maxSpeed": 4.497226269581539e-9,
+        "penetration": 6.938893903907228e-18,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "ArmsUp",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 413,
+          "maxDepth": 0.02627241194293857
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 16,
+          "maxDepth": 0.00910021577614814
+        }
+      },
+      "simulation": {
+        "steps": 249,
+        "resets": 5,
+        "maxAngle": 0.0008451265617186771,
+        "maxSpeed": 0,
+        "penetration": 0.0010276321808422653,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "ArmsUp",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 413,
+          "maxDepth": 0.026272416644629225
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 16,
+          "maxDepth": 0.009100214997286818
+        }
+      },
+      "simulation": {
+        "steps": 490,
+        "resets": 7,
+        "maxAngle": 0.012615439305929458,
+        "maxSpeed": 4.497143749305519e-9,
+        "penetration": 1.3877787807814457e-17,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "Sit",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 4,
+          "maxDepth": 0.0010088396263313454
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0
+        }
+      },
+      "simulation": {
+        "steps": 731,
+        "resets": 9,
+        "maxAngle": 0.0014502292144905997,
+        "maxSpeed": 0,
+        "penetration": 0.002393343501119617,
+        "contactBone": "Dress_Front_L_03",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "Sit",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 4,
+          "maxDepth": 0.0010088395254024968
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0
+        }
+      },
+      "simulation": {
+        "steps": 972,
+        "resets": 11,
+        "maxAngle": 0.06765669037722412,
+        "maxSpeed": 1.232236676544158e-9,
+        "penetration": 2.07346639857775e-12,
+        "contactBone": "Dress_Back_L_01",
+        "contactBody": "骨盆"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "LieDown",
+      "mode": "static",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 0,
+          "maxDepth": 0.0005952788269537809
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0
+        }
+      },
+      "simulation": {
+        "steps": 1213,
+        "resets": 13,
+        "maxAngle": 0.0008451265617186771,
+        "maxSpeed": 0,
+        "penetration": 0.001027632621692462,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      }
+    },
+    {
+      "variant": "after",
+      "pose": "LieDown",
+      "mode": "dynamic",
+      "mesh": {
+        "finite": true,
+        "vertices": 25206,
+        "triangles": 18659,
+        "bones": 103
+      },
+      "contacts": {
+        "hair": {
+          "vertices": 6380,
+          "penetrating": 0,
+          "maxDepth": 0.0005952782745021132
+        },
+        "dress": {
+          "vertices": 5622,
+          "penetrating": 0,
+          "maxDepth": 0
+        }
+      },
+      "simulation": {
+        "steps": 1454,
+        "resets": 15,
+        "maxAngle": 0.01261539125174134,
+        "maxSpeed": 4.497151255512061e-9,
+        "penetration": 0,
+        "contactBone": "",
+        "contactBody": ""
+      }
+    }
+  ],
+  "movingDescription": "Additional moving images start at clip time 2 s and advance the same body trajectory for 0.6 s. The base pose stays on its plateau while the springs carry inertia."
+}

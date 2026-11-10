@@ -1,0 +1,15 @@
+.resident-lab { position: fixed; inset: 0; color: #263347; background: #e8edf3; font: 14px/1.55 system-ui, sans-serif; }
+.resident-lab-view { position: absolute; inset: 0 0 0 300px; }
+.resident-lab-view canvas { display: block; touch-action: none; }
+.resident-lab-panel { position: absolute; top: 0; left: 0; bottom: 0; width: 300px; padding: 24px; overflow-y: auto; background: #f7f9fc; box-sizing: border-box; border-right: 1px solid #d4dce8; }
+.resident-lab h1 { font-size: 23px; margin: 6px 0 14px; }
+.resident-lab-kicker { font-size: 10px; letter-spacing: 1.4px; color: #526781; }
+.resident-lab label { display: flex; align-items: center; gap: 9px; margin: 14px 0; }
+.resident-lab select { min-width: 0; flex: 1; padding: 6px; }
+.resident-lab input[type="range"] { min-width: 0; width: 145px; }
+.resident-lab input { accent-color: #426896; }
+.resident-lab button { padding: 7px 10px; border: 1px solid #aab9cd; border-radius: 5px; color: #263347; background: white; cursor: pointer; font: inherit; }
+.resident-lab button:focus-visible, .resident-lab input:focus-visible, .resident-lab select:focus-visible { outline: 2px solid #426896; outline-offset: 3px; }
+.resident-lab-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0; }
+.resident-lab-note { font-size: 12px; color: #54657a; }
+@media (max-width: 650px) { .resident-lab-view { inset: 0 0 45%; } .resident-lab-panel { top: 55%; width: 100%; border-top: 1px solid #d4dce8; padding: 16px; } .resident-lab label { display: inline-flex; margin: 7px 12px 7px 0; } }
