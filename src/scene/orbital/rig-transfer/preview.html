@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Luna · 骨骼迁移预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e7ecf2;color:#253448;font:15px system-ui}main{height:100vh;display:grid;grid-template-columns:280px 1fr}aside{padding:28px 24px;background:#f9fbff;border-right:1px solid #d1dbe6}h1{font-size:23px;margin:0 0 12px}p{line-height:1.7;color:#566780}label{display:block;margin:20px 0 8px}button,select{padding:10px 14px;border:1px solid #bac9d9;border-radius:8px;background:white;color:#253448;cursor:pointer}button.active{background:#30527b;color:white}input[type=range]{width:100%}#view{min-width:0;position:relative}canvas{display:block;width:100%;height:100%}#status{font-size:13px}#clock{font-variant-numeric:tabular-nums}small{color:#64748b;line-height:1.6}a{color:#30527b}.row{display:flex;gap:8px}footer{position:absolute;bottom:20px;left:24px;color:#52647c;background:#ffffffc9;padding:10px 16px;border-radius:8px}@media(max-width:650px){main{grid-template-columns:1fr;grid-template-rows:240px 1fr}aside{padding:12px;overflow:auto}label{margin:8px 0}.row{display:inline-flex}}
+</style></head><body><main><aside><h1>Luna 骨骼迁移</h1><p>保留 Tripo 行走动作，加入旧版头发与裙摆骨架。</p><p id="status">正在加载…</p><div class="row"><button id="play">暂停</button><button id="reset">从头播放</button></div>
+<label for="timeline">动作时间 <span id="clock">0.00 s</span></label><input id="timeline" type="range" min="0" max="4.958333" step="0.01" value="0">
+<label for="pose">预览模式</label><select id="pose"><option value="animation">原始行走动画</option><option value="bind">绑定姿态</option></select>
+<label><input id="skeleton" type="checkbox"> 显示骨架</label>
+<label for="hair">头发骨骼测试 <span id="hairValue">0°</span></label><input id="hair" type="range" min="-12" max="12" step="1" value="0">
+<label for="dress">裙摆骨骼测试 <span id="dressValue">0°</span></label><input id="dress" type="range" min="-10" max="10" step="1" value="0">
+<div class="row"><button data-camera="front">正面</button><button data-camera="side">侧面</button><button data-camera="back">背面</button></div>
+<p><a href="../../../../public/models/resident/luna-tripo-animated.glb" id="download" download>下载 GLB</a></p><small>滑杆只用于验证蒙皮，不会改写文件。此版本保留原动画的首尾衔接和穿模问题，尚未加入裙发物理。</small></aside><section id="view"><footer>拖动旋转 · 滚轮缩放</footer></section></main>
+<script type="module" src="./preview.ts"></script></body></html>
