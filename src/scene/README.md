@@ -23,4 +23,4 @@
 
 在项目根目录运行 `npm test`，统一入口自动准备生产产物与引擎测试包，再运行功能回归。开发时可用 `node --test src/scene/orbital/media/*.test.mjs src/scene/orbital/schedule/*.test.mjs` 单独检查媒体和日程。
 
-场景当前能力与验收记录见 [进度文档](orbital/进度文档.md)。
+场景当前能力与限制见 [进度文档](orbital/进度文档.md)，已做过的验证见 [验收记录](orbital/验收记录.md)。对外的操作与集成约定见根目录 [SPEC.md](../../SPEC.md)。

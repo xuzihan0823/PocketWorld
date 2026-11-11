@@ -44,4 +44,4 @@ node --test src/games/mario/engine.test.mjs src/games/mario/sound.test.mjs src/g
 npm run build
 ```
 
-当前进度与验证边界见 [进度文档](./进度文档.md)，视觉约定见 [DESIGN.md](./DESIGN.md)。角色与音频来源、许可保留在 `assets/` 与 `audio/`。继续遵守根目录 `AGENT.md`、`SPEC.md` 及功能分支 PR 交付约定，不直接合并 main。
+当前进度与验证边界见 [进度文档](./进度文档.md)，视觉约定见 [DESIGN.md](./DESIGN.md)。角色与音频来源、许可保留在 `assets/` 与 `audio/`。继续遵守根目录 `AGENTS.md`、`SPEC.md` 及功能分支 PR 交付约定，不直接合并 main。

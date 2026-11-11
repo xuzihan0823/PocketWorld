@@ -37,7 +37,7 @@ Codex 写入 `.codex/hooks.json`，Claude Code 写入 `.claude/settings.json`，
 提醒会带当前会话的 24 位检查标识。AI 先完成相关文档及 PR 的核对，记录实际更新或无需调整的理由，再从任务工作区运行确认命令。将示例中的标识替换为 hook 给出的值。
 
 ```sh
-node .agents/skills/project-doc-maintenance/scripts/maintenance.mjs ack --session 0123456789abcdef01234567 --note '已核对交互契约与原 PR，记录本轮验证范围' --document AGENT.md
+node .agents/skills/project-doc-maintenance/scripts/maintenance.mjs ack --session 0123456789abcdef01234567 --note '已核对交互契约与原 PR，记录本轮验证范围' --document AGENTS.md
 ```
 
 `--document` 可以重复，填写实际核对过的仓库内文件。纯内部调整可在具体说明中记录原因。检查状态按宿主、会话、Agent 标识和 worktree 隔离，存入 Git 元数据目录，配置备份及核对说明保留在本机。

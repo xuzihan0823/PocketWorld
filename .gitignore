@@ -34,7 +34,11 @@ lerna-debug.log*
 .env
 .env.*
 !.env.example
+
+# Local agent workspaces, plans and scratch files
 .vite/
+.tmp/
+.planning/
 
 # Local review evidence and linked dependencies
 node_modules
