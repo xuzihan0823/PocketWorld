@@ -51,6 +51,7 @@ function mount(kind, overrides = {}) {
     '../audioEngine': { roomAudio: audio },
     './ObjectHandle': { ObjectHandle: 'ObjectHandle' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
+    './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
@@ -133,7 +134,7 @@ test('moving through a jump keeps the gait animated without airborne walking sou
     }
     assert.ok(Math.max(...swings) - Math.min(...swings) > 0.02);
     assert.equal(view.sounds.filter(sound => !sound.variant).length, 0);
-    for (let i = 0; i < 60; i++) view.frame(1 / 120);
+    for (let i = 0; i < 120; i++) view.frame(1 / 120);
     assert.equal(view.sounds.filter(sound => sound.variant === 'land').length, 1);
     assert.ok(view.sounds.some(sound => !sound.variant));
   } finally { view.dispose(); }

@@ -5,7 +5,10 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import intersect_ray_tri
 root=Path(__file__).resolve().parents[4]
-path=Path(sys.argv[sys.argv.index('--')+1]); out=Path(sys.argv[-1]); cycle='cycle' in sys.argv
+args=sys.argv[sys.argv.index('--')+1:]
+path=Path(args[0]); out=Path(args[-1]); cycle='cycle' in args
+sample_count=int(args[args.index('--samples')+1]) if '--samples' in args else 97
+assert sample_count>=3
 bpy.ops.wm.read_factory_settings(use_empty=True)
 if path.suffix=='.blend': bpy.ops.wm.open_mainfile(filepath=str(path))
 else: bpy.ops.import_scene.gltf(filepath=str(path))
@@ -25,7 +28,9 @@ for side,indices in feet.items():
  for name,y in [('heel',.013),('ball',-.055)]:
   candidates=sorted(indices,key=lambda k:abs(rest[k].y-y)*.4+rest[k].z)
   patches[side+'_'+name]=candidates[:8]
-hands=ids(['mixamorig:LeftHand','mixamorig:RightHand'],.5)
+collision_prefixes=['mixamorig:LeftHand','mixamorig:RightHand']
+if '--include-forearms' in args:collision_prefixes+=['mixamorig:LeftForeArm','mixamorig:RightForeArm']
+hands=ids(collision_prefixes,.5)
 dress=set(ids(['Dress_'],.4)); handset=set(hands)
 mesh.data.calc_loop_triangles()
 dt=[tuple(t.vertices) for t in mesh.data.loop_triangles if all(v in dress for v in t.vertices)]
@@ -38,8 +43,8 @@ def crosses(aa,bb):
    if hit is not None and 1e-6<(hit-start).dot(delta)/max(delta.length_squared,1e-15)<1-1e-6:return True
  return False
 rows=[]; poses=[]
-for i in range(97):
- f=start+(float(end)-start)*i/96; sc.frame_set(int(f),subframe=f-int(f))
+for i in range(sample_count):
+ f=start+(float(end)-start)*i/(sample_count-1); sc.frame_set(int(f),subframe=f-int(f))
  ev=mesh.evaluated_get(bpy.context.evaluated_depsgraph_get())
  vs=[ev.matrix_world@v.co for v in ev.data.vertices]
  tree=BVHTree.FromPolygons(vs,dt,all_triangles=True)
@@ -54,7 +59,7 @@ for i in range(97):
   foot=arm.pose.bones['mixamorig:'+side+'Foot']; toe=arm.pose.bones['mixamorig:'+side+'ToeBase']
   row['feet'][side]={'min_z':min(p.z for p in pts),'ankle':list(foot.head),'ball':list(toe.head)}
  rows.append(row); poses.append({b.name:(b.matrix.translation.copy(),b.matrix.to_quaternion()) for b in arm.pose.bones})
-summary={'asset':str(path),'fps':fps,'duration':(float(end)-start)/fps,'samples':len(rows),
+summary={'asset':str(path),'fps':fps,'duration':(float(end)-start)/fps,'samples':len(rows),'collision_region_prefixes':collision_prefixes,
  'min_foot_z':min(r['feet'][s]['min_z'] for r in rows for s in feet),
  'max_lowest_foot_z':max(min(r['feet'][s]['min_z'] for s in feet) for r in rows),
  'min_hand_dress_distance':min(r['hand_dress_distance'] for r in rows),

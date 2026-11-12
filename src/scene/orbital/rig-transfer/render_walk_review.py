@@ -5,8 +5,8 @@ ROOT=Path(__file__).resolve().parents[4]
 OUT=ROOT/'art/resident/animated-transfer/walk-repair/video-frames'; OUT.mkdir(exist_ok=True)
 for version in ['original','repaired']:
  bpy.ops.wm.read_factory_settings(use_empty=True)
- filename='luna-tripo-animated' if version=='original' else 'luna-walk-repaired'
- bpy.ops.import_scene.gltf(filepath=str(ROOT/'public/models/resident'/f'{filename}.glb'))
+ path=OUT.parent.parent/'luna-tripo-animated.glb' if version=='original' else OUT.parent/'luna-walk-repaired.glb'
+ bpy.ops.import_scene.gltf(filepath=str(path))
  for o in list(bpy.data.objects):
   if o.type=='MESH' and len(o.vertex_groups)==0:bpy.data.objects.remove(o,do_unlink=True)
  sc=bpy.context.scene

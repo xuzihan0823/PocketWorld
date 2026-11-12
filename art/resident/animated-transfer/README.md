@@ -1,10 +1,10 @@
 # 带原始行走动画的裙发骨骼迁移
 
-后续行走修复已另存为 `luna-walk-repaired.glb`，见 [修复交付与验证](walk-repair/README.md)。此文以下描述保留的原始迁移版本；独立预览默认打开修复版，可切换回原版。
+后续行走修复及主场景接入已完成，编辑版为 `walk-repair/luna-walk-repaired.glb`，运行版为 `public/models/resident/luna-walk-room.glb`，见 [修复交付与验证](walk-repair/README.md)。此文以下描述保留的原始迁移版本；独立预览默认打开修复版，可切换回原版。
 
 已完成独立资产迁移，尚未替换房间默认角色。本版本只播放用户提供的 Tripo 动画，不调用旧版 Walk/SitCycle 等动作生成逻辑，也不复制它们的修正形变。旧文件与旧工作区保持可回退。
 
-- 输出：[luna-tripo-animated.glb](../../../public/models/resident/luna-tripo-animated.glb)，9,739,952 bytes。
+- 输出：[luna-tripo-animated.glb](luna-tripo-animated.glb)，9,739,952 bytes。
 - 可编辑源：[luna-tripo-animated.blend](luna-tripo-animated.blend)。
 - 骨骼来源：`feat/tripo-hair-dress-rig` 工作区的 `luna-tripo-transitions.glb`，SHA-256 记录在 [迁移报告](transfer-report.json)。
 - 动画来源：用户提供的 `tripo_convert_916fb9a1-fd20-4e37-a8b9-05c108736b06.glb`；保留原来的一个约 4.9583 秒动作。

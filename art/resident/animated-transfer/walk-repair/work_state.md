@@ -1,11 +1,9 @@
 # 当前检查点
 
-任务：接续 176774c 的独立迁移分支，修复原 Tripo 行走，保留原资产。
+新版 Luna 已接入主场景。编辑源为本目录 `luna-walk-repaired.blend` / `luna-walk-repaired.glb`；生产模型为 `public/models/resident/luna-walk-room.glb`，仅把底色缩至 2K。
 
-当前结果：1 秒平地循环、足底倾角与接触校正、手裙避让、手腕手指放松、小幅肩胯配合。原版和修复版可在预览切换；详见 README.md 与验证报告。
+当前证据：`arms-side.mp4`、`audit-arms-forearms.json`（385 次手与前臂/裙面采样）、`three-validation.json`（生产 GLB 的 241 次全网格采样），以及 `src/scene/orbital/review/luna-room-bed.jpg`、`luna-room-book.jpg`。`npm test` 包含类型检查、生产构建及 226 项测试，全部通过。
 
-最终源：luna-walk-repaired.blend；输出：public/models/resident/luna-walk-repaired.glb。最终证据：final-views、comparison-cycle.mp4、audit-native.json、audit-luna-walk-repaired.json、three-validation.json、metrics.json、browser-comparison.png。
+`comparison-cycle.mp4`、`final-views/`、`audit-native.json`、`audit-luna-walk-repaired.json`、`metrics.json`、`browser-comparison.png` 是前一轮足底修复证据，手臂以当前报告和 `arms-side.mp4` 为准。旧报告中的文件路径是采样时的位置；源文件现已移入 `art/`。
 
-旧 preview/ 是未通过脚跟接触复核的第一候选，仅供本地追溯，不是最终验收证据，不提交。video-frames/ 是可再生中间产物。
-
-没有未收集的渲染任务。未修改主房间入口；独立服务仍使用原 5187 端口。裙发物理与游戏控制器接入未实现，明确留待独立任务。
+没有未收集的渲染任务。预览为 Vite 开发入口，生产入口仍是主房间。裙发物理、全部姿态防穿模、实体手机/Safari 与长期压力测试未实现或未验收。复现方法和边界见 README.md。

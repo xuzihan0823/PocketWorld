@@ -26,7 +26,9 @@ floor.rotation.x = -Math.PI / 2; floor.position.y = -.0002; floor.receiveShadow 
 const resize = () => { camera.aspect = host.clientWidth / host.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(host.clientWidth, host.clientHeight); };
 const observer = new ResizeObserver(resize); observer.observe(host); resize();
 const original = new URLSearchParams(location.search).get('version') === 'original';
-const file = `${import.meta.env.BASE_URL}models/resident/${original ? 'luna-tripo-animated' : 'luna-walk-repaired'}.glb`;
+const file = original
+  ? new URL('../../../../art/resident/animated-transfer/luna-tripo-animated.glb', import.meta.url).href
+  : `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
 el<HTMLAnchorElement>('download').href = file;
 let playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, time = 0, duration = 1;
 let mixer: THREE.AnimationMixer | undefined, action: THREE.AnimationAction | undefined, asset: THREE.Group | undefined;
@@ -68,10 +70,14 @@ renderer.setAnimationLoop(now => {
     const bind = el<HTMLSelectElement>('pose').value === 'bind';
     if (playing && !document.hidden && !bind) time = (time + dt * Number(el<HTMLSelectElement>('speed').value)) % duration;
     if (bind) meshes.forEach(m => m.skeleton.pose());
-    else { action.time = time; mixer.update(0); }
+    else {
+      auxiliary.forEach(({ bone, rest }) => bone.quaternion.copy(rest));
+      action.time = time; mixer.update(0);
+      auxiliary.forEach(({ bone, rest }) => rest.copy(bone.quaternion));
+    }
     for (const { bone, rest } of auxiliary) {
       const part = bone.name.startsWith('Hair_') ? 'hair' : 'dress';
-      bone.quaternion.copy(rest).multiply(offset.setFromAxisAngle(axis, Number(el<HTMLInputElement>(part).value) * Math.PI / 180));
+      bone.quaternion.multiply(offset.setFromAxisAngle(axis, Number(el<HTMLInputElement>(part).value) * Math.PI / 180));
     }
     el<HTMLInputElement>('timeline').value = String(time); el('clock').textContent = time.toFixed(2) + ' s';
     grid.position.z = el<HTMLInputElement>('travel').checked && !bind ? -(time * .576) % .1 : 0;

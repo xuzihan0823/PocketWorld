@@ -7,7 +7,7 @@ ROOT=Path(__file__).resolve().parents[4]
 OUT=ROOT/'art/resident/animated-transfer/walk-repair'
 OUT.mkdir(exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=str(ROOT/'public/models/resident/luna-tripo-animated.glb'))
+bpy.ops.import_scene.gltf(filepath=str(OUT.parent/'luna-tripo-animated.glb'))
 sc=bpy.context.scene
 arm=next(o for o in bpy.data.objects if o.type=='ARMATURE')
 mesh=next(o for o in bpy.data.objects if o.type=='MESH' and len(o.vertex_groups)>50)
@@ -17,6 +17,61 @@ bones=list(arm.pose.bones)
 def setframe(f):
  sc.frame_set(int(f),subframe=f-int(f))
 def update(): bpy.context.view_layer.update()
+
+def aim_bone(bone, direction):
+ """Change swing about the joint, preserving the source axial twist and length."""
+ pivot=bone.head.copy()
+ turn=(bone.tail-pivot).rotation_difference(direction)
+ bone.matrix=Matrix.Translation(pivot)@turn.to_matrix().to_4x4()@Matrix.Translation(-pivot)@bone.matrix
+ update()
+
+def relaxed_arms(t):
+ # The captured upper arms barely swing; adding abduction only amplified its
+ # static A-pose. Author a restrained counter-swing in the moving chest frame.
+ # Left foot contacts at 0, right at .5; the same-side arm trails at contact.
+ chest=arm.pose.bones['mixamorig:Spine2']
+ frame=chest.matrix.to_quaternion()@chest.bone.matrix_local.to_quaternion().inverted()
+ for side,sign,phase in [('Left',1,0),('Right',-1,.5)]:
+  cycle=2*math.pi*(t-phase-.06)
+  upper_angle=math.radians(-3+16*math.cos(cycle))
+  lower_angle=math.radians(-3+16*math.cos(cycle-.16)-(12-3*math.cos(cycle-.16)))
+  upper=Vector((sign*math.sin(math.radians(12)), math.sin(upper_angle)*math.cos(math.radians(12)), -math.cos(upper_angle)*math.cos(math.radians(12))))
+  # A small elliptical arc clears the wide side of the skirt while passing;
+  # it relaxes inward at each swing extreme instead of holding the shoulder out.
+  lower_out=math.radians(26+5*math.sin(cycle-.16)**2)
+  lower=Vector((sign*math.sin(lower_out), math.sin(lower_angle)*math.cos(lower_out), -math.cos(lower_angle)*math.cos(lower_out)))
+  aim_bone(arm.pose.bones['mixamorig:'+side+'Arm'],frame@upper)
+  aim_bone(arm.pose.bones['mixamorig:'+side+'ForeArm'],frame@lower)
+  hand=arm.pose.bones['mixamorig:'+side+'Hand']
+  # Mostly neutral wrist, with a little captured softness; fingers keep a
+  # relaxed open curve. No wrist translation or bone stretching.
+  hand.rotation_quaternion=hand.rotation_quaternion.slerp(Quaternion(),.8)
+  wrist_angle=math.radians(-3+16*math.cos(cycle-.24)-(12-3*math.cos(cycle-.24)))
+  hand_out=lower_out+math.radians(3)
+  aim_bone(hand,frame@Vector((sign*math.sin(hand_out),math.sin(wrist_angle)*math.cos(hand_out),-math.cos(wrist_angle)*math.cos(hand_out))))
+  for b in bones:
+   if b.name.startswith('mixamorig:'+side+'Hand') and b!=hand:
+    b.rotation_quaternion=b.rotation_quaternion.slerp(Quaternion(),.5)
+  update()
+  # The scan's splayed thumb is the last part to catch the skirt. Bring its
+  # base softly toward the index base instead of moving the entire arm out.
+  thumb=arm.pose.bones['mixamorig:'+side+'HandThumb1']
+  index=arm.pose.bones['mixamorig:'+side+'HandIndex1']
+  direction=(thumb.tail-thumb.head).normalized().lerp((index.head-thumb.head).normalized(),.35).normalized()
+  aim_bone(thumb,direction)
+ update()
+
+def skirt_passage(t):
+ # Authored local fold, not a cloth simulation. Only the lateral panels tuck
+ # in as each hand passes. This shares clearance with the garment instead of
+ # spending it entirely on a lifted shoulder. The waist anchors stay fixed.
+ for side,sign,phase in [('Left',1,0),('Right',-1,.5)]:
+  pulse=math.exp(5*(math.cos(2*math.pi*(t-phase-.27))-1))
+  for panel,axis,strength in [(side,Vector((0,sign,0)),1),('Back_'+side[0],Vector((-1,sign,0)).normalized(),.7),('Front_'+side[0],Vector((1,sign,0)).normalized(),.7)]:
+   for section,degrees in [('01',4.5),('02',2)]:
+    b=arm.pose.bones['Dress_'+panel+'_'+section]; pivot=b.head.copy()
+    b.matrix=Matrix.Translation(pivot)@Matrix.Rotation(math.radians(degrees)*pulse*strength,4,axis)@Matrix.Translation(-pivot)@b.matrix
+    update()
 def smooth(t): return max(0,min(1,t))**2*(3-2*max(0,min(1,t)))
 base=[]
 for i in range(97):
@@ -68,17 +123,8 @@ for i in range(97):
  chest=arm.pose.bones['mixamorig:Spine2']; pivot=chest.head.copy()
  chest.matrix=Matrix.Translation(pivot)@Matrix.Rotation(math.radians(1.5)*math.sin(2*math.pi*t),4,'Z')@Matrix.Translation(-pivot)@chest.matrix
  update()
- # Gentle arm clearance retains the source swing and elbow rhythm.
- for side,sign in [('Left',-1),('Right',1)]:
-  b=arm.pose.bones['mixamorig:'+side+'Arm']; pivot=b.head.copy()
-  b.matrix=Matrix.Translation(pivot)@Matrix.Rotation(math.radians(sign*14),4,'Y')@Matrix.Translation(-pivot)@b.matrix
-  update()
-  hand=arm.pose.bones['mixamorig:'+side+'Hand']
-  hand.rotation_quaternion=hand.rotation_quaternion.slerp(Quaternion(),.5)
-  for b in bones:
-   if b.name.startswith('mixamorig:'+side+'Hand') and b!=hand:
-    b.rotation_quaternion=b.rotation_quaternion.slerp(Quaternion(),.25)
- update()
+ relaxed_arms(t)
+ skirt_passage(t)
  for side,off in [('Left',0),('Right',12)]:
   phase=(i/4-off)%24
   foot=arm.pose.bones['mixamorig:'+side+'Foot']
@@ -150,6 +196,6 @@ sc.frame_set(0)
 for unused in list(bpy.data.actions):
  if unused!=action:bpy.data.actions.remove(unused)
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'luna-walk-repaired.blend'))
-bpy.ops.export_scene.gltf(filepath=str(ROOT/'public/models/resident/luna-walk-repaired.glb'),export_format='GLB',export_animations=True,export_frame_range=True,export_force_sampling=True)
+bpy.ops.export_scene.gltf(filepath=str(OUT/'luna-walk-repaired.glb'),export_format='GLB',export_animations=True,export_frame_range=True,export_force_sampling=True)
 (OUT/'contact-samples.json').write_text(json.dumps(records,indent=2))
 print('OUTPUT',OUT)
