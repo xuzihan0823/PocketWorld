@@ -68,6 +68,7 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
       if (name === '../../audioEngine') return { roomAudio: { cancelPreparedMusic() {} } };
       if (name === '../ObjectHandle') return { ObjectHandle: 'ObjectHandle' };
       if (name === '../Primitives') return { SoftBox: 'SoftBox' };
+      if (name === '../SuppliedAsset') return { SuppliedAsset: 'SuppliedAsset' };
       if (name === './ComputerScreen') return { ComputerScreen: 'ComputerScreen' };
       if (name === './CartridgePickup') return { CartridgePickup: 'CartridgePickup' };
       if (name === './cartridge-motion') return cartridgeMotion;

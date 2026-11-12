@@ -7,6 +7,7 @@ import { SoftBox, Tube } from './Primitives';
 import { FurnitureCylinder as Cylinder, FurnitureOrb as Orb, FurnitureMotion, FurnitureCushion, FURNITURE as C } from './FurnitureParts';
 import { FurnitureDesk } from './FurnitureDesk';
 import { FurnitureBookcase } from './FurnitureBooks';
+import { SuppliedAsset } from './SuppliedAsset';
 import { Bedding } from './Bedding';
 import { ReusableAsset } from './ReusableAsset';
 import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
@@ -14,12 +15,13 @@ import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
 function FurnitureBed({ world }: { world: WorldModelProps }) {
   const state = world.objects.bed ?? CLOSED_OBJECT;
   return <ObjectHandle id="bed" action={state.active ? 'wake' : 'sleep'} hint={state.active ? '醒来 · 离开被窝' : '躺下休息'} world={world} position={[-2.6, 0, 1]}>
-    {[-0.64, 0.64].flatMap(x => [-1.06, 1.06].map(z => <SoftBox key={`${x}/${z}`} dims={[0.1, 0.32, 0.1]} position={[x, 0.16, z]} color={C.edge} />))}
+    <SuppliedAsset name="bed" size={[1.72, 1.4, 2.6]} fit="contact" fallback={<>    {[-0.64, 0.64].flatMap(x => [-1.06, 1.06].map(z => <SoftBox key={`${x}/${z}`} dims={[0.1, 0.32, 0.1]} position={[x, 0.16, z]} color={C.edge} />))}
     <SoftBox dims={[1.7, 0.19, 2.6]} position={[0, 0.365, 0]} color={C.wood} radius={0.04} />
     <SoftBox dims={[1.6, 0.25, 2.5]} position={[0, 0.595, 0]} color="#e5decb" radius={0.105} />
     <SoftBox dims={[1.72, 0.85, 0.11]} position={[0, 0.635, -1.27]} color={C.wood} radius={0.055} />
     <SoftBox dims={[1.52, 0.44, 0.08]} position={[0, 0.76, -1.2]} color="#96aaa0" radius={0.07} />
     <Bedding />
+</>} />
   </ObjectHandle>;
 }
 
@@ -34,17 +36,18 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
     if (seat.current) seat.current.position.y = -pose.drop * SEAT_DROP;
   });
   return <ObjectHandle id="chair" action={state.active ? 'stand' : 'sit'} hint={state.active ? (lounge ? '起身' : '起身 · WASD 蹬地滑行') : '坐下歇一会'} world={world}><group ref={rig}>
-    {lounge ? [-0.39, 0.39].flatMap(x => [-0.36, 0.36].map(z => <SoftBox key={`${x}/${z}`} dims={[0.08, 0.49, 0.08]} position={[x, 0.255, z]} color={C.edge} rotation={[0, 0, -x * 0.12]} />)) : <>
+    <SuppliedAsset name={lounge ? "lounge-chair.parts" : "rolling-chair.parts"} part="base" size={lounge ? [1.04, 1.40, 1] : [.90, 1.40, .90]} fit="contact" rotation={[0, Math.PI, 0]} fallback={<>    {lounge ? [-0.39, 0.39].flatMap(x => [-0.36, 0.36].map(z => <SoftBox key={`${x}/${z}`} dims={[0.08, 0.49, 0.08]} position={[x, 0.255, z]} color={C.edge} rotation={[0, 0, -x * 0.12]} />)) : <>
       <Cylinder radius={0.06} height={0.12} position={[0, 0.15, 0]} color="#9b9e94" metalness={0.7} />
       {[0, 1, 2, 3, 4].map(i => <group key={i} rotation={[0, i * Math.PI * 2 / 5, 0]}>
         <SoftBox dims={[0.075, 0.065, 0.46]} position={[0, 0.13, 0.2]} rotation={[0.08, 0, 0]} color={C.ink} />
         <Cylinder radius={0.065} height={0.085} position={[0, 0.065, 0.43]} rotation={[0, 0, Math.PI / 2]} color={C.dark} />
       </group>)}
     </>}
+</>} />
     <group ref={seat}>
-      {!lounge && <Cylinder radius={0.042} height={0.3} position={[0, 0.325, 0]} color="#b9bbb2" metalness={0.8} />}
+
       <FurnitureMotion target={SEAT_SWIVEL} reducedMotion={world.reducedMotion}>
-        <SoftBox dims={lounge ? [1.04, 0.18, 1.0] : [0.77, 0.13, 0.75]} position={[0, 0.54, 0]} color={C.edge} radius={0.07} />
+        <SuppliedAsset name={lounge ? "lounge-chair.parts" : "rolling-chair.parts"} part="seat" size={lounge ? [1.04, 1.40, 1] : [.90, 1.40, .90]} fit="contact" rotation={[0, Math.PI, 0]} fallback={<>{!lounge && <Cylinder radius={0.042} height={0.3} position={[0, 0.325, 0]} color="#b9bbb2" metalness={0.8} />}        <SoftBox dims={lounge ? [1.04, 0.18, 1.0] : [0.77, 0.13, 0.75]} position={[0, 0.54, 0]} color={C.edge} radius={0.07} />
         <FurnitureCushion dims={lounge ? [0.94, 0.24, 0.9] : [0.74, 0.18, 0.71]} position={[0, 0.65, 0]} color={lounge ? '#bc9770' : C.cloth} />
         <Tube points={[[-0.29, 0.56, 0.22], [-0.3, 0.82, 0.35], [-0.29, 1.15, 0.35]]} radius={0.026} color={C.ink} />
         <Tube points={[[0.29, 0.56, 0.22], [0.3, 0.82, 0.35], [0.29, 1.15, 0.35]]} radius={0.026} color={C.ink} />
@@ -53,6 +56,7 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
           <Tube points={[[side * 0.38, 0.55, -0.22], [side * 0.41, 0.84, -0.2], [side * 0.41, 0.88, 0.24], [side * 0.34, 0.59, 0.29]]} radius={0.025} color={C.ink} />
           <SoftBox dims={[lounge ? 0.17 : 0.1, 0.07, 0.52]} position={[side * (lounge ? 0.48 : 0.41), 0.89, 0.02]} color={lounge ? '#bc9770' : C.edge} radius={0.035} />
         </group>)}
+</>} />
       </FurnitureMotion>
     </group>
   </group></ObjectHandle>;
@@ -61,9 +65,10 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
 function FurnitureLamp({ world }: { world: WorldModelProps }) {
   const state = world.objects.lamp ?? CLOSED_OBJECT;
   return <group position={[-1.1, 0, -2.85]}>
-    <Cylinder radius={0.23} height={0.065} position={[0, 0.0325, 0]} color={C.ink} />
+    <SuppliedAsset name="lamp.parts" part="body" size={[.72, 2.02, .48]} fit="contact" position={[.22, 0, 0]} rotation={[0, Math.PI, 0]} fallback={<>    <Cylinder radius={0.23} height={0.065} position={[0, 0.0325, 0]} color={C.ink} />
     <Tube points={[[0, 0.06, 0], [0, 1.5, 0], [0.03, 1.88, 0], [0.22, 2.01, 0], [0.37, 1.97, 0]]} radius={0.022} color={C.brass} />
     <mesh position={[0.37, 1.8, 0]} castShadow><cylinderGeometry args={[0.13, 0.26, 0.32, 32, 1, true]} /><meshStandardMaterial color="#ecd8a3" roughness={0.8} side={2} /></mesh>
+</>} />
     <Orb position={[0.37, 1.76, 0]} scale={[0.06, 0.09, 0.06]} color={state.active ? '#fff4cd' : '#c9b988'} />
     {state.active && <pointLight position={[0.37, 1.66, 0]} color="#ffd59b" intensity={1.7} distance={3.5} decay={2} />}
     <ObjectHandle id="lamp" action="toggle" hint="拉动灯绳 · 开关台灯" world={world} drag="y">
@@ -78,14 +83,14 @@ function FurnitureLamp({ world }: { world: WorldModelProps }) {
 function FurniturePlant({ world, observatory }: { world: WorldModelProps; observatory: boolean }) {
   const state = world.objects.plant ?? CLOSED_OBJECT;
   return <ObjectHandle id="plant" action="water" hint="照料盆栽 · 浇水" world={world} position={observatory ? [2.75, 0, 1.85] : [-3.55, 0, 2.55]}>
-    <ReusableAsset path="plants/potted_plant_04.glb" height={observatory ? 1.02 : 0.85} />
+    <SuppliedAsset name="plant" size={[1, observatory ? 1.02 : .85, 1]} fallback={<ReusableAsset path="plants/potted_plant_04.glb" height={observatory ? 1.02 : 0.85} />} />
     {state.value > 0 && <Orb position={[0.03, 0.31, 0.02]} scale={[0.028, 0.012, 0.028]} color="#83b9b1" />}
   </ObjectHandle>;
 }
 
 function FurnitureHatch() {
   return <group position={[4.28, 0, -1.6]} rotation={[0, -Math.PI / 2, 0]} name="Furniture_Hatch">
-    {[-0.57, 0.57].map(x => <SoftBox key={x} dims={[0.12, 2.35, 0.18]} position={[x, 1.175, 0]} color="#6f8986" radius={0.06} />)}
+    <SuppliedAsset name="hatch" size={[1.22, 2.38, .23]} fit="contact" fallback={<>    {[-0.57, 0.57].map(x => <SoftBox key={x} dims={[0.12, 2.35, 0.18]} position={[x, 1.175, 0]} color="#6f8986" radius={0.06} />)}
     <SoftBox dims={[1.22, 0.13, 0.18]} position={[0, 2.32, 0]} color="#6f8986" radius={0.055} />
     <SoftBox dims={[1.2, 0.055, 0.23]} position={[0, 0.0275, 0]} color={C.brass} radius={0.02} />
     <group position={[0, 1.16, 0]}>
@@ -96,6 +101,7 @@ function FurnitureHatch() {
       <Tube points={[[0.36, -0.25, 0.08], [0.36, -0.25, 0.17], [0.36, 0.04, 0.17], [0.36, 0.04, 0.08]]} radius={0.025} color={C.brass} />
       {[-0.8, 0.8].map(y => <Cylinder key={y} radius={0.035} height={0.17} position={[-0.5, y, 0.03]} color={C.brass} metalness={0.6} />)}
     </group>
+</>} />
   </group>;
 }
 
