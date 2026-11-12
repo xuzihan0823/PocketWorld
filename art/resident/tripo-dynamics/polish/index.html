@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketWorld · 角色精修验收</title>
+<style>
+:root{font-family:system-ui,"Microsoft YaHei",sans-serif;color:#263247;background:#f4f6fa}*{box-sizing:border-box}body{margin:0}main{max-width:1300px;margin:auto;padding:34px 32px}header{display:flex;justify-content:space-between;align-items:start;gap:24px}h1{font-size:30px;letter-spacing:-.5px;margin:6px 0 12px}h2{font-size:19px;margin-top:28px}.eyebrow{font-size:12px;letter-spacing:2px;color:#678097}p{line-height:1.7;margin:8px 0;color:#56647a}.badge{background:#e4ecf6;color:#365d8d;padding:9px 13px;border-radius:24px;font-size:13px;white-space:nowrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0}.stat{border:1px solid #dce3ed;border-radius:12px;background:white;padding:14px 20px}.stat b{font-size:25px;color:#345783;display:block}.stat span{font-size:12px;color:#68788e}.controls{display:flex;flex-wrap:wrap;gap:16px;background:white;border:1px solid #dce3ed;border-radius:12px;padding:16px 20px}label{font-size:12px;color:#68788e;display:grid;gap:7px}select{font:inherit;font-size:14px;color:#263247;border:1px solid #cbd6e4;border-radius:7px;background:white;padding:8px 32px 8px 10px;min-width:125px}.comparison{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}figure{margin:0;min-width:0;background:white;border:1px solid #dce3ed;border-radius:12px;overflow:hidden}figcaption{font-size:14px;display:flex;justify-content:space-between;padding:14px 18px}figcaption small{color:#7c899a}img{display:block;width:100%;height:auto;background:#e8edf3}#context{min-height:54px;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}th,td{text-align:left;padding:12px;border-bottom:1px solid #e2e7ef}th{color:#65738a}footer{font-size:12px;border-top:1px solid #dce3ed;margin-top:24px;padding-top:16px;color:#6d7c91}details{font-size:13px;line-height:1.8;background:white;border-radius:10px;padding:14px 18px;margin-top:16px}summary{cursor:pointer;color:#345783}a{color:#345783}button{cursor:pointer} @media(max-width:700px){main{padding:20px 14px}header{display:block}.badge{display:inline-block}.stats{grid-template-columns:repeat(2,1fr)}.comparison{grid-template-columns:1fr}h1{font-size:24px}}
+</style></head><body><main>
+<header><div><div class="eyebrow">POCKETWORLD / CHARACTER REVIEW</div><h1>局部表面与姿势接触精修</h1><p>腋下补面 · 渐进抬臂修正 · 坐卧裙发接触<br>同一机位、同一动画时刻，对照 8b3c2eb 与本轮资产。</p></div><div class="badge">Windows 验收 · 2026.11.09</div></header>
+<div class="stats"><div class="stat"><b>103</b><span>骨骼保留 · 未新增</span></div><div class="stat"><b>134</b><span>局部补面 · 原面全部保留</span></div><div class="stat"><b>5</b><span>Blender 姿势修正形状键</span></div><div class="stat"><b>8 / 8</b><span>回归通过 · GLB 校验 0 错误</span></div></div>
+<div class="controls"><label>动作<select id="pose"><option value="armsup">双臂上举</option><option value="sit">坐下</option><option value="liedown">躺下</option></select></label><label>近景机位<select id="view"><option value="side">侧面</option><option value="front">正面</option><option value="back">背面</option></select></label><label>对比内容<select id="compare"><option value="revision">精修前 / 精修后</option><option value="physics">本轮静态 / 本轮动态</option></select></label><label>状态<select id="state"><option value="held">固定姿势 · 已稳定</option><option value="moving">身体移动 · 瞬态</option></select></label><label id="modeLabel">精修前后共同模式<select id="mode"><option value="static">静态</option><option value="dynamic">动态</option></select></label></div>
+<div class="comparison"><figure><figcaption><b id="leftLabel"></b><small id="leftMeta"></small></figcaption><img id="left" alt="左侧对比图"></figure><figure><figcaption><b id="rightLabel"></b><small id="rightMeta"></small></figcaption><img id="right" alt="右侧对比图"></figure></div>
+<p id="context"></p>
+<h2>检测结果与适用范围</h2>
+<table><thead><tr><th>检查</th><th>8b3c2eb</th><th>本轮</th></tr></thead><tbody><tr><td>抬臂显著拉伸边</td><td>5</td><td>0</td></tr><tr><td>坐姿头发 / 裙摆穿入胶囊的顶点</td><td>130 / 225</td><td>4 / 0</td></tr><tr><td>躺姿头发 / 裙摆穿入胶囊的顶点</td><td>129 / 16</td><td>0 / 0</td></tr><tr><td>三角面</td><td>18,525</td><td>18,659</td></tr><tr><td>GLB 大小</td><td>8.91 MiB</td><td>10.23 MiB</td></tr></tbody></table>
+<details open><summary>如何阅读对比与数值</summary><p>接触计数取固定第 2 秒、关闭三个运行时开关，阈值为穿入八个近似身体胶囊超过 0.001 模型单位；这不是精确人体表面或布料自碰撞检测。坐姿剩余 4 个头发顶点最大深度约 0.001009。抬臂、行走及任意新动作仍可能局部穿模。</p><p>显著拉伸边指长度超过静态两倍且增量超过 0.015 模型单位；动画过渡与回落也参与采样。通过阈值并不代表所有折角消失。肩腋处原有低面数折角和烘焙色斑仍可见。</p><p>保留原 53 根人体骨骼、26 根头发骨骼和 24 根裙摆骨骼，静态原顶点、原三角面、UV 和三张嵌入贴图不变。没有缩小裙摆、删发束或减面。5 个形状键是特定测试姿势的修正，已写入实际动画；静态模式也包含这些基础动画修正。</p></details>
+<footer>Blender 5.2.3 LTS · Three.js r169 · Chrome 156 / Windows 11 · 72 张对比图<br>保留原模型、第一版成果和 PR #27。主房间接入另行安排。两项 glTF 警告沿用原版；没有完整布料、自碰撞、手臂全段、地面或家具碰撞。未验收实体手机与 Safari。</footer>
+</main><script>
+const images = null;
+const $ = id => document.getElementById(id);
+function update(){
+ const pose=$('pose').value, view=$('view').value, state=$('state').value, compare=$('compare').value, mode=$('mode').value;
+ const suffix=state==='moving'?'moving-':'';
+ const lmode=compare==='physics'?'static':mode, rmode=compare==='physics'?'dynamic':mode;
+ const variant=compare==='physics'?'after':'before';
+ const left=variant+'/'+pose+'-'+view+'-'+suffix+lmode+'.png', right='after/'+pose+'-'+view+'-'+suffix+rmode+'.png';
+ $('left').src=images?images[left]:left; $('right').src=images?images[right]:right;
+ $('leftLabel').textContent=compare==='physics'?'本轮 · 静态':'精修前 · 8b3c2eb'; $('rightLabel').textContent=compare==='physics'?'本轮 · 动态':'精修后';
+ $('leftMeta').textContent=lmode==='static'?'三项开关关闭':'三项开关开启'; $('rightMeta').textContent=rmode==='static'?'三项开关关闭':'三项开关开启';
+ $('modeLabel').style.display=compare==='physics'?'none':'grid';
+ $('context').textContent=(state==='held'?'固定第 2 秒，停止身体移动；动态再稳定 2 秒。稳定后差异很小属于正常情况。':'从第 2 秒开始，沿同一轨迹移动 0.6 秒后采样；姿势处于保持段，观察裙发惯性。')+(pose==='liedown'?' 躺姿正面为上方，背面为下方；下方检查隐藏地板和床板以查看背侧接触。':'');
+}
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change',update)); update();
+</script></body></html>

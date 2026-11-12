@@ -1,0 +1,109 @@
+{
+  "browser": "Chromium WebGL on local Mac; no physical-device benchmark",
+  "poses": [
+    {
+      "pose": "Rest",
+      "simulation": {
+        "steps": 254,
+        "resets": 3,
+        "maxAngle": 0.01262234886515548,
+        "maxSpeed": 4.497307360144161e-9,
+        "penetration": 0,
+        "contactBone": "",
+        "contactBody": ""
+      },
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      }
+    },
+    {
+      "pose": "Walk",
+      "simulation": {
+        "steps": 495,
+        "resets": 4,
+        "maxAngle": 0.08043511904600582,
+        "maxSpeed": 5.993313165459292e-9,
+        "penetration": 4.867495295712843e-13,
+        "contactBone": "Dress_Front_R_01",
+        "contactBody": "Right大腿"
+      },
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      }
+    },
+    {
+      "pose": "ArmsUp",
+      "simulation": {
+        "steps": 736,
+        "resets": 5,
+        "maxAngle": 0.012615676142073214,
+        "maxSpeed": 4.497229547143655e-9,
+        "penetration": 6.938893903907228e-18,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      },
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      }
+    },
+    {
+      "pose": "Sit",
+      "simulation": {
+        "steps": 977,
+        "resets": 6,
+        "maxAngle": 0.06765679049593437,
+        "maxSpeed": 1.2323745691885677e-9,
+        "penetration": 2.0736815042887713e-12,
+        "contactBone": "Dress_Back_L_01",
+        "contactBody": "骨盆"
+      },
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      }
+    },
+    {
+      "pose": "LieDown",
+      "simulation": {
+        "steps": 1218,
+        "resets": 7,
+        "maxAngle": 0.012615628088047979,
+        "maxSpeed": 4.497226269581539e-9,
+        "penetration": 6.938893903907228e-18,
+        "contactBone": "Dress_Front_L_01",
+        "contactBody": "Left大腿"
+      },
+      "mesh": {
+        "finite": true,
+        "vertices": 24998,
+        "triangles": 18525,
+        "bones": 103
+      }
+    }
+  ],
+  "performance": {
+    "meanMs": 1.2299999988741346,
+    "maxMs": 6.5,
+    "samples": 180
+  },
+  "errors": [],
+  "failedRequests": [],
+  "faviconWarnings": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "switches": "hair, dress, collisions, static, movement, pause: passed",
+  "recovery": "failed GLB fetch then retry: passed",
+  "reducedMotion": "Rest, no autoplay, no movement or springs by default: passed",
+  "mobile": "390x844 responsive layout; simulated viewport"
+}

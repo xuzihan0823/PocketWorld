@@ -1,0 +1,71 @@
+{
+  "blender": "5.2.3 LTS",
+  "bones": 103,
+  "new_bones": 0,
+  "bone_matrices_and_parents_unchanged": true,
+  "triangles": 18525,
+  "geometry_error": 0.0,
+  "uv_error": 0.0,
+  "weight_conflicts": {
+    "hair_body": 0,
+    "dress_leg_or_arm": 0,
+    "body_secondary": 0
+  },
+  "max_influences": 4,
+  "unweighted": 0,
+  "arms_up_hair_displacement": 1.1920928955078125e-07,
+  "baseline_poses": {
+    "Walk": {
+      "max_edge_ratio": 3.256301164627075,
+      "p99_edge_ratio": 1.1049081087112427,
+      "long_stretched_edges": 61
+    },
+    "ArmsUp": {
+      "max_edge_ratio": 27.20787239074707,
+      "p99_edge_ratio": 1.8447532653808594,
+      "long_stretched_edges": 178
+    },
+    "Sit": {
+      "max_edge_ratio": 4.320807933807373,
+      "p99_edge_ratio": 1.5341726541519165,
+      "long_stretched_edges": 125
+    },
+    "LieDown": {
+      "max_edge_ratio": 1.6087993383407593,
+      "p99_edge_ratio": 1.192317008972168,
+      "long_stretched_edges": 0
+    }
+  },
+  "refined_poses": {
+    "Walk": {
+      "max_edge_ratio": 2.117133855819702,
+      "p99_edge_ratio": 1.0588499307632446,
+      "long_stretched_edges": 0
+    },
+    "ArmsUp": {
+      "max_edge_ratio": 3.9672341346740723,
+      "p99_edge_ratio": 1.5136526823043823,
+      "long_stretched_edges": 5
+    },
+    "Sit": {
+      "max_edge_ratio": 2.7256574630737305,
+      "p99_edge_ratio": 1.4665656089782715,
+      "long_stretched_edges": 0
+    },
+    "LieDown": {
+      "max_edge_ratio": 1.564628005027771,
+      "p99_edge_ratio": 1.1778656244277954,
+      "long_stretched_edges": 0
+    }
+  },
+  "roundtrip_rest_error": 4.76837158203125e-07,
+  "roundtrip_pose_error": 7.152557373046875e-07,
+  "clips": [
+    "Walk",
+    "ArmsUp",
+    "Sit",
+    "LieDown"
+  ],
+  "runtime_bytes": 9346684,
+  "sha256": "de20249abab46eb62a2ffef478b0c57adf195d6071e037a4c9ae664f40471127"
+}

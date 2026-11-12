@@ -1,0 +1,166 @@
+{
+  "date": "2026-11-10",
+  "branch": "codex/chair-stage2",
+  "main": "a7cf9780f2a024b12c88907315cb6115badbd8e7",
+  "residentBaseline": "2a4985171ec9d9badc9224b304a09bec36dfdf5f",
+  "build": "npm run build passed (TypeScript + Vite)",
+  "tests": {
+    "command": "node scripts/test.mjs",
+    "passed": 238,
+    "failed": 0,
+    "chairTests": 7
+  },
+  "browser": {
+    "engine": "System Chrome / Windows / real WebGL rendering",
+    "input": [
+      "mouse",
+      "E",
+      "floor click while seated",
+      "Escape cancellation",
+      "E cancellation during sitting",
+      "390px touchscreen emulation",
+      "reduced motion"
+    ],
+    "runtimeErrors": [],
+    "resourceErrors": []
+  },
+  "assets": {
+    "public/models/resident/luna-tripo-transitions.glb": {
+      "bytes": 11346500,
+      "sha256": "5e1da819d580426618934abf4fc29acc9b92264fff2d9bacf20565a255272ec6",
+      "unchanged": true
+    },
+    "art/resident/tripo-transitions/luna-tripo-transitions.blend": {
+      "bytes": 11082614,
+      "sha256": "45d251d59803e570d7339ca85a567309a09092d6e49ec90c2fdeae356a7b7dbe",
+      "unchanged": true
+    }
+  },
+  "measurements": {
+    "seated": {
+      "phase": "SEATED_IDLE",
+      "clipTime": 4.1,
+      "turnProgress": 1,
+      "bound": true,
+      "position": [
+        1.4644939590884967,
+        0,
+        -0.10963757551454023
+      ],
+      "yaw": 3.0915926535897933,
+      "soles": {
+        "Left": 1.2983055774543452e-7,
+        "Right": 2.115301433704077e-7
+      },
+      "knees": {
+        "Left": 102.44146152599845,
+        "Right": 102.44149656341786
+      },
+      "pelvisSurfaceMin": 0.37400000000000005,
+      "skirtSurfaceMin": 0.37400000000000005,
+      "chairPosition": [
+        1.45,
+        0,
+        0.18
+      ],
+      "audit": {
+        "position": [
+          1.4644939590884967,
+          0,
+          -0.10963757551454023
+        ],
+        "clipTime": 0.6934480948355132,
+        "moving": false,
+        "bones": 103,
+        "modelScale": 1.45,
+        "clipSpeed": 0.3625
+      }
+    },
+    "byPhase": {
+      "APPROACH": {
+        "samples": 60,
+        "soleMinimum": -0.00025611097701855405,
+        "maximumSupportSole": 0.00005000671113743698
+      },
+      "ALIGN": {
+        "samples": 72,
+        "soleMinimum": -0.00026713924709469806,
+        "maximumSupportSole": 0.000050030559128454426
+      },
+      "TURN": {
+        "samples": 58,
+        "soleMinimum": 7.434654726557431e-8,
+        "maximumSupportSole": 0.00004999299726400196
+      },
+      "SIT_DOWN": {
+        "samples": 51,
+        "soleMinimum": -0.00005232403509736205,
+        "maximumSupportSole": 1.6028661872644545e-7
+      },
+      "SEATED_IDLE": {
+        "samples": 43,
+        "soleMinimum": 1.2983055774543452e-7,
+        "maximumSupportSole": 1.2983055774543452e-7
+      },
+      "STAND_UP": {
+        "samples": 34,
+        "soleMinimum": -0.00007085725020334474,
+        "maximumSupportSole": -5.70442481217983e-8
+      },
+      "EXIT": {
+        "samples": 38,
+        "soleMinimum": -0.00018773686517433713,
+        "maximumSupportSole": 0.00005001344793065628
+      },
+      "STANDING": {
+        "samples": 24,
+        "soleMinimum": -0.00007210382912640315,
+        "maximumSupportSole": 0.00005006979362476229
+      }
+    },
+    "sourceClipSoleMinimum": -0.00004891937317814886,
+    "turnSupportAnkleDrift": 5.425697254507478e-8,
+    "blendedSoleBefore": -0.005991015931844907,
+    "blendedSoleAfter": 0.0000499161662562992,
+    "seatSamples": 3143,
+    "footCasterPenetrations": 0
+  },
+  "videos": {
+    "approach": {
+      "seconds": 12.666667,
+      "frames": 380,
+      "width": 1280,
+      "height": 888,
+      "fps": 30,
+      "bytes": 1187274,
+      "sha256": "1b77f13a97038e9004d3633124f38fbc77df4a56693aa73d01fb269ecb57b18f",
+      "fullDecode": "passed"
+    },
+    "front": {
+      "seconds": 11.633333,
+      "frames": 349,
+      "width": 1280,
+      "height": 888,
+      "fps": 30,
+      "bytes": 2443728,
+      "sha256": "ef5e68f1466799fbc7c5b04abc5296159600a5c62e09d611daa3992f907a7b6b",
+      "fullDecode": "passed"
+    },
+    "side": {
+      "seconds": 11.633333,
+      "frames": 349,
+      "width": 1280,
+      "height": 888,
+      "fps": 30,
+      "bytes": 2255860,
+      "sha256": "056ba7ff0ba08634a0483b455564783cfd21c69b1f7e931f61b03852c383bac5",
+      "fullDecode": "passed"
+    }
+  },
+  "limitations": [
+    "No complete cloth self collision",
+    "No real phone or Safari validation",
+    "No long-run performance benchmark",
+    "Seated vitality and chair drive/caster animation deferred"
+  ]
+}

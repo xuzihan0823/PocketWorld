@@ -1,0 +1,11 @@
+{
+  "original_vertices": 24359,
+  "vertices": 24877,
+  "triangles": 18525,
+  "split_vertices": 518,
+  "region_faces": {
+    "body": 7673,
+    "hair": 5997,
+    "dress": 4855
+  }
+}

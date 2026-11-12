@@ -1,0 +1,57 @@
+{
+  "source_sha256": "c3dd0a6fed696a085e850b49dfee9297529b1856cc600f4948b9141792ab381f",
+  "runtime_sha256": "3aa01d9319f692dbcf7685121b605837b46a94637be79fc5b7e077b1c27dbe32",
+  "runtime_bytes": 9057764,
+  "blender": "5.2.3 LTS",
+  "meshes": 1,
+  "skins": 1,
+  "materials": 1,
+  "triangles": 18525,
+  "runtime_vertices": 24397,
+  "original_bones_preserved": 53,
+  "hair_bones": 26,
+  "dress_bones": 24,
+  "total_bones": 103,
+  "max_influences": 4,
+  "unweighted_vertices": 0,
+  "hair_vertices": 7506,
+  "dress_vertices": 7504,
+  "outside_region_vertices_unchanged": 9349,
+  "outside_weight_max_error": 0.0,
+  "geometry_max_error": 0.0,
+  "textures_byte_identical": true,
+  "uvs_preserved": true,
+  "topology_preserved": true,
+  "seam_weight_max_error": 0.0,
+  "finger_test_displacement": 1.2578027636331096e-07,
+  "roundtrip_rest_max_error": 4.4991488978851635e-07,
+  "roundtrip_pose_max_error": 1.929079456730598e-06,
+  "roundtrip_uv_max_error": 0.0,
+  "pose_checks": {
+    "Secondary_Hair_Check": {
+      "max_displacement": 0.0717485952923003,
+      "max_edge_stretch_ratio": 2.4316368781954387,
+      "max_p99_edge_stretch_ratio": 1.1646289433357153,
+      "max_uv_seam_gap": 0.0
+    },
+    "Secondary_Dress_Walk_Check": {
+      "max_displacement": 0.13988604168365315,
+      "max_edge_stretch_ratio": 2.305797768932879,
+      "max_p99_edge_stretch_ratio": 1.032547884805035,
+      "max_uv_seam_gap": 0.0
+    },
+    "Secondary_Dress_Sit_Check": {
+      "max_displacement": 0.3239820356763869,
+      "max_edge_stretch_ratio": 3.3859697987631354,
+      "max_p99_edge_stretch_ratio": 1.1427805760939653,
+      "max_uv_seam_gap": 0.0
+    }
+  },
+  "check_actions_in_blend": 3,
+  "runtime_animation_clips": 0,
+  "limitations": [
+    "Original mesh has fused hair/body and hem/leg contact surfaces.",
+    "Diagnostic poses are not final character animations.",
+    "No runtime spring solver, self-collision, or furniture collision is included."
+  ]
+}
