@@ -1,0 +1,18 @@
+{
+  "triangles": 254728,
+  "skinnedMeshCount": 92,
+  "armatures": 1,
+  "bones": 165,
+  "expressions": [
+    "Blink",
+    "MouthOpen",
+    "Neutral",
+    "Smile"
+  ],
+  "unweightedVertices": 0,
+  "maxInfluences": 4,
+  "maxWeightSumError": 1.3399403542280197e-07,
+  "nonfiniteVertices": 0,
+  "fileBytes": 9586328,
+  "externalImages": []
+}
