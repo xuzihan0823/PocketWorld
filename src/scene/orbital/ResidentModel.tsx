@@ -21,7 +21,7 @@ export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group; bunny: THREE.Group;
   toyRest: THREE.Vector3; toyGrip: THREE.Vector3;
-  applyPose: (phase: number, walkWeight: number, holdToy: boolean, chair?: { time: number; weight: number; perch: number }) => void;
+  applyPose: (phase: number, walkWeight: number, holdToy: boolean, chair?: { time: number; weight: number; perch: number; sole?: number; soleLift?: number }) => void;
   dispose: () => void;
 }
 

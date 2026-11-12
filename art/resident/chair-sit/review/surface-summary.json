@@ -1,0 +1,32 @@
+{
+  "rolling": {
+    "dimensions": [
+      0.9,
+      1.4,
+      0.9
+    ],
+    "samples": 289,
+    "intersections": 0,
+    "buttockGap": {
+      "min": 0.003967279818060332,
+      "max": 0.007754650803281304
+    }
+  },
+  "lounge": {
+    "dimensions": [
+      1.04,
+      1.4,
+      1
+    ],
+    "samples": 289,
+    "intersections": 0,
+    "buttockGap": {
+      "min": 0.005757616068123639,
+      "max": 0.010711027803738338
+    }
+  },
+  "scootFloor": {
+    "min": -0.0002545332823426505,
+    "max": -0.0002545306365756006
+  }
+}

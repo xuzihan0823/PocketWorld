@@ -4,12 +4,13 @@ import {createServer} from 'vite';
 import { pathToFileURL } from 'node:url';
 const { chromium } = await import(process.env.PW_MODULE ? pathToFileURL(process.env.PW_MODULE).href : 'playwright');
 const output = process.env.CHAIR_OUTPUT || 'chair-review.local';
+const port = Number(process.env.CHAIR_PORT || 8974);
 await fs.mkdir(output, { recursive: true });
-const server=await createServer({root:process.cwd(),server:{host:'127.0.0.1',port:8973,strictPort:true},logLevel:'error'});await server.listen();
+const server=await createServer({root:process.cwd(),server:{host:'127.0.0.1',port,strictPort:true},logLevel:'error'});await server.listen();
 const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH});
 const page=await browser.newPage({viewport:{width:1440,height:1000},recordVideo:{dir:output+'/video',size:{width:1440,height:1000}}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
-await page.goto('http://127.0.0.1:8973/');await page.waitForTimeout(4000);
+await page.goto(`http://127.0.0.1:${port}/`);await page.waitForTimeout(4000);
 await page.screenshot({path:output+'/room.png'});
 console.log(await page.evaluate(async()=>{
  const url=performance.getEntriesByType('resource').map(e=>e.name).find(n=>n.includes('/.vite/deps/@react-three_fiber.js'));
@@ -23,8 +24,8 @@ await page.waitForFunction(()=>window.review.state.scene.getObjectByName('Orbita
 await page.evaluate(()=>{const {state}=window.review,actor=state.scene.getObjectByName('OrbitalResident');window.review.actor=actor;window.review.view='side';window.review.samples=[];
  state.internal.subscribers.push({priority:0,store:window.review.store,ref:{current:()=>{
   const view=window.review.view;if(view==='room'){state.camera.position.set(11,10.05,14);state.camera.fov=34;state.camera.lookAt(0,1.05,0);state.camera.updateProjectionMatrix();return;}const v=actor.position.clone().set(view==='front'?0:1,.25,view==='front'?1:.15).applyAxisAngle(actor.up,actor.rotation.y);
-  const target=actor.getWorldPosition(actor.position.clone()).add(actor.position.clone().set(0,.6,0));
-  state.camera.position.copy(target).addScaledVector(v,2.5);state.camera.fov=35;state.camera.lookAt(target);state.camera.updateProjectionMatrix();
+  const target=actor.getWorldPosition(actor.position.clone()).add(actor.position.clone().set(0,.85,0));
+  state.camera.position.copy(target).addScaledVector(v,3.3);state.camera.fov=35;state.camera.lookAt(target);state.camera.updateProjectionMatrix();
   window.review.samples.push({phase:actor.userData.chairMotion?.phase,time:actor.userData.chairMotion?.time,position:actor.position.toArray()});
  }}});
 });
@@ -32,7 +33,8 @@ for(const [label,condition] of [['start',"m?.phase==='blend-in'"],['lower',"m?.p
  await page.waitForFunction(condition=>{const m=window.review.actor.userData.chairMotion;return eval(condition)},condition,{timeout:30000});
  await page.screenshot({path:`${output}/${label}-side.png`});
 }
-await page.evaluate(()=>window.review.view='side');await page.waitForTimeout(100);await page.screenshot({path:output+'/seated-front.png'});
+await page.evaluate(()=>window.review.view='room');await page.waitForTimeout(100);await page.screenshot({path:output+'/room-seated.png'});
+await page.evaluate(()=>window.review.view='side');
 await page.keyboard.press('KeyE');await page.waitForFunction(()=>window.review.actor.userData.posture==='standing',{},{timeout:30000});
 await page.screenshot({path:output+'/standing-front.png'});
 // Re-enter and cancel during actual descent.
@@ -45,6 +47,7 @@ await page.keyboard.press('KeyE');
 await page.waitForFunction(()=>window.review.actor.userData.chairMotion?.phase==='seated',{},{timeout:30000});
 const before=await page.evaluate(()=>window.review.actor.position.toArray());
 await page.keyboard.down('KeyS');await page.waitForTimeout(850);await page.keyboard.up('KeyS');
+await page.screenshot({path:output+'/scoot-side.png'});
 await page.waitForTimeout(1600);
 const after=await page.evaluate(()=>window.review.actor.position.toArray());
 console.log('scoot',before,after);

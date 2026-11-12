@@ -1,0 +1,62 @@
+{
+  "schema_version": 3,
+  "blender": {
+    "background": true,
+    "build_hash": "e13b728c6880",
+    "version": "5.2.3 LTS",
+    "version_tuple": [
+      5,
+      2,
+      3
+    ]
+  },
+  "actions": [
+    {
+      "frame_end": 144.0,
+      "frame_start": 0.0,
+      "name": "Chair_Sit_Source",
+      "users": 130
+    }
+  ],
+  "totals": {
+    "actions": 1,
+    "armatures": 0,
+    "bones": 0,
+    "boundary_edges": 0,
+    "cameras": 0,
+    "constraints": 0,
+    "degenerate_faces": 0,
+    "edges": 0,
+    "flat_polygons": 0,
+    "geometry_nodes_modifiers": 0,
+    "images": 0,
+    "invalid_vertices": 0,
+    "isolated_vertices": 0,
+    "lights": 0,
+    "materials": 0,
+    "mesh_objects": 0,
+    "missing_material_faces": 0,
+    "node_materials": 0,
+    "non_manifold_edges": 0,
+    "objects": 66,
+    "polygons": 0,
+    "refinement_modifiers": 0,
+    "rigid_body_objects": 0,
+    "shape_keys": 0,
+    "simulation_modifiers": 0,
+    "smooth_polygons": 0,
+    "textured_materials": 0,
+    "triangles": 0,
+    "uv_mapped_meshes": 0,
+    "vertices": 0,
+    "weighted_meshes": 0,
+    "wire_edges": 0,
+    "zero_length_edges": 0
+  },
+  "issues": [
+    {
+      "code": "empty_mesh",
+      "severity": "gate"
+    }
+  ]
+}

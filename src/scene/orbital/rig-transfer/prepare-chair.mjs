@@ -43,8 +43,10 @@ function solve([thigh, shin, foot], target, sole) {
   aim(shin, pos(foot).sub(moved), target.clone().sub(moved));
   setRotation(foot, sole);
 }
-// Once the source's short foot adjustment ends, freeze each contact independently.
-rig.sample(1.25);
+// The original cushion is higher than Luna's standing hip. Keep the source's
+// anticipation, then lift onto the seat; resting feet hang instead of pulling
+// the pelvis through the cushion to force an unreachable floor contact.
+rig.sample(.95);
 for (const leg of legs) {
   const foot = leg.joints[2]; leg.anchor = pos(foot); leg.sole = rot(foot);
   const min = Math.min(...leg.ids.map(i => rig.mesh.localToWorld(rig.mesh.getVertexPosition(i, new T.Vector3())).y));
@@ -54,14 +56,19 @@ const frames = Array.from({ length: 289 }, (_, i) => i / 48), poses = bones.map(
 for (const time of frames) {
   rig.sample(time);
   const hips = bone('Hips'), point = pos(hips);
-  point.z -= .145 * smooth((time - .35) / 2.45);
+  const lift = smooth((time - .9) / .8), settle = smooth((time - 1.8) / 1.2);
+  const transfer = smooth((time - 1.4) / 1.35);
+  point.y = T.MathUtils.lerp(point.y, (1.03 - .086 * settle) / 1.43, lift);
+  point.z -= .55 / 1.43 * transfer;
   hips.position.copy(hips.parent.worldToLocal(point)); rig.update();
   for (const leg of legs) {
-    const foot = leg.joints[2], influence = smooth((time - .7) / .55);
-    const target = pos(foot).lerp(leg.anchor, influence), q = rot(foot).slerp(leg.sole, influence);
+    const foot = leg.joints[2], influence = smooth((time - .65) / .3);
+    const flight = smooth((time - 1) / .75);
+    const hang = new T.Vector3(leg.anchor.x, .564 / 1.43, (.55 + (leg.side === 'Right' ? .05 : 0) - .68) / 1.43);
+    const target = pos(foot).lerp(leg.anchor, influence).lerp(hang, flight), q = rot(foot).slerp(leg.sole, influence);
     solve(leg.joints, target, q); rig.update();
     const min = Math.min(...leg.ids.map(i => rig.mesh.localToWorld(rig.mesh.getVertexPosition(i, new T.Vector3())).y));
-    if (time < 1.25) { target.y -= min; solve(leg.joints, target, q); rig.update(); }
+    if (time < 1) { target.y -= min; solve(leg.joints, target, q); rig.update(); }
   }
   bones.forEach((b, i) => { for (const key of ['position', 'quaternion', 'scale']) poses[i][key].push(...b[key].toArray()); });
 }
@@ -104,4 +111,4 @@ const header = Buffer.alloc(20), binHeader = Buffer.alloc(8);
 header.writeUInt32LE(0x46546c67); header.writeUInt32LE(2,4); header.writeUInt32LE(28+json.length+byteLength,8); header.writeUInt32LE(json.length,12); header.writeUInt32LE(0x4e4f534a,16);
 binHeader.writeUInt32LE(byteLength); binHeader.writeUInt32LE(0x004e4942,4);
 await fs.writeFile(output,Buffer.concat([header,json,binHeader,...chunks]));
-console.log(JSON.stringify({ output, bytes: 28+json.length+byteLength, frames:frames.length, duration:6, bones:bones.length, plantStart:1.25, anchors:legs.map(l=>l.anchor.toArray()) }));
+console.log(JSON.stringify({ output, bytes: 28+json.length+byteLength, frames:frames.length, duration:6, bones:bones.length, floorRelease:1, settledHipHeight:.944, anchors:legs.map(l=>l.anchor.toArray()) }));

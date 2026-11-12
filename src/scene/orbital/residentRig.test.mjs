@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { load } from './rig-transfer/load-for-validation.mjs';
+import { chairSurface } from './rig-transfer/chair-surface-review.mjs';
 
 const source = readFileSync(new URL('./residentRig.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
@@ -48,12 +49,12 @@ test('the neutral stance puts both soles on the floor with separate foot positio
   } finally { rig.dispose(); }
 });
 
-test('supplied chair clip holds independent planted ankles, preserves leg lengths and restores walking', () => {
+test('chair clip keeps the high-seat feet suspended, preserves leg lengths and restores walking', () => {
   const { asset, rig, mesh } = instance();
   const joint = name => asset.getObjectByName('mixamorig' + name);
   const position = bone => bone.getWorldPosition(new THREE.Vector3());
   const legs = ['Left', 'Right'].map(side => ['UpLeg', 'Leg', 'Foot'].map(name => joint(side + name)));
-  rig.applyPose(0, 0, false, { time: 1.25, weight: 1, perch: 0 });
+  rig.applyPose(0, 0, false, { time: 3, weight: 1, perch: 0 });
   rig.mesh.updateMatrixWorld(true);
   const anchors = legs.map(leg => position(leg[2]));
   const lengths = legs.map(leg => [position(leg[0]).distanceTo(position(leg[1])), position(leg[1]).distanceTo(position(leg[2]))]);
@@ -62,7 +63,7 @@ test('supplied chair clip holds independent planted ankles, preserves leg length
       const time = f / 48;
       rig.applyPose(0, 0, false, { time, weight: 1, perch: 0 }); rig.mesh.updateMatrixWorld(true);
       legs.forEach((leg, side) => {
-        if (time >= 1.25) assert(position(leg[2]).distanceTo(anchors[side]) < .001, `${time}/${side} foot drift`);
+        if (time >= 3) assert(position(leg[2]).distanceTo(anchors[side]) < .001, `${time}/${side} resting ankle drift`);
         for (let segment = 0; segment < 2; segment++) assert(Math.abs(position(leg[segment]).distanceTo(position(leg[segment + 1])) - lengths[side][segment]) < .00001);
       });
       if (f % 24 === 0) for (let i = 0; i < mesh.geometry.attributes.position.count; i++)
@@ -71,6 +72,52 @@ test('supplied chair clip holds independent planted ankles, preserves leg length
     rig.applyPose(.4, 1, false); sample(.4);
     mesh.skeleton.bones.forEach((bone, i) => assert(bone.quaternion.angleTo(reference.skeleton.bones[i].quaternion) < .001));
   } finally { rig.dispose(); }
+});
+
+for (const kind of ['rolling', 'lounge']) test(`${kind}: actual skin clears full-size cushion, arms and back through entry, idle and reverse`, async () => {
+  const { rig, mesh } = instance(), surface = await chairSurface(kind, mesh);
+  try {
+    assert.deepEqual(surface.dimensions, kind === 'rolling' ? [.9,1.4,.9] : [1.04,1.4,1]);
+    for (let frame=0;frame<=288;frame++) {
+      const time=frame/48,transfer=THREE.MathUtils.smoothstep(time,1.4,2.75);
+      rig.mesh.position.set(0,kind==='lounge'?-.037*transfer:0,.68+(kind==='lounge'?.065:0));
+      rig.applyPose(0,0,true,{time,weight:1,perch:0});rig.mesh.updateMatrixWorld(true);
+      const result=surface.sample();assert.equal(result.intersections,0,JSON.stringify({kind,time,...result}));
+      if(time>=3) for(const gap of result.buttockGaps) assert(gap!==null&&gap>=0&&gap<.015,`${kind}/${time} unsupported buttock: ${gap}`);
+    }
+    for(const weight of [0,.25,.5,.75,1]) {
+      rig.mesh.position.set(0,0,kind==='lounge'?.745:.68);rig.applyPose(0,0,true,{time:0,weight,perch:0});rig.mesh.updateMatrixWorld(true);
+      assert.equal(surface.sample().intersections,0,`entry/release blend ${weight}`);
+    }
+  } finally {surface.dispose();rig.dispose();}
+});
+
+test('scoot entry, grounded push, recovery and cancellation keep skin outside the cushion', async () => {
+  const {rig,mesh}=instance(),surface=await chairSurface('rolling',mesh);
+  try {
+    for(const time of [3,4.5,5.5]) for(let frame=0;frame<=72;frame++) {
+      const perch=Math.min(1,frame/36),sole=.03+Math.max(0,frame-36)/36*.06;
+      rig.mesh.position.set(0,-.36*perch,.68+.14*THREE.MathUtils.smoothstep(perch,0,.6));
+      rig.applyPose(0,0,true,{time,weight:1,perch,sole,soleLift:0});rig.mesh.updateMatrixWorld(true);
+      const sample=surface.sample(.35*perch);
+      assert.equal(sample.intersections,0,`scoot ${time}/${perch}/${sole}`);
+      if(perch===1) for(const gap of sample.buttockGaps) assert(gap!==null&&gap>=0&&gap<.02,`scoot support ${time}/${sole}/${gap}`);
+      if(perch===1) {
+        const min={Left:Infinity,Right:Infinity},si=mesh.geometry.attributes.skinIndex,sw=mesh.geometry.attributes.skinWeight;
+        for(let i=0;i<si.count;i++)for(let n=0;n<4;n++) {
+          const side=/^mixamorig(Left|Right)(?:Foot|Toe)/.exec(mesh.skeleton.bones[si.getComponent(i,n)].name)?.[1];
+          if(side&&sw.getComponent(i,n)>.4)min[side]=Math.min(min[side],mesh.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(mesh.matrixWorld).y);
+        }
+        for(const [side,y] of Object.entries(min))assert(y>=-.002&&y<.006,`${time}/${sole}/${side} pushing sole ${y}`);
+      }
+    }
+    for(let frame=0;frame<=120;frame++) {
+      const elapsed=frame/60,time=Math.max(0,3-elapsed*1.35),perch=Math.exp(-7*elapsed);
+      rig.mesh.position.set(0,-.36*perch,.68+.14*THREE.MathUtils.smoothstep(perch,0,.6));
+      rig.applyPose(0,0,true,{time,weight:1,perch,sole:.03,soleLift:.06});rig.mesh.updateMatrixWorld(true);
+      assert.equal(surface.sample(.35*perch).intersections,0,`scoot cancellation ${elapsed}`);
+    }
+  } finally {surface.dispose();rig.dispose();}
 });
 
 test('room uses the authored walk at full weight and does not share bone poses between rooms', () => {

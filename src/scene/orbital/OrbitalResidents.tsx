@@ -10,7 +10,7 @@ import { residentLibraryTarget } from './library/bookMotion';
 import { readingStand } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
-import { createChairMotion, advanceChairMotion, type ChairMotion } from './chairMotion';
+import { createChairMotion, advanceChairMotion, chairSeatFit, chairScootFit, type ChairMotion } from './chairMotion';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 
 type Point = [number, number];
@@ -32,7 +32,7 @@ const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const angle = (from: number, to: number, t: number) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * t;
 // Scoot cycle: feet reach down, push the floor until the legs straighten, then lift and recover.
-const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.2, SOLE_LIFT = 0.06;
+const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.09, SOLE_LIFT = 0.06;
 const PUSH = 3.4, ROLL_DRAG = 2.4;
 
 function layout(observatory: boolean) {
@@ -455,7 +455,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const frameX = root.position.x, frameZ = root.position.z;
     let walking = false;
     if (s.posture === 'chair') {
-      const motion = chairMotion.current ??= createChairMotion(Math.hypot(root.position.x - pose.x, root.position.z - pose.z));
+      const motion = chairMotion.current ??= createChairMotion(Math.hypot(root.position.x - pose.x, root.position.z - pose.z), p.sceneId === 'observatory');
       const step = advanceChairMotion(motion, dt, s.exiting, p.reducedMotion, WALK_SPEED * .65);
       s.blend = motion.phase === 'seated' ? 1 : 0;
       if (scooting) {
@@ -494,8 +494,10 @@ export function OrbitalResidents(props: ResidentsProps) {
           s.soleLift = SOLE_LIFT * ease(u) + Math.sin(u * Math.PI) * 0.05;
         }
       }
-      const [x, z] = chairFront(pose, motion.offset + s.perch * .14);
-      root.position.set(x, -s.perch * SEAT_DROP, z);
+      const fit = chairSeatFit(motion.time, motion.weight, p.sceneId === 'observatory');
+      const scoot = chairScootFit(s.perch);
+      const [x, z] = chairFront(pose, motion.offset + fit.z + scoot.z);
+      root.position.set(x, fit.y - s.perch * SEAT_DROP + scoot.y, z);
       root.rotation.y = seatYaw(pose);
       s.sit = step.crouch; s.lie = 0;
       walking = Math.abs(step.travel) > .00001;
@@ -671,11 +673,6 @@ export function OrbitalResidents(props: ResidentsProps) {
       rig.current.legs.forEach((leg, side) => {
         let thigh = -s.sit * Math.PI / 2, knee = s.sit * Math.PI / 2;
         if (libraryActive && root.position.y < -.001) [thigh, knee] = legReach(leg, -leg.hipForward, root.position.y + HIP - leg.ankleHeight);
-        if (s.perch > 0.001) {
-          const [reachThigh, reachKnee] = legReach(leg, s.sole + .32, root.position.y + .443 - s.soleLift - leg.ankleHeight);
-          thigh = THREE.MathUtils.lerp(thigh, reachThigh, s.perch);
-          knee = THREE.MathUtils.lerp(knee, reachKnee, s.perch);
-        }
         const swing = side ? -stride : stride;
         leg.thigh.rotation.x = thigh + swing + leg.straighten[0] * straighten;
         leg.shin.rotation.x = knee + Math.max(0, -swing) * 0.5 + leg.straighten[1] * straighten;
@@ -685,7 +682,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
     if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current),
       !flow || ['idle', 'prepare', 'approach'].includes(flow.phase),
-      chairMotion.current ? { time: chairMotion.current.time, weight: chairMotion.current.weight, perch: s.perch } : undefined);
+      chairMotion.current ? { time: chairMotion.current.time, weight: chairMotion.current.weight, perch: s.perch, sole: s.sole, soleLift: s.soleLift } : undefined);
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.grounded = s.lift === 0;
