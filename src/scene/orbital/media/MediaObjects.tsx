@@ -1,3 +1,4 @@
+import { SuppliedAsset } from '../SuppliedAsset';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -36,9 +37,10 @@ function Disc({ colors, radius = 0.17 }: { colors: [string, string]; radius?: nu
 
 function Cartridge({ game }: { game: GameId }) {
   return <group>
-    <SoftBox dims={[0.22, 0.25, 0.075]} color={gameColors[game]} radius={0.016} />
+    <SuppliedAsset name="cartridge" size={[.22, .075, .25]} fit="contact" rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -.0375]} fallback={<>    <SoftBox dims={[0.22, 0.25, 0.075]} color={gameColors[game]} radius={0.016} />
     <SoftBox dims={[0.16, 0.11, 0.008]} position={[0, 0.025, 0.043]} color="#ece0bd" radius={0.005} />
     <SoftBox dims={[0.13, 0.024, 0.012]} position={[0, -0.115, 0]} color="#bba269" radius={0.003} />
+</>} />
     <mesh position={[0, 0.027, 0.05]}><circleGeometry args={[0.032, game === 'mario' ? 8 : 3]} /><meshStandardMaterial color={gameColors[game]} /></mesh>
   </group>;
 }
@@ -252,9 +254,12 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
 
   return <group name="MediaObjects">
     <group position={PLAYER}>
-      <SoftBox dims={[0.88, 0.14, 0.5]} color="#936c49" />
+      <SuppliedAsset name="turntable.parts" part="body" partBounds size={[.88, .158, .50]} fit="contact" position={[0, -.079, 0]} fallback={<>      <SoftBox dims={[0.88, 0.14, 0.5]} color="#936c49" />
       <SoftBox dims={[0.83, 0.018, 0.46]} position={[0, 0.079, 0]} color="#d9c7a4" />
       {[-0.32, 0.32].flatMap(x => [-0.16, 0.16].map(z => <SoftBox key={`${x}/${z}`} position={[x, -0.072, z]} dims={[0.09, 0.018, 0.07]} color="#464e43" />))}
+</>} />
+      {/* Close the source shell under the unchanged moving platter and tonearm. */}
+      <SoftBox dims={[0.89, 0.018, 0.51]} position={[0, 0.079, 0]} color="#936c49" radius={0.014} />
       <ObjectHandle id="music-player" action="toggle" hint={props.isMusicPlaying ? '轻触唱盘，暂停音乐' : '放下唱针，继续播放'} world={world} position={[-0.13, 0.095, 0]}>
         <mesh><cylinderGeometry args={[0.205, 0.205, 0.025, 48]} /><meshStandardMaterial color="#343d3c" metalness={0.4} /></mesh>
         {!transfer?.disc && <group rotation={[-Math.PI / 2, 0, 0]}><group ref={spin}><Disc colors={props.activeDisc.discThemeColor} radius={0.19} /></group></group>}
