@@ -9,6 +9,7 @@ import { applyLibraryPose, carryResident, libraryCrouch } from './library/reside
 import { residentLibraryTarget } from './library/bookMotion';
 import { readingStand } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
+import { WALK_SPEED } from './residentRig';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 
 type Point = [number, number];
@@ -166,11 +167,11 @@ export function OrbitalResidents(props: ResidentsProps) {
   const drawerTask = useRef<{ action: WorldAction; target: Point; elapsed: number } | null>(null);
   const drawerExtension = useRef(0);
   const approach = useRef<Approach | null>(null);
-  const strideAmount = useRef(0);
+  const walkWeight = useRef(0), airborneMotion = useRef(0);
   const libraryNav = useRef('');
   const touch = useRef<{ id: number; x: number; y: number; target: EventTarget | null } | null>(null);
   const petGesture = useRef(false);
-  const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, lift: 0, velocity: 0, gait: 0, stepCount: 0, stepGait: Math.PI * 0.45, stopTime: Infinity, nearby: '', nearbyHint: '', dismissedBed: false, dismissedChair: false,
+  const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, lift: 0, velocity: 0, walkTime: 0, nearby: '', nearbyHint: '', dismissedBed: false, dismissedChair: false,
     perch: 0, idle: Infinity, kick: 0, planted: false, plant: SOLE_NEAR, sole: SOLE_NEAR, soleLift: SOLE_LIFT });
   const exit = useRef({ from: new THREE.Vector3(), yaw: 0, sit: 0, lie: 0, progress: 0 });
   const petBody = useRef<THREE.Group>(null);
@@ -446,6 +447,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     const surfaceAt = (x: number, z: number): 'wood' | 'rug' =>
       p.sceneId === 'observatory' && x >= -2.95 && x <= -0.05 && z >= -0.3 && z <= 1.9 ? 'rug' : 'wood';
+    const frameX = root.position.x, frameZ = root.position.z;
     let walking = false;
     if (s.exiting) {
       // Move off the support before lowering the pelvis; preserve the actual in-flight pose.
@@ -523,13 +525,13 @@ export function OrbitalResidents(props: ResidentsProps) {
     } else {
       const task = drawerTask.current;
       let [dx, dz] = p.enabled && !task ? steer() : [0, 0];
-      let speed = 2.15;
+      let speed = WALK_SPEED;
       if (task) {
         task.elapsed += dt;
         root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 14));
         if (Math.abs(Math.atan2(Math.sin(root.rotation.y - Math.PI), Math.cos(root.rotation.y - Math.PI))) < 0.08) {
           const distance = Math.hypot(task.target[0] - root.position.x, task.target[1] - root.position.z);
-          speed = dt > 0 ? Math.min(0.85, distance / dt) : 0;
+          speed = dt > 0 ? Math.min(WALK_SPEED, distance / dt) : 0;
           if (distance > 0.001) { dx = (task.target[0] - root.position.x) / distance; dz = (task.target[1] - root.position.z) / distance; }
         }
       }
@@ -537,7 +539,10 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (!task && !dx && !dz && (p.enabled || autonomous || libraryWalking) && s.path.length) {
         const waypoint = s.path[0];
         const distance = Math.hypot(waypoint[0] - root.position.x, waypoint[1] - root.position.z);
-        if (distance <= 2.15 * dt) { root.position.x = waypoint[0]; root.position.z = waypoint[1]; s.path.shift(); }
+        if (distance <= WALK_SPEED * dt) {
+          root.position.x = waypoint[0]; root.position.z = waypoint[1];
+          walking = distance > 0.00001; s.path.shift();
+        }
         else { dx = (waypoint[0] - root.position.x) / distance; dz = (waypoint[1] - root.position.z) / distance; }
       }
       if (dx || dz) {
@@ -618,31 +623,25 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
     }
     pose.drop = s.perch;
-    const groundedWalk = walking && s.lift === 0;
+    const distance = Math.hypot(root.position.x - frameX, root.position.z - frameZ);
+    const groundedWalk = walking && s.lift === 0 && distance > .00001;
     if (groundedWalk) {
-      s.stopTime = 0;
-      s.gait += dt * 10;
-      const surface = surfaceAt(root.position.x, root.position.z);
-      while (s.gait >= s.stepGait) {
-        roomAudio.playFootstep({ foot: (s.stepCount++ & 1) as 0 | 1, surface });
-        s.stepGait += Math.PI;
-      }
-    } else {
-      if (walking) s.gait += dt * 10;
-      s.stopTime = walking ? 0 : s.stopTime + dt;
-      if (s.stopTime > 0.12) {
-        s.gait = (s.stepCount & 1) * Math.PI;
-        s.stepGait = s.gait + Math.PI * 0.45;
-      } else if (s.gait >= s.stepGait) {
-        s.stepGait = Math.floor(s.gait / Math.PI) * Math.PI + Math.PI * 0.45;
-        if (s.stepGait <= s.gait) s.stepGait += Math.PI;
-      }
+      const next = s.walkTime + distance / WALK_SPEED;
+      const halfStep = Math.floor(next * 2);
+      if (halfStep !== Math.floor(s.walkTime * 2))
+        roomAudio.playFootstep({ foot: (halfStep & 1) as 0 | 1, surface: surfaceAt(root.position.x, root.position.z) });
+      s.walkTime = next % 1;
     }
-    strideAmount.current = THREE.MathUtils.damp(strideAmount.current, walking && !p.reducedMotion ? Math.sin(s.gait) * 0.44 : 0, 16, dt);
-    const stride = strideAmount.current;
+    const interactionPose = s.posture !== 'standing' || s.exiting || s.lift > 0 || (libraryActive && !libraryWalking);
+    walkWeight.current = interactionPose || p.reducedMotion ? 0
+      : clamp(walkWeight.current + (groundedWalk ? 1 : -1) * dt / .14, 0, 1);
+    const airborne = walking && s.lift > 0 && !p.reducedMotion;
+    airborneMotion.current = airborne ? airborneMotion.current + dt : 0;
+    const stride = airborne ? Math.sin(airborneMotion.current * 10) * .28
+      : groundedWalk && libraryActive && !libraryWalking && !p.reducedMotion ? Math.sin(s.walkTime * Math.PI * 2) * .2 : 0;
     pivot.position.y = HIP;
     pivot.rotation.x = -s.lie * Math.PI / 2;
-    pivot.rotation.z = stride * 0.12;
+    pivot.rotation.z = airborne ? stride * .12 : 0;
     if (rig.current) {
       const straighten = Math.max(s.sit, s.lie, s.perch);
       rig.current.skirtFront.rotation.x = -s.sit * Math.PI / 2;
@@ -664,6 +663,8 @@ export function OrbitalResidents(props: ResidentsProps) {
       });
     }
     if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
+    if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current),
+      !flow || ['idle', 'prepare', 'approach'].includes(flow.phase));
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.grounded = s.lift === 0;

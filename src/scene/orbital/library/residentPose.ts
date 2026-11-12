@@ -8,8 +8,7 @@ const point = new THREE.Vector3(), restToy = new THREE.Vector3(), parkedToy = ne
 export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: string, flow: LibraryFlow, dt: number) {
   const phase = flow.phase, t = smooth(flow.progress), originX = scene === 'observatory' ? 14 : 0;
   rig.mesh.updateWorldMatrix(true, true);
-  const rest = new THREE.Vector3(.115, .895, .17);
-  rig.mesh.localToWorld(restToy.copy(rest)); parkedToy.set(...toySupport(scene)); parkedToy.x += originX;
+  rig.mesh.localToWorld(restToy.copy(rig.toyRest)); parkedToy.set(...toySupport(scene)); parkedToy.x += originX;
   const parked = !['idle', 'prepare', 'approach'].includes(phase);
   toy.copy(parked ? parkedToy : restToy);
   if (phase === 'park') toy.lerpVectors(restToy, parkedToy, t);
@@ -23,7 +22,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   else if (phase === 'unpark') rig.bunny.quaternion.slerpQuaternions(parentRotation.clone().invert(), new THREE.Quaternion(), t);
   if (phase === 'idle' || phase === 'prepare' || phase === 'approach') { resetArms(rig, 1 - Math.exp(-dt * 9)); return; }
   if (['park', 'unpark'].includes(phase)) {
-    point.copy(toy).add(new THREE.Vector3(0, -.015, .02)); reachArm(rig, rig.arms[1], point, 1); resetFreeArm(rig, dt); return;
+    rig.bunny.localToWorld(point.copy(rig.toyGrip)); reachArm(rig, rig.arms[1], point, 1); resetFreeArm(rig, dt); return;
   }
   if (!flow.book || ['catalog', 'form', 'recenter', 'shelving', 'leaving'].includes(phase)) { resetArms(rig, 1 - Math.exp(-dt * 9)); return; }
   const book = bookPose(scene, flow.book, flow);
@@ -33,7 +32,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
     const armSide = shelfOrigin(scene)[0] + slotFor(flow.book).position[0] < root.position.x ? 1 : 0;
     const aim = contact(-.015, .035, -.075);
     const blend = phase === 'reach' ? t : phase === 'release' ? 1 - t : phase === 'align' ? 0 : 1;
-    const restWorld = rig.mesh.localToWorld(armSide ? new THREE.Vector3(.065, .889, .185) : new THREE.Vector3(-.213, .719, .08));
+    const restWorld = rig.mesh.localToWorld(rig.arms[armSide].restWrist.clone());
     point.lerpVectors(restWorld, aim, blend); reachArm(rig, rig.arms[armSide], point, armSide);
     rig.arms[1 - armSide].upper.quaternion.slerp(new THREE.Quaternion(), 1 - Math.exp(-dt * 9)); rig.arms[1 - armSide].forearm.quaternion.slerp(new THREE.Quaternion(), 1 - Math.exp(-dt * 9));
   } else {
