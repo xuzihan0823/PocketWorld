@@ -21,16 +21,18 @@ export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group; bunny: THREE.Group;
   toyRest: THREE.Vector3; toyGrip: THREE.Vector3;
-  applyPose: (phase: number, walkWeight: number, holdToy: boolean) => void;
+  applyPose: (phase: number, walkWeight: number, holdToy: boolean, chair?: { time: number; weight: number; perch: number; sole?: number; soleLift?: number }) => void;
   dispose: () => void;
 }
 
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
 const TOY = `${import.meta.env.BASE_URL}models/resident/luna-bunny-refined.glb`;
+const CHAIR = `${import.meta.env.BASE_URL}models/resident/luna-chair-sit.glb`;
 
 function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
   const { scene, animations } = useGLTF(MODEL);
   const plush = useGLTF(TOY);
+  const chair = useGLTF(CHAIR);
   const container = useRef<THREE.Group>(null);
   const resident = useMemo(() => {
     const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
@@ -42,8 +44,8 @@ function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) 
         object.raycast = () => {};
       }
     });
-    return createResidentRig(clone(scene), walk, toy);
-  }, [scene, animations, plush.scene]);
+    return createResidentRig(clone(scene), walk, toy, chair.animations[0]);
+  }, [scene, animations, plush.scene, chair.animations]);
   useLayoutEffect(() => {
     const group = container.current!;
     group.add(resident.mesh);
@@ -74,7 +76,7 @@ class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFa
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useGLTF.clear(TOY); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useGLTF.clear(TOY); useGLTF.clear(CHAIR); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 
@@ -86,3 +88,4 @@ export function ResidentModel({ rig, onFailure, ...props }: ThreeElements['group
 
 useGLTF.preload(MODEL);
 useGLTF.preload(TOY);
+useGLTF.preload(CHAIR);

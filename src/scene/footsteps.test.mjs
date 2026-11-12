@@ -52,6 +52,7 @@ function mount(kind, overrides = {}) {
     './ObjectHandle': { ObjectHandle: 'ObjectHandle' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
+    './chairMotion': load('./orbital/chairMotion.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },

@@ -8,7 +8,7 @@ export const CHAIR_POSES: Record<WorldSceneId, ChairPose> = {
 };
 export const SEAT_SWIVEL = -0.2;
 /** Gas-lift travel that lets the short-legged resident reach the floor while scooting. */
-export const SEAT_DROP = 0.25;
+export const SEAT_DROP = 0.35;
 
 export function chairFacing(pose: ChairPose) { return pose.yaw + SEAT_SWIVEL + Math.PI; }
 
