@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { load } from './rig-transfer/load-for-validation.mjs';
 
 const source = readFileSync(new URL('./residentRig.ts', import.meta.url), 'utf8');
@@ -13,10 +14,12 @@ const module = { exports: {}, require: () => THREE };
 vm.runInNewContext(compiled, module);
 const { createResidentRig, RESIDENT_SCALE } = module.exports;
 const { gltf, mesh: reference, sample } = await load(new URL('../../../public/models/resident/luna-walk-room.glb', import.meta.url));
+const chairBytes = readFileSync(new URL('../../../public/models/resident/luna-chair-sit.glb', import.meta.url));
+const chairAsset = await new GLTFLoader().parseAsync(chairBytes.buffer.slice(chairBytes.byteOffset, chairBytes.byteOffset + chairBytes.byteLength), '');
 
 function instance() {
   const asset = clone(gltf.scene);
-  const rig = createResidentRig(asset, gltf.animations[0], new THREE.Group());
+  const rig = createResidentRig(asset, gltf.animations[0], new THREE.Group(), chairAsset.animations[0]);
   const mesh = asset.getObjectByProperty('isSkinnedMesh', true);
   return { asset, rig, mesh };
 }
@@ -42,6 +45,31 @@ test('the neutral stance puts both soles on the floor with separate foot positio
       }
     }
     for (const [side, y] of Object.entries(min)) assert(y >= -.002 && y < .005, `${side} sole at ${y}`);
+  } finally { rig.dispose(); }
+});
+
+test('supplied chair clip holds independent planted ankles, preserves leg lengths and restores walking', () => {
+  const { asset, rig, mesh } = instance();
+  const joint = name => asset.getObjectByName('mixamorig' + name);
+  const position = bone => bone.getWorldPosition(new THREE.Vector3());
+  const legs = ['Left', 'Right'].map(side => ['UpLeg', 'Leg', 'Foot'].map(name => joint(side + name)));
+  rig.applyPose(0, 0, false, { time: 1.25, weight: 1, perch: 0 });
+  rig.mesh.updateMatrixWorld(true);
+  const anchors = legs.map(leg => position(leg[2]));
+  const lengths = legs.map(leg => [position(leg[0]).distanceTo(position(leg[1])), position(leg[1]).distanceTo(position(leg[2]))]);
+  try {
+    for (let f = 0; f <= 288; f++) {
+      const time = f / 48;
+      rig.applyPose(0, 0, false, { time, weight: 1, perch: 0 }); rig.mesh.updateMatrixWorld(true);
+      legs.forEach((leg, side) => {
+        if (time >= 1.25) assert(position(leg[2]).distanceTo(anchors[side]) < .001, `${time}/${side} foot drift`);
+        for (let segment = 0; segment < 2; segment++) assert(Math.abs(position(leg[segment]).distanceTo(position(leg[segment + 1])) - lengths[side][segment]) < .00001);
+      });
+      if (f % 24 === 0) for (let i = 0; i < mesh.geometry.attributes.position.count; i++)
+        assert(mesh.getVertexPosition(i, new THREE.Vector3()).toArray().every(Number.isFinite));
+    }
+    rig.applyPose(.4, 1, false); sample(.4);
+    mesh.skeleton.bones.forEach((bone, i) => assert(bone.quaternion.angleTo(reference.skeleton.bones[i].quaternion) < .001));
   } finally { rig.dispose(); }
 });
 

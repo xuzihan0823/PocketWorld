@@ -10,7 +10,7 @@ import { FurnitureBookcase } from './FurnitureBooks';
 import { SuppliedAsset } from './SuppliedAsset';
 import { Bedding } from './Bedding';
 import { ReusableAsset } from './ReusableAsset';
-import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
+import { CHAIR_POSES, CHAIR_SCALE, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
 
 function FurnitureBed({ world }: { world: WorldModelProps }) {
   const state = world.objects.bed ?? CLOSED_OBJECT;
@@ -33,9 +33,9 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
     const pose = CHAIR_POSES[world.sceneId];
     rig.current?.position.set(pose.x, 0, pose.z);
     if (rig.current) rig.current.rotation.y = pose.yaw;
-    if (seat.current) seat.current.position.y = -pose.drop * SEAT_DROP;
+    if (seat.current) seat.current.position.y = -pose.drop * SEAT_DROP / CHAIR_SCALE;
   });
-  return <ObjectHandle id="chair" action={state.active ? 'stand' : 'sit'} hint={state.active ? (lounge ? '起身' : '起身 · WASD 蹬地滑行') : '坐下歇一会'} world={world}><group ref={rig}>
+  return <ObjectHandle id="chair" action={state.active ? 'stand' : 'sit'} hint={state.active ? (lounge ? '起身' : '起身 · WASD 蹬地滑行') : '坐下歇一会'} world={world}><group ref={rig} scale={CHAIR_SCALE}>
     <SuppliedAsset name={lounge ? "lounge-chair.parts" : "rolling-chair.parts"} part="base" size={lounge ? [1.04, 1.40, 1] : [.90, 1.40, .90]} fit="contact" rotation={[0, Math.PI, 0]} fallback={<>    {lounge ? [-0.39, 0.39].flatMap(x => [-0.36, 0.36].map(z => <SoftBox key={`${x}/${z}`} dims={[0.08, 0.49, 0.08]} position={[x, 0.255, z]} color={C.edge} rotation={[0, 0, -x * 0.12]} />)) : <>
       <Cylinder radius={0.06} height={0.12} position={[0, 0.15, 0]} color="#9b9e94" metalness={0.7} />
       {[0, 1, 2, 3, 4].map(i => <group key={i} rotation={[0, i * Math.PI * 2 / 5, 0]}>
