@@ -18,7 +18,7 @@
 
 `three-validation.json` 对生产 GLB 进行 Three.js 独立加载与 241 次全网格采样：单个 `Walk_Grounded_Loop`，115 骨骼，所有坐标有限，最低表面高度约 0.176 mm，端点骨骼矩阵差 0。角色回归另检查双脚站姿、完整权重下导出动作一致、跨房间骨骼独立、交互控制与蒙皮关节对齐以及恢复行走。
 
-`npm test` 的类型检查、生产构建及 226 项测试全部通过，保留既有 large-chunk 提示，没有新增运行依赖。浏览器实测主场景加载、坐下/起身、躺床、取书和翻页；截图见 `src/scene/orbital/review/luna-room-bed.jpg`、`luna-room-book.jpg`。
+`npm test` 的类型检查、生产构建及 228 项测试全部通过，保留既有 large-chunk 提示，没有新增运行依赖。浏览器实测主场景加载、坐下/起身、躺床、取书和翻页；截图见 `src/scene/orbital/review/luna-room-bed.jpg`、`luna-room-book.jpg`。
 
 原扫描网格的开放边界仍存在；没有表情、逐指抓握、裙发惯性或布料物理，没有全部交互姿态的自动防穿模。实体手机、Safari、地形适应及长期压力测试未验收。
 
