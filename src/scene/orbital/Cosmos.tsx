@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
-  skyVertex, skyFragment, starVertex, starFragment, meteorVertex, meteorFragment,
+  skyVertex, skyFragment, starVertex, starFragment, particleVertex, particleFragment,
   planetVertex, earthFragment, cloudFragment, atmosphereFragment,
 } from './shaders/cosmos';
 
@@ -10,12 +10,16 @@ import {
 export const SUN_DIRECTION: [number, number, number] = [-0.534522, 0.801784, 0.267261];
 
 const GALACTIC_POLE = new THREE.Vector3(0.32, 0.88, -0.35).normalize();
-const STAR_COUNT = 7000;
+const STAR_COUNT = 9000;
 const STAR_RADIUS = 1400;
-const METEOR_COUNT = 3;
-const METEOR_RADIUS = 1200;
+const DRIFT_COUNT = 160;
+const EARTH_POSITION: [number, number, number] = [-623, -277, -588];
+const EARTH_NARROW_POSITION: [number, number, number] = [-606, -259, -613];
+const EARTH_RADIUS = 115;
+const EARTH_NARROW_SCALE = 0.72;
 const NO_RAYCAST = () => undefined;
-const STAR_COLORS = ['#9db4ff', '#cad7ff', '#f8f7ff', '#fff4e8', '#ffe2b8', '#ffc58f'].map(hex => new THREE.Color(hex));
+const STAR_COLORS = ['#8fb0ff', '#b9ccff', '#dfe9ff', '#f8f7ff', '#fff4e8', '#ffd9b0'].map(hex => new THREE.Color(hex));
+const DRIFT_COLORS = ['#7fd4ff', '#a8e4ff', '#e6f4ff', '#9fb8ff'].map(hex => new THREE.Color(hex));
 
 function seededRandom(seed: number) {
   return () => {
@@ -47,9 +51,9 @@ function createStarGeometry() {
     direction.setLength(STAR_RADIUS).toArray(positions, i * 3);
     const magnitude = Math.pow(random(), 7);
     const color = STAR_COLORS[Math.floor(random() * STAR_COLORS.length)];
-    const brightness = 0.25 + 0.55 * random() + magnitude * 1.4;
+    const brightness = 0.22 + 0.5 * random() + magnitude * 1.3;
     colors.set([color.r * brightness, color.g * brightness, color.b * brightness], i * 3);
-    sizes[i] = 1.1 + magnitude * 5.5;
+    sizes[i] = 0.9 + magnitude * 4.6;
     twinkles.set([random() * Math.PI * 2, 0.4 + random() * 2.6], i * 2);
   }
   const geometry = new THREE.BufferGeometry();
@@ -60,77 +64,57 @@ function createStarGeometry() {
   return geometry;
 }
 
-function createMeteorGeometry() {
-  const meteors = new Float32Array(METEOR_COUNT * 4);
-  const corners = new Float32Array(METEOR_COUNT * 8);
-  const indices: number[] = [];
-  for (let i = 0; i < METEOR_COUNT; i++) {
-    meteors.fill(i, i * 4, i * 4 + 4);
-    corners.set([-1, 0, 1, 0, -1, 1, 1, 1], i * 8);
-    const base = i * 4;
-    indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
+function createDriftGeometry() {
+  const random = seededRandom(20261112);
+  const positions = new Float32Array(DRIFT_COUNT * 3);
+  const colors = new Float32Array(DRIFT_COUNT * 3);
+  const sizes = new Float32Array(DRIFT_COUNT);
+  const seeds = new Float32Array(DRIFT_COUNT * 3);
+  const point = new THREE.Vector3();
+  let i = 0;
+  while (i < DRIFT_COUNT) {
+    point.set(-14 + random() * 42, 0.6 + random() * 9.4, -14 + random() * 28);
+    const nearFloor = point.y < 4.5 && Math.abs(point.z) < 6 && (Math.abs(point.x) < 6 || Math.abs(point.x - 14) < 6);
+    if (nearFloor) continue;
+    point.toArray(positions, i * 3);
+    const color = DRIFT_COLORS[Math.floor(random() * DRIFT_COLORS.length)];
+    const brightness = 0.5 + random() * 0.6;
+    colors.set([color.r * brightness, color.g * brightness, color.b * brightness], i * 3);
+    sizes[i] = 1.6 + random() * 2.6;
+    seeds.set([random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2], i * 3);
+    i++;
   }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(METEOR_COUNT * 12), 3));
-  geometry.setAttribute('aMeteor', new THREE.BufferAttribute(meteors, 1));
-  geometry.setAttribute('aCorner', new THREE.BufferAttribute(corners, 2));
-  geometry.setIndex(indices);
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+  geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 3));
   return geometry;
 }
 
 interface CosmicClock { value: number }
 
-function Meteors({ enabled }: { enabled: boolean }) {
-  const geometry = useMemo(createMeteorGeometry, []);
-  const uniforms = useMemo(() => ({
-    uHead: { value: Array.from({ length: METEOR_COUNT }, () => new THREE.Vector3()) },
-    uTail: { value: Array.from({ length: METEOR_COUNT }, () => new THREE.Vector3()) },
-    uAlpha: { value: new Array<number>(METEOR_COUNT).fill(0) },
-    uResolution: { value: new THREE.Vector2(1, 1) },
-  }), []);
-  const meteors = useMemo(() => Array.from({ length: METEOR_COUNT }, () => ({ from: new THREE.Vector3(), to: new THREE.Vector3(), age: 0, life: 0 })), []);
-  const basis = useMemo(() => ({ forward: new THREE.Vector3(), right: new THREE.Vector3(), up: new THREE.Vector3() }), []);
-  const nextSpawn = useRef(2);
-  useFrame(({ camera, gl }, delta) => {
-    gl.getDrawingBufferSize(uniforms.uResolution.value);
-    nextSpawn.current -= delta;
-    const idle = meteors.find(meteor => meteor.age >= meteor.life);
-    if (enabled && idle && nextSpawn.current <= 0) {
-      const { forward, right, up } = basis;
-      camera.getWorldDirection(forward);
-      right.crossVectors(forward, camera.up).normalize();
-      up.crossVectors(right, forward);
-      idle.from.copy(forward).addScaledVector(right, (Math.random() - 0.5) * 0.9).addScaledVector(up, 0.08 + Math.random() * 0.32).normalize();
-      const heading = -0.5 - Math.random() * 2.1;
-      idle.to.copy(idle.from).addScaledVector(right, Math.cos(heading) * (0.14 + Math.random() * 0.14))
-        .addScaledVector(up, Math.sin(heading) * (0.14 + Math.random() * 0.14)).normalize();
-      idle.age = 0;
-      idle.life = 0.7 + Math.random() * 0.6;
-      nextSpawn.current = 2.5 + Math.random() * 6;
-    }
-    meteors.forEach((meteor, i) => {
-      if (meteor.age >= meteor.life) { uniforms.uAlpha.value[i] = 0; return; }
-      meteor.age += delta;
-      const progress = Math.min(meteor.age / meteor.life, 1);
-      uniforms.uHead.value[i].lerpVectors(meteor.from, meteor.to, progress).setLength(METEOR_RADIUS);
-      uniforms.uTail.value[i].lerpVectors(meteor.from, meteor.to, Math.max(0, progress - 0.32)).setLength(METEOR_RADIUS);
-      uniforms.uAlpha.value[i] = Math.sin(Math.PI * progress);
-    });
-  });
+function Drift({ clock }: { clock: CosmicClock }) {
+  const geometry = useMemo(createDriftGeometry, []);
+  const dpr = useThree(state => state.viewport.dpr);
+  const uniforms = useMemo(() => ({ uTime: clock, uPixelRatio: { value: dpr } }), [clock]);
+  useEffect(() => { uniforms.uPixelRatio.value = dpr; }, [dpr, uniforms]);
   return (
-    <mesh geometry={geometry} renderOrder={-95} raycast={NO_RAYCAST} frustumCulled={false}>
-      <shaderMaterial uniforms={uniforms} vertexShader={meteorVertex} fragmentShader={meteorFragment} defines={{ METEOR_COUNT }}
+    <points geometry={geometry} raycast={NO_RAYCAST} frustumCulled={false}>
+      <shaderMaterial uniforms={uniforms} vertexShader={particleVertex} fragmentShader={particleFragment}
         transparent blending={THREE.AdditiveBlending} depthWrite={false} />
-    </mesh>
+    </points>
   );
 }
 
 function CelestialSphere({ clock, onBeforeRender }: { clock: CosmicClock; onBeforeRender: THREE.Object3D['onBeforeRender'] }) {
   const sphere = useRef<THREE.Group>(null);
   const dpr = useThree(state => state.viewport.dpr);
+  const narrow = useThree(state => state.size.width < 720);
   const starGeometry = useMemo(createStarGeometry, []);
   const sun = useMemo(() => new THREE.Vector3(...SUN_DIRECTION).normalize(), []);
-  const skyUniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun }, uGalacticPole: { value: GALACTIC_POLE } }), [clock, sun]);
+  const earthGlow = useMemo(() => new THREE.Vector3(...(narrow ? EARTH_NARROW_POSITION : EARTH_POSITION)).normalize(), [narrow]);
+  const skyUniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun }, uGalacticPole: { value: GALACTIC_POLE }, uEarthGlow: { value: earthGlow } }), [clock, sun, earthGlow]);
   const starUniforms = useMemo(() => ({ uTime: clock, uPixelRatio: { value: dpr } }), [clock]);
   useEffect(() => { starUniforms.uPixelRatio.value = dpr; }, [dpr, starUniforms]);
   useFrame(() => { sphere.current?.quaternion.setFromAxisAngle(GALACTIC_POLE, clock.value * 0.0025); });
@@ -150,23 +134,26 @@ function CelestialSphere({ clock, onBeforeRender }: { clock: CosmicClock; onBefo
 
 function Earth({ clock }: { clock: CosmicClock }) {
   const spin = useRef<THREE.Group>(null);
+  const narrow = useThree(state => state.size.width < 720);
+  const radius = narrow ? EARTH_RADIUS * EARTH_NARROW_SCALE : EARTH_RADIUS;
   const uniforms = useMemo(() => ({ uTime: clock, uSun: { value: new THREE.Vector3(...SUN_DIRECTION).normalize() } }), [clock]);
   useFrame(() => { if (spin.current) spin.current.rotation.y = clock.value * 0.008; });
   return (
-    <group position={[-645, -285, -560]} rotation={[0.05, 2.05, 0.13]}>
+    <group position={narrow ? EARTH_NARROW_POSITION : EARTH_POSITION} rotation={[0.05, 2.05, 0.13]}>
       <group ref={spin}>
         <mesh renderOrder={-90} raycast={NO_RAYCAST}>
-          <sphereGeometry args={[82, 96, 64]} />
+          <sphereGeometry args={[radius, 96, 64]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={earthFragment} />
         </mesh>
         <mesh renderOrder={-89} raycast={NO_RAYCAST}>
-          <sphereGeometry args={[82.27, 96, 64]} />
+          <sphereGeometry args={[radius * 1.0037, 96, 64]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={cloudFragment} transparent depthWrite={false} />
         </mesh>
       </group>
       <mesh renderOrder={-88} raycast={NO_RAYCAST}>
-        <sphereGeometry args={[82.8, 96, 64]} />
-        <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={atmosphereFragment} transparent depthWrite={false} />
+        <sphereGeometry args={[radius * 1.0107, 96, 64]} />
+        <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={atmosphereFragment}
+          transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -191,10 +178,12 @@ export const Cosmos: React.FC<{ reducedMotion: boolean }> = ({ reducedMotion }) 
     follow(camera);
   });
   return (
-    <group ref={distant} name="cosmos">
-      <CelestialSphere clock={clock} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
-      <Meteors enabled={!reducedMotion} />
-      <Earth clock={clock} />
-    </group>
+    <>
+      <group ref={distant} name="cosmos">
+        <CelestialSphere clock={clock} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
+        <Earth clock={clock} />
+      </group>
+      <Drift clock={clock} />
+    </>
   );
 };
