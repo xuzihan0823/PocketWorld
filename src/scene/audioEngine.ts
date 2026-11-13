@@ -88,6 +88,8 @@ class RoomAudioEngine {
   private preparedMusic: { disc: MusicDisc; audio: HTMLAudioElement } | null = null;
   private requestId = 0;
   private musicGain: GainNode | null = null;
+  private playbackGain: GainNode | null = null;
+  private musicLevel = 1;
   private voices = new Set<OscillatorNode>();
   private listeners = new Set<() => void>();
   private snapshot: RoomAudioSnapshot = { disc: this.currentDisc, isPlaying: false, isMuted: false, status: 'idle', error: null };
@@ -112,6 +114,9 @@ class RoomAudioEngine {
         this.musicGain = this.ctx.createGain();
         this.musicGain.gain.value = this.isMuted ? 0 : 1;
         this.musicGain.connect(this.ctx.destination);
+        this.playbackGain = this.ctx.createGain();
+        this.playbackGain.gain.value = this.musicLevel;
+        this.playbackGain.connect(this.musicGain);
       }
       return this.ctx;
     } catch { return null; }
@@ -150,6 +155,16 @@ class RoomAudioEngine {
     prepared.audio.pause();
     prepared.audio.removeAttribute('src');
     prepared.audio.load();
+  }
+
+  /** Transport envelope; independent of mute and room/interaction sound effects. */
+  public setMusicLevel(level: number): void {
+    if (!Number.isFinite(level)) return;
+    const next = Math.max(0, Math.min(1, level));
+    if (next === this.musicLevel) return;
+    this.musicLevel = next;
+    if (this.playbackGain && this.ctx) this.playbackGain.gain.setTargetAtTime(next, this.ctx.currentTime, .015);
+    if (this.htmlAudio) this.htmlAudio.volume = .65 * next;
   }
 
   public setMuted(muted: boolean) {
@@ -425,7 +440,7 @@ class RoomAudioEngine {
         if (!this.htmlAudio) {
           const audio = prepared ?? new Audio(disc.audioUrl);
           audio.loop = true;
-          audio.volume = 0.65;
+          audio.volume = 0.65 * this.musicLevel;
           audio.muted = this.isMuted;
           audio.onerror = () => {
             if (this.htmlAudio !== audio) return;
@@ -480,7 +495,7 @@ class RoomAudioEngine {
       gain.gain.setValueAtTime(0.001, now);
       gain.gain.linearRampToValueAtTime(0.045, now + 0.08);
       gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.62);
-      gain.connect(this.musicGain);
+      gain.connect(this.playbackGain ?? this.musicGain);
       let remaining = 2;
       for (const [type, multiplier] of [['sine', 1], ['triangle', 0.5]] as const) {
         const osc = ctx.createOscillator();

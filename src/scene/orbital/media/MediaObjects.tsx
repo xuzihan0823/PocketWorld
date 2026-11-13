@@ -4,40 +4,23 @@ import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { GameCartridgeProps, GameId } from '../../../types/game';
-import type { MusicDisc } from '../../../types/interactable';
 import type { WorldAction, WorldSceneProps } from '../../../types/world';
-import { roomAudio } from '../../audioEngine';
 import { ObjectHandle } from '../ObjectHandle';
 import { SoftBox } from '../Primitives';
 import { ComputerScreen } from './ComputerScreen';
 import { CartridgePickup } from './CartridgePickup';
+import { RecordPlayer } from './RecordPlayer';
 import { CARTRIDGE_SLOT as SLOT, cartridgePosition, cartridgeTransferPoint } from './cartridge-motion';
 
 type Point = [number, number, number];
-const PLAYER: Point = [-0.35, 1.2, -2.25];
-const PLATTER: Point = [-0.48, 1.295, -2.25];
 const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridgeProps> }>('../../../games/*/index.tsx');
 const gameNames: Record<GameId, string> = { mario: '奶娃滑雪大冒险', shooter: '团团魔法录' };
 const gameColors: Record<GameId, string> = { mario: '#cb795a', shooter: '#8b72b3' };
-// Six accessible records per shelf; the physical end tabs turn through the collection.
-// Records lean back in a stepped row (each 2 cm further forward) so they never share a plane.
-const RACK_X = -0.2, RACK_Z = -2.83, DISC_LEAN = -0.12;
-const discPosition = (index: number): Point => [-0.58 + (index % 6) * 0.155, 1.36, -2.88 + (index % 6) * 0.02];
-// The blank import record lies flat on the desk between the turntable and the cartridges.
-const IMPORT_DISC: Point = [0.3, 1.128, -2.3];
 
 function Label({ children, position, width = 180 }: { children: React.ReactNode; position: Point; width?: number }) {
   return <Html center position={position} distanceFactor={4} style={{ pointerEvents: 'none', width, textAlign: 'center', color: '#f3e6c9', font: '12px monospace', textShadow: '0 1px 3px #242723', userSelect: 'none', overflowWrap: 'anywhere' }}><span>{children}</span></Html>;
 }
 
-function Disc({ colors, radius = 0.17 }: { colors: [string, string]; radius?: number }) {
-  return <group rotation={[Math.PI / 2, 0, 0]}>
-    <mesh castShadow><cylinderGeometry args={[radius, radius, 0.014, 48]} /><meshStandardMaterial color="#24282b" roughness={0.32} metalness={0.35} /></mesh>
-    {[0.76, 0.88].map(r => <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.008, 0]}><ringGeometry args={[radius * r, radius * r + 0.002, 48]} /><meshStandardMaterial color="#606263" /></mesh>)}
-    <mesh position={[0, 0.01, 0]}><cylinderGeometry args={[radius * 0.4, radius * 0.4, 0.008, 32]} /><meshStandardMaterial color={colors[0]} /></mesh>
-    <mesh position={[0, 0.016, 0]}><cylinderGeometry args={[0.018, 0.018, 0.009, 16]} /><meshStandardMaterial color={colors[1]} metalness={0.5} /></mesh>
-  </group>;
-}
 
 function Cartridge({ game }: { game: GameId }) {
   return <group>
@@ -49,26 +32,19 @@ function Cartridge({ game }: { game: GameId }) {
   </group>;
 }
 
-interface Transfer { key: number; from: Point; to: Point; disc?: MusicDisc; game?: GameId; eject?: boolean; returnOnly?: boolean }
+interface Transfer { key: number; from: Point; to: Point; game?: GameId; eject?: boolean; returnOnly?: boolean }
 function TransferObject({ transfer, reduced, onDone }: { transfer: Transfer; reduced: boolean; onDone: () => void }) {
   const group = useRef<THREE.Group>(null);
   const elapsed = useRef(0);
   const finished = useRef(false);
-  const destination = useRef(new THREE.Vector3(...transfer.to));
   useFrame((_, delta) => {
     if (!group.current || finished.current) return;
     elapsed.current += delta;
     const t = Math.min(1, elapsed.current / (reduced ? 0.08 : 0.8));
-    const eased = t * t * (3 - 2 * t);
-    if (transfer.game) group.current.position.set(...cartridgeTransferPoint(transfer.from, transfer.to, t));
-    else {
-      group.current.position.set(...transfer.from).lerp(destination.current, eased);
-      group.current.position.y += Math.sin(t * Math.PI) * (reduced ? 0 : 0.42);
-    }
-    if (transfer.disc) group.current.rotation.x = -Math.PI / 2 * eased;
+    group.current.position.set(...cartridgeTransferPoint(transfer.from, transfer.to, t));
     if (t === 1) { finished.current = true; onDone(); }
   });
-  return <group ref={group} position={transfer.from}>{transfer.disc ? <Disc colors={transfer.disc.discThemeColor} /> : transfer.game ? <Cartridge game={transfer.game} /> : null}</group>;
+  return <group ref={group} position={transfer.from}>{transfer.game ? <Cartridge game={transfer.game} /> : null}</group>;
 }
 
 class ScreenBoundary extends React.Component<{ children: React.ReactNode; onError: () => void }, { failed: boolean }> {
@@ -83,16 +59,12 @@ const screenMessage: React.CSSProperties = { width: '100%', height: '100%', disp
 export const MediaObjects: React.FC<WorldSceneProps> = props => {
   const latest = useRef(props);
   latest.current = props;
-  const spin = useRef<THREE.Group>(null);
   const serial = useRef(0);
   const transferRef = useRef<Transfer | null>(null);
   const [transfer, setTransfer] = useState<Transfer | null>(null);
   const pickupRef = useRef<GameId | null>(null);
   const [pickup, setPickup] = useState<GameId | null>(null);
   const [nearSlot, setNearSlot] = useState(false);
-  const [rackPage, setRackPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(props.discs.length / 6));
-  const visiblePage = Math.min(rackPage, pageCount - 1);
   const [paused, setPaused] = useState(false);
   const [presentation, setPresentation] = useState<'auto' | 'expanded' | 'collapsed' | 'embedded'>('auto');
   const [narrow, setNarrow] = useState(() => window.innerWidth <= 720 || window.innerHeight <= 480);
@@ -121,21 +93,18 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
   }, []);
   useEffect(() => { setPresentation('auto'); }, [props.activeGame]);
   useEffect(() => () => {
-    if (transferRef.current?.disc) roomAudio.cancelPreparedMusic();
     transferRef.current = null;
     latest.current.onGesture(false);
   }, []);
   useEffect(() => {
     if (!sceneVisible) {
-      if (transferRef.current?.disc) roomAudio.cancelPreparedMusic();
       transferRef.current = null;
       setTransfer(null);
     }
   }, [sceneVisible]);
   useEffect(() => {
     const pending = transferRef.current;
-    if (pending && props.focusedObject !== (pending.disc ? 'music-player' : 'computer')) {
-      if (pending.disc) roomAudio.cancelPreparedMusic();
+    if (pending && props.focusedObject !== 'computer') {
       transferRef.current = null;
       setTransfer(null);
     }
@@ -162,12 +131,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     return () => { cancelled = true; };
   }, [props.activeGame, computerFocused, sceneVisible, loaded]);
 
-  useFrame((_, delta) => {
-    if (spin.current && props.isMusicPlaying && !props.reducedMotion) spin.current.rotation.z -= Math.min(delta, 0.1) * 1.2;
-  });
-
   const begin = (next: Omit<Transfer, 'key'>) => {
-    if (transferRef.current?.disc && !next.disc) roomAudio.cancelPreparedMusic();
     const value = { ...next, key: ++serial.current };
     transferRef.current = value;
     setTransfer(value);
@@ -187,7 +151,6 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     } else latest.current.onReturn();
   }, []);
   const leaveComputer = useCallback(() => {
-    if (transferRef.current?.disc) roomAudio.cancelPreparedMusic();
     transferRef.current = null;
     setTransfer(null);
     latest.current.onGameChange(null);
@@ -209,31 +172,12 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     if (transferRef.current?.key !== value.key) return;
     transferRef.current = null;
     setTransfer(null);
-    if (value.disc) latest.current.onSelectDisc(value.disc);
     if (value.game && !value.returnOnly) latest.current.onGameChange(value.eject ? null : value.game);
   };
   const mediaAction = (action: WorldAction) => {
     const id = action.objectId;
     if (!sceneVisible) return;
-    if (id === 'music-rack') {
-      setRackPage((visiblePage + (action.payload?.direction ?? 1) + pageCount) % pageCount);
-      return;
-    }
-    if (id.startsWith('music-disc-')) {
-      const disc = props.discs.find(item => item.id === action.payload?.itemId);
-      if (!disc) return;
-      roomAudio.prepareMusic(disc);
-      focus('music-player');
-      begin({ disc, from: discPosition(props.discs.indexOf(disc)), to: PLATTER });
-    } else if (id === 'music-player') {
-      if (transferRef.current?.disc) return;
-      roomAudio.prepareMusic(props.activeDisc);
-      focus('music-player');
-      if (props.isMusicPlaying) props.onToggleMusic();
-      else begin({ disc: props.activeDisc, from: [PLATTER[0], PLATTER[1] + 0.15, PLATTER[2]], to: PLATTER });
-    } else if (id === 'music-import') {
-      // Import is invoked only by the synchronous click below, never a transition callback.
-    } else if (id === 'music-mute' || id === 'game-mute') props.onToggleMute();
+    if (id === 'game-mute') props.onToggleMute();
     else if (id.startsWith('game-cartridge-')) {
       focus('computer');
     } else if (id === 'game-slot') eject();
@@ -257,45 +201,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
   };
 
   return <group name="MediaObjects">
-    <group position={PLAYER}>
-      <SuppliedAsset name="turntable.parts" part="body" partBounds size={[.88, .158, .50]} fit="contact" position={[0, -.079, 0]} fallback={<>      <SoftBox dims={[0.88, 0.14, 0.5]} color="#936c49" />
-      <SoftBox dims={[0.83, 0.018, 0.46]} position={[0, 0.079, 0]} color="#d9c7a4" />
-      {[-0.32, 0.32].flatMap(x => [-0.16, 0.16].map(z => <SoftBox key={`${x}/${z}`} position={[x, -0.072, z]} dims={[0.09, 0.018, 0.07]} color="#464e43" />))}
-</>} />
-      {/* Close the source shell under the unchanged moving platter and tonearm. */}
-      <SoftBox dims={[0.89, 0.018, 0.51]} position={[0, 0.079, 0]} color="#936c49" radius={0.014} />
-      <ObjectHandle id="music-player" action="toggle" hint={props.isMusicPlaying ? '轻触唱盘，暂停音乐' : '放下唱针，继续播放'} world={world} position={[-0.13, 0.095, 0]}>
-        <mesh><cylinderGeometry args={[0.205, 0.205, 0.025, 48]} /><meshStandardMaterial color="#343d3c" metalness={0.4} /></mesh>
-        {!transfer?.disc && <group rotation={[-Math.PI / 2, 0, 0]}><group ref={spin}><Disc colors={props.activeDisc.discThemeColor} radius={0.19} /></group></group>}
-      </ObjectHandle>
-      <ObjectHandle id="music-player" action="toggle" hint="抬起或放下唱臂" world={world} position={[0.27, 0.11, -0.13]} rotation={[0, props.isMusicPlaying ? -0.5 : 0.1, 0]}>
-        <mesh><cylinderGeometry args={[0.035, 0.035, 0.07, 16]} /><meshStandardMaterial color="#b7ad92" metalness={0.65} /></mesh>
-        <SoftBox dims={[0.025, 0.023, 0.28]} position={[-0.03, 0.04, 0.12]} rotation={[0, -0.3, 0]} color="#c9c4ac" />
-        <SoftBox dims={[0.05, 0.03, 0.065]} position={[-0.07, 0.035, 0.245]} color="#54675d" />
-      </ObjectHandle>
-    </group>
-    <SoftBox position={[RACK_X, 1.16, RACK_Z]} dims={[1.24, 0.06, 0.23]} color="#765b43" />
-    {props.discs.slice(visiblePage * 6, visiblePage * 6 + 6).map((disc, index) => <ObjectHandle key={disc.id} id={`music-disc-${disc.id}`} action="insert" hint={`拿取《${disc.title}》${disc.isUserUploaded ? ' · 我的唱片' : ''}`} world={world} drag="y" payload={{ itemId: disc.id }} position={discPosition(index)}>
-      {transfer?.disc?.id !== disc.id && <group rotation={[DISC_LEAN, 0, 0]}><Disc colors={disc.discThemeColor} /></group>}
-    </ObjectHandle>)}
-    {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pageCount > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[RACK_X + direction * 0.6, 1.31, RACK_Z - 0.01]}>
-      <SoftBox dims={[0.035, 0.29, 0.21]} color="#765b43" />
-    </ObjectHandle>)}
-    <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={IMPORT_DISC} onClick={event => { event.stopPropagation(); if (!sceneVisible || event.delta >= 9) return;
-      const action: WorldAction = { sceneId: props.sceneId, objectId: 'music-import', kind: 'insert' };
-      const ready = !props.onApproach || props.onApproach(IMPORT_DISC, action, () => {});
-      if (ready) props.onImportMusic();
-      else props.onHover('music-import', '走近后，再点击空白唱片选择音乐'); }}>
-      <group rotation={[-Math.PI / 2, 0, 0]}><Disc colors={['#efe4c7', '#c8a879']} radius={0.145} /></group>
-    </ObjectHandle>
-    <group position={[2.57, 1.4, -2.55]}>
-      <SoftBox dims={[0.38, 0.56, 0.37]} color="#886448" />
-      {[0.13, -0.1].map((y, i) => <mesh key={y} position={[0, y, 0.19]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[i ? 0.125 : 0.065, i ? 0.125 : 0.065, 0.018, 32]} /><meshStandardMaterial color="#35423f" /></mesh>)}
-      <ObjectHandle id="music-mute" action="toggle" hint={props.isMuted ? '旋动音箱旋钮，恢复声音' : '旋动音箱旋钮，静音'} world={world} position={[0.12, -0.21, 0.21]} drag="x">
-        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.03, 0.03, 0.035, 16]} /><meshStandardMaterial color={props.isMuted ? '#7a7f73' : '#d7b46e'} /></mesh>
-      </ObjectHandle>
-    </group>
-    {sceneVisible && props.focusedObject === 'music-player' && <Label position={[-0.35, 1.85, -2.25]} width={250}>{props.activeDisc.title} · {transfer?.disc ? '正在放入唱片' : props.isMusicPlaying ? '播放中' : '唱针已抬起'}<br />拿取唱片换曲 · 空白唱片导入音乐{pageCount > 1 ? ` · 唱片架 ${visiblePage + 1}/${pageCount}` : ''}</Label>}
+    <RecordPlayer {...props} />
 
     {(['mario', 'shooter'] as const).map(game => <CartridgePickup key={game} id={`game-cartridge-${game}`} world={world} position={cartridgePosition(game)}
       enabled={sceneVisible && !props.activeGame && !transfer && ['idle', 'active', 'error'].includes(props.transition.phase)}

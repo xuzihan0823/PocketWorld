@@ -11,6 +11,7 @@
 - `orbital/schedule/` 管理日程迁移、同步、纸页、贴纸、纸团和相关测试。
 - `orbital/media/` 管理电脑屏幕布局、游戏卡带加载与拖放、唱片交互、实体键盘和相关测试。
 - `orbital/` 根目录保留舱室、家具、住民、交互基础组件、材质与场景样式。
+- `orbital/media/RecordPlayer.tsx` 保留唱机/唱片的原有几何，`record-motion.ts` 统一管理舱室局部坐标路径、唱臂和串行播放阶段；架位在本次会话中稳定，音乐淡入淡出不影响房间音效。
 - `audioEngine.ts` 提供音乐播放、静音、环境与脚步音效。
 - `geometry.ts` 提供场景共用的几何工具。
 

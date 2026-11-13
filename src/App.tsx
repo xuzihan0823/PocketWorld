@@ -83,7 +83,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     ownedUrls.current.push(url);
     const disc: MusicDisc = { id: `local-${Date.now()}-${ownedUrls.current.length}`, title, artist: '私人唱片收藏', audioUrl: url, discThemeColor: generateDiscColorsFromName(title), isUserUploaded: true };
     setDiscs(current => [disc, ...current]);
-    void roomAudio.startMusic(disc);
+    roomAudio.prepareMusic(disc);
     void world.onAction({ sceneId: world.sceneId, objectId: 'music-player', kind: 'inspect' });
     onFeatureError(`《${title}》已放进唱片架`);
     if (fileInput.current) fileInput.current.value = '';
