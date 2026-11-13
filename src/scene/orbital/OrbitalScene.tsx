@@ -15,12 +15,13 @@ import { ScheduleSurfaces } from './schedule/ScheduleSurfaces';
 import { OrbitalResidents } from './OrbitalResidents';
 import type { DrawerInteraction } from './drawerInteraction';
 import { JOURNAL_PAGE_POSITION } from './journalLayout';
+import { SCHEDULE_POSITION } from './schedule/bookLayout';
 
 const FOCUS: Record<string, { target: [number, number, number]; offset: [number, number, number] }> = {
   computer: { target: [1.45, 1.58, -2.30], offset: [0, 0.30, 3.5] },
   'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
   journal: { target: JOURNAL_PAGE_POSITION, offset: [0, 0.60, 0.28] },
-  schedule: { target: [0.57, 1.20, -1.96], offset: [0, 0.88, 0.48] },
+  schedule: { target: [SCHEDULE_POSITION[0], SCHEDULE_POSITION[1] + 0.02, SCHEDULE_POSITION[2]], offset: [0, 0.72, 0.39] },
   'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
   'book-01': { target: [-3.35, 1.03, -1.14], offset: [1.35, 1.12, 2.5] },
   bed: { target: [-2.5, 0.7, 1.0], offset: [3.2, 3.2, 4.0] },
@@ -72,7 +73,7 @@ function CameraRig(props: OrbitalSceneProps) {
         if (props.library?.cameraView === 'side') offset.set(2.5, 1.1, -.35);
       }
       if (props.focusedObject?.startsWith('schedule')) {
-        offset.multiplyScalar(Math.max(1, 0.62 / (size.width / size.height)));
+        offset.multiplyScalar(Math.max(1, (props.focusedObject === 'schedule' ? 1.05 : 0.62) / (size.width / size.height)));
         if (narrow && props.focusedObject === 'schedule') target.current.x = origin.x + 0.69;
       }
       if (props.focusedObject === 'book-01' && narrow) { const close = props.library?.cameraView === 'close'; offset.multiplyScalar(close ? 1.9 : 1.6); target.current.y -= close ? .40 : .55; }

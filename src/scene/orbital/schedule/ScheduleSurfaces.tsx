@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import type { WorldSceneProps } from '../../../types/world';
 import { useSchedule } from './ScheduleContext';
 import { discardSchedulePage, MAX_POSTED_SCHEDULES, postSchedulePage, schedulePageError, SCHEDULE_FULL_MESSAGE, type SchedulePage } from './schedule';
-import { BOOK_POSITION, FloorPaperBall, FlyingPaper, GLASS_POSITION, PostedPaper, type PaperFlight } from './SchedulePaper';
+import { FloorPaperBall, FlyingPaper, GLASS_POSITION, PostedPaper, type PaperFlight } from './SchedulePaper';
+import { BOOK_POSITION, PAGE_DISTANCE_FACTOR, PAGE_LOCAL_POSITION } from './bookLayout';
+import { ScheduleBook } from './ScheduleBook';
 import './schedule.css';
 
 export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) {
@@ -136,25 +138,8 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
     post(from.toArray() as [number, number, number]);
   };
   const blocked = !ready || !!flight || !settled;
-  return <>
-    {state.posted.slice(Math.max(0, selectedIndex - 2), selectedIndex + 3).map(page => {
-      const offset = state.posted.indexOf(page) - selectedIndex;
-      if (flight && (flight.page.id === page.id || offset === 0)) return null;
-      return <PostedPaper key={page.id} page={page} position={[GLASS_POSITION[0] + offset * 0.68, GLASS_POSITION[1] - Math.abs(offset) * 0.035, GLASS_POSITION[2]]} onSelect={() => {
-        if (busy.current || !props.visible) return;
-        const select = () => {
-          setSelectedId(page.id);
-          if (!glassView) props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
-        };
-        const action = { sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' as const };
-        if (props.onApproach) props.onApproach([0.57, 1.2, -1.96], action, select);
-        else select();
-      }} />;
-    })}
-    {state.discarded.filter(ball => flight?.page.id !== ball.id).map(ball => <FloorPaperBall key={ball.id} ball={ball} />)}
-    {flight && <FlyingPaper flight={flight} reducedMotion={props.reducedMotion} onComplete={() => { busy.current = false; setFlight(null); }} />}
-    {focused && !flight && <Html transform={!narrow} center={narrow} position={bookView ? BOOK_POSITION : [GLASS_POSITION[0], GLASS_POSITION[1], GLASS_POSITION[2] + 0.018]}
-      rotation={bookView ? [-Math.PI / 2, 0, 0.08] : [0, 0, 0]} distanceFactor={narrow ? undefined : bookView ? 0.28 : 0.62} zIndexRange={[24, 21]}>
+  const editor = focused && !flight && settled && <Html transform={!narrow} center={narrow} position={bookView ? PAGE_LOCAL_POSITION : [GLASS_POSITION[0], GLASS_POSITION[1], GLASS_POSITION[2] + 0.018]}
+      rotation={bookView ? [-Math.PI / 2, 0, 0] : [0, 0, 0]} distanceFactor={narrow ? undefined : bookView ? PAGE_DISTANCE_FACTOR : 0.62} zIndexRange={[24, 21]}>
       <article ref={article} tabIndex={-1} className={`schedule-sheet ${glassView ? 'is-posted' : 'is-book'}`} aria-label={bookView ? '日程书当前页' : '玻璃上的日程'} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={resetDrag} onLostPointerCapture={resetDrag} onWheel={e => e.stopPropagation()}>
         {bookView && <div className="schedule-paper-drag" aria-hidden="true" />}
         <header className="schedule-heading"><h2>{glassView && !selected ? '玻璃上的安排' : '今天的安排'}</h2><span>{glassView ? selected?.date ?? state.current.date : state.current.date}</span></header>
@@ -173,6 +158,25 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
         {message && <footer role="status" aria-live="polite">{message}</footer>}
         {ready && error && <p className="schedule-error" role="alert">{error}<button onClick={retry}>{props.adapters?.schedule ? '重试同步' : '重试保存'}</button></p>}
       </article>
-    </Html>}
+    </Html>;
+  return <>
+    <ScheduleBook world={props}>{bookView && editor}</ScheduleBook>
+    {glassView && editor}
+    {state.posted.slice(Math.max(0, selectedIndex - 2), selectedIndex + 3).map(page => {
+      const offset = state.posted.indexOf(page) - selectedIndex;
+      if (flight && (flight.page.id === page.id || offset === 0)) return null;
+      return <PostedPaper key={page.id} page={page} position={[GLASS_POSITION[0] + offset * 0.68, GLASS_POSITION[1] - Math.abs(offset) * 0.035, GLASS_POSITION[2]]} onSelect={() => {
+        if (busy.current || !props.visible) return;
+        const select = () => {
+          setSelectedId(page.id);
+          if (!glassView) props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
+        };
+        const action = { sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' as const };
+        if (props.onApproach) props.onApproach([0.57, 1.2, -1.96], action, select);
+        else select();
+      }} />;
+    })}
+    {state.discarded.filter(ball => flight?.page.id !== ball.id).map(ball => <FloorPaperBall key={ball.id} ball={ball} />)}
+    {flight && <FlyingPaper flight={flight} reducedMotion={props.reducedMotion} onComplete={() => { busy.current = false; setFlight(null); }} />}
   </>;
 }

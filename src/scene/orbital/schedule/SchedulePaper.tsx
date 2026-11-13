@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PaperBall, SchedulePage } from './schedule';
+import { BOOK_POSITION } from './bookLayout';
 
 export const GLASS_POSITION: [number, number, number] = [0.69, 2.3, -3.39];
-export const BOOK_POSITION: [number, number, number] = [0.69, 1.201, -1.974];
 const ease = (t: number) => 1 - (1 - t) ** 3;
 export function paperBallPosition(seed: number): [number, number, number] {
   return [0.25 + Math.sin(seed * 2.4) * 0.65, 0.105, -0.68 + Math.cos(seed * 1.8) * 0.45];

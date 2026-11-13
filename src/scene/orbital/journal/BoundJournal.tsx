@@ -52,8 +52,9 @@ function paperEdges(geometry: THREE.BufferGeometry, leaves: ReturnType<typeof le
   geometry.computeVertexNormals(); geometry.computeBoundingSphere();
 }
 
-export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
+export function BoundJournal({ opened, control, reducedMotion, leafCount, coverColor = '#45534a', coverLabel = '日  记', coverSubtitle = 'M O M E N T S', turnSpeed = 1.6 }: {
   opened: boolean; control: MutableRefObject<BoundBookControl>; reducedMotion: boolean; leafCount: number;
+  coverColor?: string; coverLabel?: string; coverSubtitle?: string; turnSpeed?: number;
 }) {
   const cover = useRef<THREE.Group>(null);
   const bookmark = useMemo(() => {
@@ -69,8 +70,8 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
   const state = useRef({ opening: 0, cursor: 0 });
   const drawn = useRef({ opening: -1, cursor: -1, leafCount: 0 });
   const textureRevision = useRef(-1);
-  const cloth = useMemo(() => clothTexture(), []);
-  const title = useMemo(() => clothTexture(true), []);
+  const cloth = useMemo(() => clothTexture(false, coverColor), [coverColor]);
+  const title = useMemo(() => clothTexture(true, coverColor, coverLabel, coverSubtitle), [coverColor, coverLabel, coverSubtitle]);
   useEffect(() => () => { cloth.dispose(); title.dispose(); }, [cloth, title]);
   const data = useMemo(() => {
     const geometry = leafGeometry(leafCount);
@@ -145,7 +146,7 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
       current.cursor = targetCursor;
     } else {
       if (opened || current.cursor === 0) current.opening = move(current.opening, openingTarget, 2);
-      if (current.opening === 1) current.cursor = move(current.cursor, targetCursor, opened ? 1.6 : Math.max(5, book.spread * 3));
+      if (current.opening === 1) current.cursor = move(current.cursor, targetCursor, opened ? turnSpeed : Math.max(5, book.spread * 3));
     }
     const ready = current.cursor === targetCursor && current.opening === openingTarget;
     const justSettled = ready && !book.ready;
