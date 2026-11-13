@@ -57,6 +57,7 @@ export function ObjectHandle({ id, action, hint, world, drag, payload, children,
   return <group {...props} name={`Interactable_${id}`} userData={{ objectId: id, action, sceneId: world.sceneId }}
     onPointerOver={e => { e.stopPropagation(); world.onHover(id, hint); }}
     onPointerOut={() => { if (!held.current) world.onHover(null); }}
+    onClick={event => event.stopPropagation()}
     onPointerDown={down} onPointerUp={up}
     onPointerMove={event => {
       if (!held.current || !drag || !movable.current) return;

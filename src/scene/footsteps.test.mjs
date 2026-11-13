@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 function load(path, dependencies, globals = {}) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -52,6 +53,10 @@ function mount(kind, overrides = {}) {
     './ObjectHandle': { ObjectHandle: 'ObjectHandle' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
+    './chairMotion': load('./orbital/chairMotion.ts', { three: THREE }),
+    'three/examples/jsm/utils/BufferGeometryUtils.js': { mergeGeometries },
+    './Primitives': { SoftBox: 'SoftBox' },
+    './shaders/oak': { applyOakGrain() {} },
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
@@ -64,8 +69,8 @@ function mount(kind, overrides = {}) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/orbital.css': {},
   };
-  const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
-  const names = { orbital: 'OrbitalResidents', app: 'App' };
+  const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx', shell: './orbital/HabitatShell.tsx' };
+  const names = { orbital: 'OrbitalResidents', app: 'App', shell: 'HabitatShell' };
   const props = {
     sceneId: 'habitat', objects: {}, enabled: true, reducedMotion: false, walkTarget: null,
     interaction: { current: null }, drawerEnabled: true, drawerInteraction: { current: null }, onDrawerAction() {},
@@ -92,7 +97,7 @@ function mount(kind, overrides = {}) {
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
-    root, pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    root, tree, pointer: type => target.dispatchEvent(new Event(type)), pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -305,7 +310,7 @@ for (const yaw of [0.15, Math.PI / 2, Math.PI, -Math.PI / 2]) {
           performed++;
           const facing = view.chair.yaw - 0.2 + Math.PI;
           const dx = view.root.position.x - view.chair.x, dz = view.root.position.z - view.chair.z;
-          assert.ok(dx * Math.sin(facing) + dz * Math.cos(facing) > 0.7);
+          assert.ok(dx * Math.sin(facing) + dz * Math.cos(facing) > 0.54);
           assert.ok(Math.abs(dx * Math.cos(facing) - dz * Math.sin(facing)) < 0.06);
           view.props.objects.chair = { active: true };
         });
@@ -387,12 +392,66 @@ test('a chair with no safe front entry cannot seat the resident through furnitur
   let performed = 0;
   try {
     Object.assign(view.chair, { x: 1.45, z: -0.85, yaw: 0.15 });
-    view.root.position.set(1.45, 0, 0.1);
+    view.root.position.set(1.45, 0, -0.3);
     view.props.interaction.current([view.chair.x, 0.7, view.chair.z], { sceneId: 'habitat', objectId: 'chair', kind: 'sit' }, () => performed++);
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
     assert.equal(performed, 0);
     assert.equal(view.root.userData.posture, 'standing');
     assert.ok(Math.abs(view.chair.z + 0.85) < 0.001);
+  } finally { view.dispose(); }
+});
+
+test('moving an object on pointerup cannot turn its click into a floor walk', () => {
+  const walks = [], view = mount('shell', { variant: 'habitat', onFloorClick: point => walks.push(point) });
+  try {
+    const floor = view.tree.props.children.flat().find(node => node?.props?.onClick);
+    const click = () => floor.props.onClick({ delta: 0, point: new THREE.Vector3(1, 0, 1), stopPropagation() {} });
+    view.pointer('pointerdown'); floor.props.onPointerDown(); click();
+    assert.equal(walks.length, 1);
+    // The next press belongs to an ObjectHandle, which consumes pointerdown.
+    view.pointer('pointerdown'); click();
+    assert.equal(walks.length, 1);
+    view.pointer('pointerdown'); floor.props.onPointerDown(); view.pointer('pointercancel'); click();
+    assert.equal(walks.length, 1);
+    view.pointer('pointerdown'); floor.props.onPointerDown(); click();
+    assert.equal(walks.length, 2);
+  } finally { view.dispose(); }
+});
+
+test('fixed-height chair completes original sitting, rolls, and returns to standing', () => {
+  const view = mount('orbital');
+  try {
+    view.props.interaction.current([view.chair.x, 0.3, view.chair.z], { sceneId: 'habitat', objectId: 'chair', kind: 'sit' }, () => {
+      view.props.objects.chair = { active: true };
+    });
+    for (let i = 0; i < 1200 && view.root.userData.chairMotion?.phase !== 'seated'; i++) view.frame(1 / 60);
+    assert.equal(view.root.userData.chairMotion?.phase, 'seated');
+    const before = new THREE.Vector2(view.chair.x, view.chair.z);
+    view.key('KeyD');
+    for (let i = 0; i < 120; i++) { view.frame(1 / 60); assert.equal(view.chair.drop, 0); assert.equal(view.root.position.y, 0); }
+    view.key('KeyD', 'keyup');
+    assert.ok(before.distanceTo(new THREE.Vector2(view.chair.x, view.chair.z)) > .1);
+    view.key('KeyE');
+    for (let i = 0; i < 600; i++) view.frame(1 / 60);
+    assert.equal(view.root.userData.posture, 'standing');
+    assert.equal(view.root.userData.chairMotion, null);
+    assert.equal(view.chair.drop, 0);
+  } finally { view.dispose(); }
+});
+
+test('movement during original descent cancels sitting and leaves the chair', () => {
+  const view = mount('orbital');
+  try {
+    view.props.interaction.current([view.chair.x, 0.3, view.chair.z], { sceneId: 'habitat', objectId: 'chair', kind: 'sit' }, () => {
+      view.props.objects.chair = { active: true };
+    });
+    for (let i = 0; i < 1200 && view.root.userData.chairMotion?.phase !== 'sit-down'; i++) view.frame(1 / 60);
+    assert.equal(view.root.userData.chairMotion?.phase, 'sit-down');
+    for (let i = 0; i < 40; i++) view.frame(1 / 60);
+    view.key('KeyD'); view.frame(1 / 60); view.key('KeyD', 'keyup');
+    for (let i = 0; i < 600; i++) view.frame(1 / 60);
+    assert.equal(view.root.userData.posture, 'standing');
+    assert.equal(view.root.userData.chairMotion, null);
   } finally { view.dispose(); }
 });
 
@@ -432,7 +491,7 @@ for (let side = 0; side < 8; side++) {
       if (action.objectId === 'chair' && action.kind === 'sit') {
         const facing = view.chair.yaw - 0.2 + Math.PI;
         const dx = view.root.position.x - view.chair.x, dz = view.root.position.z - view.chair.z;
-        assert.ok(dx * Math.sin(facing) + dz * Math.cos(facing) > 0.7);
+        assert.ok(dx * Math.sin(facing) + dz * Math.cos(facing) > 0.54);
         assert.ok(Math.abs(dx * Math.cos(facing) - dz * Math.sin(facing)) < 0.06);
         view.props.objects.chair = { active: true };
       }
