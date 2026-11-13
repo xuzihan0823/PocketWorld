@@ -1,8 +1,28 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-11-07",
+  "verifiedAt": "2026-11-13",
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
+    {
+      "file": "resident/luna-chair-original.glb",
+      "sourceFile": "tripo_convert_1e85a593-cd98-40e8-98a3-6228e51e4889.glb",
+      "sourceSha256": "6a0dd05b9ff9904aa059e05ee09422f875a0372376197fc036a3134b94dc5c0d",
+      "license": "User-supplied character animation; no separate license document supplied.",
+      "used": true,
+      "bytes": 133140,
+      "sha256": "a48f34da176a5e3eba2b173cdb782a268c9dd3245360e6fff584dd7ca9486b7c",
+      "processing": "scripts/extract-chair-animation.mjs copies the original 195 animation channels and accessor buffers verbatim, removes unused mesh/texture payloads and names the clip ChairSit_Original. Duration remains 191/24 seconds. Chair placement, independent foot IK and added dress/hair bones are adapted at runtime; the source file is unchanged."
+    },
+    {
+      "file": "replaced/rolling-chair.parts.glb",
+      "sourceFile": "3d素材/滑轮椅.glb",
+      "sourceSha256": "b30bc907b0fc9481746b3c45e8a759f0a2aa387b3540df5a51db1ebbe4d1b016",
+      "license": "User-supplied furniture; no separate license document supplied.",
+      "used": true,
+      "bytes": 3617732,
+      "sha256": "79c2c559740d0f7e4ac744420d7879563eb318a1e97fbbceeb79619237253749",
+      "processing": "Reuse the existing optimized base/seat split derived from the supplied caster chair. Runtime contact fit is 0.60 x 0.56 x 0.40 room units; cushion height is approximately 0.30. Seat height is fixed during entry, sitting, scooting and exit."
+    },
     {
       "file": "furniture/throw_pillows_01.glb",
       "sourcePage": "https://polyhaven.com/a/throw_pillows_01",

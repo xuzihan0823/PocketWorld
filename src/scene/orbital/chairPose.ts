@@ -7,8 +7,8 @@ export const CHAIR_POSES: Record<WorldSceneId, ChairPose> = {
   observatory: { x: -1.65, z: 0.75, yaw: 0.42, vx: 0, vz: 0, spin: 0, drop: 0 },
 };
 export const SEAT_SWIVEL = -0.2;
-/** Gas-lift travel that lets the short-legged resident reach the floor while scooting. */
-export const SEAT_DROP = 0.25;
+/** Fixed-height chairs: rolling and swivelling never change the seat elevation. */
+export const SEAT_DROP = 0;
 
 export function chairFacing(pose: ChairPose) { return pose.yaw + SEAT_SWIVEL + Math.PI; }
 

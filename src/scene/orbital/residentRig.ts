@@ -43,7 +43,7 @@ function plantNeutralLeg([thigh, shin, foot]: THREE.Bone[], point: THREE.Vector3
   setWorldRotation(foot, sole);
 }
 
-export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip): ResidentRig {
+export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip, chairClip?: THREE.AnimationClip): ResidentRig {
   const bones = new Map<string, THREE.Bone>();
   const skinned: THREE.SkinnedMesh[] = [];
   asset.traverse(object => {
@@ -71,6 +71,13 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const sample = (t: number) => {
     for (const { value, curve } of channels) value.fromArray(curve.evaluate(t));
   };
+  const chairChannels = chairClip?.tracks.map(track => {
+    const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+    const target = bones.get(nodeName);
+    if (!target || !['position', 'quaternion', 'scale'].includes(propertyName)) throw new Error(`Unexpected chair track ${track.name}`);
+    const key = propertyName as 'position' | 'quaternion' | 'scale';
+    return { target, key, value: target[key].clone(), curve: track.createInterpolant() };
+  }) ?? [];
 
   // Build a two-foot neutral pose using the planted phase of each leg, and
   // average the upper body at the two mid-swing phases for a relaxed stance.
@@ -146,15 +153,86 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     front: target.name.includes('Front'), side: /^Dress_(Left|Right)_/.test(target.name),
   }));
   const neutral = Array.from(bones.values(), joint => ({ joint, pose: capture(joint) }));
+  const chairThighs = [bone('LeftUpLeg'), bone('RightUpLeg')].map(joint => ({ joint, inverse: joint.quaternion.clone().invert() }));
+  const chairDress = dress.map(({ target }) => ({ target, rest: target.quaternion.clone() }));
+  const chairRearFolds = Array.from(bones.values()).filter(joint => /^Dress_Back(?:_[LR])?_02$/.test(joint.name));
+  const chairHair = Array.from(bones.values()).filter(joint => /^Hair_Back_.+_01$/.test(joint.name))
+    .map(joint => ({ joint, world: joint.getWorldQuaternion(new THREE.Quaternion()) }));
+  const chairFeet = [leftLeg, rightLeg].map(joints => ({ joints,
+    sole: joints[2].getWorldQuaternion(new THREE.Quaternion()),
+    ankle: joints[2].getWorldPosition(new THREE.Vector3()).y * RESIDENT_SCALE,
+    anchor: new THREE.Vector3(),
+  }));
+  // Independent anchors at the end of the source's deliberate foot adjustment.
+  for (const { target, key, curve } of chairChannels) target[key].fromArray(curve.evaluate(1.5));
+  asset.updateMatrixWorld(true);
+  chairFeet.forEach(({ joints, anchor }) => anchor.copy(joints[2].getWorldPosition(new THREE.Vector3())).multiplyScalar(RESIDENT_SCALE));
+  for (const { joint, pose } of neutral) restore(joint, pose);
+  const leftFold = new THREE.Quaternion(), rightFold = new THREE.Quaternion(), clothFold = new THREE.Quaternion();
+  const identity = new THREE.Quaternion();
   const walkPose = neutral.map(({ joint }) => capture(joint));
   const axisX = new THREE.Vector3(1, 0, 0);
   const fold = new THREE.Quaternion();
   asset.scale.setScalar(RESIDENT_SCALE);
   mesh.add(asset);
 
-  function applyPose(phase: number, walkWeight: number) {
+  function applyPose(phase: number, walkWeight: number, chair?: { time: number; weight: number; perch: number; sole: number; soleLift: number }) {
     if (walkWeight === 1) sample(phase);
     else applyBlendedPose(phase, walkWeight);
+    if (!chair || chair.weight <= 0 || !chairChannels.length) return;
+    for (const { target, key, value, curve } of chairChannels) {
+      value.fromArray(curve.evaluate(chair.time));
+      if (key === 'quaternion') target.quaternion.slerp(value as THREE.Quaternion, chair.weight);
+      else target[key].lerp(value as THREE.Vector3, chair.weight);
+    }
+    // Source motion descends in place. Transfer onto the cushion while the
+    // independently captured feet remain in front of its fixed caster base.
+    bone('Hips').position.z -= .24 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, .7, 2.8);
+    bone('Hips').position.y += .032 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.25, 2.6);
+    // Keep the source anticipation/step; plant only after the foot adjustment.
+    const planting = chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.1, 1.6);
+    asset.updateWorldMatrix(true, true);
+    const basis = mesh.getWorldQuaternion(new THREE.Quaternion());
+    for (const { joints, sole, ankle, anchor } of chairFeet) {
+      const foot = joints[2], actual = foot.getWorldPosition(new THREE.Vector3());
+      const local = anchor.clone();
+      local.y = ankle + chair.perch * chair.soleLift;
+      local.z *= .45;
+      local.z = THREE.MathUtils.lerp(local.z, .03 + chair.sole, chair.perch);
+      const point = actual.lerp(mesh.localToWorld(local), planting);
+      const rotation = foot.getWorldQuaternion(new THREE.Quaternion()).slerp(basis.clone().multiply(sole), planting);
+      plantNeutralLeg(joints, point, rotation);
+    }
+    leftFold.copy(chairThighs[0].joint.quaternion).multiply(chairThighs[0].inverse);
+    rightFold.copy(chairThighs[1].joint.quaternion).multiply(chairThighs[1].inverse);
+    for (const { target, rest } of chairDress) {
+      const left = /(?:Left|_L)_01$/.test(target.name), right = /(?:Right|_R)_01$/.test(target.name);
+      clothFold.copy(left ? leftFold : right ? rightFold : leftFold).slerp(rightFold, left || right ? 0 : .5);
+      clothFold.slerp(identity, target.name.includes('Back') ? .6 : target.name.includes('Front') ? .3 : .2).multiply(rest);
+      target.quaternion.slerp(clothFold, chair.weight);
+    }
+    // Gather the rear hem onto the cushion and keep the side folds inside the
+    // arm supports. These offsets are in the resident frame, not bone axes.
+    const gather = chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.4, 2.8);
+    for (const { target } of chairDress) {
+      if (!/Back|Dress_(Left|Right)_/.test(target.name)) continue;
+      const side = /^Dress_(Left|Right)_/.test(target.name);
+      const point = mesh.worldToLocal(target.getWorldPosition(new THREE.Vector3()));
+      point.y += (side ? .052 : .02) * gather;
+      if (side) point.x -= Math.sign(point.x) * .08 * gather;
+      target.position.copy(target.parent!.worldToLocal(mesh.localToWorld(point)));
+      target.updateWorldMatrix(false, true);
+    }
+    for (const { joint, world } of chairHair) {
+      const rotation = joint.parent!.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(basis).multiply(world);
+      joint.quaternion.slerp(rotation, gather * .8);
+    }
+    for (const joint of chairRearFolds) {
+      const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0).applyQuaternion(basis), -.75 * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.2, 1.9))
+        .multiply(joint.getWorldQuaternion(new THREE.Quaternion()));
+      joint.quaternion.copy(joint.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(rotation);
+      joint.updateWorldMatrix(false, true);
+    }
   }
 
   function applyBlendedPose(phase: number, walkWeight: number) {

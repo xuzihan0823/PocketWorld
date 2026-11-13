@@ -20,20 +20,24 @@ export interface ResidentArm {
 export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
-  applyPose: (phase: number, walkWeight: number) => void;
+  applyPose: (phase: number, walkWeight: number, chair?: { time: number; weight: number; perch: number; sole: number; soleLift: number }) => void;
   dispose: () => void;
 }
 
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
+const CHAIR = `${import.meta.env.BASE_URL}models/resident/luna-chair-original.glb`;
 
 function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
   const { scene, animations } = useGLTF(MODEL);
+  const { animations: chairAnimations } = useGLTF(CHAIR);
   const container = useRef<THREE.Group>(null);
   const resident = useMemo(() => {
     const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
     if (!walk) throw new Error('Luna walk animation missing');
-    return createResidentRig(clone(scene), walk);
-  }, [scene, animations]);
+    const chair = chairAnimations.find(clip => clip.name === 'ChairSit_Original');
+    if (!chair) throw new Error('Luna original chair animation missing');
+    return createResidentRig(clone(scene), walk, chair);
+  }, [scene, animations, chairAnimations]);
   useLayoutEffect(() => {
     const group = container.current!;
     group.add(resident.mesh);
@@ -64,7 +68,7 @@ class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFa
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useGLTF.clear(CHAIR); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 
