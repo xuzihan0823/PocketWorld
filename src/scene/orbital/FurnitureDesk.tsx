@@ -22,9 +22,8 @@ function FurnitureComputer({ world }: { world: WorldModelProps }) {
     {Array.from({ length: 8 }, (_, i) => <SoftBox key={i} dims={[0.003, 0.012, 0.22]} position={[0.576, 0.39 + i * 0.035, -0.11]} color="#a9aa97" radius={0.001} />)}
 </>} />
     <group position={[0, 0.045, 0.62]} rotation={[0.06, 0, 0]}>
-      <SuppliedAsset name="keyboard.parts" part="body" partBounds size={[.77, .055, .36]} fit="contact" position={[0, -.0275, 0]} fallback={<>      <SoftBox dims={[0.77, 0.055, 0.36]} color="#d1cdb5" radius={0.018} />
-</>} />
-      <ReactiveKeyboard reducedMotion={world.reducedMotion} />
+      <SoftBox dims={[0.80, 0.06, 0.36]} position={[0, 0.004, -0.012]} color="#d1cdb5" radius={0.022} />
+      <ReactiveKeyboard reducedMotion={world.reducedMotion} active={world.focusedObject === 'computer'} />
     </group>
     <Tube points={[[0.2, 0.03, 0.59], [0.36, 0.025, 0.47], [0.33, 0.025, 0.25], [0.1, 0.08, -0.24]]} radius={0.008} color={C.ink} />
   </ObjectHandle>;

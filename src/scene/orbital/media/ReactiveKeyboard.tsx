@@ -32,7 +32,7 @@ function createLegends() {
 }
 
 /** Two draw calls: instanced moving caps and one atlas for all printed legends. */
-export function ReactiveKeyboard({ reducedMotion }: { reducedMotion: boolean }): React.ReactElement {
+export function ReactiveKeyboard({ reducedMotion, active }: { reducedMotion: boolean; active: boolean }): React.ReactElement {
   const caps = useRef<THREE.InstancedMesh>(null), input = useRef<KeyboardPressState | null>(null);
   const geometry = useMemo(() => new RoundedBoxGeometry(1, 1, 1, 2, .12), []);
   const legends = useMemo(createLegends, []), levels = useMemo(() => new Float32Array(KEYBOARD_KEYS.length), []);
@@ -40,9 +40,10 @@ export function ReactiveKeyboard({ reducedMotion }: { reducedMotion: boolean }):
   const matrix = useMemo(() => new THREE.Matrix4(), []), color = useMemo(() => new THREE.Color(), []), pressedColor = useMemo(() => new THREE.Color('#f4b85f'), []);
   const position = useMemo(() => new THREE.Vector3(), []), scale = useMemo(() => new THREE.Vector3(), []), rotation = useMemo(() => new THREE.Quaternion(), []);
   useEffect(() => {
+    if (!active) return;
     const subscription = subscribePhysicalKeyboard(); input.current = subscription.state;
     return () => { input.current = null; subscription.dispose(); };
-  }, []);
+  }, [active]);
   useEffect(() => () => { geometry.dispose(); legends.geometry.dispose(); legends.material.dispose(); legends.texture.dispose(); }, [geometry, legends]);
   useLayoutEffect(() => {
     const mesh = caps.current; if (!mesh) return;
@@ -55,10 +56,11 @@ export function ReactiveKeyboard({ reducedMotion }: { reducedMotion: boolean }):
     if (mesh.instanceColor) { mesh.instanceColor.setUsage(THREE.DynamicDrawUsage); mesh.instanceColor.needsUpdate = true; }
   }, [matrix, position, rotation, scale, baseColors]);
   useFrame((_, delta) => {
-    const mesh = caps.current; if (!mesh || !input.current) return;
+    const mesh = caps.current; if (!mesh) return;
+    const state = active ? input.current : null;
     let changed = false; const now = performance.now(), dt = Math.min(delta, .05);
     KEYBOARD_KEYS.forEach((key, i) => {
-      const target = input.current!.active(key.code, now) ? 1 : 0, before = levels[i];
+      const target = state && state.active(key.code, now) ? 1 : 0, before = levels[i];
       let value = reducedMotion ? target : THREE.MathUtils.damp(before, target, target ? 45 : 24, dt);
       if (Math.abs(value - target) < .001) value = target;
       if (Math.abs(value - before) < .00001) return;
