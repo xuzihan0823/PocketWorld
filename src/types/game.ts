@@ -1,6 +1,6 @@
 /**
  * 电脑内置小游戏统一「卡带」接口契约
- * 组员开发的马里奥（src/games/mario）与打飞机（src/games/shooter）均需实现此 Props 接口。
+ * mario（src/games/mario）与 shooter（src/games/shooter）两张卡带均需实现此 Props 接口，行为约定见 SPEC.md 第 3 节。
  */
 export interface GameCartridgeProps {
   /** 虚拟屏幕逻辑宽度（默认 800px，内部 Canvas 按此坐标系绘制，外层容器负责等比缩放） */

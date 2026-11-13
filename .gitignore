@@ -34,9 +34,9 @@ lerna-debug.log*
 .env
 .env.*
 !.env.example
-.vite/
 
 # Local scratch, planning, and generation outputs
+.vite/
 .tmp/
 .planning/
 output/

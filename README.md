@@ -1,13 +1,14 @@
-# PocketWorld — 浏览器里的 3D 微缩数字空间
+# PocketWorld — 浏览器里的 3D 轨道居住舱
 
-一个等轴测（Isometric Diorama）非像素风 3D 交互房间项目。访客可以在精致的微缩房间内自由观察、点击物品触发丝滑的镜头推进过渡，在房间的复古电脑里体验内置小游戏（奶娃滑雪大冒险、团团魔法录），或将自己的本地音频文件转化为实体音乐光盘放入唱片机播放。
+一个可以直接动手的 3D 小房间。访客在轨道居住舱里环绕观察、控制住民走动，写日记和日程，从书柜取书阅读，播放唱片或把本地音乐做成唱片，把实体卡带插入电脑游玩内置小游戏（奶娃滑雪大冒险、团团魔法录）。
 
 ## 一、技术栈与整体架构
 
-- **框架与构建**：`React + TypeScript + Vite`（支持一键导出纯静态产物部署至 Qoder Sites）
-- **3D 场景与相机动画**：`Three.js` + `@react-three/fiber` + `@react-three/drei` + `GSAP`（负责等轴测箱庭房间渲染、光线氛围与点击物品时的平滑推镜过渡）
-- **电脑内置小游戏**：基于 HTML5 `Canvas 2D` 实现高帧率独立卡带组件，通过标准接口 `GameCartridgeProps` 嵌入电脑屏幕内
-- **音频与光盘系统**：基于 `Web Audio API` + `File API`（支持预置曲目与本地音频拖入自动生成光盘动画及频谱律动）
+- **框架与构建**：`React + TypeScript + Vite`，产物为纯静态资源，部署至 Qoder Sites
+- **3D 场景**：`Three.js` + `@react-three/fiber` + `@react-three/drei`，`GSAP` 负责物品动作与镜头转场的时间线
+- **电脑内置小游戏**：基于 HTML5 `Canvas 2D` 的独立卡带组件，通过标准接口 `GameCartridgeProps` 按需加载到电脑屏幕
+- **音频**：`Web Audio API` + `File API`，预置曲目与音效由程序合成，支持导入本地音频
+- **数据**：全部保存在浏览器 `localStorage`，没有后端
 
 ## 二、目录结构与模块边界
 
@@ -24,6 +25,7 @@ PocketWorld/
 │   ├── App.tsx               # 应用编排、全局快捷键与本地音乐导入
 │   ├── scene/
 │   │   ├── orbital/          # 当前轨道居住舱的场景编排与模型
+│   │   │   ├── journal/      # 日记书页、编辑和存档
 │   │   │   ├── library/      # 书柜、导入、阅读与角色取还书动作
 │   │   │   ├── schedule/     # 日程存档、同步、纸页、玻璃贴纸与测试
 │   │   │   ├── media/        # 电脑屏幕、卡带、唱片机、键盘与测试
@@ -33,34 +35,41 @@ PocketWorld/
 │   ├── components/computer/  # 独立滑雪页面与卡带播放器
 │   ├── games/
 │   │   ├── mario/            # 奶娃滑雪大冒险，保留 mario 卡带标识
-│   │   └── shooter/          # 团团魔法录与独立调试入口
+│   │   └── shooter/          # 团团魔法录，保留 shooter 卡带标识
 │   └── types/                # 卡带、交互物品与世界接口
-├── AGENT.md                  # 工程规范与协作流程
-├── SPEC.md                   # 产品交互与技术约定
+├── AGENTS.md                 # 工程规范与协作流程（CLAUDE.md 引入同一份）
+├── SPEC.md                   # 当前生效的产品行为与集成契约
+├── PRODUCT.md                # 产品定位与设计语境
 └── README.md
 ```
 
-> **仓库约束**：所有素材统一放在 `assets/` 下；测试截图、录屏、预览 HTML 等展示或测试残留文件严禁存放在仓库中或提交至 Git（详见 `AGENT.md` 第 3.1 节）。
+> **仓库约束**：所有素材统一放在 `assets/` 下；测试截图、录屏、预览 HTML 等展示或测试残留文件严禁存放在仓库中或提交至 Git（详见 `AGENTS.md` 第 3.1 节）。
 
 新增日程或媒体能力时，优先在对应功能目录内维护实现和回归测试。`OrbitalScene.tsx` 负责组合场景，家具通过功能组件或上下文接入业务。场景细节见 [场景模块说明](src/scene/README.md)。
 
-## 三、多人协作与接口约定
-> 开发前请务必先阅读 **[`AGENT.md`](./AGENT.md)**（工程与防冲突铁律）与 **[`SPEC.md`](./SPEC.md)**（产品交互与小游戏细则）。
+## 三、文档导航
 
-1. **目录隔离**：
-   - 负责**马里奥小游戏**的成员仅在 `src/games/mario/` 下开发；
-   - 负责**打飞机小游戏**的成员仅在 `src/games/shooter/` 下开发；
-   - 严禁直接污染全局样式或未清理的 `window` 键盘监听（组件卸载时必须移除所有 `keydown/keyup` 监听与 `requestAnimationFrame` 循环）。
-2. **统一卡带接口**：
-   两个游戏入口组件均接收 `src/types/game.ts` 中定义的 `GameCartridgeProps`，默认逻辑画布尺寸为 `800 × 600`（外层电脑显示器容器会自动等比缩放并加上复古屏幕滤镜）。
-3. **分支规范**：
-   每人基于最新 `main` 创建独立功能分支（如 `feat/game-mario`、`feat/game-shooter`、`feat/room-scene`），推送后尽早创建 Draft PR，完成验证再提交审查。**队员必须通过 PR 交付，禁止直接推送 `main` 或自行合并；由队长审查并统一合并。** 具体流程见 `AGENT.md` 第 6 节，提交说明使用仓库 PR 模板。
-4. **进度与玩法设计**：
-   两名队员分别维护自己游戏目录下的 `进度文档.md`，写清已有功能、当前阶段和待办，整理最新状态并删除冗余内容。PR 必须说明本次提交内容并链接进度文档。核心玩法允许完全重设计，技术接口、嵌入方式、暂停/静音/退出与清理机制保持稳定，集成变更由队长协调。
+开发前先读 **[`AGENTS.md`](./AGENTS.md)** 与 **[`SPEC.md`](./SPEC.md)**。
+
+| 想了解 | 看这里 |
+|---|---|
+| 分工、目录边界、分支与 PR 流程、文档放哪 | [`AGENTS.md`](./AGENTS.md) |
+| 操作方式、卡带接口、存储键、入口参数 | [`SPEC.md`](./SPEC.md) |
+| 场景模块的职责与当前状态 | [场景说明](src/scene/README.md)、[场景进度](src/scene/orbital/进度文档.md) |
+| 奶娃滑雪大冒险 | [说明](src/games/mario/README.md)、[进度](src/games/mario/进度文档.md) |
+| 团团魔法录 | [说明](src/games/shooter/README.md)、[进度](src/games/shooter/进度文档.md) |
+| Agent 技能包的安装与使用 | [技能集合](skills/README.md) |
+
+协作要点：
+
+1. **目录隔离**：`mario` 卡带只在 `src/games/mario/` 下开发，`shooter` 卡带只在 `src/games/shooter/` 下开发，场景与公共配置由队长维护。游戏不得污染全局样式，卸载时必须清理监听、动画循环与音频。
+2. **统一卡带接口**：两个游戏入口都实现 `src/types/game.ts` 的 `GameCartridgeProps`，逻辑画布为 `800 × 600`，由外层电脑容器负责缩放。
+3. **PR 交付**：每个任务从最新 `main` 开独立分支（`type/简短描述`），尽早创建 Draft PR，验证后请队长审查。**禁止直接推送 `main` 或自行合并。**
+4. **进度文档**：各模块维护自己的 `进度文档.md`，只写当前状态；每个 PR 说明本次改动并链接进度文档。
 
 ## 四、本地开发与验证
 
-使用 Node.js 24，首次启动先运行 `npm ci`。
+使用 Node.js 24（版本写在 `.nvmrc`），首次启动先运行 `npm ci`。
 
 ```sh
 npm run dev
@@ -71,4 +80,4 @@ npm test
 
 默认页面进入房间。`?game=ski` 或 `?dev=mario` 进入滑雪独立页，`?dev=shooter` 进入团团魔法录独立页。
 
-`npm test` 先构建生产产物，再编译游戏引擎并发现 `src/` 内的全部 `*.test.mjs`。生产构建用于检查按需加载依赖图，引擎测试包生成在被 Git 忽略的 `src/games/shooter/survival/dist/`。功能测试与对应实现就近维护。
+`npm test` 先执行类型检查与生产构建，再编译游戏引擎并发现 `src/` 内的全部 `*.test.mjs`。生产构建用于检查按需加载依赖图，引擎测试包生成在被 Git 忽略的 `src/games/shooter/survival/dist/`。功能测试与对应实现就近维护。

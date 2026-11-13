@@ -4,7 +4,7 @@
 
 ## 开发环境与依赖
 
-当前本机使用 Node.js 24。其他成员先核对项目要求，涉及 `node:fs` 的 `globSync` 和 Node.js 24 测试入口时使用兼容版本。包管理器沿用 npm 和 `package-lock.json`。
+项目使用 Node.js 24，版本写在根目录 `.nvmrc`。其他成员先核对项目要求，涉及 `node:fs` 的 `globSync` 和 Node.js 24 测试入口时使用兼容版本。包管理器沿用 npm 和 `package-lock.json`。
 
 同一台机器的新 worktree 可以复用主检出目录的 `node_modules`。确认依赖声明和锁文件一致、目录有效且当前 worktree 没有自己的依赖目录或链接后，用软链接接入。将以下示例中的主检出路径替换为本机实际位置，在任务 worktree 中执行。
 
@@ -42,16 +42,17 @@ printf 'preview pid=%s log=%s\n' "$preview_pid" "$preview_log"
 
 ## 类型、构建与测试
 
-先查看当前 `package.json` 的脚本。基础入口如下。
+先查看当前 `package.json` 的脚本。`main` 提供以下入口。
 
 ```sh
-npm exec --no -- tsc --noEmit
+npm run typecheck
 npm run build
+npm test
 ```
 
-若当前分支提供 `npm run typecheck`，使用该入口。若提供 `npm test`，先阅读脚本的准备工作及覆盖范围，按项目要求执行；当它已包含类型检查和构建时，一次成功执行可作为相应验证证据。
+`npm test` 依次执行类型检查、生产构建，再准备游戏引擎测试包并运行 `src/` 内全部 `*.test.mjs`，一次成功执行可作为这三项的验证证据。开发中可以用 `npm run typecheck` 和与改动相关的 `node --test <测试文件>` 快速检查；部分测试依赖生产构建或引擎测试包，单独运行前先确认准备条件。
 
-只有 `dev`、`build`、`preview` 的版本按模块 README 准备产物，再运行与改动相关的 `node --test`。某些游戏测试依赖预先生成的引擎包或生产构建，目录整理后的版本可能改用统一入口。使用当前工作区的文件和脚本，核对准备条件后执行。
+基于旧基线、只有 `dev`、`build`、`preview` 脚本的分支，用 `npm exec --no -- tsc --noEmit` 做类型检查，按模块 README 准备产物后再运行相关测试。使用当前工作区的文件和脚本，核对准备条件后执行。
 
 纯文档或技能说明修改检查差异、链接与技能格式。技能分发内容变化时，在临时目录执行 npx 安装并核对随包参考资料，随后更新原 PR 的验证记录。
 
