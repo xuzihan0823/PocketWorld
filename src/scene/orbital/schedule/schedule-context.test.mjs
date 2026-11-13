@@ -222,3 +222,32 @@ test('a failed remote save retries after loading remote additions', async () => 
     assert.ok(server.some(item => item.id === 'remote-new'));
   } finally { view.dispose(); }
 });
+
+test('consecutive native input commits merge against the latest draft, not a stale render', async () => {
+  const storage = storageFor(schedule.migrateSchedule([entry('ime')]));
+  const view = mount(storage);
+  try {
+    await view.flush();
+    view.value.commit(current => schedule.patchScheduleTask(current, 'ime', { title: '中文输入' }), { retainDraftOnError: true });
+    view.value.commit(current => schedule.patchScheduleTask(current, 'ime', { category: '生活' }), { retainDraftOnError: true });
+    view.value.commit(current => ({ ...current, current: { ...current.current, date: '2027-05-06' } }), { retainDraftOnError: true });
+    await view.flush();
+    assert.equal(storage.read().current.entries[0].title, '中文输入');
+    assert.equal(storage.read().current.entries[0].category, '生活');
+    assert.equal(storage.read().current.date, '2027-05-06');
+  } finally { view.dispose(); }
+});
+
+test('a failed placement write retains the paper at its original location', async () => {
+  const state = schedule.migrateSchedule([entry('paper')]);
+  const storage = storageFor(state), view = mount(storage);
+  try {
+    await view.flush(); storage.fail = true;
+    const placement = { surface: 'desk', position: [0.6, 1.126, -2.3], rotation: 0 };
+    assert.equal(view.value.commit(current => schedule.placeScheduleTask(current, 'paper', placement)), false);
+    await view.flush();
+    assert.equal(view.value.state.placements.paper, undefined);
+    assert.equal(storage.read().placements.paper, undefined);
+    assert.equal(view.value.state.current.entries[0].title, '任务 paper');
+  } finally { view.dispose(); }
+});

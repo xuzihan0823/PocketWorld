@@ -8,7 +8,7 @@
 - `orbital/useWorldController.ts` 管理世界状态、动作适配器和转场生命周期。
 - `orbital/journal/` 管理实体翻页、纸面编辑、逐页日期和天气、存档及迁移。
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
-- `orbital/schedule/` 管理日程迁移、同步、纸页、贴纸、纸团和相关测试。
+- `orbital/schedule/` 管理日程迁移、同步、独立任务纸条、纸团和相关测试；中文输入、撕裂状态、网格与放置检测分别由 `ScheduleTextField`、`stripState`、`TaskStrip` 和 `useStripDrag` 负责。
 - `orbital/media/` 管理电脑屏幕布局、游戏卡带加载与拖放、唱片交互、实体键盘和相关测试。
 - `orbital/` 根目录保留舱室、家具、住民、交互基础组件、材质与场景样式。
 - `audioEngine.ts` 提供音乐播放、静音、环境与脚步音效。

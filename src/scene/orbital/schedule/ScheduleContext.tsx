@@ -1,12 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { WorldFeatureAdapters } from '../../../types/world';
-import { flattenSchedule, isScheduleEntry, isScheduleNotebook, migrateSchedule, SCHEDULE_KEY, type ScheduleNotebook } from './schedule';
+import { flattenSchedule, allSchedulePages, isScheduleEntry, migrateSchedule, upgradeSchedule, LEGACY_SCHEDULE_KEY, SCHEDULE_KEY, type ScheduleNotebook } from './schedule';
 
 interface ScheduleContextValue {
   state: ScheduleNotebook;
   ready: boolean;
   error: string;
-  commit: (next: ScheduleNotebook, options?: { retainDraftOnError?: boolean }) => boolean;
+  commit: (next: ScheduleNotebook | ((current: ScheduleNotebook) => ScheduleNotebook), options?: { retainDraftOnError?: boolean }) => boolean;
   retry: () => void;
 }
 const ScheduleContext = createContext<ScheduleContextValue | null>(null);
@@ -57,10 +57,10 @@ export function ScheduleProvider({ adapters, children }: { adapters?: WorldFeatu
     setError('');
     void (async () => {
       try {
-        const raw = localStorage.getItem(SCHEDULE_KEY);
+        const raw = localStorage.getItem(SCHEDULE_KEY) ?? localStorage.getItem(LEGACY_SCHEDULE_KEY);
         const saved: unknown = raw ? JSON.parse(raw) : null;
-        if (raw && !isScheduleNotebook(saved)) throw new Error('日程存档格式无法读取，原始存档已保留。');
-        let next = loaded.current ? latest.current : (saved as ScheduleNotebook | null);
+        if (raw && !upgradeSchedule(saved)) throw new Error('日程存档格式无法读取，原始存档已保留。');
+        let next = loaded.current ? latest.current : upgradeSchedule(saved);
         const legacyRaw = !next && !remote ? localStorage.getItem('pocketworld:schedule') : null;
         let entries: unknown = [];
         let offline = false;
@@ -73,13 +73,13 @@ export function ScheduleProvider({ adapters, children }: { adapters?: WorldFeatu
         if (!next) next = migrateSchedule(entries);
         else if (remote && !offline) {
           const byId = new Map(entries.map(entry => [entry.id, entry]));
-          const merge = (page: ScheduleNotebook['current']) => ({ ...page, entries: page.entries.map(entry => byId.get(entry.id) ?? entry) as ScheduleNotebook['current']['entries'] });
-          if (!next.syncPending) next = { ...next, current: merge(next.current), posted: next.posted.map(merge), queued: next.queued.map(merge) };
+          const merge = (page: ScheduleNotebook['current']) => ({ ...page, entries: page.entries.map(entry => ({ ...entry, ...byId.get(entry.id) })) as ScheduleNotebook['current']['entries'] });
+          if (!next.syncPending) next = { ...next, current: merge(next.current), posted: next.posted.map(merge), queued: next.queued.map(merge), archive: next.archive.map(merge) };
           const known = new Set([...flattenSchedule(next).map(entry => entry.id), ...(next.syncRemovedIds ?? [])]);
           const extras = entries.filter(entry => !known.has(entry.id));
           if (extras.length) {
             const recovered = migrateSchedule(extras);
-            const number = Math.max(next.current.number, ...next.posted.map(p => p.number), ...next.queued.map(p => p.number));
+            const number = Math.max(...allSchedulePages(next).map(p => p.number));
             const recoveredPages = [recovered.current, ...recovered.queued].map((page, index) => ({ ...page, number: number + index + 1 }));
             next = { ...next, queued: [...next.queued, ...recoveredPages] };
           }
@@ -98,9 +98,9 @@ export function ScheduleProvider({ adapters, children }: { adapters?: WorldFeatu
     })();
     return () => abort.abort();
   }, [remote, attempt, sync]);
-  const commit = useCallback((next: ScheduleNotebook, options?: { retainDraftOnError?: boolean }) => {
+  const commit = useCallback((next: ScheduleNotebook | ((current: ScheduleNotebook) => ScheduleNotebook), options?: { retainDraftOnError?: boolean }) => {
     if (!ready) return false;
-    next = { ...next, syncPending: !!remote };
+    next = { ...(typeof next === 'function' ? next(latest.current) : next), syncPending: !!remote };
     if (remote) {
       const remaining = new Set(flattenSchedule(next).map(entry => entry.id));
       const removed = flattenSchedule(latest.current).filter(entry => !remaining.has(entry.id)).map(entry => entry.id);
