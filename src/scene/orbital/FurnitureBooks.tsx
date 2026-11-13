@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LibraryBooks } from './library/LibraryBooks';
+import { shelfOrigin } from './library/catalog';
 import { useSchedule } from './schedule/ScheduleContext';
 import { upholstery } from './Materials';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
@@ -65,7 +66,7 @@ function ScheduleTurningLeaf({ pageId, reducedMotion }: { pageId: string; reduce
 export function FurnitureBookcase({ world, observatory = false }: { world: WorldModelProps; observatory?: boolean }) {
   const cabinet = world.objects.cabinet ?? CLOSED_OBJECT;
   const item = world.objects['cabinet-item'] ?? CLOSED_OBJECT;
-  return <><LibraryBooks world={world} /><group position={observatory ? [-3.45, 0, -0.65] : [-3.45, 0, -1.9]} name="Furniture_OpenBookcase">
+  return <><LibraryBooks world={world} /><group position={shelfOrigin(observatory ? 'observatory' : 'habitat')} name="Furniture_OpenBookcase">
     <ObjectHandle id="book-01" action="inspect" hint="查看书柜 · 靠近按 E" world={world}>
     <SuppliedAsset name="cabinet.parts" part="body" size={[1.18, 1.59, .54]} fit="contact" fallback={<>    <SoftBox dims={[1.18, 0.08, 0.54]} position={[0, 0.12, 0]} color={C.edge} />
     {[-0.47, 0.47].flatMap(x => [-0.17, 0.17].map(z => <SoftBox key={`${x}/${z}`} dims={[0.09, 0.1, 0.09]} position={[x, 0.05, z]} color={C.edge} radius={0.012} />))}
