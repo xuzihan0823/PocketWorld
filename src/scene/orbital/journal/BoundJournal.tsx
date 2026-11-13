@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { BOOK as B, clamp, coverPose, leafPose, paperHalfThickness, smooth } from './bookModel';
+import { BOOK as B, clamp, coverPose, leafPose, openingStackPose, paperHalfThickness, smooth } from './bookModel';
 import { clothTexture } from './coverTexture';
 import type { BoundBookControl } from './bookControl';
 
@@ -52,8 +52,9 @@ function paperEdges(geometry: THREE.BufferGeometry, leaves: ReturnType<typeof le
   geometry.computeVertexNormals(); geometry.computeBoundingSphere();
 }
 
-export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
+export function BoundJournal({ opened, control, reducedMotion, leafCount, coverColor = '#45534a', coverLabel = '日  记', coverSubtitle = 'M O M E N T S', openAsStack = false, openingDuration = 0.5 }: {
   opened: boolean; control: MutableRefObject<BoundBookControl>; reducedMotion: boolean; leafCount: number;
+  coverColor?: string; coverLabel?: string; coverSubtitle?: string; openAsStack?: boolean; openingDuration?: number;
 }) {
   const cover = useRef<THREE.Group>(null);
   const bookmark = useMemo(() => {
@@ -69,8 +70,8 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
   const state = useRef({ opening: 0, cursor: 0 });
   const drawn = useRef({ opening: -1, cursor: -1, leafCount: 0 });
   const textureRevision = useRef(-1);
-  const cloth = useMemo(() => clothTexture(), []);
-  const title = useMemo(() => clothTexture(true), []);
+  const cloth = useMemo(() => clothTexture(false, coverColor), [coverColor]);
+  const title = useMemo(() => clothTexture(true, coverColor, coverLabel, coverSubtitle), [coverColor, coverLabel, coverSubtitle]);
   useEffect(() => () => { cloth.dispose(); title.dispose(); }, [cloth, title]);
   const data = useMemo(() => {
     const geometry = leafGeometry(leafCount);
@@ -125,7 +126,7 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
   useFrame((_, delta) => {
     const current = state.current;
     const book = control.current;
-    const targetCursor = opened ? book.spread : 0;
+    const targetCursor = opened || openAsStack ? book.spread : 0;
     if (textureRevision.current !== book.revision || drawn.current.leafCount !== leafCount) {
       textureRevision.current = book.revision;
       data.sheets.forEach((mesh, i) => {
@@ -143,6 +144,9 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
     if (reducedMotion) {
       current.opening = openingTarget;
       current.cursor = targetCursor;
+    } else if (openAsStack) {
+      current.opening = move(current.opening, openingTarget, 1 / openingDuration);
+      current.cursor = targetCursor;
     } else {
       if (opened || current.cursor === 0) current.opening = move(current.opening, openingTarget, 2);
       if (current.opening === 1) current.cursor = move(current.cursor, targetCursor, opened ? 1.6 : Math.max(5, book.spread * 3));
@@ -154,15 +158,17 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount }: {
     if (justSettled) book.onSettled?.();
     if (drawn.current.opening === current.opening && drawn.current.cursor === current.cursor && drawn.current.leafCount === leafCount) return;
     drawn.current = { ...current, leafCount };
-    const pose = coverPose(current.opening);
+    const pose = coverPose(current.opening, openAsStack);
     cover.current!.position.set(pose.x, pose.y, 0); cover.current!.rotation.z = pose.angle;
     const leaves = [];
     for (let index = 0; index < data.sheets.length; index++) {
-      const turn = clamp(current.cursor - index), leaf = leafPose(index, turn, current.opening, current.cursor, leafCount);
+      const turn = clamp(current.cursor - index);
+      const leaf = openAsStack ? openingStackPose(index, current.opening, current.cursor, leafCount) : leafPose(index, turn, current.opening, current.cursor, leafCount);
       leaves.push(leaf);
       const mesh = data.sheets[index];
       // The edge mesh fills each stack, so only the exposed sheets need skinning.
-      mesh.visible = index >= Math.floor(current.cursor) - 1 && index <= Math.ceil(current.cursor);
+      mesh.visible = openAsStack ? index === 0 || index === current.cursor - 1 || index === current.cursor
+        : index >= Math.floor(current.cursor) - 1 && index <= Math.ceil(current.cursor);
       if (!mesh.visible) continue;
       mesh.position.set(leaf.points[0].x, leaf.points[0].y, 0);
       const bones = mesh.skeleton.bones;

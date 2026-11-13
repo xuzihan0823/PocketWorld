@@ -8,10 +8,8 @@
 }
 .schedule-heading { flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid #bbaa8670; }
 .schedule-heading h2 { margin: 0; font-size: 23px; font-weight: 500; letter-spacing: 1px; }
-.schedule-heading > span { color: #6c624e; font-size: 11px; font-variant-numeric: tabular-nums; }
 .schedule-tasks { display: grid; gap: 12px; margin-top: 16px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .schedule-tasks fieldset { padding: 0 0 9px; border: 0; border-bottom: 1px solid #bbaa8670; min-width: 0; margin: 0; }
-.schedule-tasks legend { padding: 0; margin-bottom: 6px; color: #76613e; font-size: 11px; }
 .schedule-task-heading { display: grid; grid-template-columns: minmax(0, 1fr) 87px; gap: 12px; }
 .schedule-sheet label { display: grid; gap: 3px; min-width: 0; }
 .schedule-sheet label > span { display: none; }
@@ -26,7 +24,6 @@
 .schedule-sheet button:disabled { opacity: .45; cursor: default; }
 .schedule-actions { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
 .schedule-actions > span, .schedule-actions nav > span { font-size: 11px; color: #6c624e; }
-.schedule-sheet footer { flex-shrink: 0; margin-top: 14px; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #bbaa8640; font-size: 10px; color: #6c624e; }
 .schedule-empty { flex: 1; display: flex; flex-direction: column; justify-content: center; line-height: 1.9; }
 .schedule-empty p { margin: 0 0 14px; }
 .schedule-empty button { align-self: flex-start; text-decoration: underline; }
@@ -43,17 +40,20 @@
 .schedule-sheet:focus-visible { outline: none; }
 .schedule-sheet ::selection { background: #c4d2b9; color: #303c31; }
 
+@media (min-width: 720px) {
+  /* The bound mesh supplies the paper, curved gutter and physical page edges. */
+  .schedule-sheet.is-book:not(.is-dragging) { background: none; box-shadow: none; border-radius: 0; }
+}
+
 @media (max-width: 719px) {
   .schedule-sheet { width: calc(100vw - 32px); max-width: 430px; height: min(590px, calc(100svh - 150px)); padding: 22px 22px 16px; font-size: 15px; }
   .schedule-heading { padding-bottom: 14px; }
   .schedule-heading h2 { font-size: 24px; }
-  .schedule-heading > span, .schedule-tasks legend { font-size: 12px; }
   .schedule-sheet button { min-height: 44px; min-width: 44px; padding: 8px 6px; font-size: 14px; }
   .schedule-task-heading { grid-template-columns: minmax(0, 1fr) 105px; gap: 10px; }
   .schedule-sheet input { min-height: 44px; }
   .schedule-time input { font-size: 16px; }
   .schedule-sheet textarea { font-size: 16px; height: 60px; line-height: 27px; background-image: repeating-linear-gradient(transparent 0 26px, #bbaa863d 26px 27px); }
-  .schedule-sheet footer { margin-top: 10px; padding-top: 4px; font-size: 12px; }
   .schedule-actions { margin-top: 10px; gap: 8px; }
   .schedule-actions > span, .schedule-actions nav > span { font-size: 12px; }
   .schedule-actions nav { gap: 4px; }
@@ -68,4 +68,67 @@
 .schedule-sheet.is-book input, .schedule-sheet.is-book textarea, .schedule-sheet.is-book button { pointer-events: auto; }
 .schedule-sheet.is-dragging { cursor: grabbing; user-select: none; will-change: transform; box-shadow: 4px 12px 18px #372b1b40; }
 .schedule-sheet.is-dragging .schedule-paper-drag { cursor: grabbing; }
-.schedule-page-number { flex-shrink: 0; margin-top: 18px; padding: 8px 0; color: #6c624e; font-size: 11px; }
+.schedule-sheet > .schedule-date, .schedule-sheet.is-book > .schedule-date {
+  position: absolute; top: 0; right: 0; width: 110px; padding: 0; text-align: right; pointer-events: auto;
+  color: #6c624e; font: 12px/24px Georgia, 'Songti SC', serif; font-variant-numeric: tabular-nums;
+}
+.schedule-sheet > .schedule-page-number, .schedule-sheet.is-book > .schedule-page-number {
+  position: absolute; bottom: 0; right: 0; margin: 0; padding: 0;
+  color: #6c624e; font: 12px/24px Georgia, serif; font-variant-numeric: tabular-nums;
+}
+.schedule-task-heading input { border-bottom: 1px solid #bbaa863d; }
+.schedule-sheet.is-posted { padding-bottom: 42px; }
+@media (max-width: 719px) {
+  .schedule-sheet { padding-top: 52px; padding-bottom: 38px; }
+  .schedule-sheet > .schedule-date, .schedule-sheet.is-book > .schedule-date { top: 4px; right: 16px; width: 124px; font-size: 16px; line-height: 44px; }
+  .schedule-sheet > .schedule-page-number, .schedule-sheet.is-book > .schedule-page-number { right: 16px; bottom: 8px; font-size: 14px; }
+}
+
+/* Each slot keeps its size after tearing, so its neighbour never shifts. */
+.schedule-sheet.is-book { overflow: visible; }
+.schedule-sheet.is-book > .schedule-tasks { pointer-events: auto; }
+.schedule-tasks { grid-template-rows: 1fr 1fr; gap: 12px; overflow: visible; margin-bottom: 14px; }
+.schedule-strip-slot { min-height: 0; position: relative; perspective: 700px; }
+.schedule-task-strip { --peel: 0; position: relative; height: 100%; box-sizing: border-box; padding: 12px 18px 10px 10px; background: #f5efdf; transform-origin: left top; transition: filter 180ms ease-out; }
+.schedule-task-strip[data-peeling="true"] { filter: drop-shadow(2px 6px 5px #6e553b36); will-change: transform; }
+.schedule-task-strip:has(.strip-grip:hover):not([data-peeling="true"]) { transform: perspective(700px) rotateY(-2deg); filter: drop-shadow(2px 3px 3px #6e553b26); }
+.schedule-strip-slot[data-removed="true"] > .schedule-task-strip { visibility: hidden; pointer-events: none; }
+.schedule-strip-slot[data-removed="true"]::before { content: ''; position: absolute; top: 0; right: 0; width: 100%; height: 2px; border-top: 1px dashed #b3a17e60; }
+.schedule-task-strip fieldset { padding: 0; border: 0; display: flex; flex-direction: column; gap: 5px; height: 100%; }
+.schedule-task-strip .strip-title { font-size: 17px; border-bottom: 1px solid #bbaa864d; padding-bottom: 3px; }
+.strip-times { display: flex; align-items: baseline; gap: 10px; max-width: 180px; color: #73654e; }
+.strip-times input { text-align: center; font-size: 12px; border-bottom: 1px solid #bbaa863d; font-variant-numeric: tabular-nums; }
+.schedule-task-strip .strip-content { flex: 1; min-height: 28px; height: 44px; font-size: 12px; line-height: 20px; background-image: repeating-linear-gradient(transparent 0 19px, #bbaa8630 19px 20px); }
+.strip-metadata { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.strip-metadata select { appearance: none; border: 0; background: transparent; font: 12px/22px 'Songti SC', serif; color: #765a3f; padding: 0 12px 0 0; cursor: pointer; }
+.strip-metadata input { text-align: right; font-size: 12px; max-width: 130px; border-bottom: 1px solid #bbaa863d; }
+.schedule-sheet .strip-grip { position: absolute; right: 0; top: 0; width: 18px; height: 100%; min-width: 0; padding: 0; cursor: grab; touch-action: none; }
+.strip-grip:active { cursor: grabbing; }
+.strip-grip svg { width: 10px; height: 82%; opacity: .65; }
+.strip-grip path { fill: none; stroke: #9f8a65; stroke-width: 1; stroke-dasharray: 1 5; stroke-linecap: round; }
+.strip-perforation { position: absolute; width: 100%; height: 4px; left: 0; top: 0; pointer-events: none; }
+.strip-perforation path { fill: none; stroke: #a99773; stroke-width: .6; stroke-dasharray: 2 4; }
+.strip-tear-shadow { position: absolute; right: 0; top: 0; width: calc(var(--peel) * 100%); height: 4px; background: linear-gradient(#856c4466, transparent); pointer-events: none; clip-path: polygon(0 0, 100% 0, 100% 100%, 87% 60%, 72% 100%, 54% 55%, 33% 100%, 17% 65%, 0 100%); }
+.schedule-sheet > .schedule-page-number { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+.schedule-page-number button { font-size: 20px; padding: 0 5px; }
+.strip-keyboard-actions { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.strip-keyboard-actions:focus-within { width: auto; height: auto; clip-path: none; bottom: -32px; background: #f5efdf; padding: 4px 10px; }
+.schedule-sheet select:focus-visible { outline: 1px solid #7c6746; outline-offset: 3px; }
+@media (max-width: 719px) {
+  .schedule-task-strip { padding: 12px 30px 10px 12px; }
+  .schedule-task-strip .strip-title { font-size: 18px; min-height: 32px; }
+  .schedule-task-strip .strip-content { font-size: 16px; line-height: 24px; background-image: repeating-linear-gradient(transparent 0 23px, #bbaa8630 23px 24px); }
+  .strip-times input, .strip-metadata input { font-size: 16px; min-height: 32px; }
+  .strip-metadata select { font-size: 16px; min-height: 32px; }
+  .schedule-sheet .strip-grip { width: 30px; }
+  .schedule-tasks { min-height: 350px; }
+  .schedule-sheet { max-height: calc(100svh - 90px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .schedule-task-strip { transition: none; }
+  .schedule-task-strip:has(.strip-grip:hover):not([data-peeling="true"]) { transform: none; }
+}
+.strip-perforation { clip-path: inset(0 calc(var(--peel) * 100%) 0 0); }
+@media (max-width: 719px) {
+  .schedule-sheet.is-book[data-dragging="true"] { opacity: 0; pointer-events: none; }
+}

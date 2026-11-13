@@ -10,7 +10,7 @@ function canvasTexture(width: number, height: number, draw: (context: CanvasRend
   return texture;
 }
 
-export function clothTexture(title = false, color = '#45534a') {
+export function clothTexture(title = false, color = '#45534a', label = '日  记', subtitle = 'M O M E N T S') {
   return canvasTexture(768, 1080, ctx => {
     ctx.fillStyle = color; ctx.fillRect(0, 0, 768, 1080);
     ctx.lineWidth = 1;
@@ -22,8 +22,8 @@ export function clothTexture(title = false, color = '#45534a') {
       ctx.strokeStyle = '#d0c19a99'; ctx.lineWidth = 2;
       ctx.strokeRect(88, 95, 592, 890);
       ctx.fillStyle = '#dfd0a7'; ctx.textAlign = 'center';
-      ctx.font = '62px SimSun, serif'; ctx.fillText('日  记', 384, 430, 520);
-      ctx.font = '23px Georgia, serif'; ctx.fillText('M O M E N T S', 384, 493);
+      ctx.font = '62px SimSun, serif'; ctx.fillText(label, 384, 430, 520);
+      ctx.font = '23px Georgia, serif'; ctx.fillText(subtitle, 384, 493);
       ctx.beginPath(); ctx.moveTo(332, 548); ctx.lineTo(436, 548); ctx.stroke();
     }
   });

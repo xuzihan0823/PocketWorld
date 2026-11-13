@@ -107,3 +107,14 @@ test('storage rejects malformed pages and duplicate identities without truncatin
   assert.equal(isScheduleNotebook({ ...state, syncRemovedIds: ['removed-task'] }), true);
   assert.equal(isScheduleNotebook({ ...state, syncRemovedIds: [123] }), false);
 });
+
+test('keyboard-entered dates survive draft serialization and posting without being replaced by today', () => {
+  let state = migrateSchedule([entry('typed-date')]);
+  state.current.date = '2027-02-';
+  assert.ok(isScheduleNotebook(JSON.parse(JSON.stringify(state))));
+  state.current.date = '2027-02-18';
+  state = JSON.parse(JSON.stringify(state));
+  const posted = postSchedulePage(state);
+  assert.equal(posted.posted[0].date, '2027-02-18');
+  assert.equal(posted.posted[0].entries[0].title, state.current.entries[0].title);
+});
