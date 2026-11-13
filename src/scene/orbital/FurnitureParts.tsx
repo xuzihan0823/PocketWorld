@@ -11,14 +11,17 @@ export const FURNITURE = {
 };
 export type FurnitureVector = [number, number, number];
 
-export function FurnitureMotion({ children, axis = 'y', target, mode = 'rotation', reducedMotion = false, ...props }: Omit<ThreeElements['group'], 'ref'> & {
+export function FurnitureMotion({ children, axis = 'y', target, mode = 'rotation', reducedMotion = false, drive, ...props }: Omit<ThreeElements['group'], 'ref'> & {
   axis?: 'x' | 'y' | 'z'; target: number; mode?: 'rotation' | 'position'; reducedMotion?: boolean;
+  /** Returns a value that something else (e.g. the resident's hand) is holding the part at, if any. */
+  drive?: () => number | undefined;
 }) {
   const group = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
     if (!group.current) return;
     const transform = group.current[mode];
-    transform[axis] = reducedMotion ? target : THREE.MathUtils.damp(transform[axis], target, 8, Math.min(dt, 0.05));
+    const held = drive?.();
+    transform[axis] = held !== undefined ? held : reducedMotion ? target : THREE.MathUtils.damp(transform[axis], target, 8, Math.min(dt, 0.05));
   });
   return <group {...props} ref={group}>{children}</group>;
 }

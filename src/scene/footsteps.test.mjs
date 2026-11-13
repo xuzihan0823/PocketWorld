@@ -54,6 +54,7 @@ function mount(kind, overrides = {}) {
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
+    './drawerPose': { applyDrawerHands() {}, releaseDrawerHands() {} },
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
     './scene/orbital/library/useLibrary': { useLibrary: options => ({ dispatch: options.onAction, back: options.onReturn, data: { books: [] }, flow: { current: { phase: 'idle' } } }) },
@@ -92,7 +93,7 @@ function mount(kind, overrides = {}) {
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
-    root, pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    root, pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat, drawer: dependencies['./drawerInteraction'],
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -177,27 +178,60 @@ test('push and landing survive nearby walking sounds while duplicate contacts st
 
 
 for (const fps of [30, 60, 144]) {
-  test(`drawer: retreat finishes before opening and ignores movement/jump at ${fps} FPS`, () => {
+  test(`drawer: hands hold the handle and pull it open while backing away, ignoring movement/jump at ${fps} FPS`, () => {
     const opened = [];
     const view = mount('orbital', { onDrawerAction: action => opened.push({ kind: action.kind, z: view.root.position.z }) });
+    const { drawerDrive, drawerStandZ, drawerExtensionAt, DRAWER_TRAVEL, DRAWER_CLEAR_Z } = view.drawer;
     try {
       view.root.position.set(0.35, 0, -1.32);
       view.props.drawerInteraction.current.request({ sceneId: 'habitat', objectId: 'desk-drawer', kind: 'open' });
       view.key('KeyW'); view.key('Space');
       view.props.drawerInteraction.current.request({ sceneId: 'habitat', objectId: 'desk-drawer', kind: 'open' });
-      for (let i = 0; i < fps * 2; i++) {
+      let held = 0, last = 0;
+      for (let i = 0; i < fps * 4; i++) {
         view.frame(1 / fps);
         assert.equal(view.root.position.y, 0);
-        if (view.root.position.z < -0.56) assert.equal(opened.length, 0);
+        const drive = drawerDrive.habitat;
+        if (drive !== undefined && !opened.length) {
+          // The drawer travels exactly with the resident, so the hands never slip off the handle.
+          assert.ok(Math.abs(drive - drawerExtensionAt(view.root.position.z)) < 1e-9);
+          assert.ok(drive >= last - 1e-9);
+          last = drive; held++;
+        }
+        if (view.root.position.z < drawerStandZ(DRAWER_TRAVEL) - 0.001) assert.equal(opened.length, 0);
       }
+      assert.ok(held > fps / 2);
       assert.equal(opened.length, 1);
       assert.equal(opened[0].kind, 'open');
-      assert.ok(opened[0].z >= -0.56);
+      assert.ok(Math.abs(opened[0].z - drawerStandZ(DRAWER_TRAVEL)) < 0.001);
+      assert.ok(view.root.position.z >= DRAWER_CLEAR_Z - 0.001);
+      assert.equal(drawerDrive.habitat, undefined);
       assert.equal(view.props.drawerInteraction.current.busy, false);
       assert.ok(view.sounds.some(sound => !sound.variant));
     } finally { view.dispose(); }
   });
 }
+
+test('drawer: hands push an open drawer closed while stepping forward', () => {
+  const closed = [];
+  const view = mount('orbital', { objects: { 'desk-drawer': { open: true } }, onDrawerAction: action => closed.push({ kind: action.kind, z: view.root.position.z }) });
+  const { drawerDrive, drawerStandZ, DRAWER_TRAVEL } = view.drawer;
+  try {
+    view.root.position.set(0.5, 0, -0.6);
+    view.props.drawerInteraction.current.request({ sceneId: 'habitat', objectId: 'desk-drawer', kind: 'close' });
+    assert.equal(view.props.drawerInteraction.current.busy, true);
+    let last = DRAWER_TRAVEL;
+    for (let i = 0; i < 240; i++) {
+      view.frame(1 / 60);
+      const drive = drawerDrive.habitat;
+      if (drive !== undefined) { assert.ok(drive <= last + 1e-9); last = drive; }
+    }
+    assert.deepEqual(closed.map(item => item.kind), ['close']);
+    assert.ok(Math.abs(closed[0].z - drawerStandZ(0)) < 0.001);
+    assert.equal(last, 0);
+    assert.equal(view.props.drawerInteraction.current.busy, false);
+  } finally { view.dispose(); }
+});
 
 test('drawer: distance, front side and grounded posture are required', () => {
   const opened = [];
@@ -243,12 +277,12 @@ test('drawer: a parked chair blocks opening and remains free to roll away', () =
     assert.ok(view.chair.z > -1.16);
     Object.assign(view.chair, { x: 1.45, z: -0.85, vx: 0, vz: 0 });
     view.props.drawerInteraction.current.request(action);
-    for (let i = 0; i < 180; i++) view.frame(1 / 60);
+    for (let i = 0; i < 300; i++) view.frame(1 / 60);
     assert.equal(opened.length, 1);
   } finally { view.dispose(); }
 });
 
-test('drawer: a chair rolling into the opening during retreat cancels the action', () => {
+test('drawer: a chair rolling into the opening while pulling cancels the action', () => {
   const opened = [];
   const view = mount('orbital', { onDrawerAction: action => opened.push(action) });
   try {
@@ -344,7 +378,7 @@ test('clicking the far corner of the bed still uses its safe entry', () => {
   } finally { view.dispose(); }
 });
 
-test('a remote drawer click approaches before retreating and opening', () => {
+test('a remote drawer click approaches before gripping and pulling it open', () => {
   let performed = 0;
   const view = mount('orbital', { onDrawerAction: () => performed++ });
   try {
@@ -353,7 +387,7 @@ test('a remote drawer click approaches before retreating and opening', () => {
     assert.equal(view.props.drawerInteraction.current.busy, false);
     for (let i = 0; i < 900 && !performed; i++) view.frame(1 / 60);
     assert.equal(performed, 1);
-    assert.ok(view.root.position.z >= -0.56);
+    assert.ok(Math.abs(view.root.position.z - view.drawer.drawerStandZ(view.drawer.DRAWER_TRAVEL)) < 0.001);
   } finally { view.dispose(); }
 });
 

@@ -6,7 +6,7 @@ import { SoftBox, Tube } from './Primitives';
 import { ReactiveKeyboard } from './media/ReactiveKeyboard';
 import { FurnitureCylinder as Cylinder, FurnitureMotion, FURNITURE as C } from './FurnitureParts';
 import { ScheduleBook } from './FurnitureBooks';
-import { DRAWER_TRAVEL } from './drawerInteraction';
+import { DRAWER_TRAVEL, drawerDrive } from './drawerInteraction';
 
 function FurnitureComputer({ world }: { world: WorldModelProps }) {
   const state = world.objects.computer ?? CLOSED_OBJECT;
@@ -44,8 +44,8 @@ export function FurnitureDesk({ world }: { world: WorldModelProps }) {
       <SoftBox dims={[0.018, 0.035, 0.84]} position={[x + (x < 0 ? 0.03 : -0.03), 0.78, -2.2]} color="#a5a49b" metalness={0.6} />
     </group>)}
 </>} />
-    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · 点击 / E 推回' : '靠近抽屉 · 点击 / E 后退拉开'} world={world}>
-      <FurnitureMotion mode="position" axis="z" target={drawer.open ? DRAWER_TRAVEL : 0} reducedMotion={world.reducedMotion}>
+    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · 点击 / E 握住把手推回' : '靠近抽屉 · 点击 / E 握住把手拉开'} world={world}>
+      <FurnitureMotion mode="position" axis="z" target={drawer.open ? DRAWER_TRAVEL : 0} reducedMotion={world.reducedMotion} drive={() => drawerDrive[world.sceneId]}>
         {/* Keep the open drawer's lining; generated source only supplies its closed outer shell. */}
         <SoftBox dims={[1.02, .035, .88]} position={[.35, .725, -2.15]} color="#bc996b" />
         {[-.145, .845].map(x => <SoftBox key={x} dims={[.035, .21, .87]} position={[x, .83, -2.15]} color="#bd9668" />)}

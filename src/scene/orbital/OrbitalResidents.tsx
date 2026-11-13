@@ -10,7 +10,11 @@ import { residentLibraryTarget } from './library/bookMotion';
 import { readingStand, shelfOrigin } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
-import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
+import { canReachDrawer, DRAWER_CLEAR_Z, drawerDrive, drawerExtensionAt, drawerObstacle, drawerStandZ, DRAWER_HANDLE, DRAWER_REACH_TIME, DRAWER_RELEASE_TIME, DRAWER_SLIDE_SPEED, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
+import { applyDrawerHands, releaseDrawerHands } from './drawerPose';
+
+/** align: walk to the handle · reach: hands to the handle · slide: drawer moves with the hands · release: let go · step: back off an opened drawer. */
+type DrawerTask = { action: WorldAction; opening: boolean; phase: 'align' | 'reach' | 'slide' | 'release' | 'step'; elapsed: number; time: number; hands: number };
 
 type Point = [number, number];
 type Box = [number, number, number, number];
@@ -165,8 +169,16 @@ export function OrbitalResidents(props: ResidentsProps) {
   const rig = useRef<ResidentRig | null>(null);
   const keys = useRef(new Set<string>());
   const jump = useRef(false);
-  const drawerTask = useRef<{ action: WorldAction; target: Point; elapsed: number } | null>(null);
+  const drawerTask = useRef<DrawerTask | null>(null);
   const drawerExtension = useRef(0);
+  /** Ends (or abandons) a hand-held drawer move: hands let go and the drawer returns to its committed state. */
+  const finishDrawerTask = () => {
+    const p = current.current;
+    drawerTask.current = null;
+    delete drawerDrive[p.sceneId];
+    if (p.drawerInteraction.current) p.drawerInteraction.current.busy = false;
+    if (rig.current) releaseDrawerHands(rig.current);
+  };
   const approach = useRef<Approach | null>(null);
   const walkWeight = useRef(0), airborneMotion = useRef(0);
   const libraryNav = useRef('');
@@ -290,17 +302,25 @@ export function OrbitalResidents(props: ResidentsProps) {
         p.onHover('desk-drawer', '走到抽屉正面，站稳后再操作');
         return;
       }
-      if (p.objects['desk-drawer']?.open) { p.onDrawerAction({ ...action, kind: 'close' }); return; }
+      const open = !!p.objects['desk-drawer']?.open;
       const pose = CHAIR_POSES[p.sceneId];
-      if (!free([pose.x, pose.z], room.openChairBoxes)) {
+      if (!open && !free([pose.x, pose.z], room.openChairBoxes)) {
         p.onHover('desk-drawer', '椅子挡住了抽屉，先把椅子移开');
+        return;
+      }
+      // The resident walks the drawer's full travel while holding the handle, so that lane must be clear.
+      const reach = room.chairRadius + RADIUS;
+      const lane: Box[] = [...room.baseBoxes, [pose.x - reach, pose.x + reach, pose.z - reach, pose.z + reach]];
+      const from: Point = [DRAWER_HANDLE.x, drawerStandZ(open ? DRAWER_TRAVEL : 0)], to: Point = [DRAWER_HANDLE.x, open ? drawerStandZ(0) : DRAWER_CLEAR_Z];
+      if (!free(from, lane) || !clearSegment(from, to, lane)) {
+        p.onHover('desk-drawer', open ? '抽屉前有东西挡着，先移开再推回' : '身后空间不足，先把椅子移开再拉抽屉');
         return;
       }
       handle.busy = true;
       keys.current.clear(); jump.current = false; s.path = [];
       if (s.external) { s.external = false; p.onArrive(); }
-      drawerTask.current = { action: { ...action, kind: 'open' }, target: [root.position.x, Math.max(DRAWER_CLEAR_Z, root.position.z + 0.12)], elapsed: 0 };
-      p.onHover('desk-drawer', '后退让开抽屉…');
+      drawerTask.current = { action: { ...action, kind: open ? 'close' : 'open' }, opening: !open, phase: 'align', elapsed: 0, time: 0, hands: 0 };
+      p.onHover('desk-drawer', '走到把手前…');
     } };
     props.drawerInteraction.current = handle;
     return () => { drawerTask.current = null; if (props.drawerInteraction.current === handle) props.drawerInteraction.current = null; };
@@ -388,14 +408,14 @@ export function OrbitalResidents(props: ResidentsProps) {
     const p = current.current;
     const s = state.current;
     const drawerOpen = !!p.objects['desk-drawer']?.open;
-    drawerExtension.current = p.reducedMotion ? (drawerOpen ? DRAWER_TRAVEL : 0) : THREE.MathUtils.damp(drawerExtension.current, drawerOpen ? DRAWER_TRAVEL : 0, 8, dt);
+    const heldDrawer = drawerDrive[p.sceneId];
+    drawerExtension.current = heldDrawer ?? (p.reducedMotion ? (drawerOpen ? DRAWER_TRAVEL : 0) : THREE.MathUtils.damp(drawerExtension.current, drawerOpen ? DRAWER_TRAVEL : 0, 8, dt));
     const blocking = drawerOpen || drawerExtension.current > 0.001;
-    room.boxes = blocking ? room.openBoxes : room.baseBoxes;
+    // While walking up to grip the handle the resident may step inside the open drawer's keep-out margin.
+    room.boxes = blocking && !drawerTask.current ? room.openBoxes : room.baseBoxes;
     room.chairBoxes = blocking ? room.openChairBoxes : room.baseChairBoxes;
-    if (drawerTask.current && !p.drawerEnabled) {
-      drawerTask.current = null;
-      if (p.drawerInteraction.current) p.drawerInteraction.current.busy = false;
-    }
+    // Leaving the room view mid-move lets go; the final release is already committed and plays out.
+    if (drawerTask.current && !p.drawerEnabled && !['release', 'step'].includes(drawerTask.current.phase)) finishDrawerTask();
     const library = p.library, flow = library?.flow.current;
     const libraryActive = !!flow && flow.phase !== 'idle';
     const libraryWalking = !!flow && ['approach', 'align', 'recenter'].includes(flow.phase);
@@ -527,13 +547,60 @@ export function OrbitalResidents(props: ResidentsProps) {
       const task = drawerTask.current;
       let [dx, dz] = p.enabled && !task ? steer() : [0, 0];
       let speed = WALK_SPEED;
-      if (task) {
-        task.elapsed += dt;
-        root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 14));
-        if (Math.abs(Math.atan2(Math.sin(root.rotation.y - Math.PI), Math.cos(root.rotation.y - Math.PI))) < 0.08) {
-          const distance = Math.hypot(task.target[0] - root.position.x, task.target[1] - root.position.z);
-          speed = dt > 0 ? Math.min(WALK_SPEED, distance / dt) : 0;
-          if (distance > 0.001) { dx = (task.target[0] - root.position.x) / distance; dz = (task.target[1] - root.position.z) / distance; }
+      let faceTravel = false;
+      if (task && task.opening && task.phase !== 'release' && task.phase !== 'step' && !free([pose.x, pose.z], room.openChairBoxes)) {
+        // The chair rolled into the drawer's path: let go and leave the drawer where it was.
+        finishDrawerTask();
+        p.onHover('desk-drawer', '椅子挡住了抽屉，先把椅子移开');
+      } else if (task) {
+        task.elapsed += dt; task.time += dt;
+        const startZ = drawerStandZ(task.opening ? 0 : DRAWER_TRAVEL), endZ = drawerStandZ(task.opening ? DRAWER_TRAVEL : 0);
+        const facing = () => {
+          root.rotation.y = angle(root.rotation.y, Math.PI, p.reducedMotion ? 1 : 1 - Math.exp(-dt * 14));
+          return Math.abs(Math.atan2(Math.sin(root.rotation.y - Math.PI), Math.cos(root.rotation.y - Math.PI))) < 0.04;
+        };
+        if (task.phase === 'align') {
+          // Walk to the handle, then square up to the drawer face.
+          const ax = DRAWER_HANDLE.x - root.position.x, az = startZ - root.position.z, distance = Math.hypot(ax, az);
+          if (distance > 0.004) {
+            speed = dt > 0 ? Math.min(WALK_SPEED, distance / dt) : 0;
+            dx = ax / distance; dz = az / distance; faceTravel = distance > 0.12;
+            if (!faceTravel) facing();
+          } else {
+            root.position.x = DRAWER_HANDLE.x; root.position.z = startZ;
+            if (facing()) { task.phase = 'reach'; task.time = 0; }
+          }
+          if (task.elapsed > 4) {
+            finishDrawerTask();
+            p.onHover('desk-drawer', '走不到抽屉正面，先清开前方的空间');
+          }
+        } else if (task.phase === 'reach') {
+          facing();
+          task.hands = p.reducedMotion ? 1 : ease(clamp(task.time / DRAWER_REACH_TIME, 0, 1));
+          if (task.hands >= 1) { task.phase = 'slide'; task.time = 0; p.onHover('desk-drawer', task.opening ? '握住把手，往后拉…' : '握住把手，往里推…'); }
+        } else if (task.phase === 'slide') {
+          // The resident steps backwards (or forwards) while the drawer travels with the hands.
+          const gap = endZ - root.position.z, step = p.reducedMotion ? Math.abs(gap) : Math.min(Math.abs(gap), DRAWER_SLIDE_SPEED * dt);
+          root.position.z += Math.sign(gap) * step;
+          walking = step > 0.0001;
+          drawerDrive[p.sceneId] = drawerExtensionAt(root.position.z);
+          if (Math.abs(endZ - root.position.z) < 0.0005) {
+            root.position.z = endZ;
+            drawerDrive[p.sceneId] = task.opening ? DRAWER_TRAVEL : 0;
+            p.onDrawerAction(task.action);
+            task.phase = 'release'; task.time = 0;
+          }
+        } else if (task.phase === 'release') {
+          task.hands = p.reducedMotion ? 0 : 1 - ease(clamp(task.time / DRAWER_RELEASE_TIME, 0, 1));
+          if (task.hands <= 0) {
+            if (task.opening && root.position.z < DRAWER_CLEAR_Z) { task.phase = 'step'; task.time = 0; }
+            else finishDrawerTask();
+          }
+        } else {
+          const gap = DRAWER_CLEAR_Z - root.position.z, step = p.reducedMotion ? gap : Math.min(gap, DRAWER_SLIDE_SPEED * dt);
+          root.position.z += Math.max(0, step);
+          walking = step > 0.0001;
+          if (gap < 0.0005) { root.position.z = Math.max(root.position.z, DRAWER_CLEAR_Z); finishDrawerTask(); }
         }
       }
       const autonomous = wanted !== 'standing';
@@ -569,14 +636,7 @@ export function OrbitalResidents(props: ResidentsProps) {
           if (Math.hypot(pose.x - root.position.x, pose.z - root.position.z) < contact - 0.005) { root.position.x = beforeX; root.position.z = beforeZ; }
         }
         walking = Math.hypot(root.position.x - beforeX, root.position.z - beforeZ) > 0.001;
-        if (!task) root.rotation.y = angle(root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 14));
-      }
-      if (task && (Math.hypot(task.target[0] - root.position.x, task.target[1] - root.position.z) < 0.005 || task.elapsed > 2.5)) {
-        drawerTask.current = null;
-        if (p.drawerInteraction.current) p.drawerInteraction.current.busy = false;
-        if (!free([pose.x, pose.z], room.openChairBoxes)) p.onHover('desk-drawer', '椅子挡住了抽屉，先把椅子移开');
-        else if (Math.hypot(task.target[0] - root.position.x, task.target[1] - root.position.z) < 0.005 && root.position.z >= DRAWER_CLEAR_Z - 0.005) p.onDrawerAction(task.action);
-        else p.onHover('desk-drawer', '身后空间不足，换个位置再拉开抽屉');
+        if (!task || faceTravel) root.rotation.y = angle(root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 14));
       }
       if (!s.path.length && s.external && p.enabled && !s.exiting && s.lift === 0 && !approach.current?.chairTarget) {
         const request = approach.current;
@@ -633,13 +693,14 @@ export function OrbitalResidents(props: ResidentsProps) {
         roomAudio.playFootstep({ foot: (halfStep & 1) as 0 | 1, surface: surfaceAt(root.position.x, root.position.z) });
       s.walkTime = next % 1;
     }
-    const interactionPose = s.posture !== 'standing' || s.exiting || s.lift > 0 || (libraryActive && !libraryWalking);
+    const holdingDrawer = !!drawerTask.current && drawerTask.current.phase !== 'align';
+    const interactionPose = s.posture !== 'standing' || s.exiting || s.lift > 0 || (libraryActive && !libraryWalking) || holdingDrawer;
     walkWeight.current = interactionPose || p.reducedMotion ? 0
       : clamp(walkWeight.current + (groundedWalk ? 1 : -1) * dt / .14, 0, 1);
     const airborne = walking && s.lift > 0 && !p.reducedMotion;
     airborneMotion.current = airborne ? airborneMotion.current + dt : 0;
     const stride = airborne ? Math.sin(airborneMotion.current * 10) * .28
-      : groundedWalk && libraryActive && !libraryWalking && !p.reducedMotion ? Math.sin(s.walkTime * Math.PI * 2) * .2 : 0;
+      : groundedWalk && ((libraryActive && !libraryWalking) || holdingDrawer) && !p.reducedMotion ? Math.sin(s.walkTime * Math.PI * 2) * .2 : 0;
     pivot.position.y = HIP;
     pivot.rotation.x = -s.lie * Math.PI / 2;
     pivot.rotation.z = airborne ? stride * .12 : 0;
@@ -664,6 +725,8 @@ export function OrbitalResidents(props: ResidentsProps) {
       });
     }
     if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
+    if (rig.current && drawerTask.current && drawerTask.current.hands > 0 && root.parent)
+      applyDrawerHands(rig.current, root.parent, drawerExtensionAt(root.position.z), drawerTask.current.hands);
     if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current));
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
@@ -675,7 +738,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       const distance = Math.hypot(root.position.x - item.point[0], root.position.z - item.point[1]);
       return { id: item.id, reachable: distance < item.distance, gap: distance - (item.id === 'chair' ? room.chairRadius : 0) };
     }).filter(item => item.reachable).sort((a, b) => a.gap - b.gap)[0]?.id ?? '' : '';
-    const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '推回抽屉' : '后退拉开抽屉') : '坐下'}` : '';
+    const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '握住把手推回抽屉' : '握住把手拉开抽屉') : '坐下'}` : '';
     if (!drawerTask.current && (nearby !== s.nearby || hint !== s.nearbyHint)) { s.nearby = nearby; s.nearbyHint = hint; p.onHover(nearby || null, hint || undefined); }
 
     const cat = pet.current;
