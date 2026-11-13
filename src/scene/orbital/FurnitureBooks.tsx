@@ -10,39 +10,34 @@ import { ObjectHandle } from './ObjectHandle';
 import { SoftBox, Tube } from './Primitives';
 import { FurnitureMotion, FURNITURE as C, type FurnitureVector } from './FurnitureParts';
 
-export function FurnitureBook({ world, id, position, rotation = [0, 0, 0], color = '#8b5744', kind = 'read', scale = 1 }: {
-  world: WorldModelProps; id: string; position: FurnitureVector; rotation?: FurnitureVector; color?: string; kind?: 'read' | 'write' | 'plan'; scale?: number;
+export function ScheduleBook({ world, position, rotation = [0, 0, 0], color, scale = 1 }: {
+  world: WorldModelProps; position: FurnitureVector; rotation?: FurnitureVector; color: string; scale?: number;
 }) {
-  const state = world.objects[id] ?? CLOSED_OBJECT;
+  const state = world.objects.schedule ?? CLOSED_OBJECT;
   const notebook = useSchedule();
-  const planner = kind === 'plan';
   const opened = state.open || state.active;
-  const label = kind === 'write' ? '翻开日记 · 写下今天' : kind === 'plan' ? '展开日程 · 安排计划' : opened ? '翻动书页' : '取阅书籍';
   return <group position={position} rotation={rotation} scale={scale}>
-    <ObjectHandle id={id} action={opened && kind === 'read' ? 'turn-page' : kind} hint={label} world={world} drag="x" payload={kind === 'read' && opened ? { direction: 1 } : undefined}>
-      <SuppliedAsset name={planner ? "planner.parts" : "journal.parts"} part="body" size={[.36, .1125, .47]} fit="contact" position={[.18, 0, 0]} fallback={<>      <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0.0125, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
-      <SoftBox dims={[0.325, 0.065, 0.435]} position={[0.185, 0.057, 0]} radius={0.006} color={C.paper} />
-      {planner && Array.from({ length: 12 }, (_, i) => <SoftBox key={i} dims={[0.322, 0.0009, 0.433]} position={[0.185, 0.029 + i * 0.005, 0]} radius={0.0003} color={i % 3 === 0 ? '#bcb092' : '#d5c9ac'} />)}
-      <SoftBox dims={[0.025, 0.11, 0.47]} position={[0, 0.055, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
-</>} />
+    <ObjectHandle id="schedule" action="plan" hint="展开日程 · 安排计划" world={world} drag="x">
+      <SuppliedAsset name="planner.parts" part="body" size={[.36, .1125, .47]} fit="contact" position={[.18, 0, 0]} fallback={<>
+        <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0.0125, 0]} radius={0.009} color={color} material={upholstery(color)} />
+        <SoftBox dims={[0.325, 0.065, 0.435]} position={[0.185, 0.057, 0]} radius={0.006} color={C.paper} />
+        {Array.from({ length: 12 }, (_, i) => <SoftBox key={i} dims={[0.322, 0.0009, 0.433]} position={[0.185, 0.029 + i * 0.005, 0]} radius={0.0003} color={i % 3 === 0 ? '#bcb092' : '#d5c9ac'} />)}
+        <SoftBox dims={[0.025, 0.11, 0.47]} position={[0, 0.055, 0]} radius={0.009} color={color} material={upholstery(color)} />
+      </>} />
       <FurnitureMotion axis="z" target={opened ? Math.PI * 0.94 : 0} reducedMotion={world.reducedMotion} position={[0, 0.1, 0]}>
-        {/* The generated shell has no authored inner binding; retain a solid inner cover. */}
-        <SoftBox dims={[0.35, 0.012, 0.46]} position={[0.18, -0.008, 0]} radius={0.005} color={planner ? '#8e6344' : '#637d67'} />
-        <SuppliedAsset name={planner ? "planner.parts" : "journal.parts"} part="cover" size={[.36, .1125, .47]} fit="contact" position={[.18, -.1, 0]} fallback={<>        <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0, 0]} radius={0.009} color={color} material={planner ? upholstery(color) : undefined} />
-        <SoftBox dims={[0.24, 0.003, 0.34]} position={[0.18, 0.014, 0]} radius={0.001} color={kind === 'plan' ? '#b8c5ae' : '#be9c61'} />
-        {[0, 1, 2].map(i => <SoftBox key={i} dims={[0.12 - i * 0.02, 0.002, 0.006]} position={[0.18, 0.016, -0.06 + i * 0.025]} radius={0.0005} color={C.edge} />)}
-        {planner && <>
+        <SoftBox dims={[0.35, 0.012, 0.46]} position={[0.18, -0.008, 0]} radius={0.005} color="#8e6344" />
+        <SuppliedAsset name="planner.parts" part="cover" size={[.36, .1125, .47]} fit="contact" position={[.18, -.1, 0]} fallback={<>
+          <SoftBox dims={[0.36, 0.025, 0.47]} position={[0.18, 0, 0]} radius={0.009} color={color} material={upholstery(color)} />
+          <SoftBox dims={[0.24, 0.003, 0.34]} position={[0.18, 0.014, 0]} radius={0.001} color="#b8c5ae" />
+          {[0, 1, 2].map(i => <SoftBox key={i} dims={[0.12 - i * 0.02, 0.002, 0.006]} position={[0.18, 0.016, -0.06 + i * 0.025]} radius={0.0005} color={C.edge} />)}
           <SoftBox dims={[0.325, 0.002, 0.433]} position={[0.18, -0.014, 0]} radius={0.002} color="#b7bfa5" material={upholstery('#b7bfa5')} />
           <SoftBox dims={[0.008, 0.002, 0.42]} position={[0.027, -0.016, 0]} radius={0.001} color="#71816b" />
           {[-0.195, 0.195].map(z => <Tube key={z} points={[[0.04, -0.016, z], [0.18, -0.016, z], [0.32, -0.016, z]]} radius={0.0008} color="#d7dcc1" />)}
-        </>}
-</>} />
+        </>} />
       </FurnitureMotion>
-      <FurnitureMotion axis="z" target={opened && !planner ? (state.page % 2 === 0 ? 0 : 2.92) : 0} reducedMotion={world.reducedMotion} position={[0.015, 0.095, 0]}>
-        <SoftBox dims={[0.32, 0.004, 0.43]} position={[0.16, 0, 0]} radius={0.001} color="#fff3d6" />
-      </FurnitureMotion>
-      {planner && <ScheduleTurningLeaf pageId={notebook.state.current.id} reducedMotion={world.reducedMotion} />}
-      {planner && <Tube points={[[0.013, 0.091, -0.205], [0.008, 0.093, 0], [0.013, 0.091, 0.205]]} radius={0.002} color="#c2b18e" />}
+      <SoftBox dims={[0.32, 0.004, 0.43]} position={[0.175, 0.095, 0]} radius={0.001} color="#fff3d6" />
+      <ScheduleTurningLeaf pageId={notebook.state.current.id} reducedMotion={world.reducedMotion} />
+      <Tube points={[[0.013, 0.091, -0.205], [0.008, 0.093, 0], [0.013, 0.091, 0.205]]} radius={0.002} color="#c2b18e" />
       <SoftBox dims={[0.024, 0.003, 0.13]} position={[0.27, 0.093, 0.22]} radius={0.001} color="#c5774b" />
     </ObjectHandle>
   </group>;
