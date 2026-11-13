@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   base: './',
+  publicDir: 'assets/public',
   plugins: [react()],
   build: {
     target: 'es2020',

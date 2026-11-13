@@ -54,13 +54,38 @@ function controller() {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('./useLibrary.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, { exports, ...m.globals, require: name => name === 'react' ? react : m, window: { addEventListener() {}, removeEventListener() {}, setTimeout: fn => fn(), clearTimeout() {} } });
   const c = exports.useLibrary({ sceneId: 'habitat', reducedMotion: false, onAction: a => actions.push(a), onReturn: () => actions.push('return'), error: s => errors.push(s) }); effects.forEach(fn => fn());
-  const advance = () => { for (let i = 0; i < 250; i++) { if (['approach', 'reading', 'catalog', 'align', 'recenter', 'leaving', 'idle'].includes(c.flow.current.phase)) break; c.tick(.04); } };
-  const enter = () => { c.dispatch({ sceneId: 'habitat', objectId: 'book-01', kind: 'read' }); advance(); c.arrived(); advance(); c.arrived(); };
+  const advance = () => { for (let i = 0; i < 250; i++) { if (['approach', 'reading', 'catalog', 'align', 'recenter', 'idle'].includes(c.flow.current.phase)) break; c.tick(.04); } };
+  const enter = (itemId) => {
+    c.dispatch({ sceneId: 'habitat', objectId: 'book-01', kind: 'read', payload: { itemId } });
+    advance();
+    assert.equal(c.flow.current.phase, 'approach');
+    c.arrived();
+  };
   const open = id => { c.choose(id); c.arrived(); c.setPages([{ start: 0, end: 10, text: '首页' }, { start: 10, end: 20, text: '末页' }]); advance(); };
   return { c, m, errors, actions, advance, enter, open };
 }
 test('直接触发添加不能绕过状态校验；表单保存成功才生成实体书', async () => {
   const { c, enter } = controller(); await assert.rejects(c.add('绕过', '', '正文'), /表单/); enter(); assert.equal(c.flow.current.phase, 'catalog'); c.openForm(); await c.add('新书', '', '正文'); assert.equal(c.flow.current.phase, 'shelving');
+});
+test('抵达书柜即开始取指定书，归还后可退出并继续待处理的动作', () => {
+  const { c, enter, advance, actions } = controller();
+  enter('book-01');
+  assert.equal(c.flow.current.phase, 'align');
+  assert.equal(c.flow.current.book.id, 'book-01');
+  c.arrived();
+  advance();
+  assert.equal(c.flow.current.phase, 'reading');
+  const sleep = { sceneId: 'habitat', objectId: 'bed', kind: 'sleep' };
+  c.dispatch(sleep);
+  advance();
+  assert.equal(c.flow.current.phase, 'recenter');
+  c.arrived();
+  assert.equal(c.flow.current.phase, 'idle');
+  assert.deepEqual(actions.slice(-2), ['return', sleep]);
+  enter();
+  assert.equal(c.flow.current.phase, 'catalog');
+  c.back();
+  assert.equal(c.flow.current.phase, 'idle');
 });
 test('翻页边界、连点、动画中 Esc 不跳页，换书先还后取且记住独立锚点', async () => {
   const { c, m, enter, open, advance, actions } = controller(); enter(); open('book-01'); assert.equal(c.flow.current.phase, 'reading'); c.turn(-1); assert.equal(c.flow.current.phase, 'reading');

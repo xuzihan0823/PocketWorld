@@ -14,11 +14,12 @@ import { ScheduleProvider } from './schedule/ScheduleContext';
 import { ScheduleSurfaces } from './schedule/ScheduleSurfaces';
 import { OrbitalResidents } from './OrbitalResidents';
 import type { DrawerInteraction } from './drawerInteraction';
+import { JOURNAL_PAGE_POSITION } from './journalLayout';
 
 const FOCUS: Record<string, { target: [number, number, number]; offset: [number, number, number] }> = {
   computer: { target: [1.45, 1.58, -2.30], offset: [0, 0.30, 3.5] },
   'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
-  journal: { target: [-0.48, 1.20, -1.94], offset: [0, 1.05, 0.78] },
+  journal: { target: JOURNAL_PAGE_POSITION, offset: [0, 0.60, 0.28] },
   schedule: { target: [0.57, 1.20, -1.96], offset: [0, 0.88, 0.48] },
   'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
   'book-01': { target: [-3.35, 1.03, -1.14], offset: [1.35, 1.12, 2.5] },
@@ -65,6 +66,7 @@ function CameraRig(props: OrbitalSceneProps) {
       target.current.copy(origin).add(new THREE.Vector3(...pose.target));
       if (props.focusedObject === 'book-01' && props.transition.toScene === 'observatory') target.current.z += 1.25;
       const offset = new THREE.Vector3(...pose.offset);
+      if (props.focusedObject === 'journal') offset.multiplyScalar(Math.max(1, 0.9 / (size.width / size.height)));
       if (props.focusedObject === 'book-01') {
         if (props.library?.cameraView === 'close') { offset.set(1.75, .65, .30); target.current.y = 1.08; }
         if (props.library?.cameraView === 'side') offset.set(2.5, 1.1, -.35);
@@ -134,7 +136,7 @@ function WorldContent(props: OrbitalSceneProps) {
     if (!action) return;
     const points: Record<string, [number, number, number]> = {
       computer: [1.55, 1.2, -1.96], 'music-player': [-0.45, 1.2, -1.96],
-      journal: [-0.48, 1.2, -1.94], schedule: [0.57, 1.2, -1.96],
+      journal: JOURNAL_PAGE_POSITION, schedule: [0.57, 1.2, -1.96],
       'book-01': [-3.35, 0.9, props.sceneId === 'habitat' ? -1.75 : -0.5], bed: [-2.6, 0.7, 1],
     };
     const point = points[action.objectId];
@@ -154,6 +156,7 @@ function WorldContent(props: OrbitalSceneProps) {
         onApproach: (point: [number, number, number], action: Parameters<typeof props.onAction>[0], perform: () => void) => {
           if (id !== props.sceneId || drawerInteraction.current?.busy) return false;
           let target = point;
+          if (action.objectId === 'journal') target = JOURNAL_PAGE_POSITION;
           if (action.objectId.startsWith('schedule')) target = [0.57, 1.2, -1.96];
           if (action.objectId.startsWith('music-')) target = [-0.45, 1.2, -1.96];
           if (action.objectId === 'computer' || action.objectId === 'music-mute' || action.objectId === 'computer-exit' || action.objectId.startsWith('game-')) target = [1.55, 1.2, -1.96];
@@ -170,8 +173,8 @@ function WorldContent(props: OrbitalSceneProps) {
         <HabitatShell variant={id} onFloorClick={point => { if ((!props.focusedObject || props.focusedObject === 'bed') && props.sceneId === id && !props.gestureActive && !drawerInteraction.current?.busy && (!props.library || props.library.flow.current.phase === 'idle')) { void roomAudio.unlock(); setWalkTarget(point); } }} />
         {id === 'habitat' && <ScheduleSurfaces {...world} visible={props.sceneId === 'habitat'} />}
         <Suspense fallback={null}><HabitatFurniture {...world} /><MediaObjects {...world} /></Suspense>
+        <FeatureSurfaces {...world} />
         {id === props.sceneId && <>
-          <FeatureSurfaces {...world} />
           <OrbitalResidents {...world} drawerInteraction={drawerInteraction} interaction={interaction}
             drawerEnabled={!props.focusedObject && ['idle', 'active', 'error'].includes(props.transition.phase)} onDrawerAction={props.onAction} walkTarget={walkTarget} onArrive={() => setWalkTarget(null)} enabled={(!props.focusedObject || props.focusedObject === 'bed') && (!props.library || props.library.view.phase === 'idle') && !props.gestureActive && ['idle', 'active', 'error'].includes(props.transition.phase)} />
         </>}

@@ -6,6 +6,7 @@
 
 - `orbital/OrbitalScene.tsx` 组合镜头、灯光、舱室、家具、住民与交互表面。
 - `orbital/useWorldController.ts` 管理世界状态、动作适配器和转场生命周期。
+- `orbital/journal/` 管理实体翻页、纸面编辑、逐页日期和天气、存档及迁移。
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
 - `orbital/schedule/` 管理日程迁移、同步、纸页、贴纸、纸团和相关测试。
 - `orbital/media/` 管理电脑屏幕布局、游戏卡带加载与拖放、唱片交互、实体键盘和相关测试。
@@ -17,7 +18,7 @@
 
 跨模块的数据接口定义在 `src/types/`。日程通过 `ScheduleProvider` 和 `useSchedule` 接入家具与纸面，书柜通过 `useLibrary` 接入应用和住民。媒体模块通过 `GameCartridgeProps` 按需加载 `src/games/*/index.tsx`。
 
-新增功能优先复用 `ObjectHandle`、`Primitives` 和已有世界动作。资产通过 Vite 相对路径引用，资源源文件放在 `art/`，运行时模型放在 `public/models/`。
+新增功能优先复用 `ObjectHandle`、`Primitives` 和已有世界动作。运行时模型放在根目录 `assets/public/models/`，游戏与静态素材统一放在 `assets/games/`。
 
 ## 验证
 

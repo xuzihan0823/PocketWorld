@@ -1,38 +1,88 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Html } from '@react-three/drei';
+import { useEffect, useRef, useState } from 'react';
 import type { JournalEntry, WorldSceneProps } from '../../types/world';
-export function FeatureSurfaces(props: WorldSceneProps) {
-  const id = props.focusedObject;
-  const [journal, setJournal] = useState<JournalEntry>({ id: 'today', date: new Date().toLocaleDateString('sv-SE'), text: '', updatedAt: '' });
+import { ObjectHandle } from './ObjectHandle';
+import { JOURNAL_POSITION, JOURNAL_SCALE, JOURNAL_YAW } from './journalLayout';
+import { BoundJournal } from './journal/BoundJournal';
+import { BOOK } from './journal/bookModel';
+import { createBookControl } from './journal/bookControl';
+import { JournalEditor } from './journal/JournalEditor';
+import { emptyJournal, journalPages, loadLocalJournal, saveLocalJournal } from './journal/journalStorage';
+
+export function FeatureSurfaces(world: WorldSceneProps) {
+  const opened = world.focusedObject === 'journal' && !!world.objects.journal?.open;
+  const adapter = world.adapters?.journal;
+  const { onFeatureError, onGesture } = world;
+  const book = useRef(createBookControl());
+  const [entry, setEntry] = useState<JournalEntry>();
+  const [leafCount, setLeafCount] = useState(BOOK.leaves);
   const [saveState, setSaveState] = useState('');
-  const [loaded, setLoaded] = useState(false);
-  const changed = useRef(false), onError = useRef(props.onFeatureError);
-  onError.current = props.onFeatureError;
+  const saved = useRef<Promise<void>>(Promise.resolve());
+  const unsaved = useRef<{ adapter: typeof adapter; entry: JournalEntry }>();
+
   useEffect(() => {
-    const abort = new AbortController(); setLoaded(false); changed.current = false; setSaveState('');
-    if (id === 'journal') void (async () => {
+    if (!opened) {
+      setEntry(undefined);
+      return;
+    }
+    const abort = new AbortController();
+    setSaveState('');
+    void (async () => {
       try {
-        const stored = props.adapters?.journal ? null : localStorage.getItem('pocketworld:journal:today');
-        const entry = props.adapters?.journal ? await props.adapters.journal.load(abort.signal) : stored ? JSON.parse(stored) as JournalEntry : journal;
-        if (!abort.signal.aborted && entry && typeof entry.text === 'string') setJournal(entry);
-      } catch { if (!abort.signal.aborted) onError.current('日记暂时无法读取，原记录仍会保留。'); }
-      if (!abort.signal.aborted) setLoaded(true);
+        await saved.current;
+        if (abort.signal.aborted) return;
+        const pending = unsaved.current;
+        const loaded = pending && pending.adapter === adapter ? pending.entry :
+          adapter ? await adapter.load(abort.signal) : loadLocalJournal(localStorage);
+        if (!abort.signal.aborted) {
+          const next = loaded && typeof loaded.text === 'string' ? loaded : emptyJournal();
+          setLeafCount(count => Math.max(count, Math.ceil(journalPages(next).length / 2) + 1));
+          setEntry(next);
+        }
+      } catch {
+        if (!abort.signal.aborted) onFeatureError('日记暂时无法读取，请重新打开再试。');
+      }
     })();
     return () => abort.abort();
-  }, [id, props.adapters]);
+  }, [opened, adapter, onFeatureError]);
+
   useEffect(() => {
-    if (!loaded || !changed.current || id !== 'journal') return;
-    const abort = new AbortController(); setSaveState('正在记录');
-    const timer = window.setTimeout(async () => {
-      try {
-        const entry = { ...journal, updatedAt: new Date().toISOString() };
-        if (props.adapters?.journal) await props.adapters.journal.save(entry, abort.signal);
-        else localStorage.setItem('pocketworld:journal:today', JSON.stringify(entry));
-        if (!abort.signal.aborted) setSaveState('已记下');
-      } catch { if (!abort.signal.aborted) { setSaveState('尚未保存'); onError.current('内容没有保存成功，请暂时保留这一页。'); } }
-    }, 450);
-    return () => { window.clearTimeout(timer); abort.abort(); };
-  }, [journal, id, loaded, props.adapters]);
-  if (id !== 'journal' || !loaded || !props.objects.journal?.open) return null;
-  return <Html transform position={[-0.482, 1.225, -1.92]} rotation={[-Math.PI / 2 + .01, 0, 0]} distanceFactor={.32} zIndexRange={[20, 10]} className="world-page-anchor"><article className="world-page" onPointerDown={e => e.stopPropagation()}><small>{journal.date}</small><h2>今天，想记住什么？</h2><textarea aria-label="今天的日记" value={journal.text} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} onChange={e => { changed.current = true; setJournal(current => ({ ...current, text: e.target.value })); }} /><footer>{saveState || '纸上的时间，慢一点'}</footer></article></Html>;
+    const textures = book.current.textures;
+    return () => { textures.forEach(texture => texture.dispose()); textures.clear(); };
+  }, []);
+
+  const save = (next: JournalEntry) => {
+    const usedLeaves = Math.ceil((next.pages?.length ?? 1) / 2);
+    if (usedLeaves >= leafCount) setLeafCount(usedLeaves + 1);
+    const revision = { adapter, entry: next };
+    unsaved.current = revision;
+    const complete = () => {
+      if (unsaved.current !== revision) return;
+      unsaved.current = undefined;
+      setSaveState('已记下');
+    };
+    const failed = () => {
+      if (unsaved.current !== revision) return;
+      setSaveState('尚未保存');
+      onFeatureError('内容暂时无法保存。可以继续编辑，下一次修改会重试。');
+    };
+    if (adapter) {
+      setSaveState('正在记录');
+      saved.current = saved.current.then(() => {
+        if (unsaved.current === revision) return adapter.save(next, new AbortController().signal);
+      }).then(complete, failed);
+    } else {
+      try { saveLocalJournal(localStorage, next); complete(); }
+      catch { failed(); }
+    }
+  };
+
+  const editor = opened && entry && (world.transition.phase === 'active' || world.transition.phase === 'error');
+
+  return <group position={JOURNAL_POSITION} rotation-y={JOURNAL_YAW} scale={JOURNAL_SCALE}>
+    <ObjectHandle id="journal" action="write" hint="翻开日记 · 写下今天"
+      world={opened ? { ...world, onApproach: () => false } : world}>
+      <BoundJournal opened={opened} reducedMotion={world.reducedMotion} control={book} leafCount={leafCount} />
+    </ObjectHandle>
+    {editor && <JournalEditor book={book} leafCount={leafCount} entry={entry} saveState={saveState} onChange={save} onGesture={onGesture} />}
+  </group>;
 }

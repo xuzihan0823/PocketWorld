@@ -33,13 +33,18 @@
 
 | 角色 / 任务 | 负责模块 | 允许修改的专属目录 | 严禁擅自修改的区域 |
 |---|---|---|---|
-| **任务一（队长）** | 轨道居住舱场景与住民、书柜、日程、唱机、电脑与卡带集成、房间音频，以及运行时模型和它们的制作源文件 | `src/scene/`、`src/components/`、`src/App.tsx`、`src/main.tsx`、`public/`、`art/`、`scripts/` | 组员负责的具体游戏内部实现（集成联调除外） |
-| **任务二（组员 A）** | `mario` 卡带，当前游戏为「奶娃滑雪大冒险」 | `src/games/mario/` | `src/scene/`、`src/components/`、`src/games/shooter/`、全局样式文件 |
+| **任务一（队长）** | 轨道居住舱场景与住民、书柜、日程、唱机、电脑与卡带集成、房间音频，以及运行时模型和它们的制作源文件 | `src/scene/`、`src/components/`、`src/App.tsx`、`src/main.tsx`、`assets/public/models/`、`scripts/` | 组员负责的具体游戏内部实现（集成联调除外） |
+| **任务二（组员 A）** | `mario` 卡带，当前游戏为「奶娃滑雪大冒险」 | `src/games/mario/`、`assets/games/ski/` | `src/scene/`、`src/components/`、`src/games/shooter/`、全局样式文件 |
 | **任务三（组员 B）** | `shooter` 卡带，当前游戏为「团团魔法录」 | `src/games/shooter/` | `src/scene/`、`src/components/`、`src/games/mario/`、全局样式文件 |
 | **公共契约与工程配置** | 跨模块类型、根目录规范文档、跨模块文档、技能包、PR 模板、依赖与构建配置、全局样式 | `src/types/`、`AGENTS.md`、`CLAUDE.md`、`SPEC.md`、`README.md`、`PRODUCT.md`、`docs/`、`skills/`、`.github/`、`package.json`、`package-lock.json`、`vite.config.ts`、`tsconfig.json`、`.gitignore`、`.nvmrc`、`src/styles.css` | 仅限队长统一维护，组员如需扩展字段或调整配置须先向队长提出 |
 
 - 目录名 `mario` 与 `shooter` 是稳定的卡带标识，同时用于动态导入路径、`GameId`、存储键和 `?dev=` 参数，不随游戏改名而变动。
 - 队长可以把场景内的某项功能（例如人物、书柜）分配给其他成员。受托成员只在该功能的目录内修改，仍按第 6 节一任务一分支经 PR 交付。
+
+### 3.1 素材归口与禁止提交测试/展示文件铁律
+
+- **素材统一归口 `assets/`**：所有 3D 模型、贴图、精灵图、字体、音频等素材文件必须集中存放在根目录 `assets/` 下（运行时通过相对 URL 加载的静态模型放入 `assets/public/models/`，由 Vite 打包器静态 `import` 的游戏素材放入 `assets/games/<game>/`）。**严禁**再将图片、音频、字体、模型等素材文件放在 `src/` 目录或另建零散的 `public/`、`art/`、`output/` 目录。
+- **严禁存放并提交测试残留与展示文件**：**任何**手工测试残留产物、视觉验收截图/录屏、对比图、HTML 预览页或交互展示页面、离线 QA/跑分脚本输出及审计 JSON、临时规划与草稿文件（如 `review/`、`evidence/`、`views/`、`final-views/`、`*preview*.html`、`*gallery*.html`、`*.mp4`、`.tmp/`、`.planning/`、`output/`、`dist/` 等）**一律不得放在项目目录中，更严禁提交进 Git 仓库**。PR 所需的验收截图与录屏应直接上传至 GitHub PR 描述或评论区。自动化回归测试仅允许保留标准单测脚本（`*.test.mjs` 与 `scripts/test.mjs`）。
 
 ---
 
@@ -74,10 +79,11 @@
 
 1. **交互接入**：
    - 场景物品用 `ObjectHandle`（`src/scene/orbital/ObjectHandle.tsx`）声明物品标识、动作和提示，由它发出 `WorldAction`（见 `src/types/world.ts`），交给 `useWorldController` 统一处理走近、转场、焦点、取消与失败回滚。新增物品优先复用已有的动作类型。
-   - 功能自身的状态、界面、样式和测试放在对应功能目录（`library/`、`schedule/`、`media/`），不在家具或模型的渲染组件里硬编码业务流程。
+   - 功能自身的状态、界面、样式和测试放在对应功能目录（`journal/`、`library/`、`schedule/`、`media/`），不在家具或模型的渲染组件里硬编码业务流程。
 2. **模型与资源规范**：
-   - 运行时模型放在 `public/models/`，统一使用 `.glb`（glTF 2.0 二进制）格式；可编辑的制作源文件放在 `art/`，制作与导出脚本放在 `scripts/`。外部素材的来源与许可登记在 `public/models/assets.sources.json`。
+   - 导出至 `assets/public/models/` 的模型统一使用 `.glb`（glTF 2.0 二进制）格式，可交互物体节点命名采用 `Interactable_<Name>`（如 `Interactable_Computer`、`Interactable_MusicPlayer`）。外部素材的来源与许可登记在 `assets/models.sources.json`。
    - 单个 `.glb` 模型文件建议控制在 `10MB` 以内，贴图分辨率不超过 `2048 × 2048`，确保网页首屏加载流畅。
+   - **禁止**在 `assets/public/` 中留存未使用的历史模型或文档说明（该目录内容会被 Vite 原样复制到生产 `dist/`）。
 
 ---
 
@@ -155,11 +161,11 @@
 | 模块的视觉与界面约定 | 模块目录 | `DESIGN.md` |
 | 只涉及单个模块的验收记录与专项说明 | 模块目录 | 中文短名，如 `平衡说明.md`、`PR7修复验收.md` |
 | 跨模块的验收记录 | `docs/` | `<主题>验收.md` |
-| 素材来源、许可与制作记录 | 素材所在目录 | `README.md`，运行时模型另登记 `public/models/assets.sources.json` |
+| 素材来源、许可与制作记录 | 素材所在目录 | `README.md`，运行时模型另登记 `assets/models.sources.json` |
 | 单次任务的目标、进度与验证结果 | 该任务的 PR | 使用 PR 模板 |
 
 - **命名**：工具或社区约定的入口文件用英文大写名（`README.md`、`AGENTS.md`、`SPEC.md`、`PRODUCT.md`、`DESIGN.md`）；项目内的记录性文档用中文名。同一类文档在各模块使用相同文件名。
 - **状态与历史**：规范、契约与进度文档只写当前有效的内容。改动原因、过程和某次验证的细节写进 PR；需要长期留存的验收证据写成验收记录，不堆在进度文档里。
-- **本机工作文件**：任务计划、草稿、对比稿和临时产物放在已被 Git 忽略的 `.planning/`、`.tmp/`、`.vite/`，不提交到仓库。
-- **评审截图**：新增的评审截图放在 `docs/review/<模块>/`，不再放进 `src/`。现有 `src/**/review/` 目录待相关 PR 合并后统一迁移，迁移前保持原位，已有链接继续有效。
+- **本机工作文件**：任务计划、草稿、对比稿和验收临时产物存放在仓库外，遵守第 3.1 节。
+- **评审截图**：评审截图和录屏直接附在对应 PR，验收文档记录验证方法和结论。
 - **联动更新**：移动或改名文件时同步修正所有引用。行为、接口、存储键或入口参数变化时，在同一个 PR 里更新 `SPEC.md` 与受影响的模块文档。

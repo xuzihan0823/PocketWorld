@@ -1,5 +1,5 @@
-import laughUrl from './audio/原版笑声.wav?url';
-import mountUrl from './audio/niulai.wav?url';
+import laughUrl from '../../../assets/games/ski/audio/原版笑声.wav?url';
+import mountUrl from '../../../assets/games/ski/audio/niulai.wav?url';
 import type { SkiEvent } from './model';
 
 export type SoundName = 'laugh' | 'mount';

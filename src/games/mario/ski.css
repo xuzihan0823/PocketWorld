@@ -1,4 +1,4 @@
-@font-face { font-family: 'SkiTitle'; src: url('./assets/type/ski-title.ttf') format('truetype'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'SkiTitle'; src: url('../../../assets/games/ski/type/ski-title.ttf') format('truetype'); font-weight: 400 900; font-display: swap; }
 .ski-game { --ski-ink: #294b5c; --ski-cream: #fff9ec; --ski-orange: #f6ad49; --ski-wood: #b78359; position: relative; width: 100%; height: 100%; overflow: hidden; outline: none; background: #d5edf6; color: var(--ski-ink); font-family: 'Avenir Next', 'PingFang SC', 'Microsoft YaHei', sans-serif; touch-action: none; user-select: none; }
 .ski-stage { position: absolute; left: 50%; top: 50%; width: 800px; height: 600px; transform-origin: center; overflow: hidden; }
 .ski-stage canvas { position: absolute; inset: 0; display: block; width: 800px; height: 600px; }

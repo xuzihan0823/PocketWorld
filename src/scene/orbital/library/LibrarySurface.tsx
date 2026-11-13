@@ -64,7 +64,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
     return () => { cancelled = true; observer.disconnect(); };
   }, [view.book?.id, reading]);
   if (!active) return null;
-  const phaseLabel: Record<string, string> = { prepare: '正在整理书柜', approach: '正在走向书柜', align: '正在对准书位', reach: '正在伸手取书', extract: '正在抽出书籍', carry: '正在调整持书姿势', open: '正在打开书籍', turn: '正在翻页', close: '正在合书', 'return-carry': '正在送回书位', insert: '正在放回书籍', release: '正在松手', recenter: '正在回到选书位置', shelving: '正在放入书柜', leaving: '正在拿回玩偶' };
+  const phaseLabel: Record<string, string> = { prepare: '正在整理书柜', approach: '正在走向书柜', align: '正在对准书位', reach: '正在伸手取书', extract: '正在抽出书籍', carry: '正在调整持书姿势', open: '正在打开书籍', turn: '正在翻页', close: '正在合书', 'return-carry': '正在送回书位', insert: '正在放回书籍', release: '正在松手', recenter: '正在回到选书位置', shelving: '正在放入书柜' };
   const cancelForm = () => { if (!busy) { if (title || author || text) setConfirm('discard'); else library.closeForm(); } };
   const page = view.pages[view.page];
   const views = <nav className="library-views" aria-label="书柜视角">{([['shelf', '书柜'], ['close', '近景'], ['side', '侧面']] as const).map(([id, label]) => <button key={id} aria-pressed={library.cameraView === id} onClick={() => library.setCameraView(id)}>{label}</button>)}</nav>;

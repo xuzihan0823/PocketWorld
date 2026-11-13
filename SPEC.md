@@ -39,7 +39,8 @@ PocketWorld 是浏览器里的 3D 轨道居住舱。访客在生活舱里环绕�
 | `W A S D` / 方向键 | 行走 |
 | `Space` | 跳跃 |
 | `E` | 与最近的物品互动 |
-| `J` | 日记 |
+| `J` | 打开日记 |
+| `←` / `→` | 日记打开时翻到前一页或后一页 |
 | `O` | 日程 |
 | `V` | 日程聚焦时切换书本与玻璃视角 |
 | `R` | 阅读 |
@@ -111,9 +112,9 @@ PocketWorld 是浏览器里的 3D 轨道居住舱。访客在生活舱里环绕�
 
 各功能的完整行为、数值上限和验证状态记录在场景的 [进度文档](src/scene/orbital/进度文档.md) 与对应验收记录中。这里只列对外可见的约定。
 
-- **日记**：在书页上直接输入，自动保存到本机。
+- **日记**：在实体书页上编辑正文、日期和天气，自动保存到本机。点页角或按左右方向键翻页，窄屏提供放大的翻页控件。
 - **日程**：每页两项任务，包含时间、标题和内容。向上拖动纸页贴到玻璃上，玻璃最多同时贴 5 张；可以揉掉已贴的纸页，地面保留有限数量的纸团。
-- **书柜与阅读**：18 个实体书位，内置 3 本书与访客添加的书共用容量，满柜后不能再添加。添加入口只在书柜交互中出现。单本正文上限 128 KiB，访客正文总量上限 512 KiB。写入依赖浏览器的 Web Locks，不支持时拒绝写入而不是冒险覆盖。详见 [书柜交互验收](docs/书柜交互验收.md)。
+- **书柜与阅读**：18 个实体书位，内置 3 本书与访客添加的书共用容量，满柜后不能再添加。添加入口只在书柜交互中出现。单本正文上限 128 KiB，访客正文总量上限 512 KiB。写入依赖浏览器的 Web Locks，不支持时拒绝写入而不是冒险覆盖。详见 [场景验收记录](src/scene/orbital/验收记录.md)。
 - **唱机**：预置曲目由 Web Audio 程序化合成，仓库里没有预置音频文件。访客可以导入本地音频（100 MB 以内）生成唱片；导入的唱片只在当前会话有效，刷新后不保留。离开唱机后音乐继续播放。
 - **床、椅子、抽屉、柜门、台灯、盆栽、猫**：住民走到物品旁后执行对应动作，动作之间互斥（例如躺下会解除坐姿）。
 - **适配器**：`App` 接受可选的 `WorldFeatureAdapters`（见 `src/types/world.ts`），可以把日记、日程、藏书和睡眠回调接到外部数据源。默认不传，全部使用本机存储。
@@ -131,7 +132,8 @@ PocketWorld 是浏览器里的 3D 轨道居住舱。访客在生活舱里环绕�
 | `pocketworld:mario:highscore` | `mario` 卡带最高分 | 游戏与电脑集成层 |
 | `pocketworld:shooter:highscore` | `shooter` 卡带最高分 | 游戏与电脑集成层 |
 | `pocketworld:shooter:history` | `shooter` 历史成绩，最多 10 条 | 游戏 |
-| `pocketworld:journal:today` | 日记 | `FeatureSurfaces.tsx` |
+| `pocketworld:journal:book:v1` | 日记各页正文、日期与天气 | `journal/journalStorage.ts` |
+| `pocketworld:journal:today` / `pocketworld:journal:entries:v1` | 旧版日记，只读取并迁移 | 无 |
 | `pocketworld:schedule:notebook:v1` | 日程纸页、已贴纸页与纸团 | `schedule/` |
 | `pocketworld:schedule` | 旧版日程，只读取并迁移，原记录保留 | 无 |
 | `pocketworld:library:collection:v1` | 藏书、书位与阅读位置 | `library/` |

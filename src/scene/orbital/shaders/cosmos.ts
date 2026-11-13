@@ -70,6 +70,7 @@ export const skyFragment = /* glsl */ `
   uniform float uTime;
   uniform vec3 uSun;
   uniform vec3 uGalacticPole;
+  uniform vec3 uEarthGlow;
   varying vec3 vLocalDirection;
   varying vec3 vWorldDirection;
   ${noise}
@@ -77,24 +78,32 @@ export const skyFragment = /* glsl */ `
     vec3 d = normalize(vLocalDirection);
     float latitude = dot(d, uGalacticPole);
     vec3 core = normalize(cross(uGalacticPole, vec3(0.0, 0.0, 1.0)));
-    float drift = uTime * 0.006;
-    vec3 q = d * 2.1 + vec3(drift, -drift * 0.7, drift * 0.4);
-    float warp = fbm(q, 4);
-    float cloud = fbm(q * 1.8 + warp * 1.6 + vec3(0.0, drift, 0.0), 5);
-    float band = exp(-latitude * latitude / 0.05);
-    float lane = smoothstep(-0.05, 0.4, warp) * exp(-latitude * latitude / 0.006);
-    float bulge = pow(max(dot(d, core), 0.0), 5.0) * exp(-latitude * latitude / 0.03);
+    float drift = uTime * 0.004;
+    vec3 q = d * 1.7 + vec3(drift, -drift * 0.6, drift * 0.35);
+    float warp = fbm(q, 3);
+    float cloud = fbm(q * 1.9 + warp * 1.3 + vec3(0.0, drift, 0.0), 4);
+    float band = exp(-latitude * latitude / 0.06);
+    float lane = smoothstep(-0.05, 0.4, warp) * exp(-latitude * latitude / 0.007);
+    float bulge = pow(max(dot(d, core), 0.0), 5.0) * exp(-latitude * latitude / 0.035);
 
-    vec3 color = vec3(0.004, 0.006, 0.014);
-    vec3 milky = mix(vec3(0.12, 0.13, 0.2), vec3(0.32, 0.27, 0.24), bulge);
-    color += milky * band * (0.32 + 0.68 * smoothstep(-0.45, 0.6, cloud)) * 0.42 * (1.0 - lane * 0.85);
-    color += vec3(0.95, 0.66, 0.38) * bulge * (0.35 + 0.65 * smoothstep(-0.2, 0.5, cloud)) * 0.22;
-    float nebula = smoothstep(0.08, 0.62, cloud) * (0.35 + 0.65 * smoothstep(-0.3, 0.5, warp));
-    vec3 hue = mix(vec3(0.42, 0.1, 0.46), vec3(0.06, 0.3, 0.42), smoothstep(-0.35, 0.35, warp));
-    color += hue * nebula * 0.075;
+    float rise = smoothstep(-0.75, 0.85, d.y);
+    vec3 color = mix(vec3(0.004, 0.006, 0.018), vec3(0.010, 0.012, 0.034), rise);
+    color = mix(color, vec3(0.014, 0.010, 0.034), smoothstep(-0.2, 0.9, warp) * 0.5);
+
+    vec3 milky = mix(vec3(0.08, 0.10, 0.18), vec3(0.16, 0.15, 0.22), bulge);
+    color += milky * band * (0.30 + 0.70 * smoothstep(-0.45, 0.6, cloud)) * 0.22 * (1.0 - lane * 0.8);
+    color += vec3(0.30, 0.28, 0.40) * bulge * (0.35 + 0.65 * smoothstep(-0.2, 0.5, cloud)) * 0.08;
+
+    float nebula = smoothstep(0.22, 0.72, cloud) * (0.30 + 0.70 * smoothstep(-0.3, 0.5, warp));
+    vec3 hue = mix(vec3(0.14, 0.10, 0.40), vec3(0.04, 0.20, 0.34), smoothstep(-0.35, 0.35, warp));
+    color += hue * nebula * 0.04;
+
+    float halo = pow(max(dot(d, uEarthGlow), 0.0), 32.0);
+    color += vec3(0.04, 0.10, 0.18) * halo * 0.4;
+    color += vec3(0.08, 0.18, 0.28) * pow(halo, 2.0) * 0.35;
 
     float sun = max(dot(normalize(vWorldDirection), uSun), 0.0);
-    color += vec3(1.0, 0.9, 0.72) * (smoothstep(0.99985, 0.99993, sun) * 9.0 + pow(sun, 260.0) * 0.5 + pow(sun, 18.0) * 0.035);
+    color += vec3(1.0, 0.9, 0.72) * (smoothstep(0.99985, 0.99993, sun) * 9.0 + pow(sun, 260.0) * 0.5 + pow(sun, 18.0) * 0.03);
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -111,7 +120,7 @@ export const starVertex = /* glsl */ `
   void main() {
     float pulse = sin(uTime * aTwinkle.y + aTwinkle.x) * 0.5 + 0.5;
     float flicker = sin(uTime * aTwinkle.y * 2.7 + aTwinkle.x * 3.1) * 0.5 + 0.5;
-    float twinkle = mix(0.55, 1.15, pulse * 0.75 + flicker * 0.25);
+    float twinkle = mix(0.6, 1.1, pulse * 0.75 + flicker * 0.25);
     vColor = aColor * twinkle;
     gl_PointSize = aSize * uPixelRatio * (0.85 + 0.3 * pulse);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -122,48 +131,43 @@ export const starFragment = /* glsl */ `
   varying vec3 vColor;
   void main() {
     vec2 c = gl_PointCoord * 2.0 - 1.0;
-    float glow = exp(-dot(c, c) * 5.5);
+    float glow = exp(-dot(c, c) * 4.5);
     float spikes = exp(-abs(c.x) * 18.0) * exp(-abs(c.y) * 2.6) + exp(-abs(c.y) * 18.0) * exp(-abs(c.x) * 2.6);
-    gl_FragColor = vec4(vColor * (glow + spikes * 0.35), 1.0);
+    gl_FragColor = vec4(vColor * (glow + spikes * 0.25), 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
 `;
 
-export const meteorVertex = /* glsl */ `
-  attribute float aMeteor;
-  attribute vec2 aCorner;
-  uniform vec3 uHead[METEOR_COUNT];
-  uniform vec3 uTail[METEOR_COUNT];
-  uniform float uAlpha[METEOR_COUNT];
-  uniform vec2 uResolution;
-  varying float vAlong;
-  varying float vSide;
-  varying float vAlpha;
+export const particleVertex = /* glsl */ `
+  attribute float aSize;
+  attribute vec3 aSeed;
+  attribute vec3 aColor;
+  uniform float uTime;
+  uniform float uPixelRatio;
+  varying vec3 vColor;
+  varying float vFade;
   void main() {
-    int index = int(aMeteor);
-    vec4 head = projectionMatrix * modelViewMatrix * vec4(uHead[index], 1.0);
-    vec4 tail = projectionMatrix * modelViewMatrix * vec4(uTail[index], 1.0);
-    vAlong = aCorner.y;
-    vSide = aCorner.x;
-    vAlpha = uAlpha[index];
-    if (head.w <= 0.0 || tail.w <= 0.0 || vAlpha <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-    vec2 streak = (head.xy / head.w - tail.xy / tail.w) * uResolution;
-    vec2 normal = length(streak) > 0.001 ? normalize(vec2(-streak.y, streak.x)) : vec2(0.0, 1.0);
-    vec4 point = mix(tail, head, aCorner.y);
-    point.xy += normal * aCorner.x * mix(0.4, 2.2, aCorner.y) * 2.0 / uResolution * point.w;
-    gl_Position = point;
+    vec3 drifted = position + vec3(
+      sin(uTime * 0.10 + aSeed.x),
+      sin(uTime * 0.07 + aSeed.y),
+      cos(uTime * 0.08 + aSeed.z)) * 0.7;
+    vec4 view = modelViewMatrix * vec4(drifted, 1.0);
+    float pulse = 0.65 + 0.35 * sin(uTime * 0.5 + aSeed.x * 3.0);
+    vColor = aColor * pulse;
+    vFade = 1.0 - smoothstep(12.0, 30.0, -view.z);
+    gl_PointSize = aSize * uPixelRatio * (18.0 / max(-view.z, 1.0));
+    gl_Position = projectionMatrix * view;
   }
 `;
 
-export const meteorFragment = /* glsl */ `
-  varying float vAlong;
-  varying float vSide;
-  varying float vAlpha;
+export const particleFragment = /* glsl */ `
+  varying vec3 vColor;
+  varying float vFade;
   void main() {
-    float fade = vAlpha * vAlong * vAlong * (1.0 - vSide * vSide);
-    vec3 color = mix(vec3(0.45, 0.62, 1.0), vec3(1.0, 0.97, 0.9), vAlong * vAlong);
-    gl_FragColor = vec4(color * fade * 2.4, 1.0);
+    vec2 c = gl_PointCoord * 2.0 - 1.0;
+    float glow = exp(-dot(c, c) * 4.0);
+    gl_FragColor = vec4(vColor * glow, glow * vFade * 0.5);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -185,8 +189,8 @@ export const planetVertex = /* glsl */ `
 const clouds = /* glsl */ `
   float cloudDensity(vec3 p, float time) {
     float swirl = snoise(p * 1.3 + vec3(0.0, time * 0.004, 0.0)) * 0.6;
-    vec3 q = p * 2.6 + vec3(time * 0.01, swirl, -time * 0.006);
-    return smoothstep(0.04, 0.58, fbm(q, 5) + 0.12 * (1.0 - abs(p.y)));
+    vec3 q = p * 2.2 + vec3(time * 0.01, swirl, -time * 0.006);
+    return smoothstep(0.0, 0.5, fbm(q, 4) + 0.16 * (1.0 - abs(p.y)));
   }
 `;
 
@@ -203,28 +207,30 @@ export const earthFragment = /* glsl */ `
     vec3 n = normalize(vWorldNormal);
     vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
     float sunHeight = dot(n, uSun);
-    float daylight = smoothstep(-0.065, 0.12, sunHeight);
+    float daylight = smoothstep(-0.10, 0.18, sunHeight);
     float diffuse = max(sunHeight, 0.0);
 
-    float height = fbm(p * 1.4, 6) + 0.18 * snoise(p * 0.7);
-    float land = smoothstep(0.03, 0.07, height);
-    float polar = smoothstep(0.8, 0.88, abs(p.y) + 0.05 * snoise(p * 7.0));
-    float arid = smoothstep(0.1, 0.5, snoise(p * 2.3 + 4.0) * 0.5 + 0.5 - abs(abs(p.y) - 0.38) * 1.6);
-    vec3 ocean = mix(vec3(0.006, 0.03, 0.09), vec3(0.025, 0.13, 0.24), smoothstep(-0.25, 0.04, height));
-    vec3 ground = mix(vec3(0.06, 0.14, 0.05), vec3(0.4, 0.31, 0.18), arid);
-    ground = mix(ground, vec3(0.32, 0.3, 0.27), smoothstep(0.22, 0.4, height));
-    vec3 albedo = mix(mix(ocean, ground, land), vec3(0.85, 0.9, 0.95), polar);
+    float height = fbm(p * 1.35, 5) + 0.16 * snoise(p * 0.7);
+    float land = smoothstep(0.02, 0.085, height);
+    float coast = smoothstep(-0.02, 0.02, height) * (1.0 - land);
+    float polar = smoothstep(0.82, 0.9, abs(p.y) + 0.04 * snoise(p * 6.0));
+    float arid = smoothstep(0.15, 0.55, snoise(p * 2.1 + 4.0) * 0.5 + 0.5 - abs(abs(p.y) - 0.36) * 1.5);
+    vec3 ocean = mix(vec3(0.010, 0.055, 0.16), vec3(0.030, 0.14, 0.30), smoothstep(-0.28, 0.02, height));
+    ocean = mix(ocean, vec3(0.06, 0.28, 0.38), coast * 0.7);
+    vec3 ground = mix(vec3(0.08, 0.20, 0.10), vec3(0.36, 0.30, 0.20), arid);
+    ground = mix(ground, vec3(0.26, 0.26, 0.24), smoothstep(0.24, 0.42, height));
+    vec3 albedo = mix(mix(ocean, ground, land), vec3(0.86, 0.91, 0.97), polar);
 
     float shadow = cloudDensity(p, uTime);
-    vec3 color = albedo * (0.012 + daylight * (0.075 + diffuse * 1.8));
-    color *= 1.0 - shadow * daylight * 0.25;
+    vec3 day = albedo * (0.18 + diffuse * 1.05);
+    vec3 night = albedo * vec3(0.08, 0.12, 0.28) * 0.5;
+    vec3 color = mix(night, day, daylight);
+    color *= 1.0 - shadow * daylight * 0.22;
     vec3 halfway = normalize(uSun + viewDirection);
-    float specular = pow(max(dot(n, halfway), 0.0), 95.0);
-    color += vec3(1.0, 0.93, 0.8) * specular * (1.0 - land) * (1.0 - polar) * daylight * 0.35;
-    float cities = smoothstep(0.55, 0.85, snoise(p * 38.0) * 0.5 + 0.5) * smoothstep(0.2, 0.7, snoise(p * 6.0) * 0.5 + 0.5);
-    color += vec3(1.0, 0.68, 0.32) * cities * land * (1.0 - polar) * (1.0 - smoothstep(-0.2, 0.02, sunHeight)) * (1.0 - shadow * 0.7) * 0.5;
-    float limb = pow(1.0 - max(dot(n, viewDirection), 0.0), 4.0);
-    color += vec3(0.025, 0.12, 0.27) * limb * daylight * 0.32;
+    float specular = pow(max(dot(n, halfway), 0.0), 60.0);
+    color += vec3(0.9, 0.95, 1.0) * specular * (1.0 - land) * (1.0 - polar) * daylight * 0.22;
+    float limb = pow(1.0 - max(dot(n, viewDirection), 0.0), 3.0);
+    color += vec3(0.08, 0.26, 0.55) * limb * (0.25 + daylight * 0.45);
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -242,9 +248,10 @@ export const cloudFragment = /* glsl */ `
   void main() {
     float density = cloudDensity(normalize(vObjectNormal), uTime);
     float sunHeight = dot(normalize(vWorldNormal), uSun);
-    float day = smoothstep(-0.05, 0.1, sunHeight);
-    vec3 color = vec3(0.82, 0.9, 1.0) * (0.009 + day * (0.16 + max(sunHeight, 0.0) * 1.5));
-    gl_FragColor = vec4(color, density * 0.9);
+    float day = smoothstep(-0.12, 0.16, sunHeight);
+    vec3 tint = mix(vec3(0.14, 0.20, 0.40), vec3(0.92, 0.95, 1.0), day);
+    vec3 color = tint * (0.08 + day * (0.28 + max(sunHeight, 0.0) * 1.1));
+    gl_FragColor = vec4(color, density * 0.92);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -259,12 +266,12 @@ export const atmosphereFragment = /* glsl */ `
     vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
     float facing = max(dot(n, viewDirection), 0.0);
     float sunHeight = dot(n, uSun);
-    float day = smoothstep(-0.18, 0.3, sunHeight);
-    float rim = pow(1.0 - facing, 6.0);
-    float twilight = (1.0 - smoothstep(0.0, 0.22, abs(sunHeight))) * 0.3;
-    vec3 blue = mix(vec3(0.055, 0.27, 0.7), vec3(0.24, 0.57, 1.0), facing);
-    vec3 color = mix(blue, vec3(0.8, 0.3, 0.1), twilight);
-    gl_FragColor = vec4(color, rim * day * 0.26);
+    float day = smoothstep(-0.25, 0.35, sunHeight);
+    float rim = pow(1.0 - facing, 3.2);
+    float twilight = (1.0 - smoothstep(0.0, 0.3, abs(sunHeight))) * 0.25;
+    vec3 blue = mix(vec3(0.10, 0.34, 0.86), vec3(0.36, 0.68, 1.0), facing);
+    vec3 color = mix(blue, vec3(0.45, 0.55, 0.95), twilight);
+    gl_FragColor = vec4(color, rim * (0.16 + day * 0.34));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }

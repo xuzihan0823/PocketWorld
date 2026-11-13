@@ -16,16 +16,16 @@
 
 ```text
 PocketWorld/
-├── public/models/            # 运行时模型（.glb）与来源清单
-├── art/                      # 可编辑资产源文件和制作记录
+├── assets/                   # 统一素材目录（运行时模型 assets/public/ 与游戏素材 assets/games/）
 ├── scripts/
-│   ├── blender/              # 模型制作、导出与验证
 │   └── test.mjs              # 测试准备与执行入口
+├── skills/                   # 项目协作与 Three.js 开发技能集
 ├── src/
 │   ├── main.tsx              # 页面启动与独立游戏入口选择
 │   ├── App.tsx               # 应用编排、全局快捷键与本地音乐导入
 │   ├── scene/
 │   │   ├── orbital/          # 当前轨道居住舱的场景编排与模型
+│   │   │   ├── journal/      # 日记书页、编辑和存档
 │   │   │   ├── library/      # 书柜、导入、阅读与角色取还书动作
 │   │   │   ├── schedule/     # 日程存档、同步、纸页、玻璃贴纸与测试
 │   │   │   ├── media/        # 电脑屏幕、卡带、唱片机、键盘与测试
@@ -37,13 +37,13 @@ PocketWorld/
 │   │   ├── mario/            # 奶娃滑雪大冒险，保留 mario 卡带标识
 │   │   └── shooter/          # 团团魔法录，保留 shooter 卡带标识
 │   └── types/                # 卡带、交互物品与世界接口
-├── docs/                     # 跨模块验收文档
-├── skills/                   # 随仓库分发的 Agent 技能包
 ├── AGENTS.md                 # 工程规范与协作流程（CLAUDE.md 引入同一份）
 ├── SPEC.md                   # 当前生效的产品行为与集成契约
 ├── PRODUCT.md                # 产品定位与设计语境
 └── README.md
 ```
+
+> **仓库约束**：所有素材统一放在 `assets/` 下；测试截图、录屏、预览 HTML 等展示或测试残留文件严禁存放在仓库中或提交至 Git（详见 `AGENTS.md` 第 3.1 节）。
 
 新增日程或媒体能力时，优先在对应功能目录内维护实现和回归测试。`OrbitalScene.tsx` 负责组合场景，家具通过功能组件或上下文接入业务。场景细节见 [场景模块说明](src/scene/README.md)。
 
