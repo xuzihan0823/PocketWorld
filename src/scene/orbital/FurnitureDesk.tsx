@@ -33,7 +33,8 @@ function FurnitureComputer({ world }: { world: WorldModelProps }) {
 export function FurnitureDesk({ world }: { world: WorldModelProps }) {
   const drawer = world.objects['desk-drawer'] ?? CLOSED_OBJECT;
   return <group name="Furniture_Workbench">
-    <SuppliedAsset name="desk.parts" part="body" size={[3.8, 1.12, 1.35]} fit="contact" position={[1.05, 0, -2.35]} fallback={<>    <SoftBox dims={[3.8, 0.12, 1.35]} position={[1.05, 1.06, -2.35]} color={C.wood} radius={0.045} />
+    {/* Fit the desk on its own bounds so trimming the drawer does not move the tabletop. */}
+    <SuppliedAsset name="desk.parts" part="body" partBounds size={[3.8, 1.12, 1.2755]} fit="contact" position={[1.05, 0, -2.3873]} fallback={<>    <SoftBox dims={[3.8, 0.12, 1.35]} position={[1.05, 1.06, -2.35]} color={C.wood} radius={0.045} />
     <SoftBox dims={[3.62, 0.07, 0.055]} position={[1.05, 1.155, -2.98]} color={C.edge} radius={0.012} />
     {[-0.67, 2.77].flatMap(x => [-2.84, -1.86].map(z => <SoftBox key={`${x}/${z}`} dims={[0.09, 1, 0.09]} position={[x, 0.5, z]} color={C.ink} radius={0.018} />))}
     <SoftBox dims={[3.45, 0.09, 0.08]} position={[1.05, 0.23, -2.82]} color={C.ink} />
@@ -46,17 +47,15 @@ export function FurnitureDesk({ world }: { world: WorldModelProps }) {
 </>} />
     <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · 点击 / E 推回' : '靠近抽屉 · 点击 / E 后退拉开'} world={world}>
       <FurnitureMotion mode="position" axis="z" target={drawer.open ? DRAWER_TRAVEL : 0} reducedMotion={world.reducedMotion}>
-        {/* Keep the open drawer's lining; generated source only supplies its closed outer shell. */}
-        <SoftBox dims={[1.02, .035, .88]} position={[.35, .725, -2.15]} color="#bc996b" />
-        {[-.145, .845].map(x => <SoftBox key={x} dims={[.035, .21, .87]} position={[x, .83, -2.15]} color="#bd9668" />)}
-        <SoftBox dims={[1.02, .21, .035]} position={[.35, .83, -2.575]} color="#bd9668" />
-        <SuppliedAsset name="desk.parts" part="drawer" partBounds size={[1.08, .28, .96]} fit="contact" position={[.35, .71, -2.15]} fallback={<>        <SoftBox dims={[1.08, 0.28, 0.065]} position={[0.35, 0.85, -1.69]} color={C.wood} radius={0.018} />
-        <SoftBox dims={[1.02, 0.035, 0.88]} position={[0.35, 0.725, -2.15]} color="#bc996b" />
-        {[-0.145, 0.845].map(x => <SoftBox key={x} dims={[0.035, 0.21, 0.87]} position={[x, 0.83, -2.15]} color="#bd9668" />)}
-        <SoftBox dims={[1.02, 0.21, 0.035]} position={[0.35, 0.83, -2.575]} color="#bd9668" />
-        <Tube points={[[0.19, 0.87, -1.65], [0.19, 0.87, -1.59], [0.51, 0.87, -1.59], [0.51, 0.87, -1.65]]} radius={0.015} color={C.brass} />
-</>} />
-        <SoftBox dims={[0.31, 0.025, 0.4]} position={[0.19, 0.76, -2.12]} color={C.paper} />
+        <SoftBox dims={[1.008, .034, .83]} position={[.35, .765, -2.175]} color={C.wood} radius={.006} />
+        {[-.149, .849].map(x => <SoftBox key={x} dims={[.036, .202, .825]} position={[x, .858, -2.1775]} color={C.wood} radius={.007} />)}
+        <SoftBox dims={[1.008, .202, .036]} position={[.35, .858, -2.572]} color={C.wood} radius={.007} />
+        {/* The solid front joins the tray to the textured panel and doubles as its fallback. */}
+        <SoftBox dims={[1.056, .234, .068]} position={[.35, .876, -1.753]} color={C.edge} radius={.01} />
+        <SuppliedAsset name="desk.parts" part="drawer" partBounds size={[1.08, .248, .13]} fit="contact" position={[.35, .752, -1.685]} fallback={
+          <Tube points={[[.19, .876, -1.725], [.19, .876, -1.65], [.51, .876, -1.65], [.51, .876, -1.725]]} radius={.015} color={C.brass} />
+        } />
+        <SoftBox dims={[.31, .025, .4]} position={[.19, .7945, -2.12]} color={C.paper} />
       </FurnitureMotion>
     </ObjectHandle>
     <FurnitureComputer world={world} />
