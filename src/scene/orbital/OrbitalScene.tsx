@@ -73,7 +73,7 @@ function CameraRig(props: OrbitalSceneProps) {
         if (props.library?.cameraView === 'side') offset.set(2.5, 1.1, -.35);
       }
       if (props.focusedObject?.startsWith('schedule')) {
-        offset.multiplyScalar(Math.max(1, (props.focusedObject === 'schedule' ? 1.05 : 0.62) / (size.width / size.height)));
+        offset.multiplyScalar(Math.max(1, (props.focusedObject === 'schedule' ? 1.2 : 0.62) / (size.width / size.height)));
         if (narrow && props.focusedObject === 'schedule') target.current.x = origin.x + 0.69;
       }
       if (props.focusedObject === 'book-01' && narrow) { const close = props.library?.cameraView === 'close'; offset.multiplyScalar(close ? 1.9 : 1.6); target.current.y -= close ? .40 : .55; }

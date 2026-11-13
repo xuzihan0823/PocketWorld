@@ -139,6 +139,7 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
   };
   const blocked = !ready || !!flight || !settled;
   const editor = focused && !flight && settled && <Html transform={!narrow} center={narrow} position={bookView ? PAGE_LOCAL_POSITION : [GLASS_POSITION[0], GLASS_POSITION[1], GLASS_POSITION[2] + 0.018]}
+      calculatePosition={narrow ? (_object, _camera, viewport) => [viewport.width / 2, viewport.height * 0.48] : undefined}
       rotation={bookView ? [-Math.PI / 2, 0, 0] : [0, 0, 0]} distanceFactor={narrow ? undefined : bookView ? PAGE_DISTANCE_FACTOR : 0.62} zIndexRange={[24, 21]}>
       <article ref={article} tabIndex={-1} className={`schedule-sheet ${glassView ? 'is-posted' : 'is-book'}`} aria-label={bookView ? '日程书当前页' : '玻璃上的日程'} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={resetDrag} onLostPointerCapture={resetDrag} onWheel={e => e.stopPropagation()}>
         {bookView && <div className="schedule-paper-drag" aria-hidden="true" />}
