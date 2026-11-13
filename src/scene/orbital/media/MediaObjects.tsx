@@ -20,7 +20,11 @@ const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridg
 const gameNames: Record<GameId, string> = { mario: '奶娃滑雪大冒险', shooter: '团团魔法录' };
 const gameColors: Record<GameId, string> = { mario: '#cb795a', shooter: '#8b72b3' };
 // Six accessible records per shelf; the physical end tabs turn through the collection.
-const discPosition = (index: number): Point => [-0.74 + (index % 6) * 0.2, 1.37, -2.86];
+// Records lean back in a stepped row (each 2 cm further forward) so they never share a plane.
+const RACK_X = -0.2, RACK_Z = -2.83, DISC_LEAN = -0.12;
+const discPosition = (index: number): Point => [-0.58 + (index % 6) * 0.155, 1.36, -2.88 + (index % 6) * 0.02];
+// The blank import record lies flat on the desk between the turntable and the cartridges.
+const IMPORT_DISC: Point = [0.3, 1.128, -2.3];
 
 function Label({ children, position, width = 180 }: { children: React.ReactNode; position: Point; width?: number }) {
   return <Html center position={position} distanceFactor={4} style={{ pointerEvents: 'none', width, textAlign: 'center', color: '#f3e6c9', font: '12px monospace', textShadow: '0 1px 3px #242723', userSelect: 'none', overflowWrap: 'anywhere' }}><span>{children}</span></Html>;
@@ -270,19 +274,19 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
         <SoftBox dims={[0.05, 0.03, 0.065]} position={[-0.07, 0.035, 0.245]} color="#54675d" />
       </ObjectHandle>
     </group>
-    <SoftBox position={[-0.24, 1.16, -2.86]} dims={[1.28, 0.06, 0.23]} color="#765b43" />
+    <SoftBox position={[RACK_X, 1.16, RACK_Z]} dims={[1.24, 0.06, 0.23]} color="#765b43" />
     {props.discs.slice(visiblePage * 6, visiblePage * 6 + 6).map((disc, index) => <ObjectHandle key={disc.id} id={`music-disc-${disc.id}`} action="insert" hint={`拿取《${disc.title}》${disc.isUserUploaded ? ' · 我的唱片' : ''}`} world={world} drag="y" payload={{ itemId: disc.id }} position={discPosition(index)}>
-      {transfer?.disc?.id !== disc.id && <Disc colors={disc.discThemeColor} />}
+      {transfer?.disc?.id !== disc.id && <group rotation={[DISC_LEAN, 0, 0]}><Disc colors={disc.discThemeColor} /></group>}
     </ObjectHandle>)}
-    {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pageCount > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[direction < 0 ? -0.87 : 0.4, 1.31, -2.87]}>
+    {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pageCount > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[RACK_X + direction * 0.6, 1.31, RACK_Z - 0.01]}>
       <SoftBox dims={[0.035, 0.29, 0.21]} color="#765b43" />
     </ObjectHandle>)}
-    <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={[0.43, 1.35, -2.26]} onClick={event => { event.stopPropagation(); if (!sceneVisible || event.delta >= 9) return;
+    <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={IMPORT_DISC} onClick={event => { event.stopPropagation(); if (!sceneVisible || event.delta >= 9) return;
       const action: WorldAction = { sceneId: props.sceneId, objectId: 'music-import', kind: 'insert' };
-      const ready = !props.onApproach || props.onApproach([0.43, 1.35, -2.26], action, () => {});
+      const ready = !props.onApproach || props.onApproach(IMPORT_DISC, action, () => {});
       if (ready) props.onImportMusic();
       else props.onHover('music-import', '走近后，再点击空白唱片选择音乐'); }}>
-      <Disc colors={['#efe4c7', '#c8a879']} radius={0.145} />
+      <group rotation={[-Math.PI / 2, 0, 0]}><Disc colors={['#efe4c7', '#c8a879']} radius={0.145} /></group>
     </ObjectHandle>
     <group position={[2.57, 1.4, -2.55]}>
       <SoftBox dims={[0.38, 0.56, 0.37]} color="#886448" />
