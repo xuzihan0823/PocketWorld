@@ -1,30 +1,14 @@
 import * as THREE from 'three';
 import type { ResidentRig } from '../ResidentModel';
 import type { LibraryFlow } from './useLibrary';
-import { bookPose, bookStand, smooth, toySupport, leafProgress } from './bookMotion';
+import { bookPose, bookStand, smooth, leafProgress } from './bookMotion';
 import { shelfOrigin, slotFor } from './catalog';
 import { reachPalm as reachArm, resetArms } from './armPose';
-const point = new THREE.Vector3(), restToy = new THREE.Vector3(), parkedToy = new THREE.Vector3(), toy = new THREE.Vector3(), parentRotation = new THREE.Quaternion();
+const point = new THREE.Vector3();
 export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: string, flow: LibraryFlow, dt: number) {
   const phase = flow.phase, t = smooth(flow.progress), originX = scene === 'observatory' ? 14 : 0;
   rig.mesh.updateWorldMatrix(true, true);
-  rig.mesh.localToWorld(restToy.copy(rig.toyRest)); parkedToy.set(...toySupport(scene)); parkedToy.x += originX;
-  const parked = !['idle', 'prepare', 'approach'].includes(phase);
-  toy.copy(parked ? parkedToy : restToy);
-  if (phase === 'park') toy.lerpVectors(restToy, parkedToy, t);
-  if (phase === 'unpark') toy.lerpVectors(parkedToy, restToy, t);
-  rig.mesh.worldToLocal(rig.bunny.position.copy(toy));
-  rig.mesh.getWorldQuaternion(parentRotation);
-  rig.bunny.quaternion.copy(parentRotation).invert();
-  // The toy keeps its original orientation while walking, and rests upright on its stool.
-  if (['idle', 'prepare', 'approach'].includes(phase)) rig.bunny.quaternion.identity();
-  else if (phase === 'park') rig.bunny.quaternion.slerpQuaternions(new THREE.Quaternion(), parentRotation.clone().invert(), t);
-  else if (phase === 'unpark') rig.bunny.quaternion.slerpQuaternions(parentRotation.clone().invert(), new THREE.Quaternion(), t);
-  if (phase === 'idle' || phase === 'prepare' || phase === 'approach') { resetArms(rig, 1 - Math.exp(-dt * 9)); return; }
-  if (['park', 'unpark'].includes(phase)) {
-    rig.bunny.localToWorld(point.copy(rig.toyGrip)); reachArm(rig, rig.arms[1], point, 1); resetFreeArm(rig, dt); return;
-  }
-  if (!flow.book || ['catalog', 'form', 'recenter', 'shelving', 'leaving'].includes(phase)) { resetArms(rig, 1 - Math.exp(-dt * 9)); return; }
+  if (!flow.book || ['catalog', 'form', 'recenter', 'shelving'].includes(phase)) { resetArms(rig, 1 - Math.exp(-dt * 9)); return; }
   const book = bookPose(scene, flow.book, flow);
   const supportOrientation = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, -1), new THREE.Vector3(0, 1, 0))).premultiply(book.quaternion);
   const contact = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyQuaternion(book.quaternion).add(book.position).add(new THREE.Vector3(originX, 0, 0));
@@ -56,7 +40,6 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   }
   rig.neck.rotation.x = THREE.MathUtils.damp(rig.neck.rotation.x, .035, 6, dt);
 }
-function resetFreeArm(rig: ResidentRig, dt: number) { const a = rig.arms[0], identity = new THREE.Quaternion(), t = 1 - Math.exp(-dt * 9); a.upper.quaternion.slerp(identity, t); a.forearm.quaternion.slerp(identity, t); }
 export function libraryCrouch(flow: LibraryFlow) {
   if (!flow.book || slotFor(flow.book).row !== 0) return 0;
   const t = smooth(flow.progress);

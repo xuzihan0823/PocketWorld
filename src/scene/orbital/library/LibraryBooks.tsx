@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { WorldModelProps } from '../../../types/world';
 import { ObjectHandle } from '../ObjectHandle';
 import { SoftBox } from '../Primitives';
-import { bookPose, toySupport, leafProgress } from './bookMotion';
+import { bookPose, leafProgress } from './bookMotion';
 import { type LibraryBook } from './catalog';
 function BookEntity({ world, book }: { world: WorldModelProps; book: LibraryBook }) {
   const group = useRef<THREE.Group>(null), cover = useRef<THREE.Group>(null), page = useRef<THREE.Group>(null), leftPages = useRef<THREE.Group>(null);
@@ -43,12 +43,7 @@ function BookEntity({ world, book }: { world: WorldModelProps; book: LibraryBook
   </ObjectHandle>;
 }
 export function LibraryBooks({ world }: { world: WorldModelProps }) {
-  const support = toySupport(world.sceneId);
   return <>
     {world.library?.data.books.map(book => <BookEntity key={book.id} book={book} world={world} />)}
-    <group name="LibraryToyStool" position={[support[0], 0, support[2]]}>
-      <SoftBox dims={[.20, .045, .20]} position={[0, .9775, 0]} color="#8b6851" radius={.015} />
-      {[-.065, .065].flatMap(x => [-.065, .065].map(z => <SoftBox key={`${x}/${z}`} dims={[.025, .955, .025]} position={[x, .4775, z]} color="#6b5340" radius={.006} />))}
-    </group>
   </>;
 }

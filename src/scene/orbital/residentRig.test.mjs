@@ -16,7 +16,7 @@ const { gltf, mesh: reference, sample } = await load(new URL('../../../assets/pu
 
 function instance() {
   const asset = clone(gltf.scene);
-  const rig = createResidentRig(asset, gltf.animations[0], new THREE.Group());
+  const rig = createResidentRig(asset, gltf.animations[0]);
   const mesh = asset.getObjectByProperty('isSkinnedMesh', true);
   return { asset, rig, mesh };
 }
@@ -24,7 +24,7 @@ function instance() {
 test('the neutral stance puts both soles on the floor with separate foot positions', () => {
   const { asset, rig, mesh } = instance();
   try {
-    rig.applyPose(0, 0, false);
+    rig.applyPose(0, 0);
     rig.mesh.updateMatrixWorld(true);
     const left = asset.getObjectByName('mixamorigLeftFoot').getWorldPosition(new THREE.Vector3());
     const right = asset.getObjectByName('mixamorigRightFoot').getWorldPosition(new THREE.Vector3());
@@ -50,7 +50,7 @@ test('room uses the authored walk at full weight and does not share bone poses b
   const otherHips = b.asset.getObjectByName('mixamorigHips').matrix.clone();
   try {
     for (const time of [0, .137, .489, .748, .999]) {
-      a.rig.applyPose(time, 1, true);
+      a.rig.applyPose(time, 1);
       a.rig.mesh.updateMatrixWorld(true);
       sample(time);
       for (let i = 0; i < reference.skeleton.bones.length; i++) {
@@ -72,14 +72,14 @@ test('interaction controls follow the skinned joints in room units and restore t
     rig.legs[0].shin.rotation.x = 1.4;
     rig.arms[1].upper.rotation.set(-.55, .28, -.35);
     rig.arms[1].forearm.rotation.x = -.6;
-    rig.applyPose(.4, 0, true);
+    rig.applyPose(.4, 0);
     assert.equal(asset.scale.x, RESIDENT_SCALE);
     for (const [control, name] of [[rig.legs[0].foot, 'RightFoot'], [rig.arms[1].hand, 'LeftHand']]) {
       const actual = asset.getObjectByName('mixamorig' + name);
       assert(control.getWorldPosition(new THREE.Vector3()).distanceTo(actual.getWorldPosition(new THREE.Vector3())) < 1e-5, name);
     }
     const pose = asset.getObjectByName('mixamorigLeftArm').quaternion.clone();
-    rig.applyPose(.4, 1, false);
+    rig.applyPose(.4, 1);
     assert(pose.angleTo(asset.getObjectByName('mixamorigLeftArm').quaternion) > .1);
   } finally { rig.dispose(); }
 });

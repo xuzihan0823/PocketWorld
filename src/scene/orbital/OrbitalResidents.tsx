@@ -397,7 +397,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     const library = p.library, flow = library?.flow.current;
     const libraryActive = !!flow && flow.phase !== 'idle';
-    const libraryWalking = !!flow && ['approach', 'align', 'recenter', 'leaving'].includes(flow.phase);
+    const libraryWalking = !!flow && ['approach', 'align', 'recenter'].includes(flow.phase);
     const libraryTarget = flow ? residentLibraryTarget(p.sceneId, flow) : null;
     if (libraryWalking && libraryTarget) {
       const key = `${flow!.phase}/${flow!.book?.id ?? ''}`;
@@ -663,8 +663,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       });
     }
     if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
-    if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current),
-      !flow || ['idle', 'prepare', 'approach'].includes(flow.phase));
+    if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current));
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.grounded = s.lift === 0;

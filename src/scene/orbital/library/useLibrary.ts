@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorldAction, WorldSceneId } from '../../../types/world';
 import { BOOK_SLOTS, CAPACITY, freshLibrary, LIBRARY_KEY, makeUserBook, mutateLibrary, readLibrary, type LibraryBook, type TextPage } from './catalog';
-export type LibraryPhase = 'idle' | 'prepare' | 'park' | 'unpark' | 'approach' | 'catalog' | 'align' | 'reach' | 'extract' | 'carry' | 'open' | 'reading' | 'turn' | 'close' | 'return-carry' | 'insert' | 'release' | 'recenter' | 'form' | 'shelving' | 'leaving';
+export type LibraryPhase = 'idle' | 'prepare' | 'approach' | 'catalog' | 'align' | 'reach' | 'extract' | 'carry' | 'open' | 'reading' | 'turn' | 'close' | 'return-carry' | 'insert' | 'release' | 'recenter' | 'form' | 'shelving';
 export interface LibraryFlow { phase: LibraryPhase; book: LibraryBook | null; page: number; direction: number; targetPage: number; progress: number; pages: TextPage[]; nextId: string | null; closeRequested: boolean; exit: boolean; pending: WorldAction | null }
 const initialFlow = (): LibraryFlow => ({ phase: 'idle', book: null, page: 0, targetPage: 0, direction: 1, progress: 0, pages: [], nextId: null, closeRequested: false, exit: false, pending: null });
-const times: Partial<Record<LibraryPhase, number>> = { prepare: .9, park: 1.1, unpark: 1.1, reach: .65, extract: .7, carry: 1.05, open: .75, turn: .8, close: .75, 'return-carry': 1.05, insert: .7, release: .6, shelving: .6 };
+const times: Partial<Record<LibraryPhase, number>> = { prepare: .9, reach: .65, extract: .7, carry: 1.05, open: .75, turn: .8, close: .75, 'return-carry': 1.05, insert: .7, release: .6, shelving: .6 };
 export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: boolean; onAction: (action: WorldAction) => void; onReturn: () => void; error: (message: string) => void }) {
   const [cameraView, setCameraView] = useState<'shelf' | 'close' | 'side'>('shelf');
   const [data, setData] = useState(() => { try { return readLibrary(localStorage); } catch { return freshLibrary(); } });
@@ -41,10 +41,8 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
     const s = flow.current;
     if (saving.current || s.phase === 'form') return;
     if (s.phase === 'reading') update({ phase: 'close' });
-    else if (s.phase === 'catalog') update({ phase: 'leaving' });
-    else if (s.phase === 'approach' || s.phase === 'prepare') finishExit();
-    else if (s.phase !== 'idle' && s.phase !== 'turn' && s.phase !== 'leaving') s.closeRequested = true;
-    else if (s.phase === 'turn') s.closeRequested = true;
+    else if (s.phase === 'catalog' || s.phase === 'approach' || s.phase === 'prepare') finishExit();
+    else if (s.phase !== 'idle') s.closeRequested = true;
   }, [update, finishExit]);
   const dispatch = useCallback((action: WorldAction) => {
     if (action.sceneId !== live.current.sceneId) return;
@@ -56,14 +54,14 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
       if (s.phase === 'form') return;
       s.pending = action; s.exit = true;
       if (s.phase === 'reading') update({ phase: 'close', pending: action, exit: true });
-      else if (s.phase === 'catalog') update({ phase: 'leaving', pending: action, exit: true });
+      else if (s.phase === 'catalog') finishExit();
       return;
     }
     if (action.objectId === 'book-01') {
       update({ ...initialFlow(), phase: 'prepare', nextId: action.payload?.itemId ?? null });
       live.current.onAction({ ...action, kind: 'inspect', payload: undefined });
     } else live.current.onAction(action);
-  }, [choose, update]);
+  }, [choose, finishExit, update]);
   const commitAnchor = useCallback(async () => {
     const s = flow.current; if (!s.book || !s.pages[s.page]) return;
     const id = s.book.id, anchor = s.pages[s.page].start;
@@ -92,8 +90,6 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
     if (s.progress < 1) return;
     switch (s.phase) {
       case 'prepare': if (s.exit) finishExit(); else update({ phase: 'approach' }); break;
-      case 'park': update({ phase: 'recenter' }); break;
-      case 'unpark': finishExit(); break;
       case 'reach': update({ phase: 'extract' }); break;
       case 'extract': update({ phase: 'carry' }); break;
       case 'carry': update({ phase: 'open' }); break;
@@ -108,16 +104,14 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
       }
       case 'shelving': update({ phase: 'catalog', book: null }); break;
     }
-  }, [commitAnchor, update, choose, finishExit]);
+  }, [commitAnchor, update, finishExit]);
   const arrived = useCallback((success = true) => {
     const s = flow.current;
     if (!success) { live.current.error('无法安全到达书柜，请先移开挡路的椅子后重试。'); if (s.phase === 'approach') finishExit(); else update({ phase: 'catalog', book: null, pending: null, exit: false }); return; }
-    if (s.phase === 'approach') { update({ phase: s.exit ? 'unpark' : 'park' }); }
-    else if (s.phase === 'recenter') {
-      if (s.exit) update({ phase: 'leaving' });
+    if (s.phase === 'approach' || s.phase === 'recenter') {
+      if (s.exit) finishExit();
       else { const id = s.nextId; update({ phase: 'catalog', nextId: null }); if (id) choose(id); }
     } else if (s.phase === 'align') update({ phase: 'reach' });
-    else if (s.phase === 'leaving') update({ phase: 'unpark' });
   }, [choose, finishExit, update]);
   const add = useCallback(async (title: string, author: string, text: string) => {
     if (flow.current.phase !== 'form' || saving.current) throw new Error('请在书柜添加表单中操作。');

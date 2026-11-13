@@ -43,7 +43,7 @@ function plantNeutralLeg([thigh, shin, foot]: THREE.Bone[], point: THREE.Vector3
   setWorldRotation(foot, sole);
 }
 
-export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip, toy: THREE.Group): ResidentRig {
+export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip): ResidentRig {
   const bones = new Map<string, THREE.Bone>();
   const skinned: THREE.SkinnedMesh[] = [];
   asset.traverse(object => {
@@ -149,23 +149,12 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const walkPose = neutral.map(({ joint }) => capture(joint));
   const axisX = new THREE.Vector3(1, 0, 0);
   const fold = new THREE.Quaternion();
-  const carryingHand = bone('LeftHand');
-  const handPalm = arms[1].palmOffset.clone().divideScalar(RESIDENT_SCALE)
-    .applyQuaternion(carryingHand.getWorldQuaternion(new THREE.Quaternion()).invert());
-  const toyGrip = new THREE.Vector3(-.052, .075, 0);
-  const toyRest = arms[1].restWrist.clone().add(arms[1].palmOffset).sub(toyGrip);
-  const toyPoint = new THREE.Vector3();
-  toy.position.copy(toyRest);
   asset.scale.setScalar(RESIDENT_SCALE);
-  mesh.add(asset, toy);
+  mesh.add(asset);
 
-  function applyPose(phase: number, walkWeight: number, holdToy: boolean) {
+  function applyPose(phase: number, walkWeight: number) {
     if (walkWeight === 1) sample(phase);
     else applyBlendedPose(phase, walkWeight);
-    if (holdToy) {
-      carryingHand.localToWorld(toyPoint.copy(handPalm));
-      toy.position.copy(mesh.worldToLocal(toyPoint)).sub(toyGrip);
-    }
   }
 
   function applyBlendedPose(phase: number, walkWeight: number) {
@@ -193,6 +182,6 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     });
   }
 
-  return { mesh, legs, arms, torso, neck, skirtFront, skirtBack, bunny: toy, toyRest, toyGrip, applyPose,
+  return { mesh, legs, arms, torso, neck, skirtFront, skirtBack, applyPose,
     dispose: () => { for (const object of skinned) object.skeleton.dispose(); } };
 }
