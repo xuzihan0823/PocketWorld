@@ -11,6 +11,9 @@ import { readingStand } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
+import { JOURNAL_STAND } from './journalLayout';
+import type { BoundBookControl } from './journal/bookControl';
+import { reachJournalPage, resetJournalPose } from './journal/residentPose';
 
 type Point = [number, number];
 type Box = [number, number, number, number];
@@ -23,8 +26,9 @@ type ResidentsProps = WorldModelProps & {
   drawerInteraction: React.MutableRefObject<DrawerInteraction | null>;
   onDrawerAction: (action: WorldAction) => void;
   interaction: React.MutableRefObject<NonNullable<WorldModelProps['onApproach']> | null>;
+  journal?: React.MutableRefObject<BoundBookControl>;
 };
-type Approach = { point: Point; action: WorldAction; perform: () => void; elapsed: number; chairTarget: Point | null };
+type Approach = { point: Point; action: WorldAction; perform: () => void; elapsed: number; chairTarget: Point | null; journalStand?: Point };
 const RADIUS = 0.23;
 const CAT: Point = [-0.95, 1.95];
 const clamp = THREE.MathUtils.clamp;
@@ -131,6 +135,7 @@ function route(start: Point, end: Point, boxes: Box[]): Point[] {
   return [];
 }
 function approachRoute(start: Point, point: Point, boxes: Box[], fixed?: Point): Point[] | null {
+  if (fixed && Math.hypot(start[0] - fixed[0], start[1] - fixed[1]) < .01) return [];
   if (!fixed && Math.hypot(start[0] - point[0], start[1] - point[1]) <= 1.15) return [];
   const targets: Point[] = fixed ? [fixed] : [];
   if (!fixed) for (const radius of [0.7, 0.9, 1.12]) for (let i = 0; i < 24; i++) {
@@ -168,6 +173,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   const drawerExtension = useRef(0);
   const approach = useRef<Approach | null>(null);
   const walkWeight = useRef(0), airborneMotion = useRef(0);
+  const journalPose = useRef(false);
   const libraryNav = useRef('');
   const touch = useRef<{ id: number; x: number; y: number; target: EventTarget | null } | null>(null);
   const petGesture = useRef(false);
@@ -237,8 +243,15 @@ export function OrbitalResidents(props: ResidentsProps) {
     const pose = CHAIR_POSES[p.sceneId];
     const fixed = task.action.objectId === 'chair' ? chairEntry(room, pose)
       : task.action.objectId === 'bed' ? [-1.48, 0.95] as Point
-      : task.action.objectId === 'desk-drawer' ? [0.35, p.objects['desk-drawer']?.open ? -0.5 : -1.2] as Point : undefined;
-    const path = approachRoute([root.position.x, root.position.z], task.point, obstacles(room, pose), fixed);
+      : task.action.objectId === 'desk-drawer' ? [0.35, p.objects['desk-drawer']?.open ? -0.5 : -1.2] as Point : task.journalStand;
+    const start: Point = [root.position.x, root.position.z];
+    const boxes = obstacles(room, pose);
+    let path = approachRoute(start, task.point, boxes, fixed);
+    if (!path && task.journalStand) {
+      // A moved chair can block the turning position while leaving the journal usable.
+      task.journalStand = undefined;
+      path = approachRoute(start, task.point, boxes);
+    }
     if (path) state.current.path = path;
     else { cancelApproach(); p.onHover(task.action.objectId, '前方空间不足，请先移开挡路的物品'); }
   };
@@ -250,7 +263,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       const pose = CHAIR_POSES[p.sceneId];
       const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : [point[0], point[2]];
       if (s.posture === 'standing' && !s.exiting && s.lift === 0 && s.velocity <= 0
-        && action.objectId !== 'chair' && action.objectId !== 'bed'
+        && action.objectId !== 'chair' && action.objectId !== 'bed' && action.objectId !== 'journal'
         && Math.hypot(root.position.x - target[0], root.position.z - target[1]) <= 1.15) {
         cancelApproach(); perform(); return true;
       }
@@ -258,7 +271,8 @@ export function OrbitalResidents(props: ResidentsProps) {
       cancelApproach();
       stand();
       keys.current.clear(); jump.current = false;
-      approach.current = { point: target, action, perform, elapsed: 0, chairTarget: null };
+      approach.current = { point: target, action, perform, elapsed: 0, chairTarget: null,
+        journalStand: action.objectId === 'journal' ? JOURNAL_STAND : undefined };
       s.external = true;
       if (action.objectId === 'chair') {
         pose.vx = 0; pose.vz = 0; pose.spin = 0;
@@ -579,12 +593,21 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       if (!s.path.length && s.external && p.enabled && !s.exiting && s.lift === 0 && !approach.current?.chairTarget) {
         const request = approach.current;
-        const fixed = request?.action.objectId === 'chair' || request?.action.objectId === 'bed';
-        const target = request?.action.objectId === 'chair' ? seatEntry : request?.action.objectId === 'bed' ? [-1.48, 0.95] : request?.point;
+        const fixed = request?.action.objectId === 'chair' || request?.action.objectId === 'bed' || !!request?.journalStand;
+        const target = request?.action.objectId === 'chair' ? seatEntry : request?.action.objectId === 'bed' ? [-1.48, 0.95] : request?.journalStand ?? request?.point;
         const distance = target ? Math.hypot(root.position.x - target[0], root.position.z - target[1]) : 0;
         const radius = fixed ? 0.06 : 1.15;
-        cancelApproach();
-        if (request && distance <= radius) request.perform();
+        if (request?.journalStand && distance <= radius) {
+          root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 14));
+          if (p.reducedMotion || Math.cos(root.rotation.y) < -.999) {
+            root.rotation.y = Math.PI;
+            cancelApproach();
+            request.perform();
+          }
+        } else {
+          cancelApproach();
+          if (request && distance <= radius) request.perform();
+        }
       }
       if (!s.path.length && autonomous && s.lift <= 0) {
         if (Math.hypot(root.position.x - entry[0], root.position.z - entry[1]) < 0.06) {
@@ -662,8 +685,18 @@ export function OrbitalResidents(props: ResidentsProps) {
         leg.foot.rotation.x = -(leg.thigh.rotation.x + leg.shin.rotation.x);
       });
     }
-    if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
-    if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current));
+    if (rig.current) {
+      const rigValue = rig.current;
+      const hand = p.journal?.current.hand;
+      const reach = p.focusedObject === 'journal' && hand && hand.reach > 0
+        && s.posture === 'standing' && Math.hypot(root.position.x - JOURNAL_STAND[0], root.position.z - JOURNAL_STAND[1]) < .025;
+      if (journalPose.current || reach) resetJournalPose(rigValue);
+      if (reach) reachJournalPage(rigValue, pivot, hand);
+      else if (library && flow) applyLibraryPose(rigValue, root, p.sceneId, flow, dt);
+      journalPose.current = !!reach;
+      rigValue.applyPose(s.walkTime, reach ? 0 : ease(walkWeight.current));
+      if (reach) rigValue.arms[hand.side].pinch.apply(hand.grip);
+    }
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.grounded = s.lift === 0;

@@ -6,12 +6,20 @@ import ts from 'typescript';
 import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { load } from './load-for-validation.mjs';
+import { BOOK, leafPose, pageGripPose, pageTurnPose } from './journal/bookModel.ts';
 
-const source = readFileSync(new URL('./residentRig.ts', import.meta.url), 'utf8');
-const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-const module = { exports: {}, require: () => THREE };
-vm.runInNewContext(compiled, module);
-const { createResidentRig, RESIDENT_SCALE } = module.exports;
+function loadModule(path, dependencies = {}) {
+  const source = readFileSync(new URL(path, import.meta.url), 'utf8');
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const context = { exports: {}, require: name => name === 'three' ? THREE : dependencies[name] };
+  vm.runInNewContext(compiled, context);
+  return context.exports;
+}
+const { createResidentRig, RESIDENT_SCALE, HIP_HEIGHT } = loadModule('./residentRig.ts');
+const { reachJournalPage, resetJournalPose } = loadModule('./journal/residentPose.ts', {
+  '../library/armPose': loadModule('./library/armPose.ts'),
+});
+const { JOURNAL_STAND, JOURNAL_POSITION, JOURNAL_YAW, JOURNAL_SCALE } = loadModule('./journalLayout.ts');
 const { gltf, mesh: reference, sample } = await load(new URL('../../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
 function instance() {
@@ -81,5 +89,47 @@ test('interaction controls follow the skinned joints in room units and restore t
     const pose = asset.getObjectByName('mixamorigLeftArm').quaternion.clone();
     rig.applyPose(.4, 1);
     assert(pose.angleTo(asset.getObjectByName('mixamorigLeftArm').quaternion) > .1);
+  } finally { rig.dispose(); }
+});
+
+test('both hands pinch the moving diary corner and the walk restores the authored fingers', () => {
+  const { asset, rig } = instance();
+  const stand = new THREE.Group(), hips = new THREE.Group(), book = new THREE.Group();
+  stand.position.set(JOURNAL_STAND[0], 0, JOURNAL_STAND[1]);
+  stand.rotation.y = Math.PI;
+  hips.position.y = HIP_HEIGHT;
+  rig.mesh.position.y = -HIP_HEIGHT;
+  stand.add(hips); hips.add(rig.mesh);
+  book.position.set(...JOURNAL_POSITION);
+  book.rotation.y = JOURNAL_YAW;
+  book.scale.setScalar(JOURNAL_SCALE);
+  try {
+    for (const direction of [1, -1]) {
+      const side = direction === 1 ? 0 : 1;
+      const name = side === 0 ? 'Right' : 'Left';
+      const thumb = asset.getObjectByName('mixamorig' + name + 'HandThumb4');
+      const index = asset.getObjectByName('mixamorig' + name + 'HandIndex4');
+      const knuckle = asset.getObjectByName('mixamorig' + name + 'HandIndex1');
+      rig.applyPose(0, 0);
+      const idle = knuckle.quaternion.clone();
+      for (const leaf of [0, BOOK.leaves - 1]) for (let step = 24; step <= 68; step += 2) {
+        const { reach, grip, corner, page } = pageTurnPose(step / 100);
+        const turned = direction === 1 ? page : 1 - page;
+        const shape = leafPose(leaf, turned, 1, leaf + turned, BOOK.leaves);
+        const contact = pageGripPose(shape, corner * direction, direction);
+        const point = book.localToWorld(new THREE.Vector3(contact.x, contact.y, contact.z));
+        const normal = new THREE.Vector3(contact.nx, contact.ny, 0).transformDirection(book.matrixWorld);
+        resetJournalPose(rig);
+        reachJournalPage(rig, hips, { side, reach, grip, point, normal });
+        rig.applyPose(0, 0);
+        rig.arms[side].pinch.apply(grip);
+        const pads = thumb.getWorldPosition(new THREE.Vector3()).lerp(index.getWorldPosition(new THREE.Vector3()), .5);
+        assert(pads.distanceTo(point) < .003, `${name} fingertips missed leaf ${leaf} at ${step}%`);
+        assert(knuckle.quaternion.angleTo(idle) > .1);
+      }
+      resetJournalPose(rig);
+      rig.applyPose(0, 0);
+      assert(knuckle.quaternion.equals(idle));
+    }
   } finally { rig.dispose(); }
 });

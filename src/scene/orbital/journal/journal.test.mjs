@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BOOK, coverPose, leafPose } from './bookModel.ts';
+import { BOOK, cornerLift, coverPose, leafPose, pageTurnPose } from './bookModel.ts';
 import { journalPages, loadLocalJournal, saveLocalJournal } from './journalStorage.ts';
 
 const todayKey = 'pocketworld:journal:today';
@@ -50,4 +50,19 @@ test('expanded legacy books retain their closed cover clearance and turning shee
       }
     }
   }
+});
+
+test('the page corner lifts before the turn and settles after the fingers release', () => {
+  const pickup = pageTurnPose(.23);
+  assert.equal(pickup.page, 0);
+  assert(cornerLift(1, 1, pickup.corner) > 0);
+  assert.equal(cornerLift(0, 1, pickup.corner), 0);
+  assert.equal(cornerLift(1, 0, pickup.corner), 0);
+  assert(pageTurnPose(.58).page > .5);
+  assert.equal(pageTurnPose(.68).grip, 1);
+  assert.equal(pageTurnPose(.86).grip, 0);
+  assert.equal(pageTurnPose(.96).page, 1);
+  assert(pageTurnPose(.96).corner < 0);
+  assert.equal(pageTurnPose(1).corner, 0);
+  assert.equal(pageTurnPose(1).reach, 0);
 });

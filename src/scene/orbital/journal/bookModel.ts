@@ -2,6 +2,31 @@ export const BOOK = { leaves: 32, segments: 32, width: 1.38, height: 1.92, thick
 
 export const clamp = (value: number) => Math.max(0, Math.min(1, value));
 export const smooth = (value: number) => { const t = clamp(value); return t * t * (3 - 2 * t); };
+export const PAGE_TURN_SECONDS = 1.05;
+const PICK_UP = 0.24;
+const RELEASE = 0.68;
+const LAND = 0.91;
+
+export function pageTurnPose(time: number) {
+  const pull = smooth((time - PICK_UP) / (RELEASE - PICK_UP));
+  const fall = smooth((time - RELEASE) / (LAND - RELEASE));
+  const settle = clamp((time - LAND) / (1 - LAND));
+  const lift = clamp((time - 0.17) / 0.59);
+  const reach = smooth(time / PICK_UP) * (1 - smooth((time - RELEASE) / (1 - RELEASE)));
+  const grip = smooth((time - 0.14) / 0.10) * (1 - smooth((time - RELEASE) / 0.12));
+  return {
+    page: 0.60 * pull + 0.40 * fall,
+    corner: 0.64 * lift * (1 - lift) - 0.608 * (settle * (1 - settle)) ** 2,
+    reach,
+    grip,
+    holding: time <= RELEASE,
+  };
+}
+
+// The lift tapers toward both the sewn edge and the far end of the sheet.
+export function cornerLift(u: number, v: number, height: number) {
+  return height * smooth((u - 0.57) / 0.43) * smooth((v - 0.37) / 0.63);
+}
 const sheetThickness = (leafCount: number) => BOOK.thickness * BOOK.leaves / leafCount;
 export const paperHalfThickness = (u: number, leafCount: number) =>
   sheetThickness(leafCount) * 0.72 / 2 * (0.04 + 0.96 * smooth((u - 0.2) / 0.3));
@@ -33,6 +58,17 @@ export function leafPose(index: number, turn: number, opening: number, cursor: n
   }
   angles.push(angles[angles.length - 1]);
   return { points, angles };
+}
+
+export function pageGripPose(shape: ReturnType<typeof leafPose>, curl: number, direction: number) {
+  const column = BOOK.segments - 1;
+  const point = shape.points[column], angle = shape.angles[column];
+  const lift = cornerLift(column / BOOK.segments, 1, curl);
+  const sin = Math.sin(angle), cos = Math.cos(angle);
+  return {
+    x: point.x - sin * lift, y: point.y + cos * lift, z: BOOK.height / 2,
+    nx: -direction * sin, ny: direction * cos,
+  };
 }
 
 export function coverPose(opening: number) {

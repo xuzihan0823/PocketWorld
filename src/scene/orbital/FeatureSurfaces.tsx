@@ -1,18 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import type { JournalEntry, WorldSceneProps } from '../../types/world';
 import { ObjectHandle } from './ObjectHandle';
 import { JOURNAL_POSITION, JOURNAL_SCALE, JOURNAL_YAW } from './journalLayout';
 import { BoundJournal } from './journal/BoundJournal';
 import { BOOK } from './journal/bookModel';
-import { createBookControl } from './journal/bookControl';
+import type { BoundBookControl } from './journal/bookControl';
 import { JournalEditor } from './journal/JournalEditor';
 import { emptyJournal, journalPages, loadLocalJournal, saveLocalJournal } from './journal/journalStorage';
 
-export function FeatureSurfaces(world: WorldSceneProps) {
+export function FeatureSurfaces({ book, ...world }: WorldSceneProps & {
+  book: MutableRefObject<BoundBookControl>;
+}) {
   const opened = world.focusedObject === 'journal' && !!world.objects.journal?.open;
   const adapter = world.adapters?.journal;
   const { onFeatureError, onGesture } = world;
-  const book = useRef(createBookControl());
   const [entry, setEntry] = useState<JournalEntry>();
   const [leafCount, setLeafCount] = useState(BOOK.leaves);
   const [saveState, setSaveState] = useState('');
@@ -48,7 +49,7 @@ export function FeatureSurfaces(world: WorldSceneProps) {
   useEffect(() => {
     const textures = book.current.textures;
     return () => { textures.forEach(texture => texture.dispose()); textures.clear(); };
-  }, []);
+  }, [book]);
 
   const save = (next: JournalEntry) => {
     const usedLeaves = Math.ceil((next.pages?.length ?? 1) / 2);

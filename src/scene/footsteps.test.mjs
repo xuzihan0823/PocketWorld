@@ -54,6 +54,8 @@ function mount(kind, overrides = {}) {
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
+    './journalLayout': load('./orbital/journalLayout.ts', {}),
+    './journal/residentPose': { reachJournalPage() {}, resetJournalPose() {} },
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
     './scene/orbital/library/useLibrary': { useLibrary: options => ({ dispatch: options.onAction, back: options.onReturn, data: { books: [] }, flow: { current: { phase: 'idle' } } }) },

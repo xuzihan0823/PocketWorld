@@ -15,11 +15,12 @@ import { ScheduleSurfaces } from './schedule/ScheduleSurfaces';
 import { OrbitalResidents } from './OrbitalResidents';
 import type { DrawerInteraction } from './drawerInteraction';
 import { JOURNAL_PAGE_POSITION } from './journalLayout';
+import { createBookControl } from './journal/bookControl';
 
 const FOCUS: Record<string, { target: [number, number, number]; offset: [number, number, number] }> = {
   computer: { target: [1.45, 1.58, -2.30], offset: [0, 0.30, 3.5] },
   'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
-  journal: { target: JOURNAL_PAGE_POSITION, offset: [0, 0.60, 0.28] },
+  journal: { target: JOURNAL_PAGE_POSITION, offset: [0.15, 0.71, 0.19] },
   schedule: { target: [0.57, 1.20, -1.96], offset: [0, 0.88, 0.48] },
   'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
   'book-01': { target: [-3.35, 1.03, -1.14], offset: [1.35, 1.12, 2.5] },
@@ -130,6 +131,10 @@ function WorldContent(props: OrbitalSceneProps) {
   const [walkTarget, setWalkTarget] = useState<[number, number, number] | null>(null);
   const drawerInteraction = useRef<DrawerInteraction | null>(null);
   const interaction = useRef<NonNullable<WorldSceneProps['onApproach']> | null>(null);
+  const journals = useMemo(() => ({
+    habitat: { current: createBookControl() },
+    observatory: { current: createBookControl() },
+  }), []);
   useEffect(() => { setWalkTarget(null); }, [props.sceneId]);
   useEffect(() => {
     const action = props.shortcut;
@@ -173,9 +178,9 @@ function WorldContent(props: OrbitalSceneProps) {
         <HabitatShell variant={id} onFloorClick={point => { if ((!props.focusedObject || props.focusedObject === 'bed') && props.sceneId === id && !props.gestureActive && !drawerInteraction.current?.busy && (!props.library || props.library.flow.current.phase === 'idle')) { void roomAudio.unlock(); setWalkTarget(point); } }} />
         {id === 'habitat' && <ScheduleSurfaces {...world} visible={props.sceneId === 'habitat'} />}
         <Suspense fallback={null}><HabitatFurniture {...world} /><MediaObjects {...world} /></Suspense>
-        <FeatureSurfaces {...world} />
+        <FeatureSurfaces {...world} book={journals[id]} />
         {id === props.sceneId && <>
-          <OrbitalResidents {...world} drawerInteraction={drawerInteraction} interaction={interaction}
+          <OrbitalResidents {...world} journal={journals[id]} drawerInteraction={drawerInteraction} interaction={interaction}
             drawerEnabled={!props.focusedObject && ['idle', 'active', 'error'].includes(props.transition.phase)} onDrawerAction={props.onAction} walkTarget={walkTarget} onArrive={() => setWalkTarget(null)} enabled={(!props.focusedObject || props.focusedObject === 'bed') && (!props.library || props.library.view.phase === 'idle') && !props.gestureActive && ['idle', 'active', 'error'].includes(props.transition.phase)} />
         </>}
       </group>;

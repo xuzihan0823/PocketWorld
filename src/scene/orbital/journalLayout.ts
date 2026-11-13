@@ -4,6 +4,7 @@ import type { FurnitureVector } from './FurnitureParts';
 export const JOURNAL_POSITION: FurnitureVector = [-0.60, 1.121, -1.873];
 export const JOURNAL_SCALE = 0.096;
 export const JOURNAL_YAW = -0.04;
+export const JOURNAL_STAND: [number, number] = [JOURNAL_POSITION[0], -1.433];
 
 export const JOURNAL_PAGE_POSITION: FurnitureVector = [
   JOURNAL_POSITION[0],

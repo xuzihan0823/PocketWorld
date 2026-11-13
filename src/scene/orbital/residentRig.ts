@@ -133,11 +133,46 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     const hand = control(handBone, forearm, at(lowerBone));
     const wrist = at(handBone);
     const palm = at(bone(side + 'HandMiddle1')).sub(wrist);
+    const sign = side === 'Right' ? 1 : -1;
+    const grip = new THREE.Vector3(.027, .068, .021 * sign);
+    const handBasis = handBone.getWorldQuaternion(new THREE.Quaternion());
+    const fingers = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'].flatMap((digit, finger) => {
+      const chain = [1, 2, 3].map(i => bone(side + 'Hand' + digit + i));
+      const open = chain.map(joint => joint.quaternion.clone());
+      if (finger < 2) {
+        // Fit the pad centers in hand space once. These offsets are in the authored Luna rig's units.
+        const tip = bone(side + 'Hand' + digit + '4');
+        const target = handBone.localToWorld(grip.clone().add(new THREE.Vector3(0, 0, (finger === 0 ? .0025 : -.0025) * sign)));
+        const rotation = new THREE.Quaternion(), from = new THREE.Vector3(), to = new THREE.Vector3();
+        for (let pass = 0; pass < 24; pass++) for (let i = chain.length - 1; i >= 0; i--) {
+          const joint = chain[i];
+          joint.worldToLocal(tip.getWorldPosition(from)).normalize();
+          joint.worldToLocal(to.copy(target)).normalize();
+          joint.quaternion.multiply(rotation.setFromUnitVectors(from, to));
+        }
+      } else {
+        for (const [i, joint] of chain.entries()) {
+          const axis = new THREE.Vector3(sign, 0, 0).applyQuaternion(handBasis)
+            .applyQuaternion(joint.getWorldQuaternion(new THREE.Quaternion()).invert());
+          joint.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis, [.23, .30, .17][i]));
+        }
+      }
+      return chain.map((joint, i) => {
+        const closed = joint.quaternion.clone();
+        joint.quaternion.copy(open[i]);
+        return { joint, open: open[i], closed };
+      });
+    });
     return { shoulder, upper, forearm, hand, restWrist: wrist,
       restUpper: forearm.position.clone(), restLower: hand.position.clone(),
       upperLength: forearm.position.length(), lowerLength: hand.position.length(),
       palmBasis: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), palm.clone().normalize()),
-      palmOffset: palm.multiplyScalar(.50) };
+      palmOffset: palm.multiplyScalar(.50),
+      pinch: {
+        offset: grip.multiplyScalar(RESIDENT_SCALE),
+        basis: handBasis.invert(),
+        apply: amount => { for (const finger of fingers) finger.joint.quaternion.slerpQuaternions(finger.open, finger.closed, amount); },
+      } };
   });
   const skirtFront = new THREE.Bone(), skirtBack = new THREE.Bone();
   const dress = Array.from(bones.values()).filter(joint => /^Dress_.+_01$/.test(joint.name)).map(target => ({

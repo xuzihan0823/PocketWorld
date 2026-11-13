@@ -16,6 +16,11 @@ export interface ResidentArm {
   restUpper: THREE.Vector3; restLower: THREE.Vector3; restWrist: THREE.Vector3;
   upperLength: number; lowerLength: number;
   palmBasis: THREE.Quaternion; palmOffset: THREE.Vector3;
+  pinch: {
+    offset: THREE.Vector3;
+    basis: THREE.Quaternion;
+    apply: (amount: number) => void;
+  };
 }
 export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
