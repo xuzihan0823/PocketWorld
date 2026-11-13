@@ -47,6 +47,19 @@
 .world-page footer { font-size: 10px; margin-top: 14px; color: #706b58; letter-spacing: 1px; }
 .world-page textarea:focus-visible, .world-page input:focus-visible { outline: 1px solid #a99167; outline-offset: 4px; }
 .world-page ::selection { background: #c7d4bf; color: #303c31; }
+.world-journal-native-layer { position: relative; width: 1px; height: 1px; pointer-events: none; }
+.world-journal-native-layer textarea { position: absolute; width: 1px; height: 22px; min-height: 0; padding: 0; margin: 0; border: 0; opacity: 0; resize: none; pointer-events: none; font: 16px/22px SimSun, serif; }
+.world-journal-paper-hit { display: block; width: 24px; height: 26px; padding: 0; margin: 0; border: 0; background: transparent; color: transparent; opacity: 0; cursor: pointer; touch-action: manipulation; }
+.world-journal-paper-hit:focus-visible { opacity: 1; outline: 1px solid #92734d; outline-offset: 1px; }
+.world-journal-date-hit { box-sizing: border-box; width: 100px; padding: 0 6px; text-align: right; font: 10px/26px Georgia, serif; cursor: text; }
+.world-journal-date-hit:focus { opacity: 1; color: #82745c; caret-color: #7c513d; background: #f5f0e1; outline: 1px solid #92734d; outline-offset: 1px; }
+.world-journal-touch-tools { display: grid; gap: 4px; padding: 4px; border: 1px solid #d5c7a9; border-radius: 8px; background: #f5f0e8; color: #4d5b53; }
+.world-journal-touch-row, .world-journal-touch-row > div { display: flex; align-items: center; }
+.world-journal-touch-row { gap: 4px; }
+.world-journal-touch-row > span { padding: 0 4px; white-space: nowrap; font-size: 12px; }
+.world-journal-touch-row button { min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font: 14px system-ui, sans-serif; touch-action: manipulation; }
+.world-journal-touch-row button[aria-pressed=true] { background: #dce4d5; color: #374d3b; font-weight: 700; }
+.world-journal-touch-row > button { font-size: 24px; }
 .world-book-text { font: 16px/2 'Songti SC', serif; white-space: pre-line; flex: 1; }
 .world-book-nav { display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 12px; }
 .world-book-nav button, .world-book-form button { border: 0; background: transparent; color: #765d42; font: 13px 'Songti SC', serif; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
