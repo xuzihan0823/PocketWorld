@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BOOK, coverPose, leafPose } from './bookModel.ts';
+import { BOOK, coverPose, leafPose, openingStackPose, paperHalfThickness } from './bookModel.ts';
 import { journalPages, loadLocalJournal, saveLocalJournal } from './journalStorage.ts';
 
 const todayKey = 'pocketworld:journal:today';
@@ -48,6 +48,30 @@ test('expanded legacy books retain their closed cover clearance and turning shee
           assert.ok(b.y > BOOK.board, `leaf ${index}, frame ${frame}, joint ${joint}`);
         }
       }
+    }
+  }
+});
+
+test('opening a bookmarked stack moves its leaves together below the cover and settles on the same spread', () => {
+  const spread = BOOK.leaves / 2;
+  for (let index = 0; index < BOOK.leaves; index++) {
+    assert.deepEqual(openingStackPose(index, 0, spread, BOOK.leaves), leafPose(index, 0, 0, 0, BOOK.leaves));
+    const settled = openingStackPose(index, 1, spread, BOOK.leaves);
+    const expected = leafPose(index, Number(index < spread), 1, spread, BOOK.leaves);
+    settled.points.forEach((point, i) => {
+      assert.ok(Math.hypot(point.x - expected.points[i].x, point.y - expected.points[i].y) < 1e-9);
+    });
+  }
+  for (let frame = 0; frame <= 80; frame++) {
+    const opening = frame / 80, cover = coverPose(opening, true);
+    for (let index = 0; index < spread; index++) {
+      const leaf = openingStackPose(index, opening, spread, BOOK.leaves);
+      leaf.points.forEach((point, joint) => {
+        const signedDistance = (point.x - cover.x) * -Math.sin(cover.angle) + (point.y - cover.y) * Math.cos(cover.angle);
+        assert.ok(signedDistance + paperHalfThickness(joint / BOOK.segments, BOOK.leaves) < -BOOK.board / 2, `cover clearance at ${opening}, leaf ${index}`);
+      });
+      // Every leaf in the left stack opens on the same angle, not one after another.
+      if (opening === 0.25) assert.equal(leaf.angles[0], Math.PI * (3 * opening ** 2 - 2 * opening ** 3));
     }
   }
 });

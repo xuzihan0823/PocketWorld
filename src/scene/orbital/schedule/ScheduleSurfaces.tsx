@@ -16,7 +16,6 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
   const narrow = size.width < 720;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [flight, setFlight] = useState<PaperFlight | null>(null);
-  const [message, setMessage] = useState('');
   const article = useRef<HTMLElement>(null);
   const busy = useRef(false);
   const drag = useRef<{ pointerId: number; x: number; y: number; pageId: string; width: number; height: number } | null>(null);
@@ -54,21 +53,20 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
     const entries = [...state.current.entries] as SchedulePage['entries'];
     entries[index] = { ...entries[index], [field]: value };
     commit({ ...state, current: { ...state.current, entries } }, { retainDraftOnError: true });
-    setMessage('');
   };
+  const updateDate = (date: string) => commit({ ...state, current: { ...state.current, date } }, { retainDraftOnError: true });
   const post = (from: [number, number, number]) => {
     if (busy.current || !settled || !ready) return;
     if (state.posted.length >= MAX_POSTED_SCHEDULES) {
-      setMessage('玻璃贴满了，先移除一张吧。');
       props.onFeatureError(SCHEDULE_FULL_MESSAGE);
       return;
     }
     const invalid = schedulePageError(state.current);
-    if (invalid) { setMessage(invalid); return; }
+    if (invalid) { props.onFeatureError(invalid); return; }
     const page = state.current;
     if (!commit(postSchedulePage(state))) return;
     busy.current = true;
-    setMessage(''); setSelectedId(page.id);
+    setSelectedId(page.id);
     setFlight({ kind: 'post', page, from });
     props.onGesture(false);
     props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
@@ -79,7 +77,6 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
     busy.current = true;
     setFlight({ kind: 'discard', page: selected });
     setSelectedId(state.posted[selectedIndex + 1]?.id ?? state.posted[selectedIndex - 1]?.id ?? null);
-    setMessage('这张安排已揉成纸团，留在地面上。');
   };
   const resetDrag = () => {
     const held = drag.current;
@@ -143,20 +140,22 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
       rotation={bookView ? [-Math.PI / 2, 0, 0] : [0, 0, 0]} distanceFactor={narrow ? undefined : bookView ? PAGE_DISTANCE_FACTOR : 0.62} zIndexRange={[24, 21]}>
       <article ref={article} tabIndex={-1} className={`schedule-sheet ${glassView ? 'is-posted' : 'is-book'}`} aria-label={bookView ? '日程书当前页' : '玻璃上的日程'} onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={resetDrag} onLostPointerCapture={resetDrag} onWheel={e => e.stopPropagation()}>
         {bookView && <div className="schedule-paper-drag" aria-hidden="true" />}
-        <header className="schedule-heading"><h2>{glassView && !selected ? '玻璃上的安排' : '今天的安排'}</h2><span>{glassView ? selected?.date ?? state.current.date : state.current.date}</span></header>
+        {bookView ? <input className="schedule-date" type="text" inputMode="text" aria-label="日程日期" maxLength={10} autoComplete="off" spellCheck={false} disabled={blocked}
+          value={state.current.date} onChange={event => updateDate(event.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} />
+          : selected && <time className="schedule-date">{selected.date}</time>}
+        <header className="schedule-heading"><h2>{glassView && !selected ? '玻璃上的安排' : '今天的安排'}</h2></header>
         {!ready ? <div className="schedule-empty"><p>{error || '正在翻开日程……'}</p>{error && <button onClick={retry}>重新读取</button>}</div> : bookView ? <>
-          <div className="schedule-tasks">{state.current.entries.map((entry, index) => <fieldset key={entry.id} disabled={blocked}>
-            <legend>任务 {index + 1}</legend>
-            <div className="schedule-task-heading"><label className="schedule-title"><span>标题</span><input aria-label={`第${index + 1}项标题`} maxLength={60} placeholder="一件想做的事" value={entry.title} onChange={e => update(index, 'title', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label>
-              <label className="schedule-time"><span>时间</span><input type="text" inputMode="text" placeholder="09:00" maxLength={5} autoComplete="off" spellCheck={false} aria-label={`第${index + 1}项时间`} value={entry.time} onChange={e => update(index, 'time', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label></div>
-            <label className="schedule-content"><span>内容</span><textarea aria-label={`第${index + 1}项内容`} maxLength={600} rows={2} placeholder="写下细节，给自己一个小提醒……" value={entry.content ?? ''} onChange={e => update(index, 'content', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label>
+          <div className="schedule-tasks">{state.current.entries.map((entry, index) => <fieldset key={entry.id} disabled={blocked} aria-label={`任务 ${index + 1}`}>
+            <div className="schedule-task-heading"><label className="schedule-title"><span>标题</span><input aria-label={`第${index + 1}项标题`} maxLength={60} value={entry.title} onChange={e => update(index, 'title', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label>
+              <label className="schedule-time"><span>时间</span><input type="text" inputMode="text" maxLength={5} autoComplete="off" spellCheck={false} aria-label={`第${index + 1}项时间`} value={entry.time} onChange={e => update(index, 'time', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label></div>
+            <label className="schedule-content"><span>内容</span><textarea aria-label={`第${index + 1}项内容`} maxLength={600} rows={2} value={entry.content ?? ''} onChange={e => update(index, 'content', e.target.value)} onFocus={() => props.onGesture(true)} onBlur={() => props.onGesture(false)} /></label>
           </fieldset>)}</div>
-          <div className="schedule-page-number">第 {state.current.number} 页{state.queued.length > 0 ? ` · 还有 ${state.queued.length} 页旧安排` : ''}</div>
+          <div className="schedule-page-number" aria-label={`第 ${state.current.number} 页`}>{String(state.current.number).padStart(2, '0')}</div>
         </> : selected ? <>
-          <div className="schedule-posted-tasks">{selected.entries.map((entry, index) => <section key={entry.id}><div><span>任务 {index + 1}</span><time>{entry.time || '留一点空白'}</time></div><h3>{entry.title || '这一项，留给之后的自己'}</h3><p>{entry.content || '没有补充内容'}</p></section>)}</div>
+          <div className="schedule-posted-tasks">{selected.entries.map(entry => <section key={entry.id}><div><time>{entry.time}</time></div><h3>{entry.title}</h3><p>{entry.content}</p></section>)}</div>
           <div className="schedule-actions"><nav aria-label="玻璃日程翻页"><button disabled={blocked || selectedIndex === 0} onClick={() => setSelectedId(state.posted[selectedIndex - 1].id)} aria-label="上一张安排">上一张</button><span>{selectedIndex + 1} / {state.posted.length}</span><button disabled={blocked || selectedIndex >= state.posted.length - 1} onClick={() => setSelectedId(state.posted[selectedIndex + 1].id)} aria-label="下一张安排">下一张</button></nav><button className="schedule-discard" disabled={blocked} onClick={discard}>揉掉这张</button></div>
-        </> : <div className="schedule-empty"><p>这里还没有贴上安排。</p><p>回到书里写两件想做的事，<br />把它们留在抬眼就能看到的地方。</p><p>按 V 回到日程书。</p></div>}
-        {message && <footer role="status" aria-live="polite">{message}</footer>}
+          <div className="schedule-page-number" aria-label={`第 ${selected.number} 页`}>{String(selected.number).padStart(2, '0')}</div>
+        </> : <div className="schedule-empty"><p>这里还没有贴上安排。</p></div>}
         {ready && error && <p className="schedule-error" role="alert">{error}<button onClick={retry}>{props.adapters?.schedule ? '重试同步' : '重试保存'}</button></p>}
       </article>
     </Html>;

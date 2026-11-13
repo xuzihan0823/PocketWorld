@@ -10,16 +10,22 @@ import { SCHEDULE_POSITION, SCHEDULE_SCALE, SCHEDULE_SPREAD, SCHEDULE_YAW } from
 export function ScheduleBook({ world, children }: { world: WorldModelProps; children: ReactNode }) {
   const opened = !!(world.objects.schedule?.open || world.objects.schedule?.active);
   const book = useRef(createBookControl());
+  const previousOpened = useRef(opened);
   const [pageReady, setPageReady] = useState(false);
   book.current.spread = SCHEDULE_SPREAD;
   useFrame(() => {
+    if (previousOpened.current !== opened) {
+      previousOpened.current = opened;
+      setPageReady(false);
+      return;
+    }
     const ready = opened && book.current.ready && book.current.cursor === SCHEDULE_SPREAD;
     if (ready !== pageReady) setPageReady(ready);
   });
   return <group name="Schedule_Binding" position={SCHEDULE_POSITION} rotation-y={SCHEDULE_YAW} scale={SCHEDULE_SCALE}>
     <ObjectHandle id="schedule" action="plan" hint="展开日程 · 安排计划" world={world}>
       <BoundJournal opened={opened} control={book} reducedMotion={world.reducedMotion} leafCount={BOOK.leaves}
-        coverColor="#7b9184" coverLabel="日  程" coverSubtitle="D A Y S" turnSpeed={32} />
+        coverColor="#7b9184" coverLabel="日  程" coverSubtitle="D A Y S" openAsStack openingDuration={1.15} />
     </ObjectHandle>
     {opened && pageReady && children}
   </group>;

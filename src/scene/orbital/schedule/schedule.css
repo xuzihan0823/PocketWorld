@@ -8,10 +8,8 @@
 }
 .schedule-heading { flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 17px; border-bottom: 1px solid #bbaa8670; }
 .schedule-heading h2 { margin: 0; font-size: 23px; font-weight: 500; letter-spacing: 1px; }
-.schedule-heading > span { color: #6c624e; font-size: 11px; font-variant-numeric: tabular-nums; }
 .schedule-tasks { display: grid; gap: 12px; margin-top: 16px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
 .schedule-tasks fieldset { padding: 0 0 9px; border: 0; border-bottom: 1px solid #bbaa8670; min-width: 0; margin: 0; }
-.schedule-tasks legend { padding: 0; margin-bottom: 6px; color: #76613e; font-size: 11px; }
 .schedule-task-heading { display: grid; grid-template-columns: minmax(0, 1fr) 87px; gap: 12px; }
 .schedule-sheet label { display: grid; gap: 3px; min-width: 0; }
 .schedule-sheet label > span { display: none; }
@@ -26,7 +24,6 @@
 .schedule-sheet button:disabled { opacity: .45; cursor: default; }
 .schedule-actions { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
 .schedule-actions > span, .schedule-actions nav > span { font-size: 11px; color: #6c624e; }
-.schedule-sheet footer { flex-shrink: 0; margin-top: 14px; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #bbaa8640; font-size: 10px; color: #6c624e; }
 .schedule-empty { flex: 1; display: flex; flex-direction: column; justify-content: center; line-height: 1.9; }
 .schedule-empty p { margin: 0 0 14px; }
 .schedule-empty button { align-self: flex-start; text-decoration: underline; }
@@ -52,13 +49,11 @@
   .schedule-sheet { width: calc(100vw - 32px); max-width: 430px; height: min(590px, calc(100svh - 150px)); padding: 22px 22px 16px; font-size: 15px; }
   .schedule-heading { padding-bottom: 14px; }
   .schedule-heading h2 { font-size: 24px; }
-  .schedule-heading > span, .schedule-tasks legend { font-size: 12px; }
   .schedule-sheet button { min-height: 44px; min-width: 44px; padding: 8px 6px; font-size: 14px; }
   .schedule-task-heading { grid-template-columns: minmax(0, 1fr) 105px; gap: 10px; }
   .schedule-sheet input { min-height: 44px; }
   .schedule-time input { font-size: 16px; }
   .schedule-sheet textarea { font-size: 16px; height: 60px; line-height: 27px; background-image: repeating-linear-gradient(transparent 0 26px, #bbaa863d 26px 27px); }
-  .schedule-sheet footer { margin-top: 10px; padding-top: 4px; font-size: 12px; }
   .schedule-actions { margin-top: 10px; gap: 8px; }
   .schedule-actions > span, .schedule-actions nav > span { font-size: 12px; }
   .schedule-actions nav { gap: 4px; }
@@ -73,4 +68,18 @@
 .schedule-sheet.is-book input, .schedule-sheet.is-book textarea, .schedule-sheet.is-book button { pointer-events: auto; }
 .schedule-sheet.is-dragging { cursor: grabbing; user-select: none; will-change: transform; box-shadow: 4px 12px 18px #372b1b40; }
 .schedule-sheet.is-dragging .schedule-paper-drag { cursor: grabbing; }
-.schedule-page-number { flex-shrink: 0; margin-top: 18px; padding: 8px 0; color: #6c624e; font-size: 11px; }
+.schedule-sheet > .schedule-date, .schedule-sheet.is-book > .schedule-date {
+  position: absolute; top: 0; right: 0; width: 110px; padding: 0; text-align: right; pointer-events: auto;
+  color: #6c624e; font: 12px/24px Georgia, 'Songti SC', serif; font-variant-numeric: tabular-nums;
+}
+.schedule-sheet > .schedule-page-number, .schedule-sheet.is-book > .schedule-page-number {
+  position: absolute; bottom: 0; right: 0; margin: 0; padding: 0;
+  color: #6c624e; font: 12px/24px Georgia, serif; font-variant-numeric: tabular-nums;
+}
+.schedule-task-heading input { border-bottom: 1px solid #bbaa863d; }
+.schedule-sheet.is-posted { padding-bottom: 42px; }
+@media (max-width: 719px) {
+  .schedule-sheet { padding-top: 52px; padding-bottom: 38px; }
+  .schedule-sheet > .schedule-date, .schedule-sheet.is-book > .schedule-date { top: 4px; right: 16px; width: 124px; font-size: 16px; line-height: 44px; }
+  .schedule-sheet > .schedule-page-number, .schedule-sheet.is-book > .schedule-page-number { right: 16px; bottom: 8px; font-size: 14px; }
+}

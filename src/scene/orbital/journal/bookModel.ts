@@ -11,7 +11,7 @@ function restingHeight(u: number, root: number, edge: number) {
   return root + (edge - root) * smooth(u / 0.5) + shoulder;
 }
 
-export function leafPose(index: number, turn: number, opening: number, cursor: number, leafCount: number) {
+export function leafPose(index: number, turn: number, opening: number, cursor: number, leafCount: number, turnCurl = 1) {
   const t = smooth(turn), relaxed = smooth((opening - 0.25) / 0.75);
   const stackStep = sheetThickness(leafCount);
   const rightEdge = BOOK.base + (leafCount - index) * stackStep;
@@ -25,7 +25,7 @@ export function leafPose(index: number, turn: number, opening: number, cursor: n
     const a = i / BOOK.segments, b = (i + 1) / BOOK.segments;
     const rightSlope = Math.atan2(restingHeight(b, boundY, rightEdge) - restingHeight(a, boundY, rightEdge), step);
     const leftSlope = Math.atan2(restingHeight(b, boundY, leftEdge) - restingHeight(a, boundY, leftEdge), step);
-    const curl = 0.65 * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * (a + b) / 2);
+    const curl = turnCurl * 0.65 * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * (a + b) / 2);
     const angle = Math.PI * t + relaxed * ((1 - t) * rightSlope - t * leftSlope + curl);
     angles.push(angle);
     const previous = points[i];
@@ -35,7 +35,18 @@ export function leafPose(index: number, turn: number, opening: number, cursor: n
   return { points, angles };
 }
 
-export function coverPose(opening: number) {
+// Open a bookmarked spread as one stack, without sweeping through page numbers.
+export function openingStackPose(index: number, opening: number, spread: number, leafCount: number) {
+  return leafPose(index, index < spread ? opening : 0, opening, spread * smooth(opening), leafCount, 0);
+}
+
+export function coverPose(opening: number, openAsStack = false) {
   const t = smooth(opening);
-  return { x: 0.045 * (1 - 2 * t), y: (BOOK.base + BOOK.leaves * BOOK.thickness + 0.018) * (1 - t) + BOOK.board / 2 * t, angle: Math.PI * t };
+  const angle = Math.PI * t;
+  const clearance = openAsStack ? 0.012 * Math.sin(Math.PI * opening) : 0;
+  return {
+    x: 0.045 * (1 - 2 * t) - Math.sin(angle) * clearance,
+    y: (BOOK.base + BOOK.leaves * BOOK.thickness + 0.018) * (1 - t) + BOOK.board / 2 * t + Math.cos(angle) * clearance,
+    angle,
+  };
 }

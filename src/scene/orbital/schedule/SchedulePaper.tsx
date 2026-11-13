@@ -36,18 +36,18 @@ function pageTexture(page: SchedulePage) {
     ctx.fillStyle = i % 2 ? '#8a704009' : '#ffffff38'; ctx.fillRect(x, y, 1, 1);
   }
   ctx.fillStyle = '#454b3d'; ctx.font = '32px "Songti SC", serif'; ctx.fillText('今天的安排', 48, 76);
-  ctx.fillStyle = '#6c614b'; ctx.font = '17px serif'; ctx.fillText(`${page.date}  /  第 ${page.number} 页`, 48, 112);
+  ctx.fillStyle = '#6c614b'; ctx.font = '17px serif'; ctx.textAlign = 'right'; ctx.fillText(page.date, 512, 36); ctx.textAlign = 'left';
   page.entries.forEach((entry, index) => {
     const y = 168 + index * 244;
-    ctx.font = '20px serif'; ctx.fillStyle = '#775b38'; ctx.fillText(entry.time || '—', 48, y);
+    ctx.font = '20px serif'; ctx.fillStyle = '#775b38'; ctx.fillText(entry.time, 48, y);
     ctx.font = '25px "Songti SC", serif'; ctx.fillStyle = '#454b3d';
     const lines = (text: string, length: number) => Array.from(text).reduce<string[]>((rows, char, i) => { const row = Math.floor(i / length); rows[row] = (rows[row] || '') + char; return rows; }, []);
-    lines(entry.title || '留一点空白', 17).slice(0, 2).forEach((line, i) => ctx.fillText(line, 48, y + 42 + i * 32));
+    lines(entry.title, 17).slice(0, 2).forEach((line, i) => ctx.fillText(line, 48, y + 42 + i * 32));
     ctx.font = '19px "Songti SC", serif';
     lines(entry.content ?? '', 23).slice(0, 3).forEach((line, i) => ctx.fillText(line, 48, y + 110 + i * 30));
     ctx.strokeStyle = '#cbbd9f'; ctx.beginPath(); ctx.moveTo(48, y + 212); ctx.lineTo(512, y + 212); ctx.stroke();
   });
-  ctx.font = '16px serif'; ctx.fillStyle = '#6c614b'; ctx.fillText('把想做的事，留在眼前。', 48, 702);
+  ctx.font = '16px serif'; ctx.fillStyle = '#6c614b'; ctx.textAlign = 'right'; ctx.fillText(String(page.number).padStart(2, '0'), 512, 710);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
