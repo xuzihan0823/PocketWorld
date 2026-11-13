@@ -65,13 +65,10 @@ npm run build
 - `../../scene/orbital/media/media-exit.test.mjs`：13 项电脑退出与展示状态测试，覆盖收起保留、窄屏自动放大、失焦、隐藏和拔卡。
 - `integration.test.mjs`：生产产物依赖图检查，验证主入口、独立调试页和动态卡带插槽。
 - `survival/engine.test.mjs`：33 项模拟测试，含普通十分钟模拟、五职业分别锁定后的满级十分钟压力模拟及专属效果。
-- `survival/combat-regressions.test.mjs` / `collision.test.mjs`：34 项战斗回归与 2 项首次接触几何测试，新增近战加成范围出手和星灵契约弹组瞄准检查；已有碰撞修复见 [修复验收](./survival/PR7修复验收.md)。
+- `survival/combat-regressions.test.mjs` / `collision.test.mjs`：34 项战斗回归与 2 项首次接触几何测试，新增近战加成范围出手和星灵契约弹组瞄准检查。
 - `audio.test.mjs`：3 项音频生命周期测试，覆盖静音恢复、停用/激活和快速状态切换，使用异步 AudioContext 替身。
 - `survival/input.test.mjs`：4 项组件事件回归，覆盖其他手指结束不打断摇杆、松开摇杆保留键盘输入，以及外层停用清理；使用 hooks 与指针捕获替身。
-- `survival/render-qa.mjs`：用同一生产绘制代码离线生成预览，需工具环境提供 @napi-rs/canvas。
 
 在项目根目录使用 Node.js 24 运行 `npm test`，统一入口自动构建生产产物、生成生存引擎测试包并执行全部回归。
-
-需要独立离线预览时，运行 `node src/games/shooter/survival/build-preview.mjs`。该脚本复用项目依赖，也可传入包含 node_modules 的工具目录，需要 esbuild、React 18 和 React DOM 18。预览 HTML 与引擎测试包生成在被 Git 忽略的 `survival/dist/` 中。
 
 房间中宽度不超过 720px 或高度不超过 480px 时，装入卡带自动放大到可用视口中的 4:3 区域。桌面提供「放大游戏」；「回到电脑」保留并暂停本局，重新放大后点击继续。只有「拔出卡带」结束装载。窄屏菜单可纵向滚动，职业每局固定，三种兵装与秘术随展示模式保持。

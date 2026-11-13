@@ -15,11 +15,10 @@
 
 ```text
 PocketWorld/
-├── public/                   # 运行时静态资源，模型与音频
-├── art/                      # 可编辑资产源文件和制作记录
+├── assets/                   # 统一素材目录（运行时模型 assets/public/ 与游戏素材 assets/games/）
 ├── scripts/
-│   ├── blender/              # 模型制作、导出与验证
 │   └── test.mjs              # 测试准备与执行入口
+├── skills/                   # 项目协作与 Three.js 开发技能集
 ├── src/
 │   ├── main.tsx              # 页面启动与独立游戏入口选择
 │   ├── App.tsx               # 应用编排、全局快捷键与本地音乐导入
@@ -36,11 +35,12 @@ PocketWorld/
 │   │   ├── mario/            # 奶娃滑雪大冒险，保留 mario 卡带标识
 │   │   └── shooter/          # 团团魔法录与独立调试入口
 │   └── types/                # 卡带、交互物品与世界接口
-├── docs/                     # 跨模块验收文档
 ├── AGENT.md                  # 工程规范与协作流程
 ├── SPEC.md                   # 产品交互与技术约定
 └── README.md
 ```
+
+> **仓库约束**：所有素材统一放在 `assets/` 下；测试截图、录屏、预览 HTML 等展示或测试残留文件严禁存放在仓库中或提交至 Git（详见 `AGENT.md` 第 3.1 节）。
 
 新增日程或媒体能力时，优先在对应功能目录内维护实现和回归测试。`OrbitalScene.tsx` 负责组合场景，家具通过功能组件或上下文接入业务。场景细节见 [场景模块说明](src/scene/README.md)。
 

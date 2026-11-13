@@ -17,7 +17,7 @@
 
 跨模块的数据接口定义在 `src/types/`。日程通过 `ScheduleProvider` 和 `useSchedule` 接入家具与纸面，书柜通过 `useLibrary` 接入应用和住民。媒体模块通过 `GameCartridgeProps` 按需加载 `src/games/*/index.tsx`。
 
-新增功能优先复用 `ObjectHandle`、`Primitives` 和已有世界动作。资产通过 Vite 相对路径引用，资源源文件放在 `art/`，运行时模型放在 `public/models/`。
+新增功能优先复用 `ObjectHandle`、`Primitives` 和已有世界动作。运行时模型放在根目录 `assets/public/models/`，游戏与静态素材统一放在 `assets/games/`。
 
 ## 验证
 

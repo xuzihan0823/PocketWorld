@@ -36,9 +36,22 @@ lerna-debug.log*
 !.env.example
 .vite/
 
-# Local review evidence and linked dependencies
+# Local scratch, planning, and generation outputs
+.tmp/
+.planning/
+output/
+
+# Test, review, and showcase artifacts (must NOT be placed in the repo or committed)
+**/review/
+**/evidence/
+**/final-views/
+**/views/
+*preview*.html
+*gallery*.html
+*motion-check*
+*.mp4
 node_modules
 .impeccable/review/
-art/resident/generated/
+*.blend
 *.blend1
 __pycache__/

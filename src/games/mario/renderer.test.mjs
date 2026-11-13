@@ -13,7 +13,7 @@ for (const name of ['engine', 'model', 'character']) {
   source = source.replace(`'./${name}'`, JSON.stringify(new URL(`./${name}.ts`, import.meta.url).href));
 }
 const { mountains, drawPlayer } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
-const niulaiConfig = JSON.parse(await readFile(new URL('./assets/niulai/animations.json', import.meta.url), 'utf8'));
+const niulaiConfig = JSON.parse(await readFile(new URL('../../../assets/games/ski/niulai/animations.json', import.meta.url), 'utf8'));
 
 test('rider feet stay on both animated mount saddles at every roll angle and stance', () => {
   for (const kind of ['slide', 'charge']) for (const grounded of [false, true]) {

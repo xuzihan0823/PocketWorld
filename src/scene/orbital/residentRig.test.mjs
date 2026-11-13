@@ -5,14 +5,14 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { load } from './rig-transfer/load-for-validation.mjs';
+import { load } from './load-for-validation.mjs';
 
 const source = readFileSync(new URL('./residentRig.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const module = { exports: {}, require: () => THREE };
 vm.runInNewContext(compiled, module);
 const { createResidentRig, RESIDENT_SCALE } = module.exports;
-const { gltf, mesh: reference, sample } = await load(new URL('../../../public/models/resident/luna-walk-room.glb', import.meta.url));
+const { gltf, mesh: reference, sample } = await load(new URL('../../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
 function instance() {
   const asset = clone(gltf.scene);

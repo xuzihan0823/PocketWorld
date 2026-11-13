@@ -30,10 +30,15 @@
 
 | 角色 / 任务 | 负责模块 | 允许修改的专属目录 | 严禁擅自修改的区域 |
 |---|---|---|---|
-| **任务一（队长）** | 3D 等轴测房间建模与布置、相机推镜动画、电脑 OS 外壳、音乐播放器与光盘动效 | `src/scene/`、`src/components/`、`public/models/`、`public/audio/` | 组员负责的具体游戏内部实现（集成联调除外） |
-| **任务二（组员 A）** | 马里奥横版闯关小游戏 | `src/games/mario/` | `src/scene/`、`src/components/`、`src/games/shooter/`、全局样式文件 |
+| **任务一（队长）** | 3D 等轴测房间建模与布置、相机推镜动画、电脑 OS 外壳、音乐播放器与光盘动效 | `src/scene/`、`src/components/`、`assets/public/models/` | 组员负责的具体游戏内部实现（集成联调除外） |
+| **任务二（组员 A）** | 马里奥横版闯关小游戏 | `src/games/mario/`、`assets/games/ski/` | `src/scene/`、`src/components/`、`src/games/shooter/`、全局样式文件 |
 | **任务三（组员 B）** | 打飞机太空射击小游戏 | `src/games/shooter/` | `src/scene/`、`src/components/`、`src/games/mario/`、全局样式文件 |
 | **公共契约层** | 跨模块 TypeScript 类型与接口定义 | `src/types/game.ts`、`src/types/interactable.ts` | 仅限队长统一维护，组员如需扩展字段须先向队长提出 |
+
+### 3.1 素材归口与禁止提交测试/展示文件铁律
+
+- **素材统一归口 `assets/`**：所有 3D 模型、贴图、精灵图、字体、音频等素材文件必须集中存放在根目录 `assets/` 下（运行时通过相对 URL 加载的静态模型放入 `assets/public/models/`，由 Vite 打包器静态 `import` 的游戏素材放入 `assets/games/<game>/`）。**严禁**再将图片、音频、字体、模型等素材文件放在 `src/` 目录或另建零散的 `public/`、`art/`、`output/` 目录。
+- **严禁存放并提交测试残留与展示文件**：**任何**手工测试残留产物、视觉验收截图/录屏、对比图、HTML 预览页或交互展示页面、离线 QA/跑分脚本输出及审计 JSON、临时规划与草稿文件（如 `review/`、`evidence/`、`views/`、`final-views/`、`*preview*.html`、`*gallery*.html`、`*.mp4`、`.tmp/`、`.planning/`、`output/`、`dist/` 等）**一律不得放在项目目录中，更严禁提交进 Git 仓库**。PR 所需的验收截图与录屏应直接上传至 GitHub PR 描述或评论区。自动化回归测试仅允许保留标准单测脚本（`*.test.mjs` 与 `scripts/test.mjs`）。
 
 ---
 
@@ -69,8 +74,9 @@
 1. **交互解耦**：
    - 3D 场景中的所有可交互物品（电脑、音乐播放器及后续新增物品）统一通过 `InteractableItemConfig`（见 `src/types/interactable.ts`）注册，禁止在 3D 模型渲染组件中硬编码复杂的业务弹窗逻辑。
 2. **模型与资源规范**：
-   - 导出至 `public/models/` 的模型统一使用 `.glb`（glTF 2.0 二进制）格式，可交互物体节点命名采用 `Interactable_<Name>`（如 `Interactable_Computer`、`Interactable_MusicPlayer`）。
+   - 导出至 `assets/public/models/` 的模型统一使用 `.glb`（glTF 2.0 二进制）格式，可交互物体节点命名采用 `Interactable_<Name>`（如 `Interactable_Computer`、`Interactable_MusicPlayer`）。
    - 单个 `.glb` 模型文件建议控制在 `10MB` 以内，贴图分辨率不超过 `2048 × 2048`，确保网页首屏加载流畅。
+   - **禁止**在 `assets/public/` 中留存未使用的历史模型或文档说明（该目录内容会被 Vite 原样复制到生产 `dist/`）。
 
 ---
 

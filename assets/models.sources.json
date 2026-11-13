@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-11-07",
+  "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
+  "assets": [
+    {
+      "file": "furniture/throw_pillows_01.glb",
+      "sourcePage": "https://polyhaven.com/a/throw_pillows_01",
+      "license": "CC0-1.0",
+      "licensePage": "https://polyhaven.com/license",
+      "used": true,
+      "bytes": 1192668,
+      "sha256": "a497776b3e9c153dfc122dc3a1a81a29984b6bb74ced6e1578b5d30bea7e1937",
+      "processing": "Existing locally packaged glTF binary; runtime clones the scene and normalizes scale. Packaging recipe from the earlier work session is not retained."
+    },
+    {
+      "file": "plants/potted_plant_04.glb",
+      "sourcePage": "https://polyhaven.com/a/potted_plant_04",
+      "license": "CC0-1.0",
+      "licensePage": "https://polyhaven.com/license",
+      "used": true,
+      "bytes": 2119832,
+      "sha256": "fa2767cb3d4c20197a58914b88488bb06dc86ab051313ba6a834950015b1d254",
+      "processing": "Existing locally packaged glTF binary; runtime clones the scene and normalizes scale. Packaging recipe from the earlier work session is not retained."
+    }
+  ]
+}
