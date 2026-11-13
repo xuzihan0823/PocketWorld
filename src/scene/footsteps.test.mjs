@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 function load(path, dependencies, globals = {}) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -53,6 +54,9 @@ function mount(kind, overrides = {}) {
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairMotion': load('./orbital/chairMotion.ts', { three: THREE }),
+    'three/examples/jsm/utils/BufferGeometryUtils.js': { mergeGeometries },
+    './Primitives': { SoftBox: 'SoftBox' },
+    './shaders/oak': { applyOakGrain() {} },
     './chairPose': load('./orbital/chairPose.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
@@ -65,8 +69,8 @@ function mount(kind, overrides = {}) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/orbital.css': {},
   };
-  const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
-  const names = { orbital: 'OrbitalResidents', app: 'App' };
+  const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx', shell: './orbital/HabitatShell.tsx' };
+  const names = { orbital: 'OrbitalResidents', app: 'App', shell: 'HabitatShell' };
   const props = {
     sceneId: 'habitat', objects: {}, enabled: true, reducedMotion: false, walkTarget: null,
     interaction: { current: null }, drawerEnabled: true, drawerInteraction: { current: null }, onDrawerAction() {},
@@ -93,7 +97,7 @@ function mount(kind, overrides = {}) {
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
-    root, pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    root, tree, pointer: type => target.dispatchEvent(new Event(type)), pivot: groups[1]?.group, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -394,6 +398,23 @@ test('a chair with no safe front entry cannot seat the resident through furnitur
     assert.equal(performed, 0);
     assert.equal(view.root.userData.posture, 'standing');
     assert.ok(Math.abs(view.chair.z + 0.85) < 0.001);
+  } finally { view.dispose(); }
+});
+
+test('moving an object on pointerup cannot turn its click into a floor walk', () => {
+  const walks = [], view = mount('shell', { variant: 'habitat', onFloorClick: point => walks.push(point) });
+  try {
+    const floor = view.tree.props.children.flat().find(node => node?.props?.onClick);
+    const click = () => floor.props.onClick({ delta: 0, point: new THREE.Vector3(1, 0, 1), stopPropagation() {} });
+    view.pointer('pointerdown'); floor.props.onPointerDown(); click();
+    assert.equal(walks.length, 1);
+    // The next press belongs to an ObjectHandle, which consumes pointerdown.
+    view.pointer('pointerdown'); click();
+    assert.equal(walks.length, 1);
+    view.pointer('pointerdown'); floor.props.onPointerDown(); view.pointer('pointercancel'); click();
+    assert.equal(walks.length, 1);
+    view.pointer('pointerdown'); floor.props.onPointerDown(); click();
+    assert.equal(walks.length, 2);
   } finally { view.dispose(); }
 });
 

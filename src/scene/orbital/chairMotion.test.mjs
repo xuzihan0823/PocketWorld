@@ -47,6 +47,31 @@ const gltf = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, 
 const clip = gltf.animations[0];
 const walk = await load(new URL('../../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 const { createResidentRig } = compile('./residentRig.ts');
+test('caster chair keeps a full-sized seat and back with a short fixed post', () => {
+  const data = readFileSync(new URL('../../../assets/public/models/replaced/rolling-chair.parts.glb', import.meta.url));
+  const jsonLength = data.readUInt32LE(12), doc = JSON.parse(data.subarray(20, 20 + jsonLength));
+  const bin = data.subarray(28 + jsonLength), bounds = new THREE.Box3();
+  let cushion = 0, backrest = 0;
+  for (const mesh of doc.meshes) for (const primitive of mesh.primitives) {
+    const a = doc.accessors[primitive.attributes.POSITION], view = doc.bufferViews[a.bufferView];
+    const n = doc.accessors[primitive.attributes.NORMAL], nv = doc.bufferViews[n.bufferView];
+    for (let i = 0; i < a.count; i++) {
+      const offset = (view.byteOffset ?? 0) + (a.byteOffset ?? 0) + i * (view.byteStride ?? 12);
+      const p = new THREE.Vector3(...[0, 1, 2].map(axis => bin.readFloatLE(offset + axis * 4)));
+      assert.ok(p.toArray().every(Number.isFinite)); bounds.expandByPoint(p);
+      if (p.y > .27 && p.y < .33 && p.z > -.10 && p.z < .25) cushion++;
+      if (p.y > .60 && p.z < 0) backrest++;
+      const no = (nv.byteOffset ?? 0) + (n.byteOffset ?? 0) + i * (nv.byteStride ?? 12);
+      assert.ok(Math.abs(Math.hypot(...[0, 1, 2].map(axis => bin.readFloatLE(no + axis * 4))) - 1) < .00001);
+    }
+  }
+  const size = bounds.getSize(new THREE.Vector3());
+  assert.ok(size.x > .8 && size.z > .7 && size.y > .75, 'preserve furniture scale instead of shrinking the entire chair');
+  assert.ok(size.distanceTo(new THREE.Vector3(.85, .79, .75)) < .00001);
+  assert.ok(Math.abs(bounds.min.y) < .00001);
+  assert.ok(cushion > 500 && backrest > 500, 'retain both the low cushion and full backrest');
+  assert.deepEqual(doc.nodes.map(n => n.name), ['base', 'seat']);
+});
 test('original 191-frame motion is retained as a small independent animation library', () => {
   assert.equal(createHash('sha256').update(raw).digest('hex'), 'a48f34da176a5e3eba2b173cdb782a268c9dd3245360e6fff584dd7ca9486b7c');
   assert.equal(clip.name, 'ChairSit_Original'); assert.equal(clip.tracks.length, 195);

@@ -1,8 +1,8 @@
 import { MathUtils } from 'three';
 
 /** The supplied caster chair is fitted once; no gas-lift or animated seat height. */
-export const ROLLING_CHAIR_SIZE: [number, number, number] = [.60, .56, .40];
-export const CHAIR_STAND_OFFSET = .24;
+export const ROLLING_CHAIR_SIZE: [number, number, number] = [.85, .79, .75];
+export const CHAIR_STAND_OFFSET = .40;
 export type ChairPhase = 'backing' | 'blend-in' | 'sit-down' | 'seated' | 'stand-up' | 'blend-out' | 'leaving' | 'done';
 export function createChairMotion(offset: number) {
   return { phase: 'backing' as ChairPhase, offset, exitOffset: offset, time: 0, weight: 0, idle: 0, returning: false };

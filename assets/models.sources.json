@@ -19,9 +19,9 @@
       "sourceSha256": "b30bc907b0fc9481746b3c45e8a759f0a2aa387b3540df5a51db1ebbe4d1b016",
       "license": "User-supplied furniture; no separate license document supplied.",
       "used": true,
-      "bytes": 3617732,
-      "sha256": "79c2c559740d0f7e4ac744420d7879563eb318a1e97fbbceeb79619237253749",
-      "processing": "Reuse the existing optimized base/seat split derived from the supplied caster chair. Runtime contact fit is 0.60 x 0.56 x 0.40 room units; cushion height is approximately 0.30. Seat height is fixed during entry, sitting, scooting and exit."
+      "bytes": 3617736,
+      "sha256": "3747b5ecabdf595e880b05b2e28a63e2b2e2be924706eac7cc729903e86fe39d",
+      "processing": "scripts/fit-chair-post.mjs refits the existing optimized base/seat split from commit f6d26ec (input SHA-256 79c2c559740d0f7e4ac744420d7879563eb318a1e97fbbceeb79619237253749). Fit the chair body to 0.85 x 1.10 x 0.75, then shorten only the central post by 0.31; preserve the full cushion, backrest and casters. Final size is 0.85 x 0.79 x 0.75 with cushion height approximately 0.30. Normals are transformed with the inverse transpose; UVs, textures and topology are retained. Seat height is fixed during entry, sitting, scooting and exit."
     },
     {
       "file": "furniture/throw_pillows_01.glb",

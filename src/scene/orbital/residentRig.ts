@@ -187,8 +187,8 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     }
     // Source motion descends in place. Transfer onto the cushion while the
     // independently captured feet remain in front of its fixed caster base.
-    bone('Hips').position.z -= .24 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, .7, 2.8);
-    bone('Hips').position.y += .032 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.25, 2.6);
+    bone('Hips').position.z -= .30 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, .7, 2.8);
+    bone('Hips').position.y += .022 / RESIDENT_SCALE * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.25, 2.6);
     // Keep the source anticipation/step; plant only after the foot adjustment.
     const planting = chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.1, 1.6);
     asset.updateWorldMatrix(true, true);
@@ -218,7 +218,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
       if (!/Back|Dress_(Left|Right)_/.test(target.name)) continue;
       const side = /^Dress_(Left|Right)_/.test(target.name);
       const point = mesh.worldToLocal(target.getWorldPosition(new THREE.Vector3()));
-      point.y += (side ? .052 : .02) * gather;
+      point.y += (side ? .052 : -.015) * gather;
       if (side) point.x -= Math.sign(point.x) * .08 * gather;
       target.position.copy(target.parent!.worldToLocal(mesh.localToWorld(point)));
       target.updateWorldMatrix(false, true);
@@ -228,7 +228,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
       joint.quaternion.slerp(rotation, gather * .8);
     }
     for (const joint of chairRearFolds) {
-      const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0).applyQuaternion(basis), -.75 * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.2, 1.9))
+      const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0).applyQuaternion(basis), -1.05 * chair.weight * THREE.MathUtils.smoothstep(chair.time, 1.2, 1.9))
         .multiply(joint.getWorldQuaternion(new THREE.Quaternion()));
       joint.quaternion.copy(joint.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(rotation);
       joint.updateWorldMatrix(false, true);

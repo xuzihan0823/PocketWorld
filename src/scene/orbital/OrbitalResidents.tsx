@@ -32,7 +32,7 @@ const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const angle = (from: number, to: number, t: number) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * t;
 // Scoot cycle: feet reach down, push the floor until the legs straighten, then lift and recover.
-const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.2, SOLE_LIFT = 0.06;
+const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.16, SOLE_LIFT = 0.06;
 const PUSH = 3.4, ROLL_DRAG = 2.4;
 
 function layout(observatory: boolean) {
