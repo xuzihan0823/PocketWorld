@@ -28,9 +28,7 @@ export function bookPose(scene: string, book: LibraryBook, flow: LibraryFlow) {
   if (phase === 'insert') position.lerpVectors(outside, shelf, t);
   return { position, quaternion, open, phase };
 }
-export function toySupport(scene: string): Vec3 { const origin = shelfOrigin(scene); return [-3.86, 1.009, origin[2] + 1.30]; }
 export function residentLibraryTarget(scene: string, flow: LibraryFlow): Vec3 {
-  if (['approach', 'leaving'].includes(flow.phase)) { const origin = shelfOrigin(scene); return [-3.50, 0, origin[2] + 1.09]; }
   if (flow.book && flow.phase === 'align') return bookStand(scene, flow.book, true);
   return readingStand(scene);
 }

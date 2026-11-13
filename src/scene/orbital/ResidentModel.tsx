@@ -2,7 +2,7 @@ import React, { Suspense, useLayoutEffect, useMemo, useRef, type MutableRefObjec
 import { Html, useGLTF } from '@react-three/drei';
 import type { ThreeElements } from '@react-three/fiber';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import { createResidentRig } from './residentRig';
 
 export { HIP_HEIGHT } from './residentRig';
@@ -19,31 +19,21 @@ export interface ResidentArm {
 }
 export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
-  skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group; bunny: THREE.Group;
-  toyRest: THREE.Vector3; toyGrip: THREE.Vector3;
-  applyPose: (phase: number, walkWeight: number, holdToy: boolean) => void;
+  skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
+  applyPose: (phase: number, walkWeight: number) => void;
   dispose: () => void;
 }
 
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
-const TOY = `${import.meta.env.BASE_URL}models/resident/luna-bunny-refined.glb`;
 
 function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
   const { scene, animations } = useGLTF(MODEL);
-  const plush = useGLTF(TOY);
   const container = useRef<THREE.Group>(null);
   const resident = useMemo(() => {
     const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
     if (!walk) throw new Error('Luna walk animation missing');
-    const toy = plush.scene.clone(true);
-    toy.traverse(object => {
-      if (object instanceof THREE.Mesh) {
-        object.castShadow = object.receiveShadow = true;
-        object.raycast = () => {};
-      }
-    });
-    return createResidentRig(clone(scene), walk, toy);
-  }, [scene, animations, plush.scene]);
+    return createResidentRig(clone(scene), walk);
+  }, [scene, animations]);
   useLayoutEffect(() => {
     const group = container.current!;
     group.add(resident.mesh);
@@ -74,7 +64,7 @@ class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFa
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useGLTF.clear(TOY); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 
@@ -85,4 +75,3 @@ export function ResidentModel({ rig, onFailure, ...props }: ThreeElements['group
 }
 
 useGLTF.preload(MODEL);
-useGLTF.preload(TOY);
