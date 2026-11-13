@@ -8,7 +8,7 @@ import { roomAudio } from '../../audioEngine';
 import { ObjectHandle } from '../ObjectHandle';
 import { SoftBox } from '../Primitives';
 import { SuppliedAsset } from '../SuppliedAsset';
-import { RecordTransport, PLAYER, PLATTER, RECORD_CENTER, DISC_LEAN, DISC_RADIUS, discPosition, type Point } from './record-motion';
+import { RecordTransport, PLAYER, PLATTER, DISC_LEAN, DISC_RADIUS, discPosition, type Point } from './record-motion';
 
 const IMPORT_DISC: Point = [.3, 1.128, -2.3];
 const rackRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(DISC_LEAN, 0, 0));
@@ -79,7 +79,7 @@ export function RecordPlayer(props: WorldSceneProps) {
     for (const event of transport.tick(delta, props.reducedMotion)) {
       if (event.type === 'pause') roomAudio.pauseMusic();
       if (event.type === 'contact') roomAudio.playSfx('soft');
-      if (event.type === 'play') { startedAt.current = 0; roomAudio.setMusicLevel(0); latest.current.onSelectDisc(event.disc); }
+      if (event.type === 'play') { roomAudio.playSfx('switch'); startedAt.current = 0; roomAudio.setMusicLevel(0); latest.current.onSelectDisc(event.disc); }
     }
     const pose = transport.pose(props.reducedMotion);
     roomAudio.setMusicLevel(pose.volume);

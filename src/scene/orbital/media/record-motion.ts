@@ -9,7 +9,7 @@ export const DISC_RADIUS = .17;
 export const DISC_LEAN = -.12;
 export const ARM_REST = .1, ARM_PLAY = -1.03;
 // Separate the entire label/hub thickness, not only the black vinyl faces.
-export const discPosition = (slot: number): Point => [-.58 + (slot % 6) * .155, 1.36, -2.88 + (slot % 6) * .035];
+export const discPosition = (slot: number): Point => [-.58 + (slot % 6) * .155, 1.36, -2.93 + (slot % 6) * .035];
 export const smooth = (t: number) => { const x = Math.max(0, Math.min(1, t)); return x * x * x * (x * (x * 6 - 15) + 10); };
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const lerp = (a: Point, b: Point, t: number): Point => a.map((v, i) => mix(v, b[i], t)) as Point;
@@ -24,7 +24,9 @@ export function recordPath(slot: number, progress: number): { position: Point; t
   const clear: Point = [Math.max(home[0], -.1), 1.78, pop[2] - (1.78 - pop[1]) * Math.tan(-DISC_LEAN)];
   const above: Point = [RECORD_CENTER[0], 1.53, RECORD_CENTER[2]];
   if (t < .1) return { position: lerp(home, pop, smooth(t / .1)), tilt: 0 };
-  if (t < .4) return { position: lerp(pop, clear, smooth((t - .1) / .3)), tilt: 0 };
+  const aside: Point = [clear[0], pop[1], pop[2]];
+  if (t < .24) return { position: lerp(pop, aside, smooth((t - .1) / .14)), tilt: 0 };
+  if (t < .4) return { position: lerp(aside, clear, smooth((t - .24) / .16)), tilt: 0 };
   if (t < .58) return { position: clear, tilt: smooth((t - .4) / .18) };
   if (t < .85) return { position: bezier(clear, [clear[0], 1.84, -2.32], [above[0], 1.68, above[2]], above, smooth((t - .58) / .27)), tilt: 1 };
   return { position: lerp(above, RECORD_CENTER, smooth((t - .85) / .15)), tilt: 1 };
@@ -66,7 +68,7 @@ export class RecordTransport {
     const events: RecordEvent[] = [];
     switch (this.phase) {
       case 'raise': this.enter('brake'); events.push({ type: 'pause' }); break;
-      case 'brake': this.enter(this.target ? 'return' : 'park'); break;
+      case 'brake': this.enter('park'); break;
       case 'return':
         this.disc = this.target!.disc; this.slot = this.target!.slot; this.target = null; this.enter('extract'); break;
       case 'extract': this.enter('settle'); events.push({ type: 'contact' }); break;
@@ -75,7 +77,7 @@ export class RecordTransport {
       case 'swing': this.enter('lower'); break;
       case 'lower': this.enter('starting'); events.push({ type: 'play', disc: this.disc }); break;
       case 'fadein': this.enter('playing'); break;
-      case 'park': this.enter('paused'); break;
+      case 'park': this.enter(this.target ? 'return' : 'paused'); break;
     }
     return events;
   }
@@ -89,10 +91,12 @@ export class RecordTransport {
     }
     if (phase === 'settle' && !reduced) position[1] += Math.sin(Math.PI * t) ** 2 * .003;
     if (phase === 'playing' || phase === 'fadein' || phase === 'starting') { speed = 1; yaw = ARM_PLAY; lift = 0; volume = phase === 'playing' ? 1 : phase === 'fadein' ? t : 0; }
-    if (phase === 'raise') { speed = this.wasPlaying ? 1 : 0; yaw = this.wasPlaying ? ARM_PLAY : ARM_REST; lift = this.wasPlaying ? t : 1; volume = this.wasPlaying ? 1-t : 0; }
+    if (phase === 'raise') { speed = this.wasPlaying ? 1 : 0; yaw = this.wasPlaying ? ARM_PLAY : ARM_REST; lift = t; volume = this.wasPlaying ? 1-t : 0; }
     if (phase === 'brake') { speed = this.wasPlaying ? 1-t : 0; yaw = mix(this.wasPlaying ? ARM_PLAY : ARM_REST, ARM_REST, t); }
-    if (phase === 'spinup') speed = t;
+    if (phase === 'spinup') { speed = t; lift = t; }
     if (phase === 'swing') { speed = 1; yaw = mix(ARM_REST, ARM_PLAY, t); }
+    if (phase === 'paused' || phase === 'return' || phase === 'extract' || phase === 'settle') lift = 0;
+    if (phase === 'park') lift = 1-t;
     if (phase === 'lower') { speed = 1; yaw = ARM_PLAY; lift = 1-t; }
     return { position, tilt, seated, speed, yaw, lift, volume };
   }

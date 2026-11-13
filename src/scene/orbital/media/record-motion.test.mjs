@@ -103,9 +103,25 @@ test('30/60/144 Hz, reduced motion and a suspended-tab delta reach identical sta
 });
 
 test('path position and orientation are continuous at every segment boundary', () => {
-  for (let slot=0;slot<6;slot++) for (const t of [.1,.4,.58,.85]) {
+  for (let slot=0;slot<6;slot++) for (const t of [.1,.24,.4,.58,.85]) {
     const a=recordPath(slot,t-1e-7), b=recordPath(slot,t+1e-7);
     assert.ok(new THREE.Vector3(...a.position).distanceTo(new THREE.Vector3(...b.position))<1e-5);
     assert.ok(Math.abs(a.tilt-b.tilt)<1e-5);
+  }
+});
+
+test('arm, motor and volume do not jump when transport stages hand off', () => {
+  for (const playing of [false,true]) {
+    const machine = new RecordTransport(disc(0),0,playing);machine.select(disc(1),1);
+    let previous=machine.pose();
+    for(let i=0;i<15000 && machine.phase!=='playing';i++) {
+      const phase=machine.phase;
+      if(phase==='starting') machine.playbackResult(true); else machine.tick(.001);
+      const next=machine.pose();
+      if(machine.phase!==phase) for(const key of ['yaw','lift','speed','volume']) assert.ok(Math.abs(previous[key]-next[key])<.001,`${phase} -> ${machine.phase}: ${key} jumped`);
+      previous=next;
+    }
+    assert.equal(machine.phase,'playing');
+    machine.toggle();advance(machine,'paused');assert.equal(machine.pose().lift,0,'arm rests after parking');
   }
 });

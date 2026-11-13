@@ -21,7 +21,6 @@ function Label({ children, position, width = 180 }: { children: React.ReactNode;
   return <Html center position={position} distanceFactor={4} style={{ pointerEvents: 'none', width, textAlign: 'center', color: '#f3e6c9', font: '12px monospace', textShadow: '0 1px 3px #242723', userSelect: 'none', overflowWrap: 'anywhere' }}><span>{children}</span></Html>;
 }
 
-
 function Cartridge({ game }: { game: GameId }) {
   return <group>
     <SuppliedAsset name="cartridge" size={[.22, .075, .25]} fit="contact" rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -.0375]} fallback={<>    <SoftBox dims={[0.22, 0.25, 0.075]} color={gameColors[game]} radius={0.016} />
