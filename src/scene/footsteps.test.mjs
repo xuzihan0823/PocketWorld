@@ -60,7 +60,7 @@ function mount(kind, overrides = {}) {
     './scene/orbital/library/LibrarySurface': { LibrarySurface: 'LibrarySurface' },
     './library/residentPose': { applyLibraryPose() {}, carryResident() {}, libraryCrouch: () => 0 },
     './library/bookMotion': { residentLibraryTarget: () => [0, 0, 0] },
-    './library/catalog': { readingStand: () => [-3.45, 0, -1] },
+    './library/catalog': { readingStand: () => [-3.28, 0, -1.92], shelfOrigin: () => [-3.28, 0, -2.79] },
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/orbital.css': {},
   };

@@ -7,7 +7,7 @@ import { ObjectHandle } from './ObjectHandle';
 import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL, chairFacing, chairFront, type ChairPose } from './chairPose';
 import { applyLibraryPose, carryResident, libraryCrouch } from './library/residentPose';
 import { residentLibraryTarget } from './library/bookMotion';
-import { readingStand } from './library/catalog';
+import { readingStand, shelfOrigin } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
@@ -35,10 +35,11 @@ const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR 
 const PUSH = 3.4, ROLL_DRAG = 2.4;
 
 function layout(observatory: boolean) {
+  const [shelfX, , shelfZ] = shelfOrigin(observatory ? 'observatory' : 'habitat');
   const furniture: Box[] = [
     [-0.85, 2.95, -3.025, -1.675], // Desk, including the desktop overhang.
-    [-3.96, -3.76, (observatory ? -.65 : -1.9) + 1.2, (observatory ? -.65 : -1.9) + 1.4],
-    [-4.04, -2.86, observatory ? -0.92 : -2.17, observatory ? -0.38 : -1.63],
+    [shelfX - 0.51, shelfX - 0.31, shelfZ + 1.2, shelfZ + 1.4],
+    [shelfX - 0.59, shelfX + 0.59, shelfZ - 0.27, shelfZ + 0.27],
     ...(observatory ? [[-0.65, 0.15, 0.45, 1.25], [2.4, 3.1, 1.5, 2.2]] as Box[] : [[-3.46, -1.74, -0.32, 2.31], [-3.85, -3.25, 2.25, 2.85]] as Box[]),
   ];
   const grow = (by: number) => furniture.map(([a, b, c, d]) => [a - by, b + by, c - by, d + by] as Box);

@@ -39,8 +39,10 @@ const stories = [
 ] as const;
 export const BUILTIN_BOOKS: LibraryBook[] = stories.map(([title, chapters], i) => ({ id: `book-0${i + 1}`, source: 'builtin', title, author: 'PocketWorld · 原创', text: chapters.join('\f'), color: colors[i], slotId: BOOK_SLOTS[i * 6 + 2].id, anchor: 0 }));
 export const freshLibrary = (): LibraryData => ({ version: 1, revision: 0, books: BUILTIN_BOOKS.map(book => ({ ...book })) });
-export const shelfOrigin = (scene: string): Vec3 => [-3.45, 0, scene === 'observatory' ? -0.65 : -1.9];
-export const readingStand = (scene: string): Vec3 => [-3.45, 0, scene === 'observatory' ? 0.22 : -1.03];
+// Bookcase origin: x keeps its left side clear of the window sill (inner edge x=-3.905);
+// in the habitat its back sits against the rear sill (front edge z=-3.08).
+export const shelfOrigin = (scene: string): Vec3 => [-3.28, 0, scene === 'observatory' ? -0.65 : -2.79];
+export const readingStand = (scene: string): Vec3 => { const [x, y, z] = shelfOrigin(scene); return [x, y, z + 0.87]; };
 export const slotFor = (book: LibraryBook) => BOOK_SLOTS.find(slot => slot.id === book.slotId)!;
 
 export function readLibrary(storage: Pick<Storage, 'getItem'>): LibraryData {
