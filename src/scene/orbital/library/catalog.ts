@@ -37,13 +37,31 @@ const stories = [
     '第六章 · 门口\n\n门打开的时候，屋里的灯正好亮起。母亲问路上累不累，林说不累，然后在椅子上坐了很久。包里的明信片已经寄出，会比她晚几天到家。\n\n她没有急着讲那些壮丽的风景，只先帮忙摆好碗筷。窗外有一颗星，暗得几乎看不见。林知道它在那里，便觉得这一趟旅行已经有了完整的结尾。',
   ]],
 ] as const;
-export const BUILTIN_BOOKS: LibraryBook[] = stories.map(([title, chapters], i) => ({ id: `book-0${i + 1}`, source: 'builtin', title, author: 'PocketWorld · 原创', text: chapters.join('\f'), color: colors[i], slotId: BOOK_SLOTS[i * 6 + 2].id, anchor: 0 }));
+export const BUILTIN_BOOKS: LibraryBook[] = stories.map(([title, chapters], i) => ({ id: `book-0${i + 1}`, source: 'builtin', title, author: 'PocketWorld · 原创', text: chapters.join('\f'), color: colors[i], slotId: BOOK_SLOTS[6 + 1 + i].id, anchor: 0 }));
 export const freshLibrary = (): LibraryData => ({ version: 1, revision: 0, books: BUILTIN_BOOKS.map(book => ({ ...book })) });
 // Bookcase origin: x keeps its left side clear of the window sill (inner edge x=-3.905);
 // in the habitat its back sits against the rear sill (front edge z=-3.08).
 export const shelfOrigin = (scene: string): Vec3 => [-3.28, 0, scene === 'observatory' ? -0.65 : -2.79];
 export const readingStand = (scene: string): Vec3 => { const [x, y, z] = shelfOrigin(scene); return [x, y, z + 0.87]; };
 export const slotFor = (book: LibraryBook) => BOOK_SLOTS.find(slot => slot.id === book.slotId)!;
+
+// Reconcile existing v1 collections in memory; normal locked writes persist the layout.
+// Keep visitor books in place unless a new builtin slot displaces them.
+function arrangeBuiltinBooks(data: LibraryData): LibraryData {
+  if (BUILTIN_BOOKS.every(preset => data.books.some(book => book.id === preset.id && book.slotId === preset.slotId))) return data;
+  const reserved = new Map(BUILTIN_BOOKS.map(book => [book.id, book.slotId]));
+  const occupied = new Set(reserved.values());
+  for (const book of data.books) if (book.source === 'user' && !occupied.has(book.slotId)) occupied.add(book.slotId);
+  const books = data.books.map(book => {
+    const builtinSlot = reserved.get(book.id);
+    if (builtinSlot) return { ...book, slotId: builtinSlot };
+    if (!BUILTIN_BOOKS.some(preset => preset.slotId === book.slotId)) return book;
+    const slot = BOOK_SLOTS.find(slot => !occupied.has(slot.id))!;
+    occupied.add(slot.id);
+    return { ...book, slotId: slot.id };
+  });
+  return { ...data, books };
+}
 
 export function readLibrary(storage: Pick<Storage, 'getItem'>): LibraryData {
   const value = storage.getItem(LIBRARY_KEY);
@@ -72,7 +90,7 @@ export function readLibrary(storage: Pick<Storage, 'getItem'>): LibraryData {
   if (data.books.filter(b => b.source === 'user').reduce((n, b) => n + byteLength(b.text), 0) > TOTAL_LIMIT
     || BUILTIN_BOOKS.some(b => !data.books.some(saved => saved.id === b.id && saved.source === 'builtin'))
     || data.books.some(b => b.source === 'builtin' && !BUILTIN_BOOKS.some(preset => preset.id === b.id))) throw new Error('藏书配置异常，未覆盖原记录。');
-  return data;
+  return arrangeBuiltinBooks(data);
 }
 export function makeUserBook(data: LibraryData, title: string, author: string, input: string, id = `visitor-${crypto.randomUUID()}`): LibraryBook {
   const text = normalizeText(input);

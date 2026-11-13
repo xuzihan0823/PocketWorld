@@ -17,6 +17,35 @@ test('十八个标准书位具有独立受支撑空间，不越过层板和柜�
   for (const s of m.BOOK_SLOTS) { assert.ok(Math.abs(s.position[0]) + m.BOOK_SIZE.thickness / 2 < .51); assert.ok(s.position[1] + m.BOOK_SIZE.height / 2 < [ .9025, 1.1925, 1.51 ][s.row]); }
 });
 test('三本原创内容至少六页，页码间与书籍间正文各异', () => { const m = fixture(), pages = m.BUILTIN_BOOKS.flatMap(b => m.paginate(b.text, 330, 16, () => 16)); assert.ok(pages.length >= 18); assert.equal(new Set(pages.map(p => p.text)).size, pages.length); });
+test('默认书在中间层相邻摆放，旧存档保留正文和书签且读取不写存储', () => {
+  const m = fixture(), data = m.freshLibrary();
+  for (const [i, book] of data.books.entries()) { book.slotId = `s${i}-2`; book.anchor = 20 + i; }
+  data.revision = 7;
+  const saved = JSON.stringify(data); m.storage.setItem(m.LIBRARY_KEY, saved);
+  const next = m.readLibrary(m.storage);
+  assert.equal(next.books.map(book => book.slotId).join(), 's1-1,s1-2,s1-3');
+  assert.equal(next.revision, 7);
+  for (const [i, book] of next.books.entries()) { assert.equal(book.anchor, 20 + i); assert.equal(book.text, data.books[i].text); }
+  assert.equal(m.storage.getItem(m.LIBRARY_KEY), saved);
+  assert.equal(m.freshLibrary().books.map(book => book.slotId).join(), 's1-1,s1-2,s1-3');
+});
+test('满柜迁移只挪动占用默认新书位的自添书，不丢书且保存后布局稳定', async () => {
+  const m = fixture(), data = m.freshLibrary();
+  data.books.forEach((book, i) => { book.slotId = `s${i}-2`; });
+  for (let i = 0; i < 15; i++) data.books.push({ ...m.makeUserBook(data, `自添 ${i}`, '访客', `正文 ${i}`), anchor: 2 });
+  m.storage.setItem(m.LIBRARY_KEY, JSON.stringify(data));
+  const migrated = m.readLibrary(m.storage);
+  assert.equal(migrated.books.length, 18);
+  assert.equal(new Set(migrated.books.map(book => book.slotId)).size, 18);
+  for (const previous of data.books.filter(book => book.source === 'user')) {
+    const next = migrated.books.find(book => book.id === previous.id);
+    assert.equal(JSON.stringify({ ...next, slotId: previous.slotId }), JSON.stringify(previous));
+    if (!['s1-1', 's1-3'].includes(previous.slotId)) assert.equal(next.slotId, previous.slotId);
+  }
+  const saved = await m.mutateLibrary(value => value);
+  assert.equal(saved.revision, data.revision + 1);
+  assert.equal(JSON.stringify(m.readLibrary(m.storage)), JSON.stringify(saved));
+});
 test('长段落、英文长词、换行和代理对重新分页不丢字，书签锚点可重定位', () => {
   const m = fixture(), text = '开头\n\n' + 'abc无空格🙂'.repeat(500) + '\n结尾';
   for (const width of [30, 150, 420]) { const pages = m.paginate(text, width, 5, () => 16); assert.equal(pages.map(p => p.text).join(''), text); assert.equal(pages[0].start, 0); assert.equal(pages.at(-1).end, text.length); assert.ok(pages.every(p => !/^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/.test(p.text))); }
