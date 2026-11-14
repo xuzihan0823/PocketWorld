@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { load as loadModel } from './orbital/load-for-validation.mjs';
+
+const { gltf: residentModel } = await loadModel(new URL('../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
 function load(path, dependencies, globals = {}) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -55,6 +59,7 @@ function mount(kind, overrides = {}) {
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './chairPose': load('./orbital/chairPose.ts', {}),
+    './chairMotion': load('./orbital/chairMotion.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
@@ -82,6 +87,11 @@ function mount(kind, overrides = {}) {
   function attach(node) {
     if (Array.isArray(node)) { node.forEach(attach); return; }
     if (!node || typeof node !== 'object') return;
+    if (node.type === 'ResidentModel') {
+      const rig = dependencies['./residentRig'].createResidentRig(clone(residentModel.scene), residentModel.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
+      node.props.rig.current = rig;
+      cleanups.push(() => rig.dispose());
+    }
     if (node.type === 'group' && node.props.ref) {
       const group = new THREE.Group();
       if (node.props.position) group.position.set(...node.props.position);
@@ -99,6 +109,7 @@ function mount(kind, overrides = {}) {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
       target.dispatchEvent(event);
+      return event;
     },
     frame(dt) {
       elapsed += dt;
@@ -317,6 +328,7 @@ for (const yaw of [0.15, Math.PI / 2, Math.PI, -Math.PI / 2]) {
         assert.equal(view.root.userData.posture, 'chair');
         const facing = view.chair.yaw - 0.2 + Math.PI;
         assert.ok(Math.abs(Math.atan2(Math.sin(view.root.rotation.y - facing), Math.cos(view.root.rotation.y - facing))) < 0.02);
+        assert.equal(view.key('Escape').defaultPrevented, true, 'seated Escape must not also restore App state');
       } finally { view.dispose(); }
     });
   }
@@ -378,7 +390,7 @@ test('Escape cancels a pending interaction before the object opens', () => {
   try {
     view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
     view.frame(1 / 60);
-    view.key('Escape');
+    assert.equal(view.key('Escape').defaultPrevented, true, 'App must not also handle this cancellation');
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
     assert.equal(performed, 0);
   } finally { view.dispose(); }

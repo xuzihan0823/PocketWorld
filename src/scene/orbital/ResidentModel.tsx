@@ -1,9 +1,10 @@
 import React, { Suspense, useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { Html, useGLTF } from '@react-three/drei';
-import type { ThreeElements } from '@react-three/fiber';
+import { useLoader, type ThreeElements } from '@react-three/fiber';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { createResidentRig } from './residentRig';
+import { createChairAnimation, readSeatContactCache } from './chairAnimation';
 
 export { HIP_HEIGHT } from './residentRig';
 export interface ResidentLeg {
@@ -21,19 +22,29 @@ export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
   applyPose: (phase: number, walkWeight: number) => void;
+  applyChairPose?: (time: number, weight: number, soleAhead?: number, soleLift?: number) => void;
   dispose: () => void;
 }
 
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
+const CONTACT = `${import.meta.env.BASE_URL}models/resident/luna-seat-contact.bin`;
 
 function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
   const { scene, animations } = useGLTF(MODEL);
+  const contact = useLoader(THREE.FileLoader, CONTACT, loader => loader.setResponseType('arraybuffer')) as ArrayBuffer;
   const container = useRef<THREE.Group>(null);
   const resident = useMemo(() => {
     const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
     if (!walk) throw new Error('Luna walk animation missing');
-    return createResidentRig(clone(scene), walk);
-  }, [scene, animations]);
+    const sit = animations.find(clip => clip.name === 'ChairSit_Contact');
+    if (!sit) throw new Error('Luna contact-corrected sit animation missing');
+    const asset = clone(scene), result = createResidentRig(asset, walk);
+    const chair = createChairAnimation(asset, sit, readSeatContactCache(contact));
+    const dispose = result.dispose;
+    result.applyChairPose = chair.apply;
+    result.dispose = () => { chair.dispose(); dispose(); };
+    return result;
+  }, [scene, animations, contact]);
   useLayoutEffect(() => {
     const group = container.current!;
     group.add(resident.mesh);
@@ -64,7 +75,7 @@ class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFa
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useLoader.clear(THREE.FileLoader, CONTACT); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 
