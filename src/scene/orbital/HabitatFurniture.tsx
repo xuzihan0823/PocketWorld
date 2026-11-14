@@ -44,9 +44,9 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
       </group>)}
     </>}
 </>} />
-    <group ref={seat}>
+    <group ref={seat} position={[0, lounge ? 0 : -SEAT_DROP, 0]}>
 
-      <FurnitureMotion target={SEAT_SWIVEL} reducedMotion={world.reducedMotion}>
+      <group rotation={[0, SEAT_SWIVEL, 0]}>
         <SuppliedAsset name={lounge ? "lounge-chair.parts" : "rolling-chair.parts"} part="seat" size={lounge ? [1.04, 1.40, 1] : [.90, 1.40, .90]} fit="contact" rotation={[0, Math.PI, 0]} fallback={<>{!lounge && <Cylinder radius={0.042} height={0.3} position={[0, 0.325, 0]} color="#b9bbb2" metalness={0.8} />}        <SoftBox dims={lounge ? [1.04, 0.18, 1.0] : [0.77, 0.13, 0.75]} position={[0, 0.54, 0]} color={C.edge} radius={0.07} />
         <FurnitureCushion dims={lounge ? [0.94, 0.24, 0.9] : [0.74, 0.18, 0.71]} position={[0, 0.65, 0]} color={lounge ? '#bc9770' : C.cloth} />
         <Tube points={[[-0.29, 0.56, 0.22], [-0.3, 0.82, 0.35], [-0.29, 1.15, 0.35]]} radius={0.026} color={C.ink} />
@@ -57,7 +57,7 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
           <SoftBox dims={[lounge ? 0.17 : 0.1, 0.07, 0.52]} position={[side * (lounge ? 0.48 : 0.41), 0.89, 0.02]} color={lounge ? '#bc9770' : C.edge} radius={0.035} />
         </group>)}
 </>} />
-      </FurnitureMotion>
+      </group>
     </group>
   </group></ObjectHandle>;
 }

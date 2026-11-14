@@ -11,6 +11,8 @@ import { residentLibraryTarget } from './library/bookMotion';
 import { readingStand, shelfOrigin } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
+import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
+import { BED_ENTRY, BED_YAW, BED_DURATION, advanceBedTime, createBedPlayer, loadBedClip } from './bedMotion';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 
 type Point = [number, number];
@@ -32,6 +34,8 @@ const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const angle = (from: number, to: number, t: number) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * t;
 // Scoot cycle: feet reach down, push the floor until the legs straighten, then lift and recover.
+// The deeper seat pose leaves less clearance at the cushion lip during the foot stroke.
+const CHAIR_PUSH_TRAVEL = 0.035, CHAIR_FOOT_RECOVERY = 0.023;
 const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.2, SOLE_LIFT = 0.06;
 const PUSH = 3.4, ROLL_DRAG = 2.4;
 
@@ -171,7 +175,18 @@ export function OrbitalResidents(props: ResidentsProps) {
   const petGesture = useRef(false);
   const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, lift: 0, velocity: 0, walkTime: 0, nearby: '', nearbyHint: '', dismissedBed: false, dismissedChair: false,
     perch: 0, idle: Infinity, kick: 0, planted: false, plant: SOLE_NEAR, sole: SOLE_NEAR, soleLift: SOLE_LIFT });
+  const bedMotion = useRef({ clip: null as THREE.AnimationClip | null, player: null as ReturnType<typeof createBedPlayer> | null, rig: null as ResidentRig | null, time: 0 });
+  useEffect(() => {
+    if (!props.objects.bed?.active || props.sceneId !== 'habitat') return;
+    let live = true;
+    void loadBedClip().then(clip => { if (live) bedMotion.current.clip = clip; }).catch(error => {
+      if (live) { current.current.onHover('bed', '上床动作加载失败，请重试'); current.current.onAction({ sceneId: 'habitat', objectId: 'bed', kind: 'wake' }); }
+      console.error(error);
+    });
+    return () => { live = false; };
+  }, [props.objects.bed?.active, props.sceneId]);
   const exit = useRef({ from: new THREE.Vector3(), yaw: 0, sit: 0, lie: 0, progress: 0 });
+  const chairMotion = useRef(createChairMotion());
   const movement = useMemo(() => ({ forward: new THREE.Vector3(), right: new THREE.Vector3(), step: new THREE.Vector3() }), []);
 
   const act = (objectId: string, kind: WorldActionKind) => {
@@ -229,7 +244,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (!task || !root) return;
     const pose = CHAIR_POSES[p.sceneId];
     const fixed = task.action.objectId === 'chair' ? chairEntry(room, pose)
-      : task.action.objectId === 'bed' ? [-1.48, 0.95] as Point
+      : task.action.objectId === 'bed' ? BED_ENTRY as Point
       : task.action.objectId === 'desk-drawer' ? [0.35, p.objects['desk-drawer']?.open ? -0.5 : -1.2] as Point : undefined;
     const path = approachRoute([root.position.x, root.position.z], task.point, obstacles(room, pose), fixed);
     if (path) state.current.path = path;
@@ -301,7 +316,12 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const p = current.current;
-      if (event.code === 'Escape' && approach.current) { cancelApproach(); return; }
+      if (event.code === 'Escape' && (approach.current || (state.current.posture === 'chair' && !p.focusedObject))) {
+        // App's Escape handler must not restore its stale object snapshot after stand().
+        event.preventDefault(); event.stopPropagation();
+        if (approach.current) cancelApproach(); else stand();
+        return;
+      }
       const target = event.target as HTMLElement | null;
       if (!p.enabled || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || (target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) return;
       if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(event.code)) return;
@@ -322,7 +342,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         jump.current = true;
       }
       else {
-        const scooting = p.sceneId === 'habitat' && state.current.posture === 'chair' && !state.current.exiting;
+        const scooting = p.sceneId === 'habitat' && state.current.posture === 'chair' && !state.current.exiting && chairMotion.current.time === CHAIR_SIT_SECONDS;
         if (!scooting) stand();
         if (state.current.external) { state.current.external = false; p.onArrive(); }
         keys.current.add(event.code);
@@ -424,7 +444,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
     }
     const seatEntry = chairEntry(room, pose);
-    const entry: Point = (s.posture !== 'standing' ? s.posture === 'bed' : wanted === 'bed') ? [-1.48, 0.95] : seatEntry;
+    const entry: Point = (s.posture !== 'standing' ? s.posture === 'bed' : wanted === 'bed') ? BED_ENTRY : seatEntry;
     if (wanted !== s.wanted) {
       s.wanted = wanted;
       s.path = [];
@@ -442,7 +462,66 @@ export function OrbitalResidents(props: ResidentsProps) {
       p.sceneId === 'observatory' && x >= -2.95 && x <= -0.05 && z >= -0.3 && z <= 1.9 ? 'rug' : 'wood';
     const frameX = root.position.x, frameZ = root.position.z;
     let walking = false;
-    if (s.exiting) {
+    const bed = bedMotion.current;
+    if (bed.clip && rig.current && bed.rig !== rig.current) {
+      bed.player = createBedPlayer(rig.current.mesh, bed.clip); bed.rig = rig.current;
+    }
+    if (p.sceneId === 'habitat' && s.posture === 'chair') {
+      const cm = chairMotion.current;
+      const [dx, dz] = p.enabled && !s.exiting ? steer() : [0, 0];
+      const driving = dx !== 0 || dz !== 0;
+      const result = stepChairMotion(cm, dt, s.exiting, driving || Math.hypot(pose.vx, pose.vz) > .02, p.reducedMotion);
+      pose.drop = 1 - cm.height / SEAT_DROP;
+      s.blend = cm.time / CHAIR_SIT_SECONDS;
+      s.sit = result.weight; s.lie = 0; s.perch = 0;
+      if (result.canMove) {
+        if (driving && !s.planted) pose.yaw = angle(pose.yaw, Math.atan2(-dx, -dz) - SEAT_SWIVEL - Math.PI, 1 - Math.exp(-dt * 5));
+        if (!s.kick && driving) s.kick = 1e-4;
+        if (s.kick) { s.kick += dt / KICK; if (s.kick >= 1) s.kick = driving ? Math.max(1e-4, s.kick - 1) : 0; }
+        const facing = seatYaw(pose), backX = -Math.sin(facing), backZ = -Math.cos(facing);
+        const pushing = s.kick >= REACH_END && s.kick < PUSH_END;
+        if (pushing) {
+          if (!s.planted) { s.planted = true; s.plant = 0; roomAudio.playFootstep({ variant: 'push', surface: surfaceAt(pose.x, pose.z), intensity: .75 }); }
+          const speed = Math.max(0, pose.vx * backX + pose.vz * backZ) + PUSH * dt;
+          pose.vx = backX * speed; pose.vz = backZ * speed;
+        } else s.planted = false;
+        const oldX = pose.x, oldZ = pose.z;
+        rollChair(room, pose, dt, pushing, null);
+        if (pushing) { s.plant += (pose.x-oldX)*backX + (pose.z-oldZ)*backZ; if (s.plant >= CHAIR_PUSH_TRAVEL) { s.plant = CHAIR_PUSH_TRAVEL; s.kick = PUSH_END; s.planted = false; } }
+        if (!s.kick) { s.sole = 0; s.soleLift = 0; }
+        else if (s.kick < REACH_END) { s.sole = 0; s.soleLift = .035 * Math.sin(s.kick / REACH_END * Math.PI); }
+        else if (s.planted) { s.sole = s.plant; s.soleLift = 0; }
+        else { const u = clamp((s.kick-PUSH_END)/(1-PUSH_END),0,1); s.sole = s.plant * (1-ease(u)); s.soleLift = CHAIR_FOOT_RECOVERY * Math.sin(u * Math.PI); }
+      } else {
+        pose.vx = pose.vz = pose.spin = 0;
+        s.kick = 0; s.planted = false;
+        s.sole = THREE.MathUtils.damp(s.sole, 0, 16, dt);
+        s.soleLift = THREE.MathUtils.damp(s.soleLift, 0, 16, dt);
+      }
+      const start = chairFront(pose, result.offset), u = ease(cm.align);
+      root.position.set(THREE.MathUtils.lerp(seatEntry[0],start[0],u), cm.height, THREE.MathUtils.lerp(seatEntry[1],start[1],u));
+      root.rotation.y = seatYaw(pose);
+      if (result.done) {
+        s.posture = 'standing'; s.exiting = false; s.blend = 0; s.sit = 0; s.sole = 0; s.soleLift = 0;
+        chairMotion.current = createChairMotion();
+        if (libraryWalking && libraryTarget) s.path = route(entry, [libraryTarget[0],libraryTarget[2]], obstacles(room,pose));
+        else if (approach.current) planApproach();
+        else if (s.external && p.walkTarget) s.path = route(entry,[p.walkTarget[0],p.walkTarget[2]],obstacles(room,pose));
+        else if (wanted !== 'standing') s.path = route(entry, wanted === 'bed' ? BED_ENTRY : seatEntry, obstacles(room, pose));
+      }
+    } else if (s.posture === 'bed' && bed.player) {
+      // Controller owns the fixed entry transform. Clip owns all bone/root motion.
+      root.position.set(BED_ENTRY[0], 0, BED_ENTRY[1]); root.rotation.set(0, BED_YAW, 0);
+      bed.time = advanceBedTime(bed.time, dt, s.exiting, p.reducedMotion);
+      s.sit = 0; s.lie = 0; s.blend = bed.time / BED_DURATION;
+      if (s.exiting && bed.time === 0) {
+        s.posture = 'standing'; s.exiting = false; s.blend = 0;
+        if (libraryWalking && libraryTarget) s.path = route(BED_ENTRY, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose));
+        else if (approach.current) planApproach();
+        else if (s.external && p.walkTarget) s.path = route(BED_ENTRY, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
+        else if (wanted !== 'standing') s.path = route(BED_ENTRY, wanted === 'bed' ? BED_ENTRY : seatEntry, obstacles(room, pose));
+      }
+    } else if (s.exiting) {
       // Move off the support before lowering the pelvis; preserve the actual in-flight pose.
       const transition = exit.current;
       transition.progress = Math.min(1, transition.progress + dt / 0.85);
@@ -462,7 +541,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         if (libraryWalking && libraryTarget) s.path = route(entry, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose));
         else if (approach.current) planApproach();
         else if (s.external && p.walkTarget) s.path = route(entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
-        else if (wanted !== 'standing') s.path = route(entry, wanted === 'bed' ? [-1.48, 0.95] : seatEntry, obstacles(room, pose));
+        else if (wanted !== 'standing') s.path = route(entry, wanted === 'bed' ? BED_ENTRY : seatEntry, obstacles(room, pose));
       }
     } else if (s.posture !== 'standing') {
       s.blend = Math.min(1, s.blend + dt / (p.reducedMotion ? 0.4 : 0.9));
@@ -573,7 +652,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (!s.path.length && s.external && p.enabled && !s.exiting && s.lift === 0 && !approach.current?.chairTarget) {
         const request = approach.current;
         const fixed = request?.action.objectId === 'chair' || request?.action.objectId === 'bed';
-        const target = request?.action.objectId === 'chair' ? seatEntry : request?.action.objectId === 'bed' ? [-1.48, 0.95] : request?.point;
+        const target = request?.action.objectId === 'chair' ? seatEntry : request?.action.objectId === 'bed' ? BED_ENTRY : request?.point;
         const distance = target ? Math.hypot(root.position.x - target[0], root.position.z - target[1]) : 0;
         const radius = fixed ? 0.06 : 1.15;
         cancelApproach();
@@ -581,9 +660,14 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       if (!s.path.length && autonomous && s.lift <= 0) {
         if (Math.hypot(root.position.x - entry[0], root.position.z - entry[1]) < 0.06) {
-          const yaw = wanted === 'chair' ? seatYaw(pose) : root.rotation.y;
+          const yaw = wanted === 'chair' ? seatYaw(pose) : BED_YAW;
           root.rotation.y = angle(root.rotation.y, yaw, 1 - Math.exp(-dt * 12));
-          if (Math.abs(Math.atan2(Math.sin(yaw - root.rotation.y), Math.cos(yaw - root.rotation.y))) < 0.06) { s.posture = wanted; s.blend = 0; }
+          const facingTarget = Math.abs(Math.atan2(Math.sin(yaw - root.rotation.y), Math.cos(yaw - root.rotation.y))) < 0.06;
+          if (facingTarget && rig.current && (wanted !== 'bed' || bed.player)) {
+            s.posture = wanted; s.blend = 0;
+            if (wanted === 'chair') { chairMotion.current = createChairMotion(); s.sole = s.soleLift = 0; }
+            if (wanted === 'bed') { bed.time = 0; root.rotation.y = BED_YAW; }
+          }
         }
         else s.path = route([root.position.x, root.position.z], entry, obstacles(room, pose));
       }
@@ -615,7 +699,8 @@ export function OrbitalResidents(props: ResidentsProps) {
         if (['carry', 'return-carry'].includes(flow.phase) && flow.progress > .08 && flow.progress < .92) walking = true;
       }
     }
-    pose.drop = s.perch;
+    if (p.sceneId !== 'habitat') pose.drop = s.perch;
+    else if (s.posture !== 'chair') pose.drop = 1;
     const distance = Math.hypot(root.position.x - frameX, root.position.z - frameZ);
     const groundedWalk = walking && s.lift === 0 && distance > .00001;
     if (groundedWalk) {
@@ -636,13 +721,14 @@ export function OrbitalResidents(props: ResidentsProps) {
     pivot.rotation.x = -s.lie * Math.PI / 2;
     pivot.rotation.z = airborne ? stride * .12 : 0;
     if (rig.current) {
-      const straighten = Math.max(s.sit, s.lie, s.perch);
-      rig.current.skirtFront.rotation.x = -s.sit * Math.PI / 2;
+      const sit = p.sceneId === 'habitat' && s.posture === 'chair' ? 0 : s.sit;
+      const straighten = Math.max(sit, s.lie, s.perch);
+      rig.current.skirtFront.rotation.x = -sit * Math.PI / 2;
       rig.current.skirtFront.position.y = HIP + s.sit * 0.05;
       rig.current.skirtFront.position.z = 0.19 + s.sit * 0.13;
-      rig.current.skirtBack.rotation.x = -s.sit * 0.4;
+      rig.current.skirtBack.rotation.x = -sit * 0.4;
       rig.current.legs.forEach((leg, side) => {
-        let thigh = -s.sit * Math.PI / 2, knee = s.sit * Math.PI / 2;
+        let thigh = -sit * Math.PI / 2, knee = sit * Math.PI / 2;
         if (libraryActive && root.position.y < -.001) [thigh, knee] = legReach(leg, -leg.hipForward, root.position.y + HIP - leg.ankleHeight);
         if (s.perch > 0.001) {
           const [reachThigh, reachKnee] = legReach(leg, s.sole - leg.hipForward, root.position.y + HIP - s.soleLift - leg.ankleHeight);
@@ -656,12 +742,26 @@ export function OrbitalResidents(props: ResidentsProps) {
       });
     }
     if (rig.current && library && flow) applyLibraryPose(rig.current, root, p.sceneId, flow, dt);
-    if (rig.current) rig.current.applyPose(s.walkTime, ease(walkWeight.current));
+    if (rig.current) {
+      const playingBed = s.posture === 'bed' && bed.player;
+      const playingChair = p.sceneId === 'habitat' && s.posture === 'chair';
+      if (!playingBed) rig.current.applyPose(s.walkTime, ease(walkWeight.current));
+      rig.current.applyChairPose?.(
+        playingChair ? chairMotion.current.time : 0,
+        playingChair ? ease(chairMotion.current.align) : 0,
+        playingChair ? s.sole : 0,
+        playingChair ? s.soleLift : 0,
+      );
+      if (playingBed) playingBed(bed.time);
+    }
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.grounded = s.lift === 0;
+    root.userData.chairPhase = s.posture === 'chair' ? chairMotion.current.phase : 'idle';
+    root.userData.chairHeight = chairMotion.current.height;
+    root.userData.bedTime = s.posture === 'bed' ? bed.time : null;
     const candidates: { id: string; point: Point; distance: number }[] = [{ id: 'book-01', point: [readingStand(p.sceneId)[0], readingStand(p.sceneId)[2]], distance: 1.0 }, { id: 'pet', point: CAT, distance: 1.1 }, { id: 'chair', point: [pose.x, pose.z], distance: 1.35 }];
-    if (p.sceneId === 'habitat') candidates.push({ id: 'bed', point: [-1.48, 0.95], distance: 1.0 });
+    if (p.sceneId === 'habitat') candidates.push({ id: 'bed', point: BED_ENTRY, distance: 1.0 });
     if (p.drawerEnabled && s.posture === 'standing' && canReachDrawer(root.position, drawerOpen)) candidates.push({ id: 'desk-drawer', point: [0.35, drawerOpen ? -0.935 : -1.575], distance: 1.2 });
     const nearby = p.enabled && !drawerTask.current ? candidates.map(item => {
       const distance = Math.hypot(root.position.x - item.point[0], root.position.z - item.point[1]);
@@ -669,7 +769,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     }).filter(item => item.reachable).sort((a, b) => a.gap - b.gap)[0]?.id ?? '' : '';
     const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '推回抽屉' : '后退拉开抽屉') : '坐下'}` : '';
     if (!drawerTask.current && (nearby !== s.nearby || hint !== s.nearbyHint)) { s.nearby = nearby; s.nearbyHint = hint; p.onHover(nearby || null, hint || undefined); }
-  });
+  }, -1);
 
   const characterDown = (event: ThreeEvent<PointerEvent>) => {
     if (!props.enabled || drawerTask.current || event.pointerType !== 'touch' || touch.current) return;
