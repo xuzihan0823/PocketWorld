@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SoftBox } from './Primitives';
 import { applyOakGrain } from './shaders/oak';
+import { useWallVisibility } from './walls/useWallVisibility';
+import type { Vec3, WallTag } from './walls/wallVisibility';
 
 export interface HabitatShellProps {
   variant: 'habitat' | 'observatory';
@@ -27,9 +29,9 @@ function roundedPath(width: number, height: number, radius: number, cx = 0, cy =
   return s;
 }
 
-function frameShape(width: number, height: number, apertureWidth: number, apertureHeight: number, radius: number): THREE.Shape {
+function frameShape(width: number, height: number, apertureWidth: number, apertureHeight: number, radius: number, apertureOffset = 0): THREE.Shape {
   const shape = roundedPath(width, height, radius, 0, height / 2);
-  shape.holes.push(roundedPath(apertureWidth, apertureHeight, Math.min(radius, 0.42), 0, 1.94));
+  shape.holes.push(roundedPath(apertureWidth, apertureHeight, Math.min(radius, 0.42), apertureOffset, 1.94));
   return shape;
 }
 
@@ -49,16 +51,31 @@ const NO_RAYCAST = () => undefined;
 
 const EXTRUDE = { depth: 0.2, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.045, bevelThickness: 0.035, curveSegments: 16 };
 
-/** Architecture only. The front stays open for the cutaway camera; the right wall holds the hatch. */
+/** userData tags read by useWallVisibility; normals point out of the room. */
+const WALL = {
+  back: { wall: { id: 'back', normal: [0, 0, -1] } },
+  front: { wall: { id: 'front', normal: [0, 0, 1] } },
+  left: { wall: { id: 'left', normal: [-1, 0, 0] } },
+  right: { wall: { id: 'right', normal: [1, 0, 0] } },
+} satisfies Record<string, { wall: WallTag }>;
+
+/** Interior sight-line targets: the room centre plus low and high points near each corner. */
+const ROOM_SAMPLES: readonly Vec3[] = [[0, 1.2, 0],
+  ...[-3.5, 3.5].flatMap(x => [-2.7, 2.7].flatMap(z => [[x, 0.3, z], [x, 2.2, z]] as Vec3[]))];
+
+/** Architecture only. A closed shell whose walls fade out of the camera's way; the right wall holds the hatch. */
 export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClick }) => {
   const root = useRef<THREE.Group>(null);
+  useWallVisibility(root, ROOM_SAMPLES);
   const shapes = useMemo(() => ({
     floor: roundedPath(8.4, 6.8, 0.55),
     base: roundedPath(8.8, 7.2, 0.72),
     edge: windowRing(8.75, 7.15, 0.12, 0.7),
     back: frameShape(8.7, 3.5, 7.7, 2.3, 0.58),
-    side: frameShape(4.5, 3.5, 3.48, 2.3, 0.58),
-    hatchWall: doorwayShape(3.3, 3.5, 1.26, 2.38, 0.33, 0.58),
+    front: roundedPath(8.7, 3.5, 0.58, 0, 1.75),
+    // Side walls run the full depth (z −3.39/−3.58 → 3.39); openings keep their original world positions.
+    side: frameShape(6.78, 3.5, 3.48, 2.3, 0.58, 1.14),
+    hatchWall: doorwayShape(6.97, 3.5, 1.26, 2.38, -1.505, 0.58),
     backCollar: windowRing(8.02, 2.64, 0.2, 0.55),
     backSeal: windowRing(7.72, 2.34, 0.044, 0.4),
     sideCollar: windowRing(3.8, 2.64, 0.2, 0.55),
@@ -139,19 +156,23 @@ export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClic
         <extrudeGeometry args={[shapes.edge, { ...EXTRUDE, depth: 0.025, bevelSize: 0.015, bevelThickness: 0.012 }]} />
         <meshStandardMaterial color={cream} roughness={0.38} metalness={0.15} />
       </mesh>
-      <mesh position={[0, 0, -3.58]} castShadow receiveShadow>
+      <mesh position={[0, 0, -3.58]} userData={WALL.back} castShadow receiveShadow>
         <extrudeGeometry args={[shapes.back, EXTRUDE]} />
         <meshStandardMaterial color={cream} roughness={0.44} />
       </mesh>
-      <mesh position={[-4.38, 0, -1.14]} rotation={[0, Math.PI / 2, 0]} castShadow receiveShadow>
+      <mesh position={[-4.38, 0, 0]} rotation={[0, Math.PI / 2, 0]} userData={WALL.left} castShadow receiveShadow>
         <extrudeGeometry args={[shapes.side, EXTRUDE]} />
+        <meshStandardMaterial color={cream} roughness={0.44} />
+      </mesh>
+      <mesh position={[0, 0, 3.38]} userData={WALL.front} castShadow receiveShadow>
+        <extrudeGeometry args={[shapes.front, EXTRUDE]} />
         <meshStandardMaterial color={cream} roughness={0.44} />
       </mesh>
       {/* A deep ceramic collar, inset dark pressure seal, and a restrained pane:
           the aperture is physically empty, never a black rectangle or backdrop. */}
       {[{ side: false, collar: shapes.backCollar, seal: shapes.backSeal, glass: shapes.backGlass },
         { side: true, collar: shapes.sideCollar, seal: shapes.sideSeal, glass: shapes.sideGlass }].map(({ side, collar, seal, glass }) => (
-        <group key={side ? 'port-window' : 'panorama-window'}
+        <group key={side ? 'port-window' : 'panorama-window'} userData={side ? WALL.left : WALL.back}
           position={side ? [-4.14, 1.94, -1.14] : [0, 1.94, -3.34]}
           rotation={[0, side ? Math.PI / 2 : 0, 0]}>
           <mesh castShadow receiveShadow>
@@ -172,8 +193,9 @@ export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClic
       <SoftBox dims={[8.15, 0.1, 0.19]} position={[0, 0.12, -3.25]} radius={0.025} color="#d4d1c5" metalness={0.25} />
       <SoftBox dims={[0.2, 0.1, 4.28]} position={[-4.08, 0.12, -1.14]} radius={0.025} color="#d4d1c5" metalness={0.25} />
       <SoftBox dims={[0.33, 0.12, 4.12]} position={[-4.07, 0.65, -1.14]} radius={0.04} color="#d3be99" />
-      <SoftBox dims={[7.8, 0.14, 0.23]} position={[0, 3.31, -3.27]} radius={0.045} color={cream} />
-      <mesh position={[0, 3.245, -3.21]} rotation={[Math.PI / 2, 0, 0]} raycast={NO_RAYCAST}>
+      {/* Ceiling-height cornice and its light line belong to the back wall and fade with it. */}
+      <SoftBox dims={[7.8, 0.14, 0.23]} position={[0, 3.31, -3.27]} radius={0.045} color={cream} userData={WALL.back} />
+      <mesh position={[0, 3.245, -3.21]} rotation={[Math.PI / 2, 0, 0]} userData={WALL.back} raycast={NO_RAYCAST}>
         <planeGeometry args={[7.45, 0.04]} />
         <meshBasicMaterial color="#ffe8c6" toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
@@ -192,7 +214,7 @@ export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClic
           <meshStandardMaterial color="#48545b" metalness={0.8} roughness={0.32} />
         </mesh>
       ))}
-      <mesh position={[4.38, 0, -1.93]} rotation={[0, -Math.PI / 2, 0]} castShadow receiveShadow>
+      <mesh position={[4.38, 0, -0.095]} rotation={[0, -Math.PI / 2, 0]} userData={WALL.right} castShadow receiveShadow>
         <extrudeGeometry args={[shapes.hatchWall, EXTRUDE]} />
         <meshStandardMaterial color={cream} roughness={0.44} />
       </mesh>
