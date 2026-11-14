@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { load as loadModel } from './orbital/load-for-validation.mjs';
+
+const { gltf: residentModel } = await loadModel(new URL('../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
 function load(path, dependencies, globals = {}) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -53,6 +57,7 @@ function mount(kind, overrides = {}) {
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),
+    './chairMotion': load('./orbital/chairMotion.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
     './scene/audioEngine': { roomAudio: audio, PRESET_MUSIC_DISCS: [] },
     './scene/orbital/OrbitalScene': { OrbitalScene: 'OrbitalScene' },
@@ -80,6 +85,11 @@ function mount(kind, overrides = {}) {
   function attach(node) {
     if (Array.isArray(node)) { node.forEach(attach); return; }
     if (!node || typeof node !== 'object') return;
+    if (node.type === 'ResidentModel') {
+      const rig = dependencies['./residentRig'].createResidentRig(clone(residentModel.scene), residentModel.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
+      node.props.rig.current = rig;
+      cleanups.push(() => rig.dispose());
+    }
     if (node.type === 'group' && node.props.ref) {
       const group = new THREE.Group();
       if (node.props.position) group.position.set(...node.props.position);
