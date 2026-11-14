@@ -6,9 +6,11 @@
 
 ### 运行资源
 
-- `assets/public/models/resident/luna-walk-room.glb`：保留原压缩贴图与 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–68 帧，30 fps，时间归零后 67/30 秒）。31,140 个三角形，9,353,064 bytes。
+- `assets/public/models/resident/luna-walk-room.glb`：保留 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–68 帧，30 fps，时间归零后 67/30 秒）。31,140 个三角形，10,267,804 bytes。
 - 同目录 `luna-seat-contact.bin`：68 帧、2,716 个局部顶点的蒙皮前修形，1,108,148 bytes。不能只替换 GLB 而遗漏该文件；普通 glTF 查看器只显示骨骼动作，不会自动应用此缓存。
-- 相对原运行模型合计增加 2,182,580 bytes；源 `.blend` 不在 `assets/public/`，不进入网页构建。
+- 相对原运行模型合计增加 3,097,320 bytes；源 `.blend` 不在 `assets/public/`，不进入网页构建。
+
+原始 4096 × 4096 底色 JPEG 来自用户提供的 Tripo GLB，在 Git 提交 `2e1ff72` 的 `art/resident/animated-transfer/walk-repair/luna-walk-repaired.glb` 中也有相同副本。法线与粗糙度／金属度图保留 2048 × 2048。当前材质将法线强度设为 0.18、金属系数设为 0，并复用底色作为 0.55 强度的自发光，用来减轻室内近景的发际线和眼周暗块。
 
 ### 复建
 
@@ -19,7 +21,7 @@ blender --background --python scripts/bake-luna-chair.py -- --output <外部目�
 python scripts/pack-luna-chair.py --output <外部目录>
 ```
 
-第二步默认从 Git 基线 `6f6df88` 读取原 Walk 与压缩贴图，也可通过 `--original <原始GLB>` 指定输入。确认验收后，仅把输出 `luna-room-contact.glb` 复制为运行目录的 `luna-walk-room.glb`，并复制 `luna-seat-contact.bin`。
+第二步默认从 Git 基线 `6f6df88` 读取原 Walk 与压缩贴图，也可通过 `--original <原始GLB>` 指定输入。动画重建后，把输出 `luna-room-contact.glb` 与 `luna-seat-contact.bin` 作为运行资源。打包脚本沿用 2K 基线材质，发布前需按上段的来源与参数恢复 4K 底色和当前材质。
 
 制作脚本仅细化裙摆接触区，先限制为四骨骼权重，再从 Blender 评估网格反解蒙皮前位移；保留原平滑法线。转椅按场景尺寸归一化并降低 0.25 m，人物比例 1.43。升降通过人物与座椅共同平移实现，不伸长腿骨。
 

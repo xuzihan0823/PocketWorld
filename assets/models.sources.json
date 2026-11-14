@@ -25,12 +25,12 @@
     },
     {
       "file": "resident/luna-walk-room.glb",
-      "source": "User-supplied Luna/Mixamo source and Luna-Sit-ContactFixed.blend with the deeper seat adjustment; original Walk/textures from repository commit 6f6df88.",
+      "source": "User-supplied Luna/Mixamo source and Luna-Sit-ContactFixed.blend with the deeper seat adjustment; Walk and 2K data maps from repository commit 6f6df88; original 4K base color from the user-supplied Tripo GLB, also preserved in commit 2e1ff72.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 9353064,
-      "sha256": "dc6fefc48eb6e12f7b1209e0c1bac29a8b0590f8d9981c8874f04835160ec4a5",
-      "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
+      "bytes": 10267804,
+      "sha256": "5a4acb8d189b027a3b370cd089c8e9da20b1f42a685610579fb3ae9542b0ca4f",
+      "processing": "Original base-color JPEG copied into the existing runtime model. Normal scale 0.18, metallic factor 0, and base-color emission factor 0.55. See assets/models/resident/README.md."
     },
     {
       "file": "resident/luna-seat-contact.bin",
