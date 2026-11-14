@@ -79,6 +79,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const support = (leg: THREE.Bone[]) => ({
     pose: leg.map(capture),
     point: leg[2].getWorldPosition(new THREE.Vector3()),
+    toe: leg[3].getWorldPosition(new THREE.Vector3()),
     sole: leg[2].getWorldQuaternion(new THREE.Quaternion()),
   });
   sample(.20);
@@ -95,6 +96,20 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   });
   leftLeg.forEach((joint, i) => restore(joint, leftSupport.pose[i]));
   rightLeg.forEach((joint, i) => restore(joint, rightSupport.pose[i]));
+  // Mid-swing averages leave the pelvis behind the planted feet and the trunk
+  // leaning back. Balance the pelvis over the rear/middle of the sole, then
+  // align the neck above it. Replant both legs below, preserving their soles.
+  const hips = bone('Hips');
+  const hipPosition = hips.getWorldPosition(new THREE.Vector3());
+  const neckPosition = bone('Neck').getWorldPosition(new THREE.Vector3());
+  const forward = (leftSupport.point.z + rightSupport.point.z) * .5
+    + ((leftSupport.toe.z - leftSupport.point.z) + (rightSupport.toe.z - rightSupport.point.z)) * .175;
+  const pitch = Math.atan2(hipPosition.z - neckPosition.z, neckPosition.y - hipPosition.y);
+  const balancedRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitch)
+    .multiply(hips.getWorldQuaternion(new THREE.Quaternion()));
+  hips.position.copy(hips.parent!.worldToLocal(hipPosition.clone().setZ(forward)));
+  hips.quaternion.copy(hips.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(balancedRotation);
+  hips.updateWorldMatrix(false, true);
   plantNeutralLeg(leftLeg, leftSupport.point, leftSupport.sole);
   plantNeutralLeg(rightLeg, rightSupport.point, rightSupport.sole);
   asset.updateMatrixWorld(true);
@@ -182,6 +197,6 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     });
   }
 
-  return { mesh, legs, arms, torso, neck, skirtFront, skirtBack, applyPose,
+  return { mesh, legs, arms, torso, neck, skirtFront, skirtBack, applyPose, neutralPose: neutral,
     dispose: () => { for (const object of skinned) object.skeleton.dispose(); } };
 }

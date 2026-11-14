@@ -464,7 +464,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     let walking = false;
     const bed = bedMotion.current;
     if (bed.clip && rig.current && bed.rig !== rig.current) {
-      bed.player = createBedPlayer(rig.current.mesh, bed.clip); bed.rig = rig.current;
+      bed.player = createBedPlayer(rig.current.mesh, bed.clip, rig.current.neutralPose); bed.rig = rig.current;
     }
     if (p.sceneId === 'habitat' && s.posture === 'chair') {
       const cm = chairMotion.current;
