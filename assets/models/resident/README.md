@@ -1,12 +1,12 @@
 # Luna 坐姿制作源
 
-`Luna-Sit-ContactFixed.blend` 是用户提供并确认的接触修正版，保留 115 骨骼、坐下动作、真实转椅和接触修形修改器。源文件 SHA-256：`4ddff6cd6479218ef24abaaac571c8ebd758fbf7936a20e81d05aa4f8cffc61c`。角色与 Mixamo 行走素材沿用既有项目输入，未收到独立许可声明；不将其标记为 CC0。
+`Luna-Sit-ContactFixed.blend` 基于用户提供的接触修正版，调整了落座深度与小腿轨迹，保留 115 骨骼、坐下动作、真实转椅和接触修形修改器。源文件 SHA-256：`a9b60ea23722f85dcf3d9bdb419eca4ed7bbafb8028778442f85e0aaf09af3ab`。角色与 Mixamo 行走素材沿用既有项目输入，未收到独立许可声明；不将其标记为 CC0。
 
 ## 运行资源
 
-- `assets/public/models/resident/luna-walk-room.glb`：保留原压缩贴图与 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–68 帧，30 fps，时间归零后 67/30 秒）。31,189 个三角形，9,354,816 bytes。
-- 同目录 `luna-seat-contact.bin`：68 帧、3,930 个局部顶点的蒙皮前修形，1,603,460 bytes。不能只替换 GLB 而遗漏该文件；普通 glTF 查看器只显示骨骼动作，不会自动应用此缓存。
-- 相对原运行模型合计增加 2,679,644 bytes；源 `.blend` 不在 `assets/public/`，不进入网页构建。
+- `assets/public/models/resident/luna-walk-room.glb`：保留原压缩贴图与 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–68 帧，30 fps，时间归零后 67/30 秒）。31,140 个三角形，9,353,064 bytes。
+- 同目录 `luna-seat-contact.bin`：68 帧、2,716 个局部顶点的蒙皮前修形，1,108,148 bytes。不能只替换 GLB 而遗漏该文件；普通 glTF 查看器只显示骨骼动作，不会自动应用此缓存。
+- 相对原运行模型合计增加 2,182,580 bytes；源 `.blend` 不在 `assets/public/`，不进入网页构建。
 
 ## 复建
 

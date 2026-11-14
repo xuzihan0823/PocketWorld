@@ -51,7 +51,7 @@ export function createChairAnimation(asset: THREE.Object3D, clip: THREE.Animatio
     for (const { rest, position, mapping } of surfaces) {
       for (const [vertex, id] of mapping) for (let axis = 0; axis < 3; axis++) {
         const lo = cache.values[a * stride + id + axis], hi = cache.values[b * stride + id + axis];
-        position.array[vertex + axis] = rest[vertex + axis] + (lo + (hi - lo) * t) * cache.quantum * weight;
+        position.array[vertex + axis] = weight === 0 ? rest[vertex + axis] : rest[vertex + axis] + (lo + (hi - lo) * t) * cache.quantum * weight;
       }
       position.needsUpdate = true;
       // Preserve authored split normals on the face, hair and limbs. The baked correction

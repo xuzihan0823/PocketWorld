@@ -33,6 +33,8 @@ const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const angle = (from: number, to: number, t: number) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * t;
 // Scoot cycle: feet reach down, push the floor until the legs straighten, then lift and recover.
+// The deeper seat pose leaves less clearance at the cushion lip during the foot stroke.
+const CHAIR_PUSH_TRAVEL = 0.035, CHAIR_FOOT_RECOVERY = 0.023;
 const KICK = 0.72, REACH_END = 0.3, PUSH_END = 0.75, SOLE_NEAR = 0.03, SOLE_FAR = 0.2, SOLE_LIFT = 0.06;
 const PUSH = 3.4, ROLL_DRAG = 2.4;
 
@@ -470,11 +472,11 @@ export function OrbitalResidents(props: ResidentsProps) {
         } else s.planted = false;
         const oldX = pose.x, oldZ = pose.z;
         rollChair(room, pose, dt, pushing, null);
-        if (pushing) { s.plant += (pose.x-oldX)*backX + (pose.z-oldZ)*backZ; if (s.plant >= .10) { s.plant = .10; s.kick = PUSH_END; s.planted = false; } }
+        if (pushing) { s.plant += (pose.x-oldX)*backX + (pose.z-oldZ)*backZ; if (s.plant >= CHAIR_PUSH_TRAVEL) { s.plant = CHAIR_PUSH_TRAVEL; s.kick = PUSH_END; s.planted = false; } }
         if (!s.kick) { s.sole = 0; s.soleLift = 0; }
         else if (s.kick < REACH_END) { s.sole = 0; s.soleLift = .035 * Math.sin(s.kick / REACH_END * Math.PI); }
         else if (s.planted) { s.sole = s.plant; s.soleLift = 0; }
-        else { const u = clamp((s.kick-PUSH_END)/(1-PUSH_END),0,1); s.sole = s.plant * (1-ease(u)); s.soleLift = .045*Math.sin(u*Math.PI); }
+        else { const u = clamp((s.kick-PUSH_END)/(1-PUSH_END),0,1); s.sole = s.plant * (1-ease(u)); s.soleLift = CHAIR_FOOT_RECOVERY * Math.sin(u * Math.PI); }
       } else {
         pose.vx = pose.vz = pose.spin = 0;
         s.kick = 0; s.planted = false;
