@@ -5,6 +5,7 @@
 ## 职责分布
 
 - `orbital/OrbitalScene.tsx` 组合镜头、灯光、舱室、家具、住民与交互表面。
+- `orbital/walls/` 墙体显隐：`wallVisibility.ts` 为纯几何判断与渐变计时，`useWallVisibility.ts` 读取 `HabitatShell` 中带 `userData.wall` 标记的墙体并在每帧淡入淡出，不改动镜头。
 - `orbital/useWorldController.ts` 管理世界状态、动作适配器和转场生命周期。
 - `orbital/journal/` 管理实体翻页、纸面编辑、逐页日期和天气、存档及迁移。
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
