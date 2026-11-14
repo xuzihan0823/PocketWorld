@@ -19,7 +19,7 @@ type PetMotion = { time: number; remaining: number; value: number };
 
 function joint(scene: THREE.Object3D, name: string) {
   const node = scene.getObjectByName(name);
-  if (!node?.parent) throw new Error(`Missing cat model joint: ${name}`);
+  if (!(node instanceof THREE.Bone) || !node.parent) throw new Error(`Missing cat model joint: ${name}`);
   const parentSpace = node.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
   return {
     node,
@@ -37,9 +37,12 @@ function CatModel({ resident, motion, reducedMotion }: Omit<CatProps, 'value'> &
     const object = clone(scene);
     object.name = 'CatModel';
     object.updateMatrixWorld(true);
-    // The exported rig names the face joint bone_13. The joints use their own local axes.
-    const head = joint(object, 'bone_13');
-    const tail = joint(object, 'tripoTail_0');
+    const head = joint(object, 'Cat_Head');
+    const tail = [
+      joint(object, 'Cat_TailBase'),
+      joint(object, 'Cat_TailMid'),
+      joint(object, 'Cat_TailTip'),
+    ];
     const bounds = new THREE.Box3().setFromObject(object, true);
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
@@ -72,8 +75,13 @@ function CatModel({ resident, motion, reducedMotion }: Omit<CatProps, 'value'> &
     head.node.quaternion.copy(head.rest)
       .premultiply(rotation.setFromAxisAngle(head.up, yaw.current))
       .premultiply(rotation.setFromAxisAngle(head.forward, Math.sin(time * 9) * 0.10 * strength));
-    const wag = reducedMotion ? 0 : Math.sin(time * 2.2) * 0.14 + Math.sin(time * 10) * 0.20 * strength;
-    tail.node.quaternion.copy(tail.rest).premultiply(rotation.setFromAxisAngle(tail.up, wag));
+    tail.forEach(({ node, rest, up }, index) => {
+      const phase = index * 0.55;
+      const amplitude = 1 - index * 0.25;
+      const wag = (Math.sin(time * 2.2 - phase) * 0.14 +
+        Math.sin(time * 10 - phase) * 0.20 * strength) * amplitude;
+      node.quaternion.copy(rest).premultiply(rotation.setFromAxisAngle(up, reducedMotion ? 0 : wag));
+    });
   });
 
   return <group ref={pivot} position-y={CUSHION_TOP}><primitive object={model.object} /></group>;
