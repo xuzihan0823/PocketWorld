@@ -14,9 +14,10 @@ function module(file, dependencies) {
     { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
   return context.exports;
 }
-const { createResidentRig } = module('./residentRig.ts', { three: THREE });
+const residentRig = module('./residentRig.ts', { three: THREE });
+const { createResidentRig } = residentRig;
 const { createBedPlayer, advanceBedTime, BED_ENTRY, BED_YAW, BED_DURATION } = module('./bedMotion.ts',
-  { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
+  { three: THREE, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
 const raw = fs.readFileSync(new URL('../../../assets/public/models/resident/luna-bed-v3.glb', import.meta.url));
 const doc = JSON.parse(raw.subarray(20, 20 + raw.readUInt32LE(12)));
 const animation = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
@@ -25,7 +26,7 @@ const { gltf } = await load(new URL('../../../assets/public/models/resident/luna
 function instance() {
   const rig = createResidentRig(clone(gltf.scene), gltf.animations[0]);
   const root = new THREE.Group(); root.position.set(BED_ENTRY[0], 0, BED_ENTRY[1]); root.rotation.y = BED_YAW; root.add(rig.mesh);
-  const apply = createBedPlayer(rig.mesh, clip);
+  const apply = createBedPlayer(rig.mesh, clip, rig.neutralPose);
   const bone = name => rig.mesh.getObjectByName('mixamorig' + name);
   const sample = time => { apply(time); root.updateMatrixWorld(true); };
   return { rig, root, bone, sample };
@@ -73,6 +74,60 @@ test('right ankle points forward while seated and never flips through the action
       for (const n of ['RightLeg', 'RightFoot', 'RightToeBase']) assert(bone(n).matrixWorld.elements.every(Number.isFinite));
     }
     assert(maximum < .08, 'right foot rotation exceeds 4.6 degrees per half frame');
+  } finally { rig.dispose(); }
+});
+
+test('standing correction leaves authored bed contacts and sleeping pose unchanged', () => {
+  const { rig, bone, sample } = instance();
+  try {
+    for (const time of [.6, 1.5, 3, 6, BED_DURATION]) {
+      sample(time);
+      for (const track of clip.tracks) {
+        const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+        const expected = track.createInterpolant().evaluate(time);
+        const value = rig.mesh.getObjectByName(nodeName)[propertyName].toArray();
+        value.forEach((v, i) => assert(Math.abs(v - expected[i]) < 1e-7, track.name));
+      }
+    }
+    const forward = [];
+    for (let f = 0; f <= 36; f++) {
+      sample(f / 60);
+      forward.push(['Hips', 'Head', 'LeftFoot', 'RightFoot'].map(n => bone(n).getWorldPosition(new THREE.Vector3())));
+    }
+    for (let f = 36; f >= 0; f--) {
+      sample(f / 60);
+      ['Hips', 'Head', 'LeftFoot', 'RightFoot'].forEach((n, i) => {
+        const p = bone(n).getWorldPosition(new THREE.Vector3());
+        assert(p.distanceTo(forward[f][i]) < 1e-7, 'cancellation retraces the same entry pose');
+        if (f) assert(p.distanceTo(forward[f - 1][i]) < .02, n + ' entry continuity');
+      });
+    }
+  } finally { rig.dispose(); }
+});
+
+test('bed entry correction preserves both authored foot trajectories and sole orientation', () => {
+  const { rig, root, bone, sample } = instance();
+  const tracks = clip.tracks.map(track => {
+    const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+    return { value: rig.mesh.getObjectByName(nodeName)[propertyName], curve: track.createInterpolant() };
+  });
+  try {
+    for (let frame = 0; frame <= 36; frame++) {
+      const time = frame / 60;
+      for (const { value, curve } of tracks) value.fromArray(curve.evaluate(time));
+      root.updateMatrixWorld(true);
+      const expected = ['Left', 'Right'].map(side => ({
+        position: bone(side + 'Foot').getWorldPosition(new THREE.Vector3()),
+        rotation: bone(side + 'Foot').getWorldQuaternion(new THREE.Quaternion()),
+      }));
+      sample(time);
+      ['Left', 'Right'].forEach((side, i) => {
+        const gap = bone(side + 'Foot').getWorldPosition(new THREE.Vector3()).distanceTo(expected[i].position);
+        // The IK keeps a 0.1 mm safety bend when an authored leg is fully extended.
+        assert(gap < .0002, JSON.stringify({frame, side, gap}));
+        assert(bone(side + 'Foot').getWorldQuaternion(new THREE.Quaternion()).angleTo(expected[i].rotation) < .001);
+      });
+    }
   } finally { rig.dispose(); }
 });
 

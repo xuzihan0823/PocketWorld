@@ -47,6 +47,7 @@ function mount(kind, overrides = {}) {
     sceneId: 'habitat', focusedObject: null, transition: { phase: 'idle' },
     onAction: action => actions.push(action.kind), onReturn() {},
   };
+  const residentRig = load('./orbital/residentRig.ts', { three: THREE });
   const dependencies = {
     react,
     three: THREE,
@@ -56,8 +57,8 @@ function mount(kind, overrides = {}) {
     './ObjectHandle': { ObjectHandle: 'ObjectHandle' },
     './Cat': { Cat: 'Cat' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
-    './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
-    './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
+    './residentRig': residentRig,
+    './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './journalLayout': load('./orbital/journalLayout.ts', {}),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './chairMotion': load('./orbital/chairMotion.ts', {}),

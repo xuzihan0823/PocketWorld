@@ -63,6 +63,55 @@ test('room uses the authored walk at full weight and does not share bone poses b
   } finally { a.rig.dispose(); b.rig.dispose(); }
 });
 
+test('standing pelvis and neck are upright over the actual sole support area', () => {
+  const { asset, rig, mesh } = instance();
+  try {
+    rig.applyPose(.73, 0);
+    rig.mesh.updateMatrixWorld(true);
+    const point = new THREE.Vector3(), sole = new THREE.Box3();
+    for (let i = 0; i < mesh.geometry.attributes.position.count; i++) {
+      mesh.localToWorld(mesh.getVertexPosition(i, point));
+      if (point.y < .025) sole.expandByPoint(point);
+    }
+    const hip = asset.getObjectByName('mixamorigHips').getWorldPosition(new THREE.Vector3());
+    const neck = asset.getObjectByName('mixamorigNeck').getWorldPosition(new THREE.Vector3());
+    for (const p of [hip, neck]) {
+      assert(p.z > sole.min.z + .025 && p.z < sole.max.z - .025, 'body projects inside the foot support');
+      assert(p.x > sole.min.x && p.x < sole.max.x, 'body remains between both feet');
+    }
+    assert(Math.abs(Math.atan2(neck.z - hip.z, neck.y - hip.y)) < .04, 'trunk is within 2.3 degrees of vertical');
+    assert.deepEqual(rig.mesh.rotation.toArray().slice(0, 3), [0, 0, 0], 'balance must not tilt the character root');
+  } finally { rig.dispose(); }
+});
+
+test('walk blending stays continuous at its endpoints and returns to the same balanced stance', () => {
+  const { asset, rig } = instance();
+  try {
+    const joints = ['Hips', 'Neck', 'LeftFoot', 'RightFoot'].map(n => asset.getObjectByName('mixamorig' + n));
+    for (const phase of [0, .2, .49, .7, .99]) for (const fps of [30, 60, 120]) {
+      let previous;
+      for (let step = 0; step <= Math.ceil(.14 * fps); step++) {
+        const t = Math.min(1, step / (.14 * fps)), w = 1 - t * t * (3 - 2 * t);
+        rig.applyPose(phase, w);
+        rig.mesh.updateMatrixWorld(true);
+        const pose = joints.map(j => j.getWorldPosition(new THREE.Vector3()));
+        // A swinging foot can travel ~0.4 m during the existing 0.14 s stop.
+        if (previous) pose.forEach((p, i) => assert(p.distanceTo(previous[i]) < 5 / fps, 'bounded joint speed during stopping'));
+        previous = pose;
+      }
+      const stopped = previous;
+      rig.applyPose((phase + .37) % 1, 0); rig.mesh.updateMatrixWorld(true);
+      joints.forEach((j, i) => assert(j.getWorldPosition(new THREE.Vector3()).distanceTo(stopped[i]) < 1e-7));
+      for (const endpoint of [0, 1]) {
+        rig.applyPose(phase, endpoint); rig.mesh.updateMatrixWorld(true);
+        const exact = joints.map(j => j.getWorldPosition(new THREE.Vector3()));
+        rig.applyPose(phase, endpoint === 0 ? .0001 : .9999); rig.mesh.updateMatrixWorld(true);
+        joints.forEach((j, i) => assert(j.getWorldPosition(new THREE.Vector3()).distanceTo(exact[i]) < .0001, 'no discontinuity entering or leaving walk'));
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
 test('interaction controls follow the skinned joints in room units and restore the walk', () => {
   const { asset, rig } = instance();
   try {

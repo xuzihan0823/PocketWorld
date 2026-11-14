@@ -19,6 +19,7 @@ export interface ResidentArm {
   palmBasis: THREE.Quaternion; palmOffset: THREE.Vector3;
 }
 export interface ResidentRig {
+  neutralPose: { joint: THREE.Bone; pose: { position: THREE.Vector3; quaternion: THREE.Quaternion; scale: THREE.Vector3 } }[];
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
   applyPose: (phase: number, walkWeight: number) => void;
