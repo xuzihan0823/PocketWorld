@@ -80,7 +80,7 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
   const disc = { id: 'test-disc', title: 'Test', discThemeColor: ['#fff', '#000'] };
   const props = {
     sceneId: 'habitat', focusedObject, activeGame: game, discs: [disc], activeDisc: disc,
-    transition: { phase: 'active', toScene: 'habitat', fromScene: 'habitat' }, reducedMotion: true,
+    transition: { id: 0, phase: 'active', toScene: 'habitat', fromScene: 'habitat' }, reducedMotion: true,
     onGameChange: value => changes.push(value), onReturn: () => returns.push(true),
     onFeatureError: message => errors.push(message), onGesture() {}, onAction() {},
   };
@@ -206,6 +206,37 @@ test('leaving during insertion cancels the transfer and ignores its stale comple
     assert.deepEqual(view.changes, [null]);
     assert.equal(view.returns.length, 1);
     assert.equal(view.find(node => node.type?.name === 'TransferObject'), undefined);
+  } finally { view.dispose(); }
+});
+
+test('one cartridge selection from the room waits for the computer, then inserts the chosen game', () => {
+  const view = mount({ focusedObject: null });
+  try {
+    let arrive;
+    view.props.onApproach = (_point, action, proceed) => {
+      assert.equal(action.objectId, 'computer');
+      arrive = proceed;
+      return false;
+    };
+    let opening;
+    view.props.onAction = action => { opening = action; };
+    view.render();
+    const transfer = () => view.find(node => node.type?.name === 'TransferObject');
+    view.find(node => node.props?.id === 'game-cartridge-shooter').props.onSelect();
+    assert.equal(transfer(), undefined, 'leave the cartridge on the desk while walking');
+    arrive();
+    view.render();
+    assert.equal(transfer(), undefined, 'wait for world props to reach the Canvas');
+    view.props.transition = { ...view.props.transition, id: 1, phase: 'preparing', action: opening };
+    view.render();
+    assert.equal(transfer(), undefined, 'wait for computer focus to settle');
+    view.props.focusedObject = 'computer';
+    view.props.transition = { ...view.props.transition, phase: 'active' };
+    view.render();
+    assert.equal(transfer().props.transfer.game, 'shooter');
+    assert.deepEqual(transfer().props.transfer.from, cartridgeMotion.cartridgePosition('shooter'));
+    transfer().props.onDone();
+    assert.deepEqual(view.changes, ['shooter']);
   } finally { view.dispose(); }
 });
 

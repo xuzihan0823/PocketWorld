@@ -10,7 +10,7 @@
 - `orbital/journal/` 管理实体翻页、纸面编辑、逐页日期和天气、存档及迁移。
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
 - `orbital/schedule/` 管理日程迁移、同步、纸页、贴纸、纸团和相关测试。
-- `orbital/media/` 管理电脑屏幕布局、游戏卡带加载与拖放、唱片交互、实体键盘和相关测试。
+- `orbital/media/` 管理电脑屏幕布局、游戏卡带单击插入、拖放与加载、唱片交互、实体键盘和相关测试。
 - `orbital/` 根目录保留舱室、家具、住民、交互基础组件、材质与场景样式。
 - `orbital/chairMotion.ts` 管理坐下、升降、滑行和起身的顺序；`chairAnimation.ts` 采样坐姿与局部接触缓存。资源与复建方法见 [Luna 制作源](../../assets/models/resident/README.md)。
 - `orbital/media/RecordPlayer.tsx` 保留唱机/唱片的原有几何，`record-motion.ts` 统一管理舱室局部坐标路径、唱臂和串行播放阶段；架位在本次会话中稳定，音乐淡入淡出不影响房间音效。
