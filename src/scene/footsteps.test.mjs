@@ -57,6 +57,7 @@ function mount(kind, overrides = {}) {
     './Cat': { Cat: 'Cat' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
+    './standingIdle': load('./orbital/standingIdle.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class { loadAsync() { return Promise.reject(new Error('Animation offline in controller tests')); } } } }),
     './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './journalLayout': load('./orbital/journalLayout.ts', {}),
     './chairPose': load('./orbital/chairPose.ts', {}),
@@ -525,5 +526,29 @@ test('walking next to an air gap does not push the chair, but a closer step does
     assert.equal(view.chair.z, z);
     for (let i = 0; i < 16; i++) view.frame(1 / 60);
     assert.ok(view.chair.z < z);
+  } finally { view.dispose(); }
+});
+
+
+test('standing idle starts early and movement, jumping, focus and reduced motion reset its clock', () => {
+  const view = mount('orbital');
+  const advance = seconds => { for (let i = 0; i < seconds * 60; i++) view.frame(1 / 60); };
+  try {
+    advance(8);
+    assert.equal(view.root.userData.standingIdle.weight, 1);
+    view.key('KeyD'); view.frame(1 / 60);
+    assert.equal(view.root.userData.standingIdle.elapsed, 0);
+    view.key('KeyD', 'keyup'); advance(8);
+    assert.equal(view.root.userData.standingIdle.weight, 1);
+    view.key('Space'); view.frame(1 / 60);
+    assert.equal(view.root.userData.standingIdle.elapsed, 0);
+    advance(9);
+    view.props.focusedObject = 'journal'; advance(15);
+    assert.equal(view.root.userData.standingIdle.elapsed, 0);
+    assert.equal(view.root.userData.standingIdle.weight, 0);
+    view.props.focusedObject = null;
+    view.props.reducedMotion = true; advance(80);
+    assert.equal(view.root.userData.standingIdle.elapsed, 0);
+    assert.equal(view.root.userData.standingIdle.yawnTime, -1);
   } finally { view.dispose(); }
 });
