@@ -11,8 +11,17 @@ interface ObjectHandleProps extends Omit<ThreeElements['group'], 'id' | 'onPoint
   drag?: 'x' | 'y' | 'z';
   payload?: WorldAction['payload'];
 }
+function belongsToFocus(id: string, focused: string | null) {
+  if (!focused) return false;
+  if (id === focused) return true;
+  if (focused === 'computer') return id.startsWith('game-') || id === 'computer-exit' || id === 'music-mute';
+  if (focused === 'music-player') return id.startsWith('music-');
+  if (focused === 'cabinet') return id === 'cabinet-item';
+  return false;
+}
+
 /** A real object's input ownership, not an invisible menu hotspot. */
-export function ObjectHandle({ id, action, hint, world, drag, payload, children, ...props }: ObjectHandleProps) {
+export function ObjectHandle({ id, action, hint, world, drag, payload, children, onClick, ...props }: ObjectHandleProps) {
   const held = useRef<{ x: number; y: number; pointerId: number; target: EventTarget | null; point: [number, number, number] } | null>(null);
   const movable = useRef<THREE.Group>(null);
   const callbacks = useRef(world);
@@ -31,8 +40,10 @@ export function ObjectHandle({ id, action, hint, world, drag, payload, children,
     window.addEventListener('pointercancel', cancel);
     return () => { cancel(); window.removeEventListener('blur', cancel); window.removeEventListener('pointercancel', cancel); };
   }, []);
+  const enabled = belongsToFocus(id, world.focusedObject);
+  useEffect(() => { if (!enabled) release(); }, [enabled]);
   const down = (event: ThreeEvent<PointerEvent>) => {
-    if (event.button !== 0 || held.current) return;
+    if (!enabled || event.button !== 0 || held.current) return;
     event.stopPropagation();
     const origin = SCENE_ORIGINS[world.sceneId];
     const point: [number, number, number] = [event.point.x - origin[0], event.point.y - origin[1], event.point.z - origin[2]];
@@ -48,15 +59,16 @@ export function ObjectHandle({ id, action, hint, world, drag, payload, children,
     const direction = event.clientX >= held.current.x ? 1 : -1;
     const point = held.current.point;
     release();
-    if (distance < 9 || drag) {
+    if (enabled && (distance < 9 || drag)) {
       const request: WorldAction = { sceneId: world.sceneId, objectId: id, kind: action, payload: { ...payload, ...(distance > 9 ? { direction } : {}) } };
       const perform = () => callbacks.current.onAction(request);
       if (world.onApproach) world.onApproach(point, request, perform); else perform();
     }
   };
   return <group {...props} name={`Interactable_${id}`} userData={{ objectId: id, action, sceneId: world.sceneId }}
-    onPointerOver={e => { e.stopPropagation(); world.onHover(id, hint); }}
-    onPointerOut={() => { if (!held.current) world.onHover(null); }}
+    onPointerOver={e => { if (enabled) { e.stopPropagation(); world.onHover(id, hint); } }}
+    onPointerOut={() => { if (enabled && !held.current) world.onHover(null); }}
+    onClick={enabled ? onClick : undefined}
     onPointerDown={down} onPointerUp={up}
     onPointerMove={event => {
       if (!held.current || !drag || !movable.current) return;

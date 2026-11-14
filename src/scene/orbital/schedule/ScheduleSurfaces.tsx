@@ -141,14 +141,9 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
       const offset = state.posted.indexOf(page) - selectedIndex;
       if (flight && (flight.page.id === page.id || offset === 0)) return null;
       return <PostedPaper key={page.id} page={page} position={[GLASS_POSITION[0] + offset * 0.68, GLASS_POSITION[1] - Math.abs(offset) * 0.035, GLASS_POSITION[2]]} onSelect={() => {
-        if (busy.current || !props.visible) return;
-        const select = () => {
-          setSelectedId(page.id);
-          if (!glassView) props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
-        };
-        const action = { sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' as const };
-        if (props.onApproach) props.onApproach([0.57, 1.2, -2.14], action, select);
-        else select();
+        if (busy.current || !props.visible || !focused || !settled) return;
+        setSelectedId(page.id);
+        if (!glassView) props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
       }} />;
     })}
     {state.discarded.filter(ball => flight?.page.id !== ball.id).map(ball => <FloorPaperBall key={ball.id} ball={ball} />)}

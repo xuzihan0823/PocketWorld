@@ -203,7 +203,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     <RecordPlayer {...props} />
 
     {(['mario', 'shooter'] as const).map(game => <CartridgePickup key={game} id={`game-cartridge-${game}`} world={world} position={cartridgePosition(game)}
-      enabled={sceneVisible && !props.activeGame && !transfer && ['idle', 'active', 'error'].includes(props.transition.phase)}
+      enabled={sceneVisible && computerFocused && !props.activeGame && !transfer && ['idle', 'active', 'error'].includes(props.transition.phase)}
       onGrab={() => {
         if (pickupRef.current || transferRef.current || latest.current.activeGame) return false;
         pickupRef.current = game; setPickup(game); setNearSlot(false); return true;

@@ -147,9 +147,7 @@ export function RecordPlayer(props: WorldSceneProps) {
     {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pages > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[-.2 + direction * .6, 1.31, -2.81]}><SoftBox dims={[.035, .29, .21]} color="#765b43" /></ObjectHandle>)}
     <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={IMPORT_DISC} onClick={event => {
       event.stopPropagation(); if (!enabled || transport.busy || event.delta >= 9) return;
-      const request: WorldAction = { sceneId: props.sceneId, objectId: 'music-import', kind: 'insert' };
-      const ready = !props.onApproach || props.onApproach(IMPORT_DISC, request, () => {});
-      if (ready) props.onImportMusic(); else props.onHover('music-import', '走近后，再点击空白唱片选择音乐');
+      props.onImportMusic();
     }}><group rotation={[-Math.PI / 2, 0, 0]}><Disc colors={['#efe4c7', '#c8a879']} radius={.145} /></group></ObjectHandle>
     <group position={[2.57, 1.4, -2.55]}>
       <SoftBox dims={[.38, .56, .37]} color="#886448" />

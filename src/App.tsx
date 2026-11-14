@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { MusicDisc } from './types/interactable';
 import type { GameId } from './types/game';
-import type { WorldAction, WorldFeatureAdapters } from './types/world';
+import type { WorldFeatureAdapters } from './types/world';
 import { PRESET_MUSIC_DISCS, generateDiscColorsFromName, roomAudio } from './scene/audioEngine';
 import { OrbitalScene } from './scene/orbital/OrbitalScene';
 import { useLibrary } from './scene/orbital/library/useLibrary';
@@ -16,7 +16,6 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const [activeGame, setActiveGame] = useState<GameId | null>(null);
   const [draggingFile, setDraggingFile] = useState(false);
   const [announcement, setAnnouncement] = useState('');
-  const [shortcut, setShortcut] = useState<WorldAction | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const ownedUrls = useRef<string[]>([]);
   const initialized = useRef(false);
@@ -51,15 +50,6 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
       }
       if (editable || activeGame || library.flow.current.phase !== 'idle') return;
       if (event.code === 'KeyM') { event.preventDefault(); roomAudio.setMuted(!roomAudio.getSnapshot().isMuted); }
-      const shortcuts: Record<string, { objectId: string; kind: 'write' | 'plan' | 'read' | 'sleep' | 'inspect' }> = {
-        KeyJ: { objectId: 'journal', kind: 'write' }, KeyO: { objectId: 'schedule', kind: 'plan' }, KeyR: { objectId: 'book-01', kind: 'read' }, KeyB: { objectId: 'bed', kind: 'sleep' }, KeyC: { objectId: 'computer', kind: 'inspect' }, KeyL: { objectId: 'music-player', kind: 'inspect' },
-      };
-      if (event.code === 'KeyJ' && world.focusedObject === 'journal') return;
-      if (shortcuts[event.code] && !event.repeat && !(event.code === 'KeyB' && world.sceneId !== 'habitat')) {
-        event.preventDefault();
-        void roomAudio.unlock();
-        setShortcut({ sceneId: world.sceneId, ...shortcuts[event.code] });
-      }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -73,7 +63,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
 
   const onImportMusic = useCallback(() => { void roomAudio.unlock(); fileInput.current?.click(); }, []);
   const importFiles = useCallback((files: FileList | null) => {
-    if (library.flow.current.phase !== 'idle') return;
+    if (world.focusedObject !== 'music-player' || library.flow.current.phase !== 'idle') return;
     const file = files?.[0];
     if (!file) return;
     if (!file.type.startsWith('audio/') && !/\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(file.name)) { onFeatureError('请放入一个音频文件。'); return; }
@@ -84,10 +74,9 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     const disc: MusicDisc = { id: `local-${Date.now()}-${ownedUrls.current.length}`, title, artist: '私人唱片收藏', audioUrl: url, discThemeColor: generateDiscColorsFromName(title), isUserUploaded: true };
     setDiscs(current => [disc, ...current]);
     roomAudio.prepareMusic(disc);
-    void world.onAction({ sceneId: world.sceneId, objectId: 'music-player', kind: 'inspect' });
     onFeatureError(`《${title}》已放进唱片架`);
     if (fileInput.current) fileInput.current.value = '';
-  }, [world.onAction, world.sceneId, onFeatureError]);
+  }, [world.focusedObject, library.flow, onFeatureError]);
   const onSelectDisc = useCallback((disc: MusicDisc) => { void roomAudio.startMusic(disc); }, []);
   const onToggleMusic = useCallback(() => {
     const current = roomAudio.getSnapshot();
@@ -99,14 +88,14 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const focusGuide = world.focusedObject === 'journal' ? '点击书页书写 · ← / → 翻页 · 自动保存 · Esc 返回'
     : world.focusedObject === 'schedule' ? '上拖纸页贴出 · V 切换视角 · Esc 返回'
     : world.focusedObject === 'schedule-glass' ? '左右键浏览 · V 切换视角 · Esc 返回' : '';
-  const status = announcement || world.error || audio.error || focusGuide || world.hover?.hint || (world.focusedObject ? '操作物品继续探索 · Esc / 双指轻触退回' : '触碰物品，留一会儿');
+  const status = announcement || world.error || audio.error || focusGuide || world.hover?.hint || (world.focusedObject ? '操作物品继续探索 · Esc / 双指轻触退回' : '靠近物品后按 E 互动');
   const travelling = world.transition.action?.kind === 'travel' && !['active', 'idle', 'error'].includes(world.transition.phase);
   return <main className={`orbital-app${draggingFile ? ' is-importing' : ''}${world.focusedObject ? ' is-focused' : ''}`} aria-label="PocketWorld 轨道居住舱"
-    onDragEnter={event => { if (!event.dataTransfer.types.includes('Files')) return; event.preventDefault(); inputDepth.current += 1; setDraggingFile(true); }}
+    onDragEnter={event => { if (world.focusedObject !== 'music-player' || !event.dataTransfer.types.includes('Files')) return; event.preventDefault(); inputDepth.current += 1; setDraggingFile(true); }}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
     onDragLeave={event => { event.preventDefault(); inputDepth.current = Math.max(0, inputDepth.current - 1); if (!inputDepth.current) setDraggingFile(false); }}
     onDrop={event => { event.preventDefault(); inputDepth.current = 0; setDraggingFile(false); importFiles(event.dataTransfer.files); }}>
-    <OrbitalScene {...world} shortcut={shortcut} onShortcutHandled={() => setShortcut(null)} books={books} adapters={adapters} onImportMusic={onImportMusic} discs={discs} activeDisc={audio.disc} isMusicPlaying={audio.isPlaying} isMuted={audio.isMuted}
+    <OrbitalScene {...world} books={books} adapters={adapters} onImportMusic={onImportMusic} discs={discs} activeDisc={audio.disc} isMusicPlaying={audio.isPlaying} isMuted={audio.isMuted}
       onSelectDisc={onSelectDisc} onToggleMusic={onToggleMusic} onToggleMute={onToggleMute} activeGame={activeGame} onGameChange={setActiveGame} onFeatureError={onFeatureError} />
     <LibrarySurface library={library} />
     <header className="orbital-header">
