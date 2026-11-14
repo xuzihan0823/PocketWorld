@@ -14,9 +14,10 @@ function module(file, dependencies) {
     { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
   return context.exports;
 }
-const { createResidentRig } = module('./residentRig.ts', { three: THREE });
+const residentRig = module('./residentRig.ts', { three: THREE });
+const { createResidentRig } = residentRig;
 const { createBedPlayer, advanceBedTime, BED_ENTRY, BED_YAW, BED_DURATION } = module('./bedMotion.ts',
-  { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
+  { three: THREE, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
 const raw = fs.readFileSync(new URL('../../../assets/public/models/resident/luna-bed-v3.glb', import.meta.url));
 const doc = JSON.parse(raw.subarray(20, 20 + raw.readUInt32LE(12)));
 const animation = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
@@ -99,6 +100,32 @@ test('standing correction leaves authored bed contacts and sleeping pose unchang
         const p = bone(n).getWorldPosition(new THREE.Vector3());
         assert(p.distanceTo(forward[f][i]) < 1e-7, 'cancellation retraces the same entry pose');
         if (f) assert(p.distanceTo(forward[f - 1][i]) < .02, n + ' entry continuity');
+      });
+    }
+  } finally { rig.dispose(); }
+});
+
+test('bed entry correction preserves both authored foot trajectories and sole orientation', () => {
+  const { rig, root, bone, sample } = instance();
+  const tracks = clip.tracks.map(track => {
+    const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
+    return { value: rig.mesh.getObjectByName(nodeName)[propertyName], curve: track.createInterpolant() };
+  });
+  try {
+    for (let frame = 0; frame <= 36; frame++) {
+      const time = frame / 60;
+      for (const { value, curve } of tracks) value.fromArray(curve.evaluate(time));
+      root.updateMatrixWorld(true);
+      const expected = ['Left', 'Right'].map(side => ({
+        position: bone(side + 'Foot').getWorldPosition(new THREE.Vector3()),
+        rotation: bone(side + 'Foot').getWorldQuaternion(new THREE.Quaternion()),
+      }));
+      sample(time);
+      ['Left', 'Right'].forEach((side, i) => {
+        const gap = bone(side + 'Foot').getWorldPosition(new THREE.Vector3()).distanceTo(expected[i].position);
+        // The IK keeps a 0.1 mm safety bend when an authored leg is fully extended.
+        assert(gap < .0002, JSON.stringify({frame, side, gap}));
+        assert(bone(side + 'Foot').getWorldQuaternion(new THREE.Quaternion()).angleTo(expected[i].rotation) < .001);
       });
     }
   } finally { rig.dispose(); }

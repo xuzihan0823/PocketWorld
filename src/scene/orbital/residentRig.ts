@@ -16,7 +16,7 @@ function restore(bone: THREE.Bone, pose: BonePose) {
 }
 const tilt = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.z - from.z, from.y - to.y);
 
-function plantNeutralLeg([thigh, shin, foot]: THREE.Bone[], point: THREE.Vector3, sole: THREE.Quaternion) {
+export function plantResidentLeg([thigh, shin, foot]: THREE.Bone[], point: THREE.Vector3, sole: THREE.Quaternion) {
   const worldPosition = (joint: THREE.Bone) => joint.getWorldPosition(new THREE.Vector3());
   const worldRotation = (joint: THREE.Object3D) => joint.getWorldQuaternion(new THREE.Quaternion());
   const hip = worldPosition(thigh), knee = worldPosition(shin), ankle = worldPosition(foot);
@@ -110,8 +110,8 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   hips.position.copy(hips.parent!.worldToLocal(hipPosition.clone().setZ(forward)));
   hips.quaternion.copy(hips.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(balancedRotation);
   hips.updateWorldMatrix(false, true);
-  plantNeutralLeg(leftLeg, leftSupport.point, leftSupport.sole);
-  plantNeutralLeg(rightLeg, rightSupport.point, rightSupport.sole);
+  plantResidentLeg(leftLeg, leftSupport.point, leftSupport.sole);
+  plantResidentLeg(rightLeg, rightSupport.point, rightSupport.sole);
   asset.updateMatrixWorld(true);
   const mesh = new THREE.Group();
   mesh.name = 'Resident';
