@@ -50,6 +50,7 @@ function mount(kind, overrides = {}) {
     '@react-three/fiber': { useFrame: frame => frames.push(frame), useThree: select => select ? select({ camera }) : { camera } },
     '../audioEngine': { roomAudio: audio },
     './ObjectHandle': { ObjectHandle: 'ObjectHandle' },
+    './Cat': { Cat: 'Cat' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
     './chairPose': load('./orbital/chairPose.ts', {}),

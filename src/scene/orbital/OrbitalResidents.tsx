@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { WorldAction, WorldActionKind, WorldModelProps } from '../../types/world';
 import { roomAudio } from '../audioEngine';
 import { ObjectHandle } from './ObjectHandle';
+import { Cat } from './Cat';
 import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL, chairFacing, chairFront, type ChairPose } from './chairPose';
 import { applyLibraryPose, carryResident, libraryCrouch } from './library/residentPose';
 import { residentLibraryTarget } from './library/bookMotion';
@@ -149,10 +150,6 @@ function approachRoute(start: Point, point: Point, boxes: Box[], fixed?: Point):
   }
   return best;
 }
-function Ball({ position, scale = [1, 1, 1], radius, color }: { position: [number, number, number]; scale?: [number, number, number]; radius: number; color: string }) {
-  return <mesh position={position} scale={scale} castShadow receiveShadow><sphereGeometry args={[radius, 20, 14]} /><meshStandardMaterial color={color} roughness={0.7} /></mesh>;
-}
-
 /** Local coordinates belong to the mounted scene; the rendered root is the simulation position. */
 export function OrbitalResidents(props: ResidentsProps) {
   const current = useRef(props);
@@ -175,11 +172,6 @@ export function OrbitalResidents(props: ResidentsProps) {
   const state = useRef({ posture: 'standing' as Posture, wanted: 'standing' as Posture, path: [] as Point[], external: false, exiting: false, blend: 0, sit: 0, lie: 0, lift: 0, velocity: 0, walkTime: 0, nearby: '', nearbyHint: '', dismissedBed: false, dismissedChair: false,
     perch: 0, idle: Infinity, kick: 0, planted: false, plant: SOLE_NEAR, sole: SOLE_NEAR, soleLift: SOLE_LIFT });
   const exit = useRef({ from: new THREE.Vector3(), yaw: 0, sit: 0, lie: 0, progress: 0 });
-  const petBody = useRef<THREE.Group>(null);
-  const petHead = useRef<THREE.Group>(null);
-  const petTail = useRef<THREE.Group>(null);
-  const sparks = useRef<THREE.Group>(null);
-  const pet = useRef({ value: props.objects.pet?.value ?? 0, happy: 0, time: 0 });
   const movement = useMemo(() => ({ forward: new THREE.Vector3(), right: new THREE.Vector3(), step: new THREE.Vector3() }), []);
 
   const act = (objectId: string, kind: WorldActionKind) => {
@@ -249,7 +241,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (!root || drawerTask.current || action.sceneId !== p.sceneId) return false;
       if (action.kind === 'stand' || action.kind === 'wake') { cancelApproach(); perform(); return true; }
       const pose = CHAIR_POSES[p.sceneId];
-      const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : [point[0], point[2]];
+      const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : action.objectId === 'pet' ? CAT : [point[0], point[2]];
       if (s.posture === 'standing' && !s.exiting && s.lift === 0 && s.velocity <= 0
         && action.objectId !== 'chair' && action.objectId !== 'bed'
         && Math.hypot(root.position.x - target[0], root.position.z - target[1]) <= 1.15) {
@@ -677,24 +669,6 @@ export function OrbitalResidents(props: ResidentsProps) {
     }).filter(item => item.reachable).sort((a, b) => a.gap - b.gap)[0]?.id ?? '' : '';
     const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '推回抽屉' : '后退拉开抽屉') : '坐下'}` : '';
     if (!drawerTask.current && (nearby !== s.nearby || hint !== s.nearbyHint)) { s.nearby = nearby; s.nearbyHint = hint; p.onHover(nearby || null, hint || undefined); }
-
-    const cat = pet.current;
-    cat.time += dt;
-    const value = p.objects.pet?.value ?? 0;
-    if (value > cat.value) cat.happy = 2.2;
-    cat.value = value; cat.happy = Math.max(0, cat.happy - dt);
-    const happy = cat.happy > 0;
-    if (petBody.current) petBody.current.position.y = 0.09 + (happy && !p.reducedMotion ? Math.sin((2.2 - cat.happy) * 9) ** 2 * 0.08 : 0);
-    if (petHead.current) {
-      petHead.current.rotation.z = happy && !p.reducedMotion ? Math.sin(cat.time * 9) * 0.12 : 0;
-      const direction = Math.atan2(root.position.x - CAT[0], root.position.z - CAT[1]) - 0.5;
-      petHead.current.rotation.y = THREE.MathUtils.damp(petHead.current.rotation.y, clamp(Math.atan2(Math.sin(direction), Math.cos(direction)), -0.7, 0.7), 5, dt);
-    }
-    if (petTail.current) petTail.current.rotation.z = p.reducedMotion ? 0.15 : Math.sin(cat.time * (happy ? 10 : 2.2)) * (happy ? 0.5 : 0.2);
-    if (sparks.current) {
-      sparks.current.visible = happy;
-      sparks.current.children.forEach((child, i) => { child.position.set(Math.sin(i * 2.1) * 0.22, 0.7 + (p.reducedMotion ? 0.1 : ((2.2 - cat.happy + i * 0.25) % 1.1) * 0.45), Math.cos(i * 2.1) * 0.15); child.scale.setScalar(Math.min(1, cat.happy * 3) * 0.7); });
-    }
   });
 
   const characterDown = (event: ThreeEvent<PointerEvent>) => {
@@ -720,33 +694,9 @@ export function OrbitalResidents(props: ResidentsProps) {
         <ResidentModel rig={rig} onFailure={props.library?.fail} position={[0, -HIP, 0]} />
       </group>
     </group>
-    <ObjectHandle id="pet" action="pet" hint="团子 · 轻抚 / 靠近按 E" world={petWorld} position={[CAT[0], 0, CAT[1]]} rotation={[0, 0.5, 0]}>
-      <mesh position={[0, 0.04, 0]} castShadow receiveShadow><cylinderGeometry args={[0.37, 0.41, 0.08, 28]} /><meshStandardMaterial color="#d5c3aa" roughness={0.9} /></mesh>
-      <mesh position={[0, 0.08, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.34, 0.045, 12, 28]} /><meshStandardMaterial color="#c4ad90" /></mesh>
-      <group ref={petBody} position={[0, 0.09, 0]}>
-        <Ball position={[0, 0.16, -0.02]} radius={0.21} scale={[0.8, 0.67, 1.15]} color="#e79748" />
-        {[-0.12, 0, 0.1].map(z => <Ball key={z} position={[0, 0.29, z]} radius={0.08} scale={[1.6, 0.13, 0.25]} color="#b9662c" />)}
-        {[-0.1, 0.1].flatMap(x => [-0.14, 0.17].map(z => <Ball key={`${x}/${z}`} position={[x, 0.035, z]} radius={0.058} scale={[1, 0.65, 1.25]} color="#fff3dc" />))}
-        <Ball position={[0, 0.16, 0.17]} radius={0.13} scale={[0.88, 0.92, 0.55]} color="#fff3dc" />
-        <group ref={petHead} position={[0, 0.32, 0.18]}>
-          <Ball position={[0, 0, 0]} radius={0.165} scale={[1.06, 0.95, 0.98]} color="#e79748" />
-          {[-1, 1].map(side => <React.Fragment key={side}>
-            <Ball position={[side * 0.055, -0.035, 0.13]} radius={0.057} scale={[1.1, 0.85, 0.8]} color="#fff3dc" />
-            <Ball position={[side * 0.068, 0.028, 0.145]} radius={0.028} color="#679c74" />
-            <Ball position={[side * 0.068, 0.028, 0.163]} radius={0.018} scale={[0.45, 0.9, 0.5]} color="#172c29" />
-            <group position={[side * 0.1, 0.14, 0.01]} rotation={[0.15, 0, -side * 0.35]}>
-              <mesh castShadow><coneGeometry args={[0.068, 0.14, 4]} /><meshStandardMaterial color="#d17a36" /></mesh>
-              <mesh position={[0, -0.01, 0.025]} scale={[0.65, 0.72, 0.5]}><coneGeometry args={[0.055, 0.11, 4]} /><meshStandardMaterial color="#e8aaa1" /></mesh>
-            </group>
-          </React.Fragment>)}
-          <Ball position={[0, -0.012, 0.172]} radius={0.02} color="#dd8d8d" />
-        </group>
-        <group ref={petTail} position={[0, 0.16, -0.22]}>
-          <mesh position={[0, 0.11, -0.08]} rotation={[-0.55, 0, 0]} castShadow><capsuleGeometry args={[0.032, 0.24, 5, 12]} /><meshStandardMaterial color="#e79748" /></mesh>
-          <Ball position={[0, 0.24, -0.16]} radius={0.035} color="#fff3dc" />
-        </group>
-      </group>
-      <group ref={sparks} visible={false}>{[0, 1, 2].map(i => <mesh key={i}><octahedronGeometry args={[0.045, 1]} /><meshBasicMaterial color="#e5ac9e" /></mesh>)}</group>
+    <ObjectHandle id="pet" action="pet" hint="团子 · 轻抚 / 靠近按 E" world={petWorld} position={[CAT[0], 0, CAT[1]]} rotation={[0, 0.5, 0]}
+      onClick={event => event.stopPropagation()}>
+      <Cat resident={resident} value={props.objects.pet?.value ?? 0} reducedMotion={props.reducedMotion} />
     </ObjectHandle>
   </group>;
 }

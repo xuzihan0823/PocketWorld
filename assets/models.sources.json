@@ -22,6 +22,16 @@
       "bytes": 2119832,
       "sha256": "fa2767cb3d4c20197a58914b88488bb06dc86ab051313ba6a834950015b1d254",
       "processing": "Existing locally packaged glTF binary; runtime clones the scene and normalizes scale. Packaging recipe from the earlier work session is not retained."
+    },
+    {
+      "file": "cat/cat.glb",
+      "sourcePage": null,
+      "license": null,
+      "licensePage": null,
+      "used": true,
+      "bytes": 7087592,
+      "sha256": "ccab0f90867ebdfe3293cc4ef2de8a85c8f94c2da95613711c1db7f7193c55ca",
+      "processing": "Tripo GLB supplied by a project member. Packaged byte-for-byte; runtime scales and animates the skinned mesh."
     }
   ]
 }
