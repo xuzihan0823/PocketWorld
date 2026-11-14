@@ -10,7 +10,7 @@ import { SoftBox } from '../Primitives';
 import { SuppliedAsset } from '../SuppliedAsset';
 import { RecordTransport, PLAYER, PLATTER, DISC_LEAN, DISC_RADIUS, discPosition, type Point } from './record-motion';
 
-const IMPORT_DISC: Point = [.3, 1.128, -2.3];
+const IMPORT_DISC: Point = [.28, 1.128, -2.44];
 const rackRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(DISC_LEAN, 0, 0));
 const flatRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
 const phaseText = { paused: '唱针已抬起', playing: '播放中', raise: '抬起唱臂', brake: '转盘减速', return: '唱片归架', extract: '正在取放唱片', settle: '唱片就位', spinup: '转盘启动', swing: '唱臂移向外圈', lower: '唱针缓缓落下', starting: '准备播放', fadein: '音乐渐入', park: '唱臂归位' };

@@ -147,7 +147,7 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean }) 
           if (!glassView) props.onAction({ sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' });
         };
         const action = { sceneId: props.sceneId, objectId: 'schedule-glass', kind: 'inspect' as const };
-        if (props.onApproach) props.onApproach([0.57, 1.2, -1.96], action, select);
+        if (props.onApproach) props.onApproach([0.57, 1.2, -2.14], action, select);
         else select();
       }} />;
     })}

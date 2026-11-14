@@ -20,7 +20,7 @@ const FOCUS: Record<string, { target: [number, number, number]; offset: [number,
   computer: { target: [1.45, 1.58, -2.30], offset: [0, 0.30, 3.5] },
   'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
   journal: { target: JOURNAL_PAGE_POSITION, offset: [0, 0.60, 0.28] },
-  schedule: { target: [0.57, 1.20, -1.96], offset: [0, 0.88, 0.48] },
+  schedule: { target: [0.57, 1.20, -2.14], offset: [0, 0.88, 0.48] },
   'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
   'book-01': { target: [-3.35, 1.03, -1.14], offset: [1.35, 1.12, 2.5] },
   bed: { target: [-2.5, 0.7, 1.0], offset: [3.2, 3.2, 4.0] },
@@ -136,7 +136,7 @@ function WorldContent(props: OrbitalSceneProps) {
     if (!action) return;
     const points: Record<string, [number, number, number]> = {
       computer: [1.55, 1.2, -1.96], 'music-player': [-0.45, 1.2, -1.96],
-      journal: JOURNAL_PAGE_POSITION, schedule: [0.57, 1.2, -1.96],
+      journal: JOURNAL_PAGE_POSITION, schedule: [0.57, 1.2, -2.14],
       'book-01': [-3.35, 0.9, props.sceneId === 'habitat' ? -1.75 : -0.5], bed: [-2.6, 0.7, 1],
     };
     const point = points[action.objectId];
@@ -157,7 +157,7 @@ function WorldContent(props: OrbitalSceneProps) {
           if (id !== props.sceneId || drawerInteraction.current?.busy) return false;
           let target = point;
           if (action.objectId === 'journal') target = JOURNAL_PAGE_POSITION;
-          if (action.objectId.startsWith('schedule')) target = [0.57, 1.2, -1.96];
+          if (action.objectId.startsWith('schedule')) target = [0.57, 1.2, -2.14];
           if (action.objectId.startsWith('music-')) target = [-0.45, 1.2, -1.96];
           if (action.objectId === 'computer' || action.objectId === 'music-mute' || action.objectId === 'computer-exit' || action.objectId.startsWith('game-')) target = [1.55, 1.2, -1.96];
           return interaction.current?.(target, action, perform) ?? false;

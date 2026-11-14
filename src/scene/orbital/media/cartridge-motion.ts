@@ -3,8 +3,9 @@ import type { GameId } from '../../../types/game';
 export type CartridgePoint = [number, number, number];
 export const CARTRIDGE_SLOT: CartridgePoint = [2.26, 1.27, -2.05];
 export const CARTRIDGE_DRAG_HEIGHT = 1.44;
-// Both cartridges sit entirely to the left of the monitor housing (x >= .975).
-export const cartridgePosition = (game: GameId): CartridgePoint => [game === 'mario' ? 0.55 : 0.82, 1.33, -2.56];
+// Both cartridges sit entirely to the left of the monitor housing (x >= .975),
+// clustered by the monitor's rear-left corner and staggered front-to-back.
+export const cartridgePosition = (game: GameId): CartridgePoint => [game === 'mario' ? 0.60 : 0.76, 1.33, game === 'mario' ? -2.64 : -2.50];
 
 export function clampCartridgeDrag(point: CartridgePoint): CartridgePoint {
   // Keep the entire cartridge in front of the monitor and above the desk/keyboard.
