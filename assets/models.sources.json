@@ -60,6 +60,17 @@
       "bytes": 799688,
       "sha256": "b0c94ebcf1b1ae56e9d9f4df558549070b79be6d33dca76df0569cf5d7a84ed6",
       "processing": "Luna V3 bed motion, authored from user-supplied V2 Blender study (Plask-derived late motion and Mixamo Laying Sleeping upper-body finish). Direct supported seat and right shin/ankle/toe repair, fixed V2 heel contacts. Animation-only GLB, 115 nodes and 230 tracks, no meshes or textures. Editable source assets/models/resident/luna-bed-v3.blend; rebuild scripts/export-luna-bed.py. Original Luna and bed reused unchanged; upstream licenses are not reassigned."
+    },
+    {
+      "file": "resident/luna-yawn.glb",
+      "source": "User-supplied Mixamo Yawn.fbx, 30 FPS, skeleton only, frames 1–251.",
+      "sourcePage": "https://www.mixamo.com/",
+      "license": "Adobe Mixamo royalty-free project use; upstream terms apply.",
+      "licensePage": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html",
+      "used": true,
+      "bytes": 232092,
+      "sha256": "bbd25137132498d2140a0b2b24d0a657efea9aa25d741361dbb0999024af8aad",
+      "processing": "scripts/export-luna-yawn.py retargets upper-body rotations into Luna rest coordinates. Runtime retains planted neutral pelvis/legs; 54 tracks, 8.333333 seconds, no mesh or textures."
     }
   ]
 }
