@@ -303,8 +303,12 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const p = current.current;
-      if (event.code === 'Escape' && approach.current) { cancelApproach(); return; }
-      if (event.code === 'Escape' && state.current.posture === 'chair' && !p.focusedObject) { stand(); return; }
+      if (event.code === 'Escape' && (approach.current || (state.current.posture === 'chair' && !p.focusedObject))) {
+        // App's Escape handler must not restore its stale object snapshot after stand().
+        event.preventDefault(); event.stopPropagation();
+        if (approach.current) cancelApproach(); else stand();
+        return;
+      }
       const target = event.target as HTMLElement | null;
       if (!p.enabled || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || (target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) return;
       if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(event.code)) return;

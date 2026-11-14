@@ -108,6 +108,7 @@ function mount(kind, overrides = {}) {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
       target.dispatchEvent(event);
+      return event;
     },
     frame(dt) {
       elapsed += dt;
@@ -326,6 +327,7 @@ for (const yaw of [0.15, Math.PI / 2, Math.PI, -Math.PI / 2]) {
         assert.equal(view.root.userData.posture, 'chair');
         const facing = view.chair.yaw - 0.2 + Math.PI;
         assert.ok(Math.abs(Math.atan2(Math.sin(view.root.rotation.y - facing), Math.cos(view.root.rotation.y - facing))) < 0.02);
+        assert.equal(view.key('Escape').defaultPrevented, true, 'seated Escape must not also restore App state');
       } finally { view.dispose(); }
     });
   }
@@ -387,7 +389,7 @@ test('Escape cancels a pending interaction before the object opens', () => {
   try {
     view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
     view.frame(1 / 60);
-    view.key('Escape');
+    assert.equal(view.key('Escape').defaultPrevented, true, 'App must not also handle this cancellation');
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
     assert.equal(performed, 0);
   } finally { view.dispose(); }
