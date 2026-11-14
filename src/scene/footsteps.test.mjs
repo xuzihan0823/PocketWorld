@@ -57,6 +57,7 @@ function mount(kind, overrides = {}) {
     './Cat': { Cat: 'Cat' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': load('./orbital/residentRig.ts', { three: THREE }),
+    './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './chairPose': load('./orbital/chairPose.ts', {}),
     './chairMotion': load('./orbital/chairMotion.ts', {}),
     './drawerInteraction': load('./orbital/drawerInteraction.ts', {}),
@@ -353,7 +354,7 @@ test('clicking the far corner of the bed still uses its safe entry', () => {
     view.props.interaction.current([-3.4, 0.8, -0.25], { sceneId: 'habitat', objectId: 'bed', kind: 'sleep' }, () => performed++);
     for (let i = 0; i < 900 && !performed; i++) view.frame(1 / 60);
     assert.equal(performed, 1);
-    assert.ok(Math.hypot(view.root.position.x + 1.48, view.root.position.z - 0.95) < 0.06);
+    assert.ok(Math.hypot(view.root.position.x + 1.48, view.root.position.z - 0.73) < 0.06);
   } finally { view.dispose(); }
 });
 
