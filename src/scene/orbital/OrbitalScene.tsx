@@ -103,8 +103,9 @@ function CameraRig(props: OrbitalSceneProps) {
     if (progress >= 1) moving.current = false;
   });
   const locked = props.gestureActive || !!props.focusedObject || !['idle', 'active', 'error'].includes(props.transition.phase);
+  // Full orbit: the closed shell fades whichever walls block the view (see walls/useWallVisibility).
   return <OrbitControls ref={controls} enabled={!locked} enablePan={false} enableDamping dampingFactor={0.08} minDistance={5} maxDistance={homeDistance * 1.5}
-    minPolarAngle={0.45} maxPolarAngle={1.30} minAzimuthAngle={-0.15} maxAzimuthAngle={1.4}
+    minPolarAngle={0.05} maxPolarAngle={1.30}
     target={[0, 1.05, 0]} />;
 }
 function OrbitalLighting({ objects }: Pick<WorldSceneProps, 'objects'>) {

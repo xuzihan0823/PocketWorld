@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-11-07",
+  "verifiedAt": "2026-11-14",
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
     {
@@ -24,6 +24,24 @@
       "processing": "Existing locally packaged glTF binary; runtime clones the scene and normalizes scale. Packaging recipe from the earlier work session is not retained."
     },
     {
+      "file": "resident/luna-walk-room.glb",
+      "source": "User-supplied Luna/Mixamo source and Luna-Sit-ContactFixed.blend with the deeper seat adjustment; original Walk/textures from repository commit 6f6df88.",
+      "license": "User-supplied; no separate license declaration supplied.",
+      "used": true,
+      "bytes": 9353064,
+      "sha256": "dc6fefc48eb6e12f7b1209e0c1bac29a8b0590f8d9981c8874f04835160ec4a5",
+      "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
+    },
+    {
+      "file": "resident/luna-seat-contact.bin",
+      "source": "User-supplied Luna/Mixamo source and Luna-Sit-ContactFixed.blend with the deeper seat adjustment; original Walk/textures from repository commit 6f6df88.",
+      "license": "User-supplied; no separate license declaration supplied.",
+      "used": true,
+      "bytes": 1108148,
+      "sha256": "1f5ce9bd2f1301ef62da7ae826504a6c4bfed5472d6876ee73e570c7a1925c6e",
+      "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
+    },
+    {
       "file": "cat/cat.glb",
       "sourcePage": null,
       "license": null,
@@ -32,6 +50,16 @@
       "bytes": 7087592,
       "sha256": "ccab0f90867ebdfe3293cc4ef2de8a85c8f94c2da95613711c1db7f7193c55ca",
       "processing": "Tripo GLB supplied by a project member. Packaged byte-for-byte; runtime scales and animates the skinned mesh."
+    },
+    {
+      "file": "resident/luna-bed-v3.glb",
+      "sourcePage": "https://www.mixamo.com/",
+      "license": null,
+      "licensePage": null,
+      "used": true,
+      "bytes": 799688,
+      "sha256": "b0c94ebcf1b1ae56e9d9f4df558549070b79be6d33dca76df0569cf5d7a84ed6",
+      "processing": "Luna V3 bed motion, authored from user-supplied V2 Blender study (Plask-derived late motion and Mixamo Laying Sleeping upper-body finish). Direct supported seat and right shin/ankle/toe repair, fixed V2 heel contacts. Animation-only GLB, 115 nodes and 230 tracks, no meshes or textures. Editable source assets/models/resident/luna-bed-v3.blend; rebuild scripts/export-luna-bed.py. Original Luna and bed reused unchanged; upstream licenses are not reassigned."
     }
   ]
 }
