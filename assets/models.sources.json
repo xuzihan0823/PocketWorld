@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-11-07",
+  "verifiedAt": "2026-11-14",
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
     {
@@ -22,6 +22,24 @@
       "bytes": 2119832,
       "sha256": "fa2767cb3d4c20197a58914b88488bb06dc86ab051313ba6a834950015b1d254",
       "processing": "Existing locally packaged glTF binary; runtime clones the scene and normalizes scale. Packaging recipe from the earlier work session is not retained."
+    },
+    {
+      "file": "resident/luna-walk-room.glb",
+      "source": "User-supplied Luna/Mixamo source and accepted Luna-Sit-ContactFixed.blend; original Walk/textures from repository commit 6f6df88.",
+      "license": "User-supplied; no separate license declaration supplied.",
+      "used": true,
+      "bytes": 9354816,
+      "sha256": "1691210420d4479014743e2bd50bc1060c0d72ad42c58aeca1aeccc198590e9f",
+      "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
+    },
+    {
+      "file": "resident/luna-seat-contact.bin",
+      "source": "User-supplied Luna/Mixamo source and accepted Luna-Sit-ContactFixed.blend; original Walk/textures from repository commit 6f6df88.",
+      "license": "User-supplied; no separate license declaration supplied.",
+      "used": true,
+      "bytes": 1603460,
+      "sha256": "7a659c57f62af8726208e625669364e3d4fced537f47da6345f84f68bb095c5f",
+      "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
     }
   ]
 }

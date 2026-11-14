@@ -106,8 +106,16 @@ export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClic
     return merged;
   }, [boards, variant]);
   useEffect(() => () => floorGeometry.dispose(), [floorGeometry]);
+  const floorPress = useRef(false);
+  useEffect(() => {
+    const reset = () => { floorPress.current = false; };
+    window.addEventListener('pointerdown', reset, true);
+    window.addEventListener('pointercancel', reset);
+    return () => { window.removeEventListener('pointerdown', reset, true); window.removeEventListener('pointercancel', reset); };
+  }, []);
   const onClick = (event: ThreeEvent<MouseEvent>) => {
-    if (!onFloorClick || event.delta > 5 || !root.current) return;
+    const startedOnFloor = floorPress.current; floorPress.current = false;
+    if (!startedOnFloor || !onFloorClick || event.delta > 5 || !root.current) return;
     event.stopPropagation();
     const point = root.current.worldToLocal(event.point.clone());
     onFloorClick([point.x, 0, point.z]);
@@ -119,12 +127,12 @@ export const HabitatShell: React.FC<HabitatShellProps> = ({ variant, onFloorClic
         <extrudeGeometry args={[shapes.base, { ...EXTRUDE, depth: 0.3 }]} />
         <meshStandardMaterial color="#555d60" metalness={0.72} roughness={0.38} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.108, 0]} receiveShadow onClick={onClick}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.108, 0]} receiveShadow onPointerDown={() => { floorPress.current = true; }} onClick={onClick}>
         <extrudeGeometry args={[shapes.floor, { ...EXTRUDE, depth: 0.055, bevelThickness: 0.035 }]} />
         <meshStandardMaterial color="#a69883" roughness={0.85} />
       </mesh>
       {/* Separate 12 mm boards with 6 mm open joints above the recessed substrate. */}
-      <mesh geometry={floorGeometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]} receiveShadow onClick={onClick}>
+      <mesh geometry={floorGeometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]} receiveShadow onPointerDown={() => { floorPress.current = true; }} onClick={onClick}>
         <meshStandardMaterial vertexColors roughness={0.68} onBeforeCompile={applyOakGrain} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.11, 0]} castShadow>
