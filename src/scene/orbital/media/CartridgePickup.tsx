@@ -12,7 +12,7 @@ interface Props {
   onGrab: () => boolean;
   onNearSlot: (near: boolean) => void;
   onDrop: (point: CartridgePoint, insert: boolean) => void;
-  onInspect: () => void;
+  onSelect: () => void;
   children: React.ReactNode;
 }
 
@@ -21,7 +21,7 @@ export function CartridgePickup(props: Props) {
   const { camera, gl } = useThree();
   const root = useRef<THREE.Group>(null), movable = useRef<THREE.Group>(null);
   const latest = useRef(props); latest.current = props;
-  const held = useRef<{ id: number; x: number; y: number; offset: THREE.Vector3; point: CartridgePoint; moved: boolean; near: boolean; release: () => void } | null>(null);
+  const held = useRef<{ id: number; x: number; y: number; offset: THREE.Vector3 | null; point: CartridgePoint; moved: boolean; near: boolean; release: () => void } | null>(null);
   const math = useMemo(() => ({ ray: new THREE.Raycaster(), pointer: new THREE.Vector2(), plane: new THREE.Plane(), hit: new THREE.Vector3(), origin: new THREE.Vector3() }), []);
   const project = (x: number, y: number) => {
     const parent = root.current?.parent;
@@ -41,7 +41,7 @@ export function CartridgePickup(props: Props) {
     const current = held.current;
     if (!current || current.id !== event.pointerId) return;
     if (Math.hypot(event.clientX - current.x, event.clientY - current.y) >= 9) current.moved = true;
-    if (!current.moved) return;
+    if (!current.moved || !current.offset) return;
     const point = project(event.clientX, event.clientY);
     if (!point) return;
     const intended = point.add(current.offset).toArray() as CartridgePoint;
@@ -61,21 +61,26 @@ export function CartridgePickup(props: Props) {
     movable.current?.position.set(0, 0, 0);
     latest.current.world.onGesture(false);
     latest.current.onDrop(current.point, !cancelled && current.moved && current.near);
-    if (!cancelled && !current.moved) latest.current.onInspect();
+    if (!cancelled && !current.moved) latest.current.onSelect();
   };
   const handlers = useRef({ move, finish }); handlers.current = { move, finish };
   useEffect(() => {
     const move = (event: PointerEvent) => handlers.current.move(event);
     const up = (event: PointerEvent) => handlers.current.finish(false, event);
     const cancel = (event: PointerEvent) => handlers.current.finish(true, event);
+    const secondTouch = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' && !event.isPrimary) handlers.current.finish(true);
+    };
     const blur = () => handlers.current.finish(true);
     window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerdown', secondTouch, true);
     window.addEventListener('pointerup', up, true);
     window.addEventListener('pointercancel', cancel, true);
     window.addEventListener('blur', blur);
     gl.domElement.addEventListener('lostpointercapture', cancel);
     return () => {
       window.removeEventListener('pointermove', move, true);
+      window.removeEventListener('pointerdown', secondTouch, true);
       window.removeEventListener('pointerup', up, true);
       window.removeEventListener('pointercancel', cancel, true);
       window.removeEventListener('blur', blur);
@@ -85,25 +90,20 @@ export function CartridgePickup(props: Props) {
   }, []);
   useEffect(() => { if (!props.enabled) handlers.current.finish(true); }, [props.enabled]);
   const down = (event: ThreeEvent<PointerEvent>) => {
-    if (event.button !== 0 || held.current || !props.enabled) return;
+    if (event.button !== 0 || !event.isPrimary || held.current || !props.enabled) return;
     event.stopPropagation();
-    if (props.world.onApproach) {
-      const focused = props.world.focusedObject === 'computer';
-      const ready = props.world.onApproach(props.position, { sceneId: props.world.sceneId, objectId: 'computer', kind: 'inspect' }, focused ? () => {} : props.onInspect);
-      if (!focused || !ready) return;
-    }
-    const hit = project(event.clientX, event.clientY);
-    if (!hit || !props.onGrab()) return;
+    if (!props.onGrab()) return;
+    const hit = props.world.focusedObject === 'computer' ? project(event.clientX, event.clientY) : null;
     const target = event.target as Element;
     target.setPointerCapture?.(event.pointerId);
     held.current = { id: event.pointerId, x: event.clientX, y: event.clientY, point: [...props.position], moved: false, near: false,
-      offset: new THREE.Vector3(...props.position).sub(hit),
+      offset: hit ? new THREE.Vector3(...props.position).sub(hit) : null,
       release: () => { try { target.releasePointerCapture?.(event.pointerId); } catch { /* Already released. */ } } };
     props.world.onGesture(true);
   };
   return <group ref={root} position={props.position} name={`Interactable_${props.id}`} userData={{ objectId: props.id, action: 'insert', sceneId: props.world.sceneId }}
     onPointerDown={down}
-    onPointerOver={event => { if (props.enabled) { event.stopPropagation(); props.world.onHover(props.id, '按住卡带，拖到右侧卡槽后松手'); } }}
+    onPointerOver={event => { if (props.enabled) { event.stopPropagation(); props.world.onHover(props.id, '点击卡带，自动插入'); } }}
     onPointerOut={() => { if (!held.current) props.world.onHover(null); }}>
     <group ref={movable}>{props.children}</group>
   </group>;

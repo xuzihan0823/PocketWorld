@@ -10,7 +10,7 @@ import { SoftBox } from '../Primitives';
 import { ComputerScreen } from './ComputerScreen';
 import { CartridgePickup } from './CartridgePickup';
 import { RecordPlayer } from './RecordPlayer';
-import { CARTRIDGE_SLOT as SLOT, cartridgePosition, cartridgeTransferPoint } from './cartridge-motion';
+import { CARTRIDGE_HEIGHT, CARTRIDGE_SLOT as SLOT, cartridgePosition, cartridgeTransferPoint } from './cartridge-motion';
 
 type Point = [number, number, number];
 const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridgeProps> }>('../../../games/*/index.tsx');
@@ -23,7 +23,7 @@ function Label({ children, position, width = 180 }: { children: React.ReactNode;
 
 function Cartridge({ game }: { game: GameId }) {
   return <group>
-    <SuppliedAsset name="cartridge" size={[.22, .075, .25]} fit="contact" rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -.0375]} fallback={<>    <SoftBox dims={[0.22, 0.25, 0.075]} color={gameColors[game]} radius={0.016} />
+    <SuppliedAsset name="cartridge" size={[.22, .075, CARTRIDGE_HEIGHT]} fit="contact" rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -.0375]} fallback={<>    <SoftBox dims={[0.22, CARTRIDGE_HEIGHT, 0.075]} color={gameColors[game]} radius={0.016} />
     <SoftBox dims={[0.16, 0.11, 0.008]} position={[0, 0.025, 0.043]} color="#ece0bd" radius={0.005} />
     <SoftBox dims={[0.13, 0.024, 0.012]} position={[0, -0.115, 0]} color="#bba269" radius={0.003} />
 </>} />
@@ -61,6 +61,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
   const serial = useRef(0);
   const transferRef = useRef<Transfer | null>(null);
   const [transfer, setTransfer] = useState<Transfer | null>(null);
+  const [queuedInsertion, setQueuedInsertion] = useState<{ game: GameId; beforeFocus: number } | null>(null);
   const pickupRef = useRef<GameId | null>(null);
   const [pickup, setPickup] = useState<GameId | null>(null);
   const [nearSlot, setNearSlot] = useState(false);
@@ -130,14 +131,36 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     return () => { cancelled = true; };
   }, [props.activeGame, computerFocused, sceneVisible, loaded]);
 
-  const begin = (next: Omit<Transfer, 'key'>) => {
+  const begin = useCallback((next: Omit<Transfer, 'key'>) => {
     const value = { ...next, key: ++serial.current };
     transferRef.current = value;
     setTransfer(value);
-  };
-  const focus = (id: 'computer' | 'music-player') => {
+  }, []);
+  useEffect(() => {
+    if (!queuedInsertion) return;
+    if (!sceneVisible || props.activeGame) { setQueuedInsertion(null); return; }
+    // World props cross the Canvas boundary and may arrive after this component's local state.
+    if (props.transition.id === queuedInsertion.beforeFocus) return;
+    if (props.transition.action?.objectId !== 'computer') { setQueuedInsertion(null); return; }
+    if (displayVisible) {
+      setQueuedInsertion(null);
+      const { game } = queuedInsertion;
+      if (!transferRef.current && !pickupRef.current) begin({ game, from: cartridgePosition(game), to: SLOT });
+    }
+  }, [queuedInsertion, sceneVisible, displayVisible, props.activeGame, props.transition, begin]);
+  const selectCartridge = (game: GameId) => {
     const world = latest.current;
-    if (world.focusedObject !== id) world.onAction({ sceneId: world.sceneId, objectId: id, kind: 'inspect' });
+    if (transferRef.current || pickupRef.current || queuedInsertion || world.activeGame) return;
+    if (world.library && world.library.flow.current.phase !== 'idle') return;
+    const from = cartridgePosition(game);
+    if (displayVisible) { begin({ game, from, to: SLOT }); return; }
+    const action: WorldAction = { sceneId: world.sceneId, objectId: 'computer', kind: 'inspect' };
+    const openComputer = () => {
+      setQueuedInsertion({ game, beforeFocus: latest.current.transition.id });
+      latest.current.onAction(action);
+    };
+    if (world.onApproach) world.onApproach(from, action, openComputer);
+    else openComputer();
   };
   const eject = useCallback(() => {
     if (transferRef.current || pickupRef.current) return;
@@ -150,6 +173,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     } else latest.current.onReturn();
   }, []);
   const leaveComputer = useCallback(() => {
+    setQueuedInsertion(null);
     transferRef.current = null;
     setTransfer(null);
     latest.current.onGameChange(null);
@@ -177,9 +201,9 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     const id = action.objectId;
     if (!sceneVisible) return;
     if (id === 'game-mute') props.onToggleMute();
-    else if (id.startsWith('game-cartridge-')) {
-      focus('computer');
-    } else if (id === 'game-slot') eject();
+    else if (id === 'game-cartridge-mario') selectCartridge('mario');
+    else if (id === 'game-cartridge-shooter') selectCartridge('shooter');
+    else if (id === 'game-slot') eject();
     else if (id === 'game-pause') setPaused(value => !value);
     else if (id === 'computer-exit') leaveComputer();
     else props.onAction(action);
@@ -203,15 +227,15 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     <RecordPlayer {...props} />
 
     {(['mario', 'shooter'] as const).map(game => <CartridgePickup key={game} id={`game-cartridge-${game}`} world={world} position={cartridgePosition(game)}
-      enabled={sceneVisible && !props.activeGame && !transfer && ['idle', 'active', 'error'].includes(props.transition.phase)}
+      enabled={sceneVisible && !props.activeGame && !transfer && !queuedInsertion && ['idle', 'active', 'error'].includes(props.transition.phase)}
       onGrab={() => {
         if (pickupRef.current || transferRef.current || latest.current.activeGame) return false;
         pickupRef.current = game; setPickup(game); setNearSlot(false); return true;
-      }} onNearSlot={setNearSlot} onInspect={() => focus('computer')}
+      }} onNearSlot={setNearSlot} onSelect={() => selectCartridge(game)}
       onDrop={(from, insert) => {
         pickupRef.current = null; setPickup(null); setNearSlot(false);
         if (!sceneVisible) return;
-        if (insert) { focus('computer'); begin({ game, from, to: SLOT }); }
+        if (insert) begin({ game, from, to: SLOT });
         else if (from.some((value, axis) => value !== cartridgePosition(game)[axis])) begin({ game, from, to: cartridgePosition(game), returnOnly: true });
       }}>
       {props.activeGame !== game && transfer?.game !== game && <Cartridge game={game} />}
@@ -242,7 +266,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
           {React.createElement(activeComponent, { width: 800, height: 600, isActive: gameActive, isMuted: props.isMuted, onExit: eject, onScoreChange: updateScore, onGameOver: result => updateScore(result.score, result.highScore) })}
         </ScreenBoundary> : <div style={screenMessage}>
           <strong style={{ fontSize: 24, letterSpacing: 3 }}>POCKET PLAY</strong>
-          <span>{transfer?.game ? transfer.returnOnly ? '卡带正在归位' : transfer.eject ? '正在拔出卡带' : '正在插入卡带' : props.activeGame ? loadError?.game === props.activeGame ? loadError.text : computerFocused ? '正在读取卡带…' : '游戏已暂停，靠近电脑继续' : '按住卡带，拖到右侧卡槽后松手'}</span>
+          <span>{transfer?.game ? transfer.returnOnly ? '卡带正在归位' : transfer.eject ? '正在拔出卡带' : '正在插入卡带' : props.activeGame ? loadError?.game === props.activeGame ? loadError.text : computerFocused ? '正在读取卡带…' : '游戏已暂停，靠近电脑继续' : '点击卡带自动插入，也可拖入右侧卡槽'}</span>
           <span style={{ fontSize: 14, color: '#c1cbb2' }}>拔出卡带退出 · 拨杆暂停 · 音箱旋钮静音</span>
         </div>}
       </div>

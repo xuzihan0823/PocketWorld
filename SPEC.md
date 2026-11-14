@@ -61,6 +61,8 @@ PocketWorld 是浏览器里的 3D 轨道居住舱。访客在生活舱里环绕�
 
 ### 3.1 入口与接口
 
+- 两张卡带立放在桌面上。点击或轻触卡带后，住民走近电脑，卡带自动入槽。电脑近景中也可手动拖卡，松手位置不在卡槽附近时卡带归位。
+
 - 每个卡带在自己目录的 `index.tsx` 默认导出一个 React 组件（`MarioGame`、`ShooterGame`），Props 实现 `src/types/game.ts` 的 `GameCartridgeProps`。
 - 电脑集成层（`src/scene/orbital/media/MediaObjects.tsx`）用 `import.meta.glob('games/*/index.tsx')` 按需加载。选中卡带且电脑处于聚焦状态时才开始加载，游戏代码和专属资源不进入房间首屏。
 - 同一时刻只挂载一款游戏。入口缺失时屏幕提示「尚未接入」；加载失败或运行时抛错时提示拔出卡带重试，不影响房间。
