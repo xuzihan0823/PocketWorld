@@ -45,7 +45,7 @@ export function FurnitureDesk({ world }: { world: WorldModelProps }) {
     </group>)}
 </>} />
     <SoftBox name="DrawerMount" dims={[1.09, .07, .13]} position={[.35, 1.036, -1.828]} color={C.edge} radius={.006} />
-    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · 点击 / E 推回' : '靠近抽屉 · 点击 / E 后退拉开'} world={world}>
+    <ObjectHandle id="desk-drawer" action={drawer.open ? 'close' : 'open'} hint={drawer.open ? '靠近抽屉 · E 推回' : '靠近抽屉 · E 后退拉开'} world={world}>
       <FurnitureMotion mode="position" axis="z" target={drawer.open ? DRAWER_TRAVEL : 0} reducedMotion={world.reducedMotion}>
         <SoftBox dims={[1.008, .034, .83]} position={[.35, .765, -2.175]} color={C.wood} radius={.006} />
         {[-.149, .849].map(x => <SoftBox key={x} dims={[.036, .202, .825]} position={[x, .858, -2.1775]} color={C.wood} radius={.007} />)}
