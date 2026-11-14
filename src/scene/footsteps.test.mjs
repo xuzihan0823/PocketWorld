@@ -400,13 +400,14 @@ test('a chair with no safe front entry cannot seat the resident through furnitur
   const view = mount('orbital');
   let performed = 0;
   try {
-    Object.assign(view.chair, { x: 1.45, z: -0.85, yaw: 0.15 });
-    view.root.position.set(1.45, 0, 0.1);
+    // The right wall blocks the front and the desk prevents rolling backwards.
+    Object.assign(view.chair, { x: 3.48, z: -1.3, yaw: 0.2 - Math.PI / 2 });
+    view.root.position.set(3.65, 0, -0.3);
     view.props.interaction.current([view.chair.x, 0.7, view.chair.z], { sceneId: 'habitat', objectId: 'chair', kind: 'sit' }, () => performed++);
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
     assert.equal(performed, 0);
     assert.equal(view.root.userData.posture, 'standing');
-    assert.ok(Math.abs(view.chair.z + 0.85) < 0.001);
+    assert.equal(view.chair.x, 3.48);
   } finally { view.dispose(); }
 });
 
@@ -475,5 +476,24 @@ test('E at the drawer handle still selects the drawer beside the chair', () => {
     view.key('KeyE');
     assert.equal(performed.length, 1);
     assert.equal(performed[0].objectId, 'desk-drawer');
+  } finally { view.dispose(); }
+});
+
+test('E behind the default chair routes around it and makes room for the blocked front', () => {
+  const performed = [];
+  const view = mount('orbital', { onAction: action => performed.push(action) });
+  try {
+    const { x, z } = view.chair;
+    view.root.position.set(x, 0, z + 0.78);
+    view.frame(1 / 60);
+    view.key('KeyE');
+    for (let i = 0; i < 900 && !performed.length; i++) {
+      view.frame(1 / 60);
+      const { x: rx, z: rz } = view.root.position;
+      assert.ok(Math.hypot(rx - view.chair.x, rz - view.chair.z) >= 0.725, 'Luna must stay outside the chair while walking');
+    }
+    assert.deepEqual(performed.map(action => [action.objectId, action.kind]), [['chair', 'sit']]);
+    assert.ok(view.chair.z > z + 0.2, 'chair must clear the desk');
+    assert.ok(view.root.position.z < view.chair.z - 0.8, 'Luna must reach its front');
   } finally { view.dispose(); }
 });

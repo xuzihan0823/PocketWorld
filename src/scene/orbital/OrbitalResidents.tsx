@@ -30,7 +30,6 @@ type ResidentsProps = WorldModelProps & {
 };
 type Approach = { point: Point; action: WorldAction; perform: () => void; elapsed: number; chairTarget: Point | null };
 const RADIUS = 0.23;
-const CHAIR_INTERACTION_DISTANCE = 1.35;
 const CAT: Point = [-0.95, 1.95];
 const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -114,7 +113,7 @@ function distanceToSegment(x: number, z: number, p: Point, q: Point) {
   return Math.hypot(x - (p[0] + t * dx), z - (p[1] + t * dz));
 }
 function clearSegment(p: Point, q: Point, boxes: Box[], circle?: Circle) {
-  if (circle && distanceToSegment(circle.x, circle.z, p, q) < circle.radius - 1e-6) return false;
+  if (circle && distanceToSegment(circle.x, circle.z, p, q) < circle.radius - 0.005) return false;
   const steps = Math.max(1, Math.ceil(Math.hypot(p[0] - q[0], p[1] - q[1]) / 0.045));
   for (let i = 1; i <= steps; i++) if (!free([THREE.MathUtils.lerp(p[0], q[0], i / steps), THREE.MathUtils.lerp(p[1], q[1], i / steps)], boxes)) return false;
   return true;
@@ -814,15 +813,19 @@ export function OrbitalResidents(props: ResidentsProps) {
     root.userData.chairPhase = s.posture === 'chair' ? chairMotion.current.phase : 'idle';
     root.userData.chairHeight = chairMotion.current.height;
     root.userData.bedTime = s.posture === 'bed' ? bed.time : null;
-    const candidates: { id: string; point: Point; distance: number }[] = [{ id: 'book-01', point: [readingStand(p.sceneId)[0], readingStand(p.sceneId)[2]], distance: 1.0 }, { id: 'pet', point: CAT, distance: 1.1 }];
+    // Select by proximity to the live chair footprint from any side. The chair's
+    // front matters only after selection, when planning how to sit.
+    const candidates: { id: string; point: Point; distance: number; radius?: number }[] = [
+      { id: 'book-01', point: [readingStand(p.sceneId)[0], readingStand(p.sceneId)[2]], distance: 1.0 },
+      { id: 'pet', point: CAT, distance: 1.1 },
+      { id: 'chair', point: [pose.x, pose.z], distance: 1.35, radius: room.chairRadius },
+    ];
     if (p.sceneId === 'habitat') candidates.push({ id: 'bed', point: BED_ENTRY, distance: 1.0 });
     if (p.drawerEnabled && s.posture === 'standing' && canReachDrawer(root.position, drawerOpen)) candidates.push({ id: 'desk-drawer', point: [0.35, drawerOpen ? -0.935 : -1.575], distance: 1.2 });
-    // The chair can be selected all the way around, even where its reach overlaps the drawer.
-    const chairNearby = Math.hypot(root.position.x - pose.x, root.position.z - pose.z) < CHAIR_INTERACTION_DISTANCE;
-    const nearby = !p.enabled || drawerTask.current ? '' : chairNearby ? 'chair' : candidates.map(item => {
-      const gap = Math.hypot(root.position.x - item.point[0], root.position.z - item.point[1]);
-      return { id: item.id, reachable: gap < item.distance, gap };
-    }).filter(item => item.reachable).sort((a, b) => a.gap - b.gap)[0]?.id ?? '';
+    const nearby = p.enabled && !drawerTask.current ? candidates.map(item => {
+      const distance = Math.hypot(root.position.x - item.point[0], root.position.z - item.point[1]);
+      return { id: item.id, reachable: distance < item.distance, gap: distance - (item.radius ?? 0) };
+    }).filter(item => item.reachable).sort((a, b) => a.gap - b.gap)[0]?.id ?? '' : '';
     const hint = nearby ? `E · ${s.posture !== 'standing' ? '起身' : nearby === 'book-01' ? '查看藏书' : nearby === 'pet' ? '摸摸团子' : nearby === 'bed' ? '躺下休息' : nearby === 'desk-drawer' ? (drawerOpen ? '推回抽屉' : '后退拉开抽屉') : '坐下'}` : '';
     if (!drawerTask.current && (nearby !== s.nearby || hint !== s.nearbyHint)) { s.nearby = nearby; s.nearbyHint = hint; p.onHover(nearby || null, hint || undefined); }
   }, -1);
