@@ -96,7 +96,7 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
         if (action.objectId === 'cabinet-item' && next.active) updated.cabinet = { ...(updated.cabinet ?? CLOSED_OBJECT), open: true };
         return { ...current, [action.sceneId]: updated };
       });
-      if (FOCUS_ACTIONS[action.kind]) setFocusedObject(action.objectId);
+      if (FOCUS_ACTIONS[action.kind] || (action.objectId === 'cabinet' && action.kind === 'open' && next.open)) setFocusedObject(action.objectId);
       if (action.kind === 'wake' || action.kind === 'travel' || action.kind === 'sit' || (action.kind === 'close' && snapshot.focusedObject === action.objectId)) setFocusedObject(null);
       motion.current.progress = 0;
       motion.current.sceneProgress = 0;
