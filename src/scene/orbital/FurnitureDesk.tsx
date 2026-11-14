@@ -21,7 +21,7 @@ function FurnitureComputer({ world }: { world: WorldModelProps }) {
     <Cylinder radius={0.015} height={0.009} position={[0.46, 0.15, 0.216]} rotation={[Math.PI / 2, 0, 0]} color="#78a884" />
     {Array.from({ length: 8 }, (_, i) => <SoftBox key={i} dims={[0.003, 0.012, 0.22]} position={[0.576, 0.39 + i * 0.035, -0.11]} color="#a9aa97" radius={0.001} />)}
 </>} />
-    <group position={[0, 0.045, 0.62]} rotation={[0.06, 0, 0]}>
+    <group position={[0, 0.045, 0.50]} rotation={[0.06, 0, 0]}>
       <SoftBox dims={[0.80, 0.06, 0.36]} position={[0, 0.004, -0.012]} color="#d1cdb5" radius={0.022} />
       <ReactiveKeyboard reducedMotion={world.reducedMotion} active={world.focusedObject === 'computer'} />
     </group>
@@ -59,6 +59,6 @@ export function FurnitureDesk({ world }: { world: WorldModelProps }) {
       </FurnitureMotion>
     </ObjectHandle>
     <FurnitureComputer world={world} />
-    <ScheduleBook world={world} position={[0.55, 1.121, -1.96]} color="#7b9184" scale={0.76} rotation={[0, 0.08, 0]} />
+    <ScheduleBook world={world} position={[0.55, 1.121, -2.14]} color="#7b9184" scale={0.76} rotation={[0, 0.08, 0]} />
   </group>;
 }
