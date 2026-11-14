@@ -47,9 +47,9 @@
       "license": null,
       "licensePage": null,
       "used": true,
-      "bytes": 7087592,
-      "sha256": "ccab0f90867ebdfe3293cc4ef2de8a85c8f94c2da95613711c1db7f7193c55ca",
-      "processing": "Tripo GLB supplied by a project member. Packaged byte-for-byte; runtime scales and animates the skinned mesh."
+      "bytes": 6803076,
+      "sha256": "4a311b245af858771b038985699745ff1de0ad5da9930d40a0946308df63873d",
+      "processing": "Tripo mesh supplied by a project member. The runtime GLB preserves the mesh topology and embedded textures and uses a 23-bone quadruped rig. Editable source: assets/models/cat/cat.blend."
     },
     {
       "file": "resident/luna-bed-v3.glb",
