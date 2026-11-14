@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import type { ThreeElements } from '@react-three/fiber';
 import * as THREE from 'three';
 
-class AssetBoundary extends Component<{ children: React.ReactNode; fallback?: React.ReactNode }, { failed: boolean }> {
+export class AssetBoundary extends Component<{ children: React.ReactNode; fallback?: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   render() { return this.state.failed ? this.props.fallback ?? null : this.props.children; }

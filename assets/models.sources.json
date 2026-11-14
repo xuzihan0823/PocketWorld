@@ -40,6 +40,16 @@
       "bytes": 1603460,
       "sha256": "7a659c57f62af8726208e625669364e3d4fced537f47da6345f84f68bb095c5f",
       "processing": "See assets/models/resident/README.md and scripts/bake-luna-chair.py + scripts/pack-luna-chair.py."
+    },
+    {
+      "file": "cat/cat.glb",
+      "sourcePage": null,
+      "license": null,
+      "licensePage": null,
+      "used": true,
+      "bytes": 7087592,
+      "sha256": "ccab0f90867ebdfe3293cc4ef2de8a85c8f94c2da95613711c1db7f7193c55ca",
+      "processing": "Tripo GLB supplied by a project member. Packaged byte-for-byte; runtime scales and animates the skinned mesh."
     }
   ]
 }
