@@ -128,7 +128,9 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   }
   const torsoBone = bone('Spine2');
   const torso = control(torsoBone);
-  const neck = control(bone('Neck'), torso, at(torsoBone));
+  const neckBone = bone('Neck');
+  const neck = control(neckBone, torso, at(torsoBone));
+  const head = control(bone('Head'), neck, at(neckBone));
   const legs: ResidentLeg[] = ['Right', 'Left'].map(side => {
     const thighBone = bone(side + 'UpLeg'), shinBone = bone(side + 'Leg'), footBone = bone(side + 'Foot');
     const h = at(thighBone), k = at(shinBone), a = at(footBone);
@@ -139,7 +141,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
       lowerLength: Math.hypot(a.y - k.y, a.z - k.z), ankleHeight: a.y,
       hipForward: h.z, straighten: [tilt(h, k), tilt(k, a) - tilt(h, k)] };
   });
-  const arms: ResidentArm[] = ['Right', 'Left'].map(side => {
+  const arms: ResidentArm[] = ['Right', 'Left'].map((side, sideIndex) => {
     const shoulderBone = bone(side + 'Shoulder'), upperBone = bone(side + 'Arm');
     const lowerBone = bone(side + 'ForeArm'), handBone = bone(side + 'Hand');
     const shoulder = control(shoulderBone, torso, at(torsoBone));
@@ -147,12 +149,34 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     const forearm = control(lowerBone, upper, at(upperBone));
     const hand = control(handBone, forearm, at(lowerBone));
     const wrist = at(handBone);
-    const palm = at(bone(side + 'HandMiddle1')).sub(wrist);
+    const mid1 = at(bone(side + 'HandMiddle1'));
+    const mid4 = at(bone(side + 'HandMiddle4'));
+    const idx1 = at(bone(side + 'HandIndex1'));
+    const pnk1 = at(bone(side + 'HandPinky1'));
+    const palmVec = mid1.clone().sub(wrist);
+    const fingerDir = palmVec.clone().normalize();
+    const across = idx1.clone().sub(pnk1).normalize();
+    const palmY = fingerDir.clone().negate();
+    const rawNormal = (sideIndex === 0 ? across.clone().cross(fingerDir) : fingerDir.clone().cross(across)).normalize();
+    const palmX = palmY.clone().cross(rawNormal).normalize();
+    const palmZ = palmX.clone().cross(palmY).normalize();
+    const palmBasis = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(palmX, palmY, palmZ));
+    const palmOffset = palmVec.clone().multiplyScalar(0.55).addScaledVector(palmZ, 0.018);
+    const fingerTipOffset = mid4.clone().sub(wrist).multiplyScalar(0.86).addScaledVector(palmZ, 0.013);
+    const curlAxis = palmX.clone().negate();
+    const thumbAxis = fingerDir.clone().multiplyScalar(sideIndex === 0 ? -0.85 : 0.85).addScaledVector(curlAxis, 0.5).normalize();
+    const fingerChains = ['Index', 'Middle', 'Ring', 'Pinky'].map((name, fi) =>
+      [1, 2, 3].map(seg => ({ bone: control(bone(`${side}Hand${name}${seg}`), hand, wrist), factor: (0.75 + seg * 0.22) * (0.92 + fi * 0.05) }))
+    ).flat();
+    const thumbChain = [1, 2].map(seg => ({ bone: control(bone(`${side}HandThumb${seg}`), hand, wrist), factor: seg === 1 ? 0.65 : 0.9 }));
+    const setFingers = (curl: number, thumbOppose = curl * 0.6) => {
+      for (const f of fingerChains) f.bone.quaternion.setFromAxisAngle(curlAxis, curl * f.factor);
+      for (const t of thumbChain) t.bone.quaternion.setFromAxisAngle(thumbAxis, thumbOppose * t.factor);
+    };
     return { shoulder, upper, forearm, hand, restWrist: wrist,
       restUpper: forearm.position.clone(), restLower: hand.position.clone(),
       upperLength: forearm.position.length(), lowerLength: hand.position.length(),
-      palmBasis: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), palm.clone().normalize()),
-      palmOffset: palm.multiplyScalar(.50) };
+      palmBasis, palmOffset, fingerTipOffset, setFingers };
   });
   const skirtFront = new THREE.Bone(), skirtBack = new THREE.Bone();
   const dress = Array.from(bones.values()).filter(joint => /^Dress_.+_01$/.test(joint.name)).map(target => ({
@@ -197,6 +221,6 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     });
   }
 
-  return { mesh, legs, arms, torso, neck, skirtFront, skirtBack, applyPose, neutralPose: neutral,
+  return { mesh, legs, arms, torso, neck, head, skirtFront, skirtBack, applyPose, neutralPose: neutral,
     dispose: () => { for (const object of skinned) object.skeleton.dispose(); } };
 }

@@ -768,7 +768,8 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (libraryActive && !libraryWalking && flow) {
         root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 10));
         carryResident(root, p.sceneId, flow); root.position.y -= libraryCrouch(flow);
-        if (['carry', 'return-carry'].includes(flow.phase) && flow.progress > .08 && flow.progress < .92) walking = true;
+        if ((['carry', 'return-carry'].includes(flow.phase) && flow.progress > .08 && flow.progress < .92)
+          || Math.hypot(root.position.x - frameX, root.position.z - frameZ) > .0004) walking = true;
       }
     }
     if (p.sceneId !== 'habitat') pose.drop = s.perch;
@@ -798,7 +799,12 @@ export function OrbitalResidents(props: ResidentsProps) {
       rig.current.skirtBack.rotation.x = -sit * 0.4;
       rig.current.legs.forEach((leg, side) => {
         let thigh = -sit * Math.PI / 2, knee = sit * Math.PI / 2;
-        if (libraryActive && root.position.y < -.001) [thigh, knee] = legReach(leg, -leg.hipForward, root.position.y + HIP - leg.ankleHeight);
+        if (libraryActive && root.position.y < -.0005) {
+          const footZ = leg.thigh.position.z + leg.shin.position.z + leg.foot.position.z;
+          const [crouchThigh, crouchKnee] = legReach(leg, footZ - leg.hipForward, leg.thigh.position.y - leg.ankleHeight + root.position.y);
+          thigh = crouchThigh + leg.straighten[0];
+          knee = crouchKnee + leg.straighten[1];
+        }
         if (s.perch > 0.001) {
           const [reachThigh, reachKnee] = legReach(leg, s.sole - leg.hipForward, root.position.y + HIP - s.soleLift - leg.ankleHeight);
           thigh = THREE.MathUtils.lerp(thigh, reachThigh, s.perch);

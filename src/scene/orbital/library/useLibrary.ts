@@ -4,7 +4,7 @@ import { BOOK_SLOTS, CAPACITY, freshLibrary, LIBRARY_KEY, makeUserBook, mutateLi
 export type LibraryPhase = 'idle' | 'prepare' | 'approach' | 'catalog' | 'align' | 'reach' | 'extract' | 'carry' | 'open' | 'reading' | 'turn' | 'close' | 'return-carry' | 'insert' | 'release' | 'recenter' | 'form' | 'shelving';
 export interface LibraryFlow { phase: LibraryPhase; book: LibraryBook | null; page: number; direction: number; targetPage: number; progress: number; pages: TextPage[]; nextId: string | null; closeRequested: boolean; exit: boolean; pending: WorldAction | null }
 const initialFlow = (): LibraryFlow => ({ phase: 'idle', book: null, page: 0, targetPage: 0, direction: 1, progress: 0, pages: [], nextId: null, closeRequested: false, exit: false, pending: null });
-const times: Partial<Record<LibraryPhase, number>> = { prepare: .9, reach: .65, extract: .7, carry: 1.05, open: .75, turn: .8, close: .75, 'return-carry': 1.05, insert: .7, release: .6, shelving: .6 };
+const times: Partial<Record<LibraryPhase, number>> = { prepare: .9, reach: .74, extract: .62, carry: .96, open: .90, turn: .94, close: .86, 'return-carry': .96, insert: .62, release: .58, shelving: .6 };
 export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: boolean; onAction: (action: WorldAction) => void; onReturn: () => void; error: (message: string) => void }) {
   const [cameraView, setCameraView] = useState<'shelf' | 'close' | 'side'>('shelf');
   const [data, setData] = useState(() => { try { return readLibrary(localStorage); } catch { return freshLibrary(); } });

@@ -18,10 +18,12 @@ export interface ResidentArm {
   restUpper: THREE.Vector3; restLower: THREE.Vector3; restWrist: THREE.Vector3;
   upperLength: number; lowerLength: number;
   palmBasis: THREE.Quaternion; palmOffset: THREE.Vector3;
+  fingerTipOffset?: THREE.Vector3;
+  setFingers?: (curl: number, thumbOppose?: number) => void;
 }
 export interface ResidentRig {
   neutralPose: { joint: THREE.Bone; pose: { position: THREE.Vector3; quaternion: THREE.Quaternion; scale: THREE.Vector3 } }[];
-  legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone;
+  legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone; head?: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
   applyPose: (phase: number, walkWeight: number) => void;
   applyChairPose?: (time: number, weight: number, soleAhead?: number, soleLift?: number) => void;
