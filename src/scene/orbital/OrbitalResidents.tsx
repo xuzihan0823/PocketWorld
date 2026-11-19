@@ -1,3 +1,4 @@
+import { BED_ENTRY, BED_POSITION, FLOOR_SOFA, CABIN_LEFT, NIGHTSTAND_X, NIGHTSTAND_Z } from './cabinLayout';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -12,12 +13,12 @@ import { applyLibraryPose, carryResident, libraryCrouch } from './library/reside
 import { resetArms } from './library/armPose';
 import { authoredBookStand, libraryHeldBalance, residentLibraryTarget } from './library/bookMotion';
 import { createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibraryMotion, type LibraryMotion } from './library/libraryMotion';
-import { readingStand, shelfOrigin } from './library/catalog';
+import { readingStand, shelfOrigin, shelfPoint, shelfYaw } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
 import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
-import { BED_ENTRY, BED_YAW, BED_DURATION, advanceBedTime, createBedPlayer, loadBedClip } from './bedMotion';
+import { BED_YAW, BED_DURATION, advanceBedTime, createBedPlayer, loadBedClip } from './bedMotion';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 
 type Point = [number, number];
@@ -35,11 +36,12 @@ type ResidentsProps = WorldModelProps & {
 };
 type Approach = { point: Point; action: WorldAction; perform: () => void; elapsed: number; chairTarget: Point | null };
 const RADIUS = 0.23;
+const WALK_LEFT = CABIN_LEFT + .25 + RADIUS;
 // Leave full clearance when navigating or sitting; only the nearer body contact pushes the chair.
 const CHAIR_CONTACT = 0.52;
 const CHAIR_REACH = 0.95;
 type NearbyAction = { id: string; kind: WorldActionKind; hint: string; point: Point; reach: number };
-const CAT: Point = [-0.95, 1.95];
+const CAT: Point = [3.02, 2.38];
 const clamp = THREE.MathUtils.clamp;
 const ease = (t: number) => t * t * (3 - 2 * t);
 const angle = (from: number, to: number, t: number) => from + Math.atan2(Math.sin(to - from), Math.cos(to - from)) * t;
@@ -51,11 +53,19 @@ const PUSH = 3.4, ROLL_DRAG = 2.4;
 
 function layout(observatory: boolean) {
   const [shelfX, , shelfZ] = shelfOrigin(observatory ? 'observatory' : 'habitat');
+  const [sofaX, , sofaZ] = FLOOR_SOFA.position;
+  const { left, right, back, front } = FLOOR_SOFA.footprint;
   const furniture: Box[] = [
     [-0.85, 2.95, -3.025, -1.675], // Desk, including the desktop overhang.
-    [shelfX - 0.51, shelfX - 0.31, shelfZ + 1.2, shelfZ + 1.4],
-    [shelfX - 0.59, shelfX + 0.59, shelfZ - 0.27, shelfZ + 0.27],
-    ...(observatory ? [[-0.65, 0.15, 0.45, 1.25], [2.4, 3.1, 1.5, 2.2]] as Box[] : [[-3.46, -1.74, -0.32, 2.31], [-3.85, -3.25, 2.25, 2.85]] as Box[]),
+    observatory ? [shelfX - .59, shelfX + .59, shelfZ - .27, shelfZ + .27]
+      : [shelfX - .27, shelfX + .31, shelfZ - .65, shelfZ + .65],
+    ...(observatory ? [[-0.65, 0.15, 0.45, 1.25], [2.4, 3.1, 1.5, 2.2]] as Box[] : [
+      [BED_POSITION[0] - .86, BED_POSITION[0] + .86, BED_POSITION[2] - 1.3, BED_POSITION[2] + 1.3],
+      [sofaX + left, sofaX + right, sofaZ + back, sofaZ + front],
+      [-6.47, -4.97, -3.14, -2.31],
+      [NIGHTSTAND_X - .61, NIGHTSTAND_X + .61, NIGHTSTAND_Z - .355, NIGHTSTAND_Z + .397],
+      [-1.81, -.85, -3.03, -1.75],
+    ] as Box[]),
   ];
   const grow = (by: number) => furniture.map(([a, b, c, d]) => [a - by, b + by, c - by, d + by] as Box);
   const chairRadius = observatory ? 0.55 : 0.5;
@@ -78,7 +88,7 @@ function chairEntry(room: Room, pose: ChairPose): Point {
 }
 function chairOpen(room: Room, x: number, z: number, blocker: Point | null) {
   const r = room.chairRadius;
-  return Math.abs(x) <= 3.99 - r && Math.abs(z) <= 3.19 - r && !room.chairBoxes.some(([a, b, c, d]) => x > a && x < b && z > c && z < d)
+  return x >= CABIN_LEFT + .25 + r && x <= 3.99 - r && Math.abs(z) <= 3.19 - r && !room.chairBoxes.some(([a, b, c, d]) => x > a && x < b && z > c && z < d)
     && (!blocker || Math.hypot(x - blocker[0], z - blocker[1]) >= CHAIR_CONTACT);
 }
 function rollChair(room: Room, pose: ChairPose, dt: number, driven: boolean, blocker: Point | null) {
@@ -99,17 +109,17 @@ function legReach(leg: ResidentLeg, ahead: number, below: number): [number, numb
   return [-hip, knee];
 }
 function free(point: Point, boxes: Box[]) {
-  return point[0] >= -3.76 && point[0] <= 3.76 && point[1] >= -2.96 && point[1] <= 2.96 && !boxes.some(([a, b, c, d]) => point[0] > a && point[0] < b && point[1] > c && point[1] < d);
+  return point[0] >= WALK_LEFT && point[0] <= 3.76 && point[1] >= -2.96 && point[1] <= 2.96 && !boxes.some(([a, b, c, d]) => point[0] > a && point[0] < b && point[1] > c && point[1] < d);
 }
 function reachable(point: Point, boxes: Box[]): Point {
-  let result: Point = [clamp(point[0], -3.76, 3.76), clamp(point[1], -2.96, 2.96)];
+  let result: Point = [clamp(point[0], WALK_LEFT, 3.76), clamp(point[1], -2.96, 2.96)];
   for (let pass = 0; pass < 8; pass++) {
     const box = boxes.find(([a, b, c, d]) => result[0] > a && result[0] < b && result[1] > c && result[1] < d);
     if (!box) break;
     const [a, b, c, d] = box;
     const candidates: Point[] = [[a - 0.015, result[1]], [b + 0.015, result[1]], [result[0], c - 0.015], [result[0], d + 0.015]];
     candidates.sort((p, q) => Math.hypot(p[0] - result[0], p[1] - result[1]) - Math.hypot(q[0] - result[0], q[1] - result[1]));
-    result = candidates.find(p => free(p, boxes)) ?? candidates.find(p => p[0] >= -3.76 && p[0] <= 3.76 && p[1] >= -2.96 && p[1] <= 2.96) ?? [0.25, 0.5];
+    result = candidates.find(p => free(p, boxes)) ?? candidates.find(p => p[0] >= WALK_LEFT && p[0] <= 3.76 && p[1] >= -2.96 && p[1] <= 2.96) ?? [0.25, 0.5];
   }
   return result;
 }
@@ -218,7 +228,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   current.current = props;
   const { camera } = useThree();
   const room = useMemo(() => layout(props.sceneId === 'observatory'), [props.sceneId]);
-  const spawn = useMemo(() => { const point = reachable([0.25, 0.5], obstacles(room, CHAIR_POSES[props.sceneId])); return [point[0], 0, point[1]] as [number, number, number]; }, [room]);
+  const spawn = useMemo(() => { const point = reachable(props.sceneId === 'habitat' ? [2.52, 1.10] : [0.25, 0.5], obstacles(room, CHAIR_POSES[props.sceneId])); return [point[0], 0, point[1]] as [number, number, number]; }, [room]);
   const resident = useRef<THREE.Group>(null);
   const hips = useRef<THREE.Group>(null);
   const rig = useRef<ResidentRig | null>(null);
@@ -280,7 +290,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const p = current.current, root = resident.current, s = state.current;
     if (!root || !canInteract() || s.exiting || p.focusedObject) return null;
     const pose = CHAIR_POSES[p.sceneId];
-    const [shelfX, , shelfZ] = shelfOrigin(p.sceneId);
+    const [cabinetX, , cabinetZ] = shelfPoint(p.sceneId, .55, 0, .65);
     const [bookX, , bookZ] = readingStand(p.sceneId);
     const drawerOpen = !!p.objects['desk-drawer']?.open;
     const targets: NearbyAction[] = [
@@ -289,13 +299,17 @@ export function OrbitalResidents(props: ResidentsProps) {
       { id: 'journal', kind: 'write', hint: '打开日记', point: [JOURNAL_POSITION[0], -1.42], reach: 0.43 },
       { id: 'music-player', kind: 'inspect', hint: '使用唱机', point: [-0.30, -1.42], reach: 0.43 },
       { id: 'book-01', kind: 'inspect', hint: '查看藏书', point: [bookX, bookZ], reach: 0.75 },
-      { id: 'cabinet', kind: 'open', hint: '打开柜门', point: [shelfX + 0.55, shelfZ + 0.65], reach: 0.55 },
-      { id: 'lamp', kind: 'toggle', hint: '开关灯', point: [-1.42, -2.55], reach: 0.70 },
-      { id: 'plant', kind: 'water', hint: '给盆栽浇水', point: p.sceneId === 'habitat' ? [-3.55, 2.55] : [2.75, 1.85], reach: 0.85 },
+      { id: 'cabinet', kind: 'open', hint: '打开柜门', point: [cabinetX, cabinetZ], reach: 0.55 },
+      { id: 'lamp', kind: 'toggle', hint: '开关灯', point: p.sceneId === 'habitat' ? [NIGHTSTAND_X - .11, NIGHTSTAND_Z + .77] : [-1.42, -2.55], reach: 0.70 },
+      { id: 'plant', kind: 'water', hint: '给盆栽浇水', point: p.sceneId === 'habitat' ? [NIGHTSTAND_X + .32, NIGHTSTAND_Z + .78] : [2.75, 1.85], reach: 0.85 },
       { id: 'pet', kind: 'pet', hint: '摸摸团子', point: CAT, reach: 0.85 },
       { id: 'chair', kind: 'sit', hint: '坐下', point: [pose.x, pose.z], reach: CHAIR_REACH },
     ];
-    if (p.sceneId === 'habitat') targets.push({ id: 'bed', kind: 'sleep', hint: '躺下休息', point: BED_ENTRY, reach: 0.8 });
+    if (p.sceneId === 'habitat') {
+      // Select the bed along its open side, then board at the authored animation anchor.
+      const bedsideZ = clamp(root.position.z, BED_ENTRY[1], BED_POSITION[2] + 1.1);
+      targets.push({ id: 'bed', kind: 'sleep', hint: '躺下休息', point: [BED_ENTRY[0], bedsideZ], reach: .8 });
+    }
     if (p.drawerEnabled && canReachDrawer(root.position, drawerOpen)) targets.push({
       id: 'desk-drawer', kind: drawerOpen ? 'close' : 'open', hint: drawerOpen ? '推回抽屉' : '后退拉开抽屉',
       point: [0.35, drawerOpen ? -0.78 : -1.34], reach: 0.7,
@@ -507,6 +521,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (p.drawerInteraction.current) p.drawerInteraction.current.busy = false;
     }
     const library = p.library, flow = library?.flow.current;
+    const readerYaw = Math.PI + shelfYaw(p.sceneId);
     const libraryActive = !!flow && flow.phase !== 'idle';
     const libraryWalking = !!flow && ['approach', 'align', 'recenter'].includes(flow.phase);
     const motion = library?.motion.current;
@@ -697,7 +712,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       const yaw = bed ? 0 : seatYaw(pose);
       const forward = 0.1 + s.perch * 0.23;
-      const destination: Point = bed ? [-2.6, 0.94] : [pose.x + Math.sin(yaw) * forward, pose.z + Math.cos(yaw) * forward];
+      const destination: Point = bed ? [BED_POSITION[0], BED_POSITION[2] - .06] : [pose.x + Math.sin(yaw) * forward, pose.z + Math.cos(yaw) * forward];
       const slide = bed ? ease(clamp((t - 0.2) / 0.8, 0, 1)) : t;
       root.position.x = THREE.MathUtils.lerp(entry[0], destination[0], slide);
       root.position.z = THREE.MathUtils.lerp(entry[1], destination[1], slide);
@@ -794,21 +809,21 @@ export function OrbitalResidents(props: ResidentsProps) {
       root.position.y = 0;
       s.sit = 0; s.lie = 0;
       if (libraryWalking && libraryTarget && !s.path.length && Math.hypot(root.position.x - libraryTarget[0], root.position.z - libraryTarget[2]) < .055) {
-        root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 10));
+        root.rotation.y = angle(root.rotation.y, readerYaw, 1 - Math.exp(-dt * 10));
         const aligning = flow!.phase === 'align';
         const ready = !aligning || authored || library!.motion.current === null;
-        if (ready && Math.abs(Math.atan2(Math.sin(root.rotation.y - Math.PI), Math.cos(root.rotation.y - Math.PI))) < (aligning && authored ? .006 : .025)) {
-          if (aligning && authored) root.rotation.y = Math.PI;
+        if (ready && Math.abs(Math.atan2(Math.sin(root.rotation.y - readerYaw), Math.cos(root.rotation.y - readerYaw))) < (aligning && authored ? .006 : .025)) {
+          if (aligning && authored) root.rotation.y = readerYaw;
           library!.arrived();
         }
       }
       if (libraryActive && !libraryWalking && flow) {
-        root.rotation.y = angle(root.rotation.y, Math.PI, 1 - Math.exp(-dt * 10));
+        root.rotation.y = angle(root.rotation.y, readerYaw, 1 - Math.exp(-dt * 10));
         if (authored && flow.book && (librarySample || flow.phase === 'reading' || flow.phase === 'turn')) {
           const held = !librarySample || librarySample.coverProgress !== undefined;
-          root.position.fromArray(authoredBookStand(p.sceneId, flow.book, held));
-          if (held) { root.position.y -= heldBalance.drop; root.position.z += heldBalance.back; }
-          root.rotation.y = Math.PI;
+          root.position.fromArray(authoredBookStand(p.sceneId, flow.book, held, held ? heldBalance.back : 0));
+          if (held) root.position.y -= heldBalance.drop;
+          root.rotation.y = readerYaw;
         } else {
           carryResident(root, p.sceneId, flow); root.position.y -= libraryCrouch(flow);
           if ((['carry', 'return-carry'].includes(flow.phase) && flow.progress > .08 && flow.progress < .92)
@@ -924,12 +939,12 @@ export function OrbitalResidents(props: ResidentsProps) {
   }, -1);
 
   return <group name={`OrbitalResidents_${props.sceneId}`}>
-    <group ref={resident} name="OrbitalResident" position={spawn}>
+    <group ref={resident} name="OrbitalResident" position={spawn} rotation-y={-.78}>
       <group ref={hips} position={[0, HIP, 0]}>
         <ResidentModel rig={rig} onFailure={props.library?.fail} position={[0, -HIP, 0]} />
       </group>
     </group>
-    <ObjectHandle id="pet" action="pet" hint="摸摸团子" world={props} position={[CAT[0], 0, CAT[1]]} rotation={[0, 0.5, 0]}
+    <ObjectHandle id="pet" action="pet" hint="摸摸团子" world={props} position={[CAT[0], .015, CAT[1]]} rotation={[0, -.75, 0]}
       onClick={event => event.stopPropagation()}>
       <Cat resident={resident} value={props.objects.pet?.value ?? 0} reducedMotion={props.reducedMotion} />
     </ObjectHandle>

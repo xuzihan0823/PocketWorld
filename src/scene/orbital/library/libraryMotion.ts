@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RESIDENT_SCALE } from '../residentRig';
-import { AUTHORED_BOOK_RETREAT, smooth } from './bookMotion';
-import { shelfOrigin, slotFor, type LibraryBook } from './catalog';
+import { shelfRotation, AUTHORED_BOOK_RETREAT, smooth } from './bookMotion';
+import { shelfPoint, slotFor, type LibraryBook } from './catalog';
 import type { LibraryFlow, LibraryPhase } from './useLibrary';
 
 const ASSET = './models/resident/luna-library.glb';
@@ -136,11 +136,10 @@ export function applyLibraryBookMotion(
   quaternion: THREE.Quaternion,
 ) {
   if (sample.weight <= 0) return;
-  const slot = slotFor(book), clip = motion[slot.row], origin = shelfOrigin(scene);
+  const slot = slotFor(book), clip = motion[slot.row];
   const time = sample.progress * clip.duration;
   const point = new THREE.Vector3().fromArray(clip.bookPosition.evaluate(time));
-  point.x += origin[0] + slot.position[0];
-  point.z += origin[2];
+  point.fromArray(shelfPoint(scene, point.x + slot.position[0], point.y, point.z));
   position.lerp(point, sample.weight);
-  quaternion.slerp(new THREE.Quaternion().fromArray(clip.bookRotation.evaluate(time)), sample.weight);
+  quaternion.slerp(new THREE.Quaternion().fromArray(clip.bookRotation.evaluate(time)).premultiply(shelfRotation(scene)), sample.weight);
 }

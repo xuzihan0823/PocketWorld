@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CARTRIDGE_HEIGHT, CARTRIDGE_SLOT, cartridgePosition, clampCartridgeDrag, isCartridgeDrop, cartridgeDragState, cartridgeTransferPoint } from './cartridge-motion.ts';
 
-const monitor = { min: [.975, 1.215, -2.965], max: [2.125, 2.125, -2.335] };
+const { CRT_SIZE } = await import('./computerLayout.ts');
+const monitor = { min: [1.55 - CRT_SIZE[0] / 2, 1.12, -2.67 - CRT_SIZE[2] / 2],
+  max: [1.55 + CRT_SIZE[0] / 2, 1.12 + CRT_SIZE[1], -2.67 + CRT_SIZE[2] / 2] };
 const halfSize = [.11, CARTRIDGE_HEIGHT / 2, .051];
 const overlapsMonitor = point => point.every((value, axis) => value + halfSize[axis] > monitor.min[axis] && value - halfSize[axis] < monitor.max[axis]);
 

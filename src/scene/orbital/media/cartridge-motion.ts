@@ -6,9 +6,8 @@ export const CARTRIDGE_DRAG_HEIGHT = 1.44;
 export const CARTRIDGE_HEIGHT = 0.25;
 // The fitted cartridge and its fallback both have a centered vertical pivot.
 const CARTRIDGE_REST_HEIGHT = 1.12 + CARTRIDGE_HEIGHT / 2;
-// Both cartridges sit entirely to the left of the monitor housing (x >= .975),
-// clustered by the monitor's rear-left corner and staggered front-to-back.
-export const cartridgePosition = (game: GameId): CartridgePoint => [game === 'mario' ? 0.60 : 0.76, CARTRIDGE_REST_HEIGHT, game === 'mario' ? -2.64 : -2.50];
+// Both cartridges rest to the right of the housing, staggered beside the slot.
+export const cartridgePosition = (game: GameId): CartridgePoint => [game === 'mario' ? 2.52 : 2.79, CARTRIDGE_REST_HEIGHT, game === 'mario' ? -2.64 : -2.50];
 
 export function clampCartridgeDrag(point: CartridgePoint): CartridgePoint {
   // Keep the entire cartridge in front of the monitor and above the desk/keyboard.

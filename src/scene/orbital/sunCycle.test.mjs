@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { EARTH_RADIUS, earthPositionForAspect } from './cabinView.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -12,8 +13,8 @@ const {
 
 // Mirrors the Earth layouts in Cosmos.tsx.
 const LAYOUTS = {
-  wide: createSunOrbit([-623, -277, -588], 115),
-  narrow: createSunOrbit([-606, -259, -613], 115 * 0.72),
+  wide: createSunOrbit(earthPositionForAspect(1440 / 900), EARTH_RADIUS),
+  narrow: createSunOrbit(earthPositionForAspect(390 / 844), EARTH_RADIUS),
 };
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const angleBetween = (a, b) => Math.acos(Math.min(1, Math.max(-1, dot(a, b)))) * 180 / Math.PI;

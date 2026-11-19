@@ -21,7 +21,7 @@ React、TypeScript、Vite 与 Three.js（React Three Fiber），纯静态部署�
 ## Brand Commitments
 
 - 字标为小写 `pocketworld.`，副题「A LITTLE SPACE TO BE YOURSELF」，首屏文案「宇宙很大。这里，刚刚好。」
-- 房间是暖木、米白舱壁与灰绿织物的安静色调，窗外是程序生成的宇宙与地球；标题文案用宋体，界面文字用无衬线体。
+- 房间是浅木拼花地板、暖杏色舱壁与玫瑰粉织物的安静色调，窗外是程序生成的宇宙与地球；标题文案用宋体，界面文字用无衬线体。
 - 交互优先落在实体物品上：拿唱片、拖卡带、翻书页、拉灯绳。只有需要输入或选择时才出现界面控件，不做常驻的按钮面板。
 - 文案平静、简短，用访客的日常语言描述物品和动作。
 - 小游戏有各自的视觉与角色约定，由模块维护：滑雪见 [DESIGN.md](src/games/mario/DESIGN.md)，团团魔法录见其 [README](src/games/shooter/README.md)。

@@ -5,7 +5,7 @@
 ## 职责分布
 
 - `orbital/OrbitalScene.tsx` 组合镜头、灯光、舱室、家具、住民与交互表面。
-- `orbital/walls/` 墙体显隐：`wallVisibility.ts` 为纯几何判断与渐变计时，`useWallVisibility.ts` 读取 `HabitatShell` 中带 `userData.wall` 标记的墙体并在每帧淡入淡出，不改动镜头。
+- `orbital/HabitatShell.tsx` 载入两面实体舱壁、拼花地板和固定陈设，用窗洞蒙版显示实时地球。初始构图与横竖屏取景由 `orbital/cabinView.ts` 计算。
 - `orbital/useWorldController.ts` 管理世界状态、动作适配器和转场生命周期。
 - `orbital/journal/` 管理实体翻页、纸面编辑、逐页日期和天气、存档及迁移。
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
@@ -22,6 +22,20 @@
 跨模块的数据接口定义在 `src/types/`。日程通过 `ScheduleProvider` 和 `useSchedule` 接入家具与纸面，书柜通过 `useLibrary` 接入应用和住民。媒体模块通过 `GameCartridgeProps` 按需加载 `src/games/*/index.tsx`。
 
 新增功能优先复用 `ObjectHandle`、`Primitives` 和已有世界动作。运行时模型放在根目录 `assets/public/models/`，游戏与静态素材统一放在 `assets/games/`。
+
+## 舱体模型
+
+[可编辑 Blender 场景](../../assets/models/cabin/open-cabin.blend) 按舱壁、拼花地板、收纳、墙饰、书柜上架和编织物分组，木纹贴图以及拖鞋的绒面颜色和法线贴图均已打包在文件中。在仓库根目录运行以下命令可重新生成 [运行时模型](../../assets/public/models/cabin/open-cabin.glb)。导出按集合合并网格。可交互家具由运行时挂在各自的动作节点上。
+
+```sh
+blender --background assets/models/cabin/open-cabin.blend --python scripts/export-open-cabin.py
+```
+
+生活舱左前角的[落地沙发制作源](../../assets/models/furniture/floor-sofa.blend)独立保存了坐靠软包、滚边、搭毯和流苏。布料贴图已打包，修改后在仓库根目录重新导出即可。
+
+```sh
+blender --background assets/models/furniture/floor-sofa.blend --python scripts/export-floor-sofa.py
+```
 
 ## 验证
 

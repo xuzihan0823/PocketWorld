@@ -48,9 +48,8 @@ test('侧面视角把取书站位和翻页完整投影到阅读面板以外', ()
         if (reading) {
           points.push(new THREE.Vector3(0, .24, -.08).applyQuaternion(pose.quaternion).add(pose.position));
         } else {
-          const [shelfX, , shelfZ] = catalog.shelfOrigin('habitat');
-          points.push(new THREE.Vector3(shelfX + slot.position[0], .01, shelfZ + 1.04));
-          points.push(new THREE.Vector3(shelfX + slot.position[0], 1.68, shelfZ + .70));
+          points.push(new THREE.Vector3(...catalog.shelfPoint('habitat', slot.position[0], .01, 1.04)));
+          points.push(new THREE.Vector3(...catalog.shelfPoint('habitat', slot.position[0], 1.68, .70)));
         }
         for (const point of points) {
           const projected = point.project(camera);

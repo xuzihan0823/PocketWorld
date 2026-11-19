@@ -1,10 +1,9 @@
-import { BOOK_SLOTS, shelfOrigin, type Vec3 } from './catalog';
+import { BOOK_SLOTS, shelfPoint, shelfVector, type Vec3 } from './catalog';
 
 /** The side shot looks at the selected book, with the lens centered in the uncovered canvas. */
 export function sideLibraryCamera(scene: string, slotId: string | undefined, reading: boolean, width: number, height: number, fov: number) {
-  const [shelfX, , shelfZ] = shelfOrigin(scene);
   const slot = BOOK_SLOTS.find(value => value.id === slotId);
-  const target: Vec3 = [shelfX + (slot?.position[0] ?? 0), reading ? 1.08 : .85, shelfZ + (reading ? .65 : .59)];
+  const target: Vec3 = shelfPoint(scene, slot?.position[0] ?? 0, reading ? 1.08 : .85, reading ? .65 : .59);
 
   // Match the right sidebar, bottom sheet and short-screen layouts in library.css.
   let visibleWidth = width, visibleHeight = height;
@@ -22,7 +21,7 @@ export function sideLibraryCamera(scene: string, slotId: string | undefined, rea
     (reading ? 1.05 : 1.92) * height / (fieldScale * safeHeight));
   return {
     target,
-    offset: offset.map(value => value * fit / distance) as Vec3,
+    offset: shelfVector(scene, ...offset).map(value => value * fit / distance) as Vec3,
     lensOffset: [(width - visibleWidth) / 2, (height - visibleHeight) / 2] as const,
   };
 }

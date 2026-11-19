@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PAGE_TURN_AUTHORED } from './pageTurnFrames';
-import { readingStand, shelfOrigin, slotFor, type LibraryBook, type Vec3 } from './catalog';
+import { readingStand, shelfPoint, shelfYaw, slotFor, type LibraryBook, type Vec3 } from './catalog';
 import type { LibraryFlow } from './useLibrary';
 
 export const smooth = (t: number) => {
@@ -26,22 +26,22 @@ export const shelfQuaternion = new THREE.Quaternion().setFromRotationMatrix(
   new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, -1), new THREE.Vector3(-1, 0, 0), new THREE.Vector3(0, 1, 0)),
 );
 
+const up = new THREE.Vector3(0, 1, 0);
+export const shelfRotation = (scene: string) => new THREE.Quaternion().setFromAxisAngle(up, shelfYaw(scene));
+
 const HELD_TILT = 0.08;
 const READING_TILT = 0.08;
 export const heldQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(HELD_TILT, Math.PI, 0));
 
 export function bookStand(scene: string, book: LibraryBook, near = false): Vec3 {
-  const origin = shelfOrigin(scene);
-  const slot = slotFor(book);
-  const x = THREE.MathUtils.clamp(origin[0] + slot.position[0] + 0.01, origin[0] - 0.44, origin[0] + 0.46);
-  return [x, 0, origin[2] + (near ? 0.52 : 0.90)];
+  const x = THREE.MathUtils.clamp(slotFor(book).position[0] + .01, -.44, .46);
+  return shelfPoint(scene, x, 0, near ? .52 : .90);
 }
 
 export const AUTHORED_BOOK_RETREAT = .30;
 
-export function authoredBookStand(scene: string, book: LibraryBook, held = false): Vec3 {
-  const [x, y, z] = shelfOrigin(scene);
-  return [x + slotFor(book).position[0], y, z + .58 + (held ? AUTHORED_BOOK_RETREAT : 0)];
+export function authoredBookStand(scene: string, book: LibraryBook, held = false, retreat = 0): Vec3 {
+  return shelfPoint(scene, slotFor(book).position[0], 0, .58 + (held ? AUTHORED_BOOK_RETREAT : 0) + retreat);
 }
 
 /** A planted weight shift leaves the book and reading/turn hand endpoints fixed. */
@@ -286,18 +286,18 @@ export function turningPagePoint(leafRatio: number, bendAmp: number, rx = 0.185,
 }
 
 export function bookPose(scene: string, book: LibraryBook, flow: LibraryFlow, authored = false) {
-  const origin = shelfOrigin(scene);
   const slot = slotFor(book);
   const p = THREE.MathUtils.clamp(flow.progress, 0, 1);
   const t = smooth(p);
   const phase = flow.book?.id === book.id ? flow.phase : 'idle';
-  const shelf = new THREE.Vector3(origin[0] + slot.position[0] + 0.035, slot.position[1], origin[2] + 0.20);
+  const shelf = new THREE.Vector3(slot.position[0] + 0.035, slot.position[1], 0.20);
   const outside = shelf.clone().add(new THREE.Vector3(0, 0, 0.31));
-  const root = authored ? authoredBookStand(scene, book, true) : bookStand(scene, book);
+  const standX = slot.position[0] + (authored ? 0 : .01);
+  const standZ = authored ? .58 + AUTHORED_BOOK_RETREAT : .90;
   const open = coverOpenCurve({ ...flow, phase });
   // Preserve the baked closed handoff; the open book leaves room for the crossing
   // forearm in front of the torso, with the supporting palms beneath its footprint.
-  const heldBase = new THREE.Vector3(root[0] + 0.11 * (1 - open), THREE.MathUtils.lerp(0.84, 0.85, open) + .09 * smooth(open / .3) * (1 - open), root[2] - 0.32 + .035 * smooth(open / .3) + PAGE_TURN_AUTHORED.BookNear * open);
+  const heldBase = new THREE.Vector3(standX + 0.11 * (1 - open), THREE.MathUtils.lerp(0.84, 0.85, open) + .09 * smooth(open / .3) * (1 - open), standZ - 0.32 + .035 * smooth(open / .3) + PAGE_TURN_AUTHORED.BookNear * open);
   heldBase.z -= .075 * Math.sin(Math.PI * open) - .004 * Math.sin(Math.PI * smooth((open - .35) / .55));
   heldBase.y -= .03 * Math.sin(Math.PI * open);
   const position = shelf.clone();
@@ -345,6 +345,8 @@ export function bookPose(scene: string, book: LibraryBook, flow: LibraryFlow, au
     position.lerpVectors(outside, shelf, u);
   }
 
+  position.fromArray(shelfPoint(scene, position.x, position.y, position.z));
+  quaternion.premultiply(shelfRotation(scene));
   return { position, quaternion, open, phase };
 }
 

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as computerLayout from './computerLayout.ts';
 import * as cartridgeMotion from './cartridge-motion.ts';
 
 const source = fs.readFileSync(process.env.MEDIA_EXIT_SOURCE ?? new URL('./MediaObjects.tsx', import.meta.url), 'utf8');
@@ -72,6 +73,7 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
       if (name === './RecordPlayer') return { RecordPlayer: 'RecordPlayer' };
       if (name === './ComputerScreen') return { ComputerScreen: 'ComputerScreen' };
       if (name === './CartridgePickup') return { CartridgePickup: 'CartridgePickup' };
+      if (name === './computerLayout') return computerLayout;
       if (name === './cartridge-motion') return cartridgeMotion;
       throw new Error(`Unexpected dependency: ${name}`);
     },

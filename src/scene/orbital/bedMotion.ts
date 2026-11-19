@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ResidentRig } from './ResidentModel';
 import { plantResidentLeg } from './residentRig';
 
-export const BED_ENTRY: [number, number] = [-1.48, .73];
+export { BED_ENTRY } from './cabinLayout';
 export const BED_YAW = Math.PI / 2;
 export const BED_DURATION = 222 / 24;
 export const BED_SLEEP_START = 192 / 24;

@@ -9,7 +9,7 @@ export const DISC_RADIUS = .17;
 export const DISC_LEAN = -.12;
 export const ARM_REST = .1, ARM_PLAY = -1.03;
 // Separate the entire label/hub thickness, not only the black vinyl faces.
-export const discPosition = (slot: number): Point => [-.58 + (slot % 6) * .155, 1.36, -2.93 + (slot % 6) * .035];
+export const discPosition = (slot: number): Point => [-1.51 + (slot % 6) * .155, 1.36, -2.93 + (slot % 6) * .035];
 export const smooth = (t: number) => { const x = Math.max(0, Math.min(1, t)); return x * x * x * (x * (x * 6 - 15) + 10); };
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const lerp = (a: Point, b: Point, t: number): Point => a.map((v, i) => mix(v, b[i], t)) as Point;
@@ -21,7 +21,7 @@ export function recordPath(slot: number, progress: number): { position: Point; t
   const home = discPosition(slot);
   const pop: Point = [home[0], home[1] + .004, home[2] + .002];
   // First slide within the rack plane; only rotate after clearing neighbours and the lamp.
-  const clear: Point = [Math.max(home[0], -.1), 1.78, pop[2] - (1.78 - pop[1]) * Math.tan(-DISC_LEAN)];
+  const clear: Point = [Math.max(home[0], -1.03), 1.78, pop[2] - (1.78 - pop[1]) * Math.tan(-DISC_LEAN)];
   const above: Point = [RECORD_CENTER[0], 1.53, RECORD_CENTER[2]];
   if (t < .1) return { position: lerp(home, pop, smooth(t / .1)), tilt: 0 };
   const aside: Point = [clear[0], pop[1], pop[2]];

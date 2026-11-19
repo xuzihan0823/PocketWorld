@@ -10,14 +10,13 @@ import {
   bookGrabSide,
   bookHalfStepOffset,
   bookPose,
-  bookStand,
   bookWingPoint,
   coverOpenCurve,
   smooth,
   bookSupportPose,
   turningHandPose,
 } from './bookMotion';
-import { slotFor } from './catalog';
+import { shelfPoint, shelfVector, slotFor } from './catalog';
 import { applyTorsoAndGazeIK, reachPalm, resetArms } from './armPose';
 
 const point = new THREE.Vector3();
@@ -55,8 +54,9 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   const t = smooth(p);
   const originX = scene === 'observatory' ? 14 : 0;
   if (authored && flow.book && ['open', 'reading', 'turn', 'close'].includes(phase)) {
-    const stand = authoredBookStand(scene, flow.book, true), balance = libraryHeldBalance(flow);
-    root.position.set(stand[0], stand[1] - balance.drop, stand[2] + balance.back);
+    const balance = libraryHeldBalance(flow);
+    root.position.fromArray(authoredBookStand(scene, flow.book, true, balance.back));
+    root.position.y -= balance.drop;
   }
   rig.mesh.updateWorldMatrix(true, true);
 
@@ -67,6 +67,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
 
   const slot = slotFor(flow.book);
   const book = bookPose(scene, flow.book, flow, authored);
+  const shelfOffset = (x: number, y: number, z: number) => new THREE.Vector3(...shelfVector(scene, x, y, z));
   const grabSide = bookGrabSide(flow.book);
   const otherSide = (1 - grabSide) as 0 | 1;
   const grabLocal = bookGrabLocal(flow.book);
@@ -118,7 +119,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
     const preGrab = contact(grabLocal.x - 0.055, grabLocal.y + (grabSide ? 0.015 : -0.015), grabLocal.z - 0.02);
     if (p < 0.65) {
       const u = smooth(p / 0.65);
-      point.lerpVectors(restWorld, preGrab, u).add(new THREE.Vector3(grabSide ? -0.03 : 0.03, -0.02, 0.03).multiplyScalar(Math.sin(u * Math.PI)));
+      point.lerpVectors(restWorld, preGrab, u).add(shelfOffset(grabSide ? -0.03 : 0.03, -0.02, 0.03).multiplyScalar(Math.sin(u * Math.PI)));
     } else {
       const u = smooth((p - 0.65) / 0.23);
       point.lerpVectors(preGrab, grabWorld, u);
@@ -183,7 +184,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
     if (grabSide === 0) {
       // Right extracted -> holds spine until Left catches underneath, then shifts onto cover edge.
       const leftCatch = smooth((p - 0.10) / 0.68);
-      const leftPos = arcLerp(restWorldOf(1), leftSupportClosed, new THREE.Vector3(-0.04, -0.04, 0.05), leftCatch);
+      const leftPos = arcLerp(restWorldOf(1), leftSupportClosed, shelfOffset(-0.04, -0.04, 0.05), leftCatch);
       reachPalm(rig, rig.arms[1], leftPos, 1, {
         quaternion: supportOrientation,
         blend: leftCatch,
@@ -193,7 +194,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
         fingerCurl: THREE.MathUtils.lerp(0.05, 0.14, leftCatch),
       });
       const shift = smooth((p - 0.56) / 0.44);
-      const rightPos = arcLerp(grabWorld, coverClosedWorld, new THREE.Vector3(0.03, 0.05, 0.02), shift);
+      const rightPos = arcLerp(grabWorld, coverClosedWorld, shelfOffset(0.03, 0.05, 0.02), shift);
       const rightQuat = grabQuat.clone().slerp(coverClosedQuat, shift);
       reachPalm(rig, rig.arms[0], rightPos, 0, {
         quaternion: rightQuat,
@@ -205,7 +206,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
     } else {
       // Left extracted -> slides from spine underneath book; Right catches and moves onto cover edge.
       const slide = smooth((p - 0.40) / 0.52);
-      const leftPos = arcLerp(grabWorld, leftSupportClosed, new THREE.Vector3(-0.03, -0.03, 0.01), slide);
+      const leftPos = arcLerp(grabWorld, leftSupportClosed, shelfOffset(-0.03, -0.03, 0.01), slide);
       const leftQuat = grabQuat.clone().slerp(supportOrientation, slide);
       reachPalm(rig, rig.arms[1], leftPos, 1, {
         quaternion: leftQuat,
@@ -215,7 +216,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
         fingerCurl: THREE.MathUtils.lerp(0.48, 0.14, slide),
       });
       const rightCatch = smooth((p - 0.16) / 0.72);
-      const rightPos = arcLerp(restWorldOf(0), coverClosedWorld, new THREE.Vector3(0.05, 0.04, 0.04), rightCatch);
+      const rightPos = arcLerp(restWorldOf(0), coverClosedWorld, shelfOffset(0.05, 0.04, 0.04), rightCatch);
       reachPalm(rig, rig.arms[0], rightPos, 0, {
         quaternion: coverClosedQuat,
         blend: rightCatch,
@@ -369,7 +370,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
 
     if (grabSide === 0) {
       const shift = smooth(p / 0.42);
-      const rightPos = arcLerp(coverClosedWorld, grabWorld, new THREE.Vector3(0.03, 0.05, 0.02), shift);
+      const rightPos = arcLerp(coverClosedWorld, grabWorld, shelfOffset(0.03, 0.05, 0.02), shift);
       const rightQuat = coverClosedQuat.clone().slerp(grabQuat, shift);
       reachPalm(rig, rig.arms[0], rightPos, 0, {
         quaternion: rightQuat,
@@ -379,7 +380,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
         fingerCurl: THREE.MathUtils.lerp(0.22, 0.48, shift),
       });
       const leftDrop = smooth((p - 0.22) / 0.65);
-      const leftPos = arcLerp(leftSupportClosed, restWorldOf(1), new THREE.Vector3(-0.04, -0.04, 0.05), leftDrop);
+      const leftPos = arcLerp(leftSupportClosed, restWorldOf(1), shelfOffset(-0.04, -0.04, 0.05), leftDrop);
       reachPalm(rig, rig.arms[1], leftPos, 1, {
         quaternion: supportOrientation,
         blend: 1 - leftDrop,
@@ -390,7 +391,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
       });
     } else {
       const slide = smooth(p / 0.48);
-      const leftPos = arcLerp(leftSupportClosed, grabWorld, new THREE.Vector3(-0.03, -0.03, 0.01), slide);
+      const leftPos = arcLerp(leftSupportClosed, grabWorld, shelfOffset(-0.03, -0.03, 0.01), slide);
       const leftQuat = supportOrientation.clone().slerp(grabQuat, slide);
       reachPalm(rig, rig.arms[1], leftPos, 1, {
         quaternion: leftQuat,
@@ -400,7 +401,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
         fingerCurl: THREE.MathUtils.lerp(0.14, 0.48, slide),
       });
       const rightDrop = smooth((p - 0.18) / 0.68);
-      const rightPos = arcLerp(coverClosedWorld, restWorldOf(0), new THREE.Vector3(0.05, 0.04, 0.04), rightDrop);
+      const rightPos = arcLerp(coverClosedWorld, restWorldOf(0), shelfOffset(0.05, 0.04, 0.04), rightDrop);
       reachPalm(rig, rig.arms[0], rightPos, 0, {
         quaternion: coverClosedQuat,
         blend: 1 - rightDrop,
@@ -485,29 +486,19 @@ export function libraryCrouch(flow: LibraryFlow) {
 
 export function carryResident(root: THREE.Group, scene: string, flow: LibraryFlow) {
   if (!flow.book) return;
-  const near = bookStand(scene, flow.book, true);
-  const far = bookStand(scene, flow.book);
-  const stepZ = near[2] - bookHalfStepOffset(flow.book);
-  const pullZ = near[2] + 0.12;
+  const slotX = slotFor(flow.book).position[0] + .01;
+  const near = .52, far = .90, pull = near + .12;
+  const step = near - bookHalfStepOffset(flow.book);
   const p = THREE.MathUtils.clamp(flow.progress, 0, 1);
-
-  if (flow.phase === 'reach') {
-    root.position.x = near[0];
-    root.position.z = THREE.MathUtils.lerp(near[2], stepZ, smooth(p / 0.42));
-  } else if (flow.phase === 'extract') {
-    root.position.x = near[0];
-    root.position.z = THREE.MathUtils.lerp(stepZ, pullZ, smooth(p));
-  } else if (flow.phase === 'carry') {
-    root.position.x = THREE.MathUtils.lerp(near[0], far[0], smooth(p));
-    root.position.z = THREE.MathUtils.lerp(pullZ, far[2], smooth(p));
-  } else if (flow.phase === 'return-carry') {
-    root.position.x = THREE.MathUtils.lerp(far[0], near[0], smooth(p));
-    root.position.z = THREE.MathUtils.lerp(far[2], pullZ, smooth(p));
-  } else if (flow.phase === 'insert') {
-    root.position.x = near[0];
-    root.position.z = THREE.MathUtils.lerp(pullZ, stepZ, smooth(p));
-  } else if (flow.phase === 'release') {
-    root.position.x = near[0];
-    root.position.z = THREE.MathUtils.lerp(stepZ, near[2], smooth((p - 0.30) / 0.70));
+  let depth: number;
+  switch (flow.phase) {
+    case 'reach': depth = THREE.MathUtils.lerp(near, step, smooth(p / .42)); break;
+    case 'extract': depth = THREE.MathUtils.lerp(step, pull, smooth(p)); break;
+    case 'carry': depth = THREE.MathUtils.lerp(pull, far, smooth(p)); break;
+    case 'return-carry': depth = THREE.MathUtils.lerp(far, pull, smooth(p)); break;
+    case 'insert': depth = THREE.MathUtils.lerp(pull, step, smooth(p)); break;
+    case 'release': depth = THREE.MathUtils.lerp(step, near, smooth((p - .30) / .70)); break;
+    default: return;
   }
+  root.position.fromArray(shelfPoint(scene, slotX, root.position.y, depth));
 }

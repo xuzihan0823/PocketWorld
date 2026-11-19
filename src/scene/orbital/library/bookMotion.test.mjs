@@ -30,7 +30,7 @@ function makeRig() {
   const rig = rigMod.createResidentRig(asset, gltf.animations[0]);
   const root = new THREE.Group();
   root.add(rig.mesh);
-  root.rotation.y = Math.PI;
+  root.rotation.y = Math.PI + catalog.shelfYaw('habitat');
   return { asset, rig, root };
 }
 
@@ -435,6 +435,8 @@ test('腰前闭书与阅读开合和烘焙交接端点连续，抬页低于面�
     const closed = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.08, Math.PI, 0));
     const reading = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.08, Math.PI, 0));
     assert.ok(bookMotion.heldQuaternion.angleTo(closed) < 1e-7, 'preserve the baked closed tilt');
+    closed.premultiply(bookMotion.shelfRotation('habitat'));
+    reading.premultiply(bookMotion.shelfRotation('habitat'));
     assert.ok(pose('open', 0).quaternion.angleTo(closed) < 1e-7);
     assert.ok(pose('close', 1).quaternion.angleTo(closed) < 1e-7);
     assert.ok(pose('reading', 0).quaternion.angleTo(reading) < 1e-7);
@@ -444,7 +446,7 @@ test('腰前闭书与阅读开合和烘焙交接端点连续，抬页低于面�
       for (let i = 0; i <= 120; i++) {
         const held = pose(phase, i / 120);
         const front = new THREE.Vector3(0, 0, 1).applyQuaternion(held.quaternion);
-        const pitch = Math.atan2(front.y, -front.z);
+        const pitch = Math.atan2(front.y, Math.hypot(front.x, front.z));
         assert.ok(Math.abs(pitch - THREE.MathUtils.lerp(0.08, 0.08, held.open)) < 1e-10, 'pitch follows the same continuous cover opening');
         if (previous) assert.ok(held.quaternion.angleTo(previous) < 0.02, phase + ': continuous orientation');
         previous = held.quaternion.clone();
@@ -664,7 +666,7 @@ test('three-row pickup locks the spine before moving, catches upright, and hands
           const { pose, joints } = byFrame(book, frame);
           const world = local => local.clone().applyQuaternion(pose.quaternion).add(pose.position);
           if (frame <= 36) assert.ok(pose.position.distanceTo(shelf.position) < .00001, 'book waits for the grip');
-          if (frame <= 96) assert.ok(pose.quaternion.angleTo(bookMotion.shelfQuaternion) < .001, 'book stays upright through the bottom catch');
+          if (frame <= 96) assert.ok(pose.quaternion.angleTo(bookMotion.shelfRotation('habitat').multiply(bookMotion.shelfQuaternion)) < .001, 'book stays upright through the bottom catch');
           if (frame >= 30 && frame <= 96) assert.ok(at('RightHandMiddle4').distanceTo(world(spine.clone().setZ(row === 2 ? -.037+.057*bookMotion.smooth((frame-72)/24) : spine.z))) < .002, `${row}@${frame}: middle fingertip follows the authored grip beside the spine`);
           // The final volume regression checks actual hand skin against the cover triangles.
           if (frame >= 96) for (const x of [0, .24]) for (const y of [0, .064]) for (const z of [-.11, .11]) {
@@ -1133,7 +1135,7 @@ test('three shelf grips and their returns load anatomical finger pads and an opp
           assert.ok(gap(right.thumb, spine) < .002, `${label}: opposed thumb pad must brace the wrapped spine`);
         }
         if (frame >= 124) {
-          const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(bookMotion.shelfQuaternion).applyQuaternion(inverse);
+          const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(bookMotion.shelfQuaternion).applyQuaternion(bookMotion.shelfRotation('habitat')).applyQuaternion(inverse);
           assert.ok(l.dot(normal) > .94, `${label}: left palm must face upward into the load`);
           const bearing = gap(left.volar, solids);
           assert.ok(bearing < .002 && bearing < gap(left.back, solids), `${label}: left volar patch must bear the book, gap ${bearing}`);

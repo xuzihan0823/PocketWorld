@@ -26,7 +26,7 @@ export function Bedding() {
   useEffect(() => () => { quilt.dispose(); pillow.dispose(); fold.dispose(); }, [quilt, pillow, fold]);
   return <>
     <mesh geometry={pillow} material={upholstery('#e8ddc5')} position={[0, 0.83, -0.93]} rotation={[0, 0.06, 0]} castShadow receiveShadow dispose={null} />
-    <mesh geometry={quilt} material={upholstery('#638a80')} castShadow receiveShadow dispose={null} />
-    <mesh geometry={fold} material={upholstery('#a0b6a0')} castShadow receiveShadow dispose={null} />
+    <mesh geometry={quilt} material={upholstery('#d79695')} castShadow receiveShadow dispose={null} />
+    <mesh geometry={fold} material={upholstery('#edcbb8')} castShadow receiveShadow dispose={null} />
   </>;
 }

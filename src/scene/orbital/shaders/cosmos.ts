@@ -339,11 +339,11 @@ const clouds = /* glsl */ `
     // Trade-wind zonal flow + Coriolis cyclonic swirl; drier over polar highs
     float latBand = sin(p.y * 6.2);
     float swirl = snoise(p * 1.40 + vec3(time * 0.003, time * 0.004, -time * 0.002)) * 0.62;
-    vec3 q = p * 2.22 + vec3(time * 0.009 + latBand * 0.10, swirl, -time * 0.0055);
-    float baseCumulus = fbm(q, 4);
+    vec3 q = p * vec3(8.7, 12.5, 9.4) + vec3(time * 0.009 + latBand * 0.67, swirl * 2.25, -time * 0.0055);
+    float baseCumulus = fbm(q, 5);
     float cirrusStreaks = (ridgedFbm(q * 1.65 + vec3(swirl * 0.75, 1.3, -0.7), 3) - 0.42) * 0.24;
     float equatBand = 0.15 * (1.0 - abs(p.y)) - 0.12 * smoothstep(0.68, 0.92, abs(p.y));
-    return smoothstep(0.02, 0.50, baseCumulus + cirrusStreaks + equatBand);
+    return smoothstep(0.045, 0.39, baseCumulus + cirrusStreaks + equatBand);
   }
 `;
 
@@ -365,7 +365,7 @@ export const earthFragment = /* glsl */ `
     float twilight = smoothstep(-0.14, 0.04, sunHeight) * (1.0 - smoothstep(0.02, 0.28, sunHeight));
 
     // Continental elevation + tectonic mountain ridges
-    float continent = fbm(p * 1.35, 5) + 0.16 * snoise(p * 0.7);
+    float continent = fbm(p * 2.75, 5) + 0.16 * snoise(p * 0.7);
     float ridges = ridgedFbm(p * 3.8 + vec3(2.1, -1.4, 0.8), 4);
     float height = continent + ridges * smoothstep(0.0, 0.22, continent) * 0.16;
 

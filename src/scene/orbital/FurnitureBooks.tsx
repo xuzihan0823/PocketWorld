@@ -1,7 +1,7 @@
 import { SuppliedAsset } from './SuppliedAsset';
 import React from 'react';
 import { LibraryBooks } from './library/LibraryBooks';
-import { shelfOrigin } from './library/catalog';
+import { shelfOrigin, shelfYaw } from './library/catalog';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
 import { ObjectHandle } from './ObjectHandle';
 import { SoftBox, Tube } from './Primitives';
@@ -9,10 +9,10 @@ import { FurnitureMotion, FURNITURE as C } from './FurnitureParts';
 
 export { ScheduleBoundBook as ScheduleBook } from './schedule/ScheduleBoundBook';
 
-export function FurnitureBookcase({ world, observatory = false }: { world: WorldModelProps; observatory?: boolean }) {
+export function FurnitureBookcase({ world }: { world: WorldModelProps }) {
   const cabinet = world.objects.cabinet ?? CLOSED_OBJECT;
   const item = world.objects['cabinet-item'] ?? CLOSED_OBJECT;
-  return <><LibraryBooks world={world} /><group position={shelfOrigin(observatory ? 'observatory' : 'habitat')} name="Furniture_OpenBookcase">
+  return <><LibraryBooks world={world} /><group position={shelfOrigin(world.sceneId)} rotation-y={shelfYaw(world.sceneId)} name="Furniture_OpenBookcase">
     <ObjectHandle id="book-01" action="inspect" hint="查看书柜 · 靠近按 E" world={world}>
     <SuppliedAsset name="cabinet.parts" part="body" size={[1.18, 1.59, .54]} fit="contact" fallback={<>    <SoftBox dims={[1.18, 0.08, 0.54]} position={[0, 0.12, 0]} color={C.edge} />
     {[-0.47, 0.47].flatMap(x => [-0.17, 0.17].map(z => <SoftBox key={`${x}/${z}`} dims={[0.09, 0.1, 0.09]} position={[x, 0.05, z]} color={C.edge} radius={0.012} />))}

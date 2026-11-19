@@ -1,3 +1,4 @@
+import { BED_POSITION, LAMP_POSITION } from './cabinLayout';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls, PerspectiveCamera } from '@react-three/drei';
@@ -5,6 +6,7 @@ import type { OrbitControls as Controls } from 'three-stdlib';
 import * as THREE from 'three';
 import { SCENE_ORIGINS, type WorldObjectState, type WorldSceneId, type WorldSceneProps } from '../../types/world';
 import { roomAudio } from '../audioEngine';
+import { CAMERA_FOV, HOME_DIRECTION, HOME_TARGET, HOME_ZOOM, homeDistanceForAspect } from './cabinView';
 import { Cosmos, createSunState, type SunState } from './Cosmos';
 import { HabitatShell } from './HabitatShell';
 import { HabitatFurniture } from './HabitatFurniture';
@@ -16,19 +18,19 @@ import { BOOK_POSITION } from './schedule/SchedulePaper';
 import { SCHEDULE_BOOK_POSITION } from './schedule/bookLayout';
 import { OrbitalResidents } from './OrbitalResidents';
 import type { DrawerInteraction } from './drawerInteraction';
-import { shelfOrigin } from './library/catalog';
+import { shelfPoint, shelfVector } from './library/catalog';
 import { sideLibraryCamera } from './library/sideCamera';
 import { JOURNAL_PAGE_POSITION } from './journalLayout';
 
 const FOCUS: Record<string, { target: [number, number, number]; offset: [number, number, number] }> = {
-  computer: { target: [1.45, 1.58, -2.30], offset: [0, 0.30, 3.5] },
-  'music-player': { target: [-0.45, 1.2, -2.0], offset: [1.4, 2.5, 3.1] },
+  computer: { target: [1.77, 1.68, -2.30], offset: [0, 0.30, 3.5] },
+  'music-player': { target: [-0.45, 1.2, -2.0], offset: [.4, 2.5, 3.1] },
   journal: { target: JOURNAL_PAGE_POSITION, offset: [0, 0.60, 0.28] },
   schedule: { target: [SCHEDULE_BOOK_POSITION[0] + 0.02, SCHEDULE_BOOK_POSITION[1] + 0.079, SCHEDULE_BOOK_POSITION[2]], offset: [0, 0.88, 0.48] },
-  'schedule-glass': { target: [0.69, 2.30, -3.39], offset: [0, 0.02, 1.75] },
-  'book-01': { target: [-3.35, 1.03, -1.14], offset: [1.35, 1.12, 2.5] },
-  cabinet: { target: [-3.28, 0.48, -2.47], offset: [0.9, 0.71, 2.35] },
-  bed: { target: [-2.5, 0.7, 1.0], offset: [3.2, 3.2, 4.0] },
+  'schedule-glass': { target: [0.69, 2.53, -3.13], offset: [0, 0.02, 1.75] },
+  'book-01': { target: [-.07, 1.03, .9], offset: [1.35, 1.12, 2.5] },
+  cabinet: { target: [0, 0.48, .32], offset: [0.9, 0.71, 2.35] },
+  bed: { target: [BED_POSITION[0] + .1, .7, BED_POSITION[2]], offset: [3.2, 3.2, 4.0] },
 };
 interface OrbitalSceneProps extends WorldSceneProps {
   sceneObjects: Record<WorldSceneId, Record<string, WorldObjectState>>;
@@ -46,8 +48,8 @@ function CameraRig(props: OrbitalSceneProps) {
   const moving = useRef(false), cameraProgress = useRef(0), localFlight = useRef(false);
   const currentView = useRef('habitat/');
   const narrow = size.width < 720;
-  const homeDirection = useMemo(() => new THREE.Vector3(narrow ? 13 : 11, 9, narrow ? 12 : 14).normalize(), [narrow]);
-  const homeDistance = Math.max(19.8, 12 / (2 * Math.tan(THREE.MathUtils.degToRad(17)) * (size.width / size.height) * 0.87));
+  const homeDistance = useMemo(() => homeDistanceForAspect(size.width / size.height), [size.width, size.height]);
+  const zoomFlight = useRef([HOME_ZOOM, HOME_ZOOM]);
   const cameraView = props.library?.cameraView;
   const sideView = props.focusedObject === 'book-01' && cameraView === 'side';
   const sideSlot = sideView ? props.library?.view.book?.slotId : undefined;
@@ -61,12 +63,13 @@ function CameraRig(props: OrbitalSceneProps) {
     if (!controls.current) return;
     const origin = new THREE.Vector3(...SCENE_ORIGINS[props.sceneId]);
     if (!props.focusedObject) {
-      const look = origin.add(new THREE.Vector3(0, 1.05, 0));
-      camera.position.copy(look).addScaledVector(homeDirection, homeDistance);
+      const look = origin.add(HOME_TARGET);
+      if (camera instanceof THREE.PerspectiveCamera) { camera.zoom = HOME_ZOOM; camera.updateProjectionMatrix(); }
+      camera.position.copy(look).addScaledVector(HOME_DIRECTION, homeDistance);
       controls.current.target.copy(look);
       controls.current.update();
     }
-  }, [camera, size.width, size.height, homeDistance, homeDirection]);
+  }, [camera, size.width, size.height, homeDistance]);
   useEffect(() => {
     if (!controls.current || props.transition.phase === 'idle') return;
     const view = `${props.transition.toScene}/${props.focusedObject ?? ''}/${size.width}/${size.height}/${cameraView ?? ''}/${sideSlot ?? ''}/${sideReading}`;
@@ -75,6 +78,7 @@ function CameraRig(props: OrbitalSceneProps) {
     fromPosition.current.copy(camera.position);
     fromTarget.current.copy(controls.current.target);
     const lens = camera instanceof THREE.PerspectiveCamera ? camera.view : null;
+    if (camera instanceof THREE.PerspectiveCamera) zoomFlight.current = [camera.zoom, props.focusedObject ? 1 : HOME_ZOOM];
     fromLens.current.set(lens?.enabled ? lens.offsetX : 0, lens?.enabled ? lens.offsetY : 0);
     toLens.current.set(0, 0);
     const origin = new THREE.Vector3(...SCENE_ORIGINS[props.transition.toScene]);
@@ -86,8 +90,6 @@ function CameraRig(props: OrbitalSceneProps) {
       toLens.current.set(...side.lensOffset);
     } else if (pose) {
       target.current.copy(origin).add(new THREE.Vector3(...pose.target));
-      if (props.focusedObject === 'cabinet') target.current.z += shelfOrigin(props.transition.toScene)[2] - shelfOrigin('habitat')[2];
-      if (props.focusedObject === 'book-01' && props.transition.toScene === 'observatory') target.current.z += 1.25;
       const offset = new THREE.Vector3(...pose.offset);
       if (props.focusedObject === 'journal') offset.multiplyScalar(Math.max(1, 0.9 / (size.width / size.height)));
       if (props.focusedObject === 'book-01') {
@@ -99,14 +101,20 @@ function CameraRig(props: OrbitalSceneProps) {
       }
       if (props.focusedObject === 'book-01' && narrow) { const close = cameraView === 'close'; offset.multiplyScalar(close ? 1.9 : 1.6); target.current.y -= close ? .40 : .55; }
       if (props.focusedObject === 'book-01' && !narrow) target.current.x += .45;
+      if (props.focusedObject === 'cabinet' || props.focusedObject === 'book-01') {
+        target.current.sub(origin);
+        target.current.fromArray(shelfPoint(props.transition.toScene, target.current.x, target.current.y, target.current.z)).add(origin);
+        offset.fromArray(shelfVector(props.transition.toScene, offset.x, offset.y, offset.z));
+      }
       destination.current.copy(target.current).add(offset);
       // Frame the shelf and slot together, including on portrait touchscreens.
-      if (props.focusedObject === 'computer') destination.current.z = target.current.z + Math.max(pose.offset[2], 2.25 / (2 * Math.tan(THREE.MathUtils.degToRad(17)) * (size.width / size.height)) + 0.25);
+      if (props.focusedObject === 'computer') destination.current.z = target.current.z + Math.max(pose.offset[2], 2.25 / (2 * Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2)) * (size.width / size.height)) + 0.25);
     } else {
-      target.current.copy(origin).add(new THREE.Vector3(0, 1.05, 0));
-      destination.current.copy(target.current).addScaledVector(homeDirection, homeDistance);
+      target.current.copy(origin).add(HOME_TARGET);
+      destination.current.copy(target.current).addScaledVector(HOME_DIRECTION, homeDistance);
     }
     if (props.transition.phase === 'error') {
+      if (camera instanceof THREE.PerspectiveCamera) { camera.zoom = zoomFlight.current[1]; camera.updateProjectionMatrix(); }
       camera.position.copy(destination.current);
       controls.current.target.copy(target.current);
       controls.current.update();
@@ -119,6 +127,10 @@ function CameraRig(props: OrbitalSceneProps) {
     const travel = props.transition.action?.kind === 'travel';
     if (localFlight.current) cameraProgress.current = Math.min(1, cameraProgress.current + Math.min(delta, .04) / (props.reducedMotion ? .25 : .8));
     const progress = localFlight.current ? cameraProgress.current : props.motion.current[travel ? 'sceneProgress' : 'progress'];
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.zoom = THREE.MathUtils.lerp(zoomFlight.current[0], zoomFlight.current[1], progress);
+      camera.updateProjectionMatrix();
+    }
     camera.position.lerpVectors(fromPosition.current, destination.current, progress);
     if (travel && !props.reducedMotion) camera.position.y += Math.sin(progress * Math.PI) * 3;
     controls.current.target.lerpVectors(fromTarget.current, target.current, progress);
@@ -127,23 +139,22 @@ function CameraRig(props: OrbitalSceneProps) {
     if (progress >= 1) moving.current = false;
   });
   const locked = props.gestureActive || !!props.focusedObject || !['idle', 'active', 'error'].includes(props.transition.phase);
-  // Full orbit: the closed shell fades whichever walls block the view (see walls/useWallVisibility).
   return <OrbitControls ref={controls} enabled={!locked} enablePan={false} enableDamping dampingFactor={0.08} minDistance={5} maxDistance={homeDistance * 1.5}
-    minPolarAngle={0.05} maxPolarAngle={1.30}
-    target={[0, 1.05, 0]} />;
+    minPolarAngle={0} maxPolarAngle={Math.PI}
+    target={HOME_TARGET.toArray()} />;
 }
-const SUN_DAY_COLOR = new THREE.Color('#fff2d9');
+const SUN_DAY_COLOR = new THREE.Color('#ffe6d9');
 const SUN_LIMB_COLOR = new THREE.Color('#ff8e47');
 const SKY_DAY_COLOR = new THREE.Color('#f1e7d9');
 const SKY_DUSK_COLOR = new THREE.Color('#e8a87c');
 const SKY_SHADOW_COLOR = new THREE.Color('#95aad6');
-const GROUND_DAY_COLOR = new THREE.Color('#3b4145');
+const GROUND_DAY_COLOR = new THREE.Color('#a58980');
 const GROUND_DUSK_COLOR = new THREE.Color('#463733');
 const GROUND_SHADOW_COLOR = new THREE.Color('#283040');
 const EARTHSHINE_DAY_COLOR = new THREE.Color('#9ec5f0');
 const EARTHSHINE_DUSK_COLOR = new THREE.Color('#f09d6b');
 const EARTHSHINE_NIGHT_COLOR = new THREE.Color('#6b96d6');
-const SUN_INTENSITY = 2.3;
+const SUN_INTENSITY = 1.90;
 
 function OrbitalLighting({ objects, sun }: Pick<WorldSceneProps, 'objects'> & { sun: SunState }) {
   const lamp = useRef<THREE.PointLight>(null);
@@ -159,7 +170,7 @@ function OrbitalLighting({ objects, sun }: Pick<WorldSceneProps, 'objects'> & { 
     const warmth = sun.warmth;
     if (lamp.current) lamp.current.intensity = THREE.MathUtils.damp(lamp.current.intensity, objects.lamp?.active === false ? 0 : sleeping ? 1 : 4, 5, delta);
     if (ambient.current) {
-      ambient.current.intensity = THREE.MathUtils.damp(ambient.current.intensity, sleeping ? 0.18 : 0.22 + 0.26 * daylight + 0.04 * warmth, 3, delta);
+      ambient.current.intensity = THREE.MathUtils.damp(ambient.current.intensity, sleeping ? 0.24 : 0.38 + 0.48 * daylight + 0.04 * warmth, 3, delta);
       ambient.current.color.lerpColors(SKY_SHADOW_COLOR, SKY_DAY_COLOR, daylight).lerp(SKY_DUSK_COLOR, warmth * 0.42);
       ambient.current.groundColor.lerpColors(GROUND_SHADOW_COLOR, GROUND_DAY_COLOR, daylight).lerp(GROUND_DUSK_COLOR, warmth * 0.35);
     }
@@ -179,9 +190,9 @@ function OrbitalLighting({ objects, sun }: Pick<WorldSceneProps, 'objects'> & { 
     <hemisphereLight ref={ambient} args={['#f1e7d9', '#3b4145', 0.48]} />
     <directionalLight ref={key} target={sunTarget} color="#fff2d9" intensity={SUN_INTENSITY} position={sun.light.toArray().map(n => n * 18) as [number, number, number]} castShadow
       shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8}
-      shadow-camera-near={0.1} shadow-camera-far={60} shadow-normalBias={0.035} shadow-bias={-0.0001} />
+      shadow-camera-near={0.1} shadow-camera-far={60} shadow-normalBias={0.012} shadow-bias={-0.0001} />
     <directionalLight ref={earthshine} target={sunTarget} color="#9ec5f0" intensity={0.28} position={[-11, 4.5, -10]} />
-    <pointLight ref={lamp} position={[-1, 2.5, -1]} color="#ffca8b" intensity={4} distance={8} decay={2} />
+    <pointLight ref={lamp} position={[LAMP_POSITION[0] + .08, 1.74, LAMP_POSITION[2] + .07]} color="#ffca8b" intensity={4} distance={8} decay={2} />
     <pointLight position={[2.3, 2.0, 0.5]} color="#c7dded" intensity={2.2} distance={7} decay={2} />
   </>;
 }
@@ -192,7 +203,7 @@ function WorldContent(props: OrbitalSceneProps) {
   const sun = useMemo(createSunState, []);
   useEffect(() => { setWalkTarget(null); }, [props.sceneId]);
   return <ScheduleProvider adapters={props.adapters}>
-    <PerspectiveCamera makeDefault fov={34} position={[11, 10.05, 14]} near={0.08} far={2000} />
+    <PerspectiveCamera makeDefault fov={CAMERA_FOV} position={[-7.8, 8.97, 13.42]} near={0.08} far={2000} />
     <CameraRig {...props} />
     <Cosmos reducedMotion={props.reducedMotion} sun={sun} />
     <Environment resolution={128} frames={1}>
@@ -271,7 +282,7 @@ export function OrbitalScene(props: OrbitalSceneProps) {
     onPointerCancel={() => props.onGesture(false)}
     onWheel={e => { if (props.focusedObject && !props.activeGame && e.deltaY > 45) props.onReturn(); }}
     onDoubleClick={e => { if ((e.target as HTMLElement).tagName === 'CANVAS' && props.focusedObject && !props.activeGame) props.onReturn(); }}>
-    <Canvas shadows dpr={[1, 1.6]} gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+    <Canvas shadows dpr={[1, 1.6]} gl={{ stencil: true, alpha: true, antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
       onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.shadowMap.type = THREE.PCFSoftShadowMap; }}>
       <WorldContent {...props} />
     </Canvas>

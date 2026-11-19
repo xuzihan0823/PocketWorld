@@ -1,3 +1,4 @@
+import { BED_POSITION, FLOOR_SOFA, LAMP_POSITION, PLANT_POSITION } from './cabinLayout';
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -14,7 +15,7 @@ import { CHAIR_POSES, SEAT_DROP, SEAT_SWIVEL } from './chairPose';
 
 function FurnitureBed({ world }: { world: WorldModelProps }) {
   const state = world.objects.bed ?? CLOSED_OBJECT;
-  return <ObjectHandle id="bed" action={state.active ? 'wake' : 'sleep'} hint={state.active ? '醒来 · 离开被窝' : '躺下休息'} world={world} position={[-2.6, 0, 1]}>
+  return <ObjectHandle id="bed" action={state.active ? 'wake' : 'sleep'} hint={state.active ? '醒来 · 离开被窝' : '躺下休息'} world={world} position={BED_POSITION}>
     <SuppliedAsset name="bed" size={[1.72, 1.4, 2.6]} fit="contact" fallback={<>    {[-0.64, 0.64].flatMap(x => [-1.06, 1.06].map(z => <SoftBox key={`${x}/${z}`} dims={[0.1, 0.32, 0.1]} position={[x, 0.16, z]} color={C.edge} />))}
     <SoftBox dims={[1.7, 0.19, 2.6]} position={[0, 0.365, 0]} color={C.wood} radius={0.04} />
     <SoftBox dims={[1.6, 0.25, 2.5]} position={[0, 0.595, 0]} color="#e5decb" radius={0.105} />
@@ -64,7 +65,8 @@ function FurnitureChair({ world, lounge = false }: { world: WorldModelProps; lou
 
 function FurnitureLamp({ world }: { world: WorldModelProps }) {
   const state = world.objects.lamp ?? CLOSED_OBJECT;
-  return <group position={[-1.1, 0, -2.85]}>
+  const bedside = world.sceneId === 'habitat';
+  return <group position={bedside ? LAMP_POSITION : [-1.1, 0, -2.85]} scale={bedside ? .48 : 1}>
     <SuppliedAsset name="lamp.parts" part="body" size={[.72, 2.02, .48]} fit="contact" position={[.22, 0, 0]} rotation={[0, Math.PI, 0]} fallback={<>    <Cylinder radius={0.23} height={0.065} position={[0, 0.0325, 0]} color={C.ink} />
     <Tube points={[[0, 0.06, 0], [0, 1.5, 0], [0.03, 1.88, 0], [0.22, 2.01, 0], [0.37, 1.97, 0]]} radius={0.022} color={C.brass} />
     <mesh position={[0.37, 1.8, 0]} castShadow><cylinderGeometry args={[0.13, 0.26, 0.32, 32, 1, true]} /><meshStandardMaterial color="#ecd8a3" roughness={0.8} side={2} /></mesh>
@@ -82,15 +84,15 @@ function FurnitureLamp({ world }: { world: WorldModelProps }) {
 
 function FurniturePlant({ world, observatory }: { world: WorldModelProps; observatory: boolean }) {
   const state = world.objects.plant ?? CLOSED_OBJECT;
-  return <ObjectHandle id="plant" action="water" hint="照料盆栽 · 浇水" world={world} position={observatory ? [2.75, 0, 1.85] : [-3.55, 0, 2.55]}>
-    <SuppliedAsset name="plant" size={[1, observatory ? 1.02 : .85, 1]} fallback={<ReusableAsset path="plants/potted_plant_04.glb" height={observatory ? 1.02 : 0.85} />} />
+  return <ObjectHandle id="plant" action="water" hint="照料盆栽 · 浇水" world={world} position={observatory ? [2.75, 0, 1.85] : PLANT_POSITION}>
+    <SuppliedAsset name="plant" size={observatory ? [1, 1.02, 1] : [.54, .88, .54]} fallback={<ReusableAsset path="plants/potted_plant_04.glb" height={observatory ? 1.02 : 0.85} />} />
     {state.value > 0 && <Orb position={[0.03, 0.31, 0.02]} scale={[0.028, 0.012, 0.028]} color="#83b9b1" />}
   </ObjectHandle>;
 }
 
 function FurnitureHatch() {
-  return <group position={[4.28, 0, -1.6]} rotation={[0, -Math.PI / 2, 0]} name="Furniture_Hatch">
-    <SuppliedAsset name="hatch" size={[1.22, 2.38, .23]} fit="contact" fallback={<>    {[-0.57, 0.57].map(x => <SoftBox key={x} dims={[0.12, 2.35, 0.18]} position={[x, 1.175, 0]} color="#6f8986" radius={0.06} />)}
+  return <group position={[3.98, 0, -1.6]} rotation={[0, -Math.PI / 2, 0]} name="Furniture_Hatch">
+    <SuppliedAsset name="hatch" size={[1.58, 2.89, .23]} fit="contact" fallback={<>    {[-0.57, 0.57].map(x => <SoftBox key={x} dims={[0.12, 2.35, 0.18]} position={[x, 1.175, 0]} color="#6f8986" radius={0.06} />)}
     <SoftBox dims={[1.22, 0.13, 0.18]} position={[0, 2.32, 0]} color="#6f8986" radius={0.055} />
     <SoftBox dims={[1.2, 0.055, 0.23]} position={[0, 0.0275, 0]} color={C.brass} radius={0.02} />
     <group position={[0, 1.16, 0]}>
@@ -109,7 +111,7 @@ export const HabitatFurniture: React.FC<WorldModelProps> = world => {
   const observatory = world.sceneId === 'observatory';
   return <group name={`Furniture_${world.sceneId}`}>
     <FurnitureDesk world={world} />
-    <FurnitureBookcase world={world} observatory={observatory} />
+    <FurnitureBookcase world={world} />
     {observatory ? <>
       <SoftBox dims={[2.9, 0.025, 2.2]} position={[-1.5, 0.013, 0.8]} radius={0.01} color="#748f8a" />
       <FurnitureChair world={world} lounge />
@@ -119,7 +121,12 @@ export const HabitatFurniture: React.FC<WorldModelProps> = world => {
         <Cylinder radius={0.045} height={0.59} position={[0, 0.31, 0]} color={C.brass} />
         <Cylinder radius={0.25} height={0.035} position={[0, 0.018, 0]} color={C.ink} />
       </group>
-    </> : <><FurnitureBed world={world} /><FurnitureChair world={world} /></>}
+    </> : <>
+      <FurnitureBed world={world} />
+      <FurnitureChair world={world} />
+      <ReusableAsset name="Furniture_FloorSofa" path="furniture/floor-sofa.glb"
+        width={FLOOR_SOFA.width} position={FLOOR_SOFA.position} rotation={[0, FLOOR_SOFA.yaw, 0]} />
+    </>}
     <FurnitureLamp world={world} />
     <FurniturePlant world={world} observatory={observatory} />
     <FurnitureHatch />

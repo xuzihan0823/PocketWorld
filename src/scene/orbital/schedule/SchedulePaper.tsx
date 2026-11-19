@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type { PaperBall, SchedulePage } from './schedule';
 import { SCHEDULE_BOOK_POSITION } from './bookLayout';
 
-export const GLASS_POSITION: [number, number, number] = [0.69, 2.3, -3.39];
+export const GLASS_POSITION: [number, number, number] = [0.69, 2.53, -3.13];
 export const BOOK_POSITION: [number, number, number] = [SCHEDULE_BOOK_POSITION[0] + 0.126, SCHEDULE_BOOK_POSITION[1] + 0.033, SCHEDULE_BOOK_POSITION[2] - 0.01];
 const ease = (t: number) => 1 - (1 - t) ** 3;
 export function paperBallPosition(seed: number): [number, number, number] {

@@ -39,10 +39,16 @@ const stories = [
 ] as const;
 export const BUILTIN_BOOKS: LibraryBook[] = stories.map(([title, chapters], i) => ({ id: `book-0${i + 1}`, source: 'builtin', title, author: 'PocketWorld · 原创', text: chapters.join('\f'), color: colors[i], slotId: BOOK_SLOTS[6 + 1 + i].id, anchor: 0 }));
 export const freshLibrary = (): LibraryData => ({ version: 1, revision: 0, books: BUILTIN_BOOKS.map(book => ({ ...book })) });
-// Bookcase origin: x keeps its left side clear of the window sill (inner edge x=-3.905);
-// in the habitat its back sits against the rear sill (front edge z=-3.08).
-export const shelfOrigin = (scene: string): Vec3 => [-3.28, 0, scene === 'observatory' ? -0.65 : -2.79];
-export const readingStand = (scene: string): Vec3 => { const [x, y, z] = shelfOrigin(scene); return [x, y, z + 0.87]; };
+// Shelf-local +Z faces the reader. The baked clips keep this frame in both rooms.
+export const shelfOrigin = (scene: string): Vec3 => scene === 'habitat' ? [3.71, 0, 1.40] : [-3.28, 0, -.65];
+export const shelfYaw = (scene: string) => scene === 'habitat' ? -Math.PI / 2 : 0;
+export const shelfVector = (scene: string, x: number, y: number, z: number): Vec3 =>
+  scene === 'habitat' ? [-z, y, x] : [x, y, z];
+export function shelfPoint(scene: string, x: number, y: number, z: number): Vec3 {
+  const origin = shelfOrigin(scene), v = shelfVector(scene, x, y, z);
+  return [origin[0] + v[0], origin[1] + v[1], origin[2] + v[2]];
+}
+export const readingStand = (scene: string): Vec3 => shelfPoint(scene, 0, 0, .87);
 export const slotFor = (book: LibraryBook) => BOOK_SLOTS.find(slot => slot.id === book.slotId)!;
 
 // Reconcile existing v1 collections in memory; normal locked writes persist the layout.

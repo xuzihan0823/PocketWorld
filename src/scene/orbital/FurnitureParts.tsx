@@ -7,7 +7,7 @@ import { timber, upholstery } from './Materials';
 
 export const FURNITURE = {
   wood: '#b27c4e', edge: '#75503a', cream: '#e7d8bc', ink: '#293c42',
-  brass: '#ba9357', cloth: '#7c9c96', paper: '#f2e8cc', dark: '#303333',
+  brass: '#ba9357', cloth: '#cd928f', paper: '#f2e8cc', dark: '#303333',
 };
 export type FurnitureVector = [number, number, number];
 

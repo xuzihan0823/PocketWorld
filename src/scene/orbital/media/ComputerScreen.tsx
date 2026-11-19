@@ -2,6 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { CRT_SCALE, CRT_SCREEN } from './computerLayout';
 import { fitComputerDisplay, fitExpandedDisplay } from './screen-layout';
 
 const viewportCenter = (_object: THREE.Object3D, _camera: THREE.Camera, size: { width: number; height: number }): number[] => [size.width / 2, size.height / 2];
@@ -30,7 +31,7 @@ export function ComputerScreen({ visible, interactive, expanded = false, collaps
       previous.current = key;
     }
   });
-  return <group ref={anchor} position={[1.55, 1.68, -2.35]}>
+  return <group ref={anchor} position={CRT_SCREEN} scale={[CRT_SCALE, CRT_SCALE, 1]}>
     {/* Html caches z-index while its anchor is still; keep this layer above room HUDs in both modes. */}
     <Html fullscreen calculatePosition={viewportCenter} zIndexRange={[30, 30]} style={{ pointerEvents: 'none' }}>
       <div className="computer-game-layer" data-expanded={expanded} style={{ display: visible ? 'block' : 'none' }} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={e => e.stopPropagation()} onWheel={e => e.stopPropagation()}>

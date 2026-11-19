@@ -4,6 +4,14 @@
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
     {
+      "file": "furniture/floor-sofa.glb",
+      "source": "Original PocketWorld model and woven textures, authored in Blender from the user's visual reference.",
+      "used": true,
+      "bytes": 1213184,
+      "sha256": "d9fab81b3ab17ff26018d2b8dad3b627acca024e86a87f2535165a071cf4f1fc",
+      "processing": "Editable source assets/models/furniture/floor-sofa.blend with packed linen and twill maps. scripts/export-floor-sofa.py converts the piping, topstitching and fringe to mesh and reduces the runtime geometry."
+    },
+    {
       "file": "furniture/throw_pillows_01.glb",
       "sourcePage": "https://polyhaven.com/a/throw_pillows_01",
       "license": "CC0-1.0",
@@ -99,6 +107,62 @@
       "bytes": 1383148,
       "sha256": "22218756fd9dbfe2f553ba9d6ae0292e92920f1cb4b5eb6c191342c8a94e3758",
       "processing": "scripts/bake-luna-library.py builds three shelf-row pickup clips and synchronized book marker tracks. Animation-only GLB, reverse sampling for return. Neutral and closed-book handoff poses from scripts/luna-library-neutral.mjs; 0-180 frames at 30 fps, each of the four right finger pads individually seated on the near cover and opposed thumb on the wrapped spine before extraction, upright support approaches below the bottom edge and is acquired by export124 before transfer132; free reach solves wrist position once, anatomical palm cone and axial-only entry blend; unwrapped bounded forearm twist and matching runtime closed-cover handoff; evaluated Blender skin-support correction at quarter frames over export 132-180. See assets/models/resident/README.md."
+    },
+    {
+      "file": "cabin/open-cabin.glb",
+      "source": "PocketWorld original Blender scene, assets/models/cabin/open-cabin.blend.",
+      "used": true,
+      "bytes": 4335876,
+      "sha256": "1f1b0d3fe76287c155315c5f31a664d4c7112b970e42d489bbcef5ec881db2f3",
+      "processing": "Six joined collections with per-board vertex colors. The foot-of-bed rug and modeled slippers share the Rugs collection. Original wood and ivory pile textures are embedded. Export with scripts/export-open-cabin.py."
+    },
+    {
+      "file": "replaced/bed.glb",
+      "source": "Repository-supplied replaced/bed.glb at b2df620.",
+      "used": true,
+      "bytes": 2549532,
+      "sha256": "b14f54a317806d401fd80e6c3859bd378a8f455acc2e64ed512e435c66e08687",
+      "processing": "Adjusted embedded albedo for the warm cabin palette. Reuses the supplied geometry and attachment pivots."
+    },
+    {
+      "file": "replaced/desk.parts.glb",
+      "source": "Repository-supplied replaced/desk.parts.glb at b2df620.",
+      "used": true,
+      "bytes": 2365068,
+      "sha256": "ed597438eb73a30cbe93cec97b97558c6d064a796dc9cef25314e8b14fb5f5a9",
+      "processing": "Recolored embedded albedo and extended the tabletop to the left while retaining the drawer."
+    },
+    {
+      "file": "replaced/cabinet.parts.glb",
+      "source": "Repository-supplied replaced/cabinet.parts.glb at b2df620.",
+      "used": true,
+      "bytes": 3086604,
+      "sha256": "08342eae4d94ad81a7881cd740a892ec8f3d0809998aba904add4391c3b53a1c",
+      "processing": "Adjusted embedded albedo for the warm cabin palette. Reuses the supplied geometry and attachment pivots."
+    },
+    {
+      "file": "replaced/hatch.glb",
+      "source": "Repository-supplied replaced/hatch.glb at b2df620.",
+      "used": true,
+      "bytes": 2115408,
+      "sha256": "76236ab9cf67944945f5ee1a404f07ebabd31ba7edf6750fb8c9c4b6e58d8ea0",
+      "processing": "Adjusted embedded albedo for the warm cabin palette. Reuses the supplied geometry and attachment pivots."
+    },
+    {
+      "file": "replaced/rolling-chair.parts.glb",
+      "source": "Repository-supplied replaced/rolling-chair.parts.glb at b2df620.",
+      "used": true,
+      "bytes": 3556372,
+      "sha256": "687046c86dec6f5ed85bc64210c0624f5898077576647a254a707191dd705fe0",
+      "processing": "Adjusted embedded albedo for the warm cabin palette. Reuses the supplied geometry and attachment pivots."
+    },
+    {
+      "file": "replaced/computer.fitted.glb",
+      "source": "Repository-supplied replaced/computer.fitted.glb at b2df620.",
+      "used": true,
+      "bytes": 2223904,
+      "sha256": "d00440305c32b54ff0eb52f28e1c56d099fb85f396a31e03934e7f3166560be7",
+      "processing": "Adjusted embedded albedo for the warm cabin palette. Reuses the supplied geometry and attachment pivots."
     }
   ]
 }

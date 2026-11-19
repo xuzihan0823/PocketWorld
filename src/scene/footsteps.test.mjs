@@ -22,8 +22,10 @@ function load(path, dependencies, globals = {}) {
   return context.exports;
 }
 
+const cabinLayout = load('./orbital/cabinLayout.ts', {});
+const catalog = load('./orbital/library/catalog.ts', {});
+
 function libraryDependencies(residentRig) {
-  const catalog = load('./orbital/library/catalog.ts', {});
   const authored = load('./orbital/library/pageTurnFrames.ts', {});
   const bookMotion = load('./orbital/library/bookMotion.ts', { three: THREE, './catalog': catalog, './pageTurnFrames': authored });
   const armPose = load('./orbital/library/armPose.ts', { three: THREE });
@@ -72,7 +74,8 @@ function mount(kind, overrides = {}, idleLibrary) {
     './Cat': { Cat: 'Cat' },
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': residentRig,
-    './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
+    './cabinLayout': cabinLayout,
+    './bedMotion': load('./orbital/bedMotion.ts', { three: THREE, './cabinLayout': cabinLayout, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './journalLayout': load('./orbital/journalLayout.ts', {}),
     './schedule/bookLayout': load('./orbital/schedule/bookLayout.ts', {}),
     './chairPose': load('./orbital/chairPose.ts', {}),
@@ -86,7 +89,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     './library/armPose': { resetArms() {} },
     './library/libraryMotion': { libraryCoverFlow: flow => flow },
     './library/bookMotion': { residentLibraryTarget: () => [0, 0, 0] },
-    './library/catalog': { readingStand: () => [-3.28, 0, -1.92], shelfOrigin: () => [-3.28, 0, -2.79] },
+    './library/catalog': catalog,
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/OrbitalDustPrompt': { DustPrompt: 'DustPrompt' },
     './standingIdle': load('./orbital/standingIdle.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class {
@@ -156,8 +159,9 @@ test('书柜站位等待动画绑定，成功保持烘焙站位，失败平滑�
     };
     const view = mount('orbital', { enabled: false, focusedObject: 'book-01', library });
     try {
-      view.root.position.set(-3.28, 0, -1.92);
-      view.root.rotation.y = Math.PI;
+      const catalog = modules['./library/catalog'];
+      view.root.position.fromArray(catalog.readingStand('habitat'));
+      view.root.rotation.y = Math.PI + catalog.shelfYaw('habitat');
       const bookMotion = modules['./library/bookMotion'];
       const authored = new THREE.Vector3(...bookMotion.authoredBookStand('habitat', flow.book));
       for (let i = 0; i < 180; i++) view.frame(1 / 60);
@@ -220,6 +224,25 @@ test('walking after Space advances the resident and plays footsteps', () => {
     assert.ok(view.root.position.distanceTo(start) > 0.4);
     assert.ok(view.sounds.some(sound => !sound.variant));
   } finally { view.dispose(); }
+});
+
+test('the floor sofa blocks walking from the rug only inside the habitat', () => {
+  const [x, , z] = cabinLayout.FLOOR_SOFA.position;
+  for (const sceneId of ['habitat', 'observatory']) {
+    const view = mount('orbital', { sceneId });
+    try {
+      view.root.position.set(x, 0, z - 1.4);
+      view.key('KeyS');
+      for (let i = 0; i < 150; i++) view.frame(1 / 60);
+      const end = view.root.position.z;
+      if (sceneId === 'habitat') {
+        const edge = z + cabinLayout.FLOOR_SOFA.footprint.back;
+        assert.ok(end > z - 1.4 && end <= edge - .23);
+      } else {
+        assert.ok(end > z);
+      }
+    } finally { view.dispose(); }
+  }
 });
 
 test('the old bed shortcut no longer starts room interactions', () => {
@@ -343,13 +366,15 @@ for (const fps of [30, 60, 144]) {
     const view = mount('orbital');
     let performed = 0;
     try {
-      view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
+      view.root.position.set(.15, 0, .15);
+      const target = catalog.shelfPoint('habitat', 0, 1, .87);
+      view.props.interaction.current(target, { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
       assert.equal(performed, 0);
       for (let i = 0; i < fps / 2; i++) view.frame(1 / fps);
       assert.equal(performed, 0);
       for (let i = 0; i < fps * 10 && !performed; i++) view.frame(1 / fps);
       assert.equal(performed, 1);
-      assert.ok(Math.hypot(view.root.position.x + 3.3, view.root.position.z + 1.8) <= 1.15);
+      assert.ok(Math.hypot(view.root.position.x - target[0], view.root.position.z - target[2]) <= 1.15);
       for (let i = 0; i < fps; i++) view.frame(1 / fps);
       assert.equal(performed, 1);
     } finally { view.dispose(); }
@@ -414,10 +439,28 @@ test('clicking the far corner of the bed still uses its safe entry', () => {
   const view = mount('orbital');
   let performed = 0;
   try {
-    view.props.interaction.current([-3.4, 0.8, -0.25], { sceneId: 'habitat', objectId: 'bed', kind: 'sleep' }, () => performed++);
+    view.props.interaction.current([cabinLayout.BED_POSITION[0] - .8, .8, cabinLayout.BED_POSITION[2] - 1.25], { sceneId: 'habitat', objectId: 'bed', kind: 'sleep' }, () => performed++);
     for (let i = 0; i < 900 && !performed; i++) view.frame(1 / 60);
     assert.equal(performed, 1);
-    assert.ok(Math.hypot(view.root.position.x + 1.48, view.root.position.z - 0.73) < 0.06);
+    assert.ok(Math.hypot(view.root.position.x - cabinLayout.BED_ENTRY[0], view.root.position.z - cabinLayout.BED_ENTRY[1]) < 0.06);
+  } finally { view.dispose(); }
+});
+
+test('E selects the bed along its open side and distinguishes the lamp and plant at the table', () => {
+  const actions = [];
+  const view = mount('orbital', { onAction: action => actions.push(action.objectId) });
+  try {
+    const [x, , z] = cabinLayout.BED_POSITION;
+    for (const [px, pz, id] of [
+      [x + 1.12, z + .90, 'bed'],
+      [cabinLayout.NIGHTSTAND_X - .11, cabinLayout.NIGHTSTAND_Z + .77, 'lamp'],
+      [cabinLayout.NIGHTSTAND_X + .32, cabinLayout.NIGHTSTAND_Z + .78, 'plant'],
+    ]) {
+      view.root.position.set(px, 0, pz);
+      view.key('KeyE');
+      for (let i = 0; i < 240 && !actions.length; i++) view.frame(1 / 60);
+      assert.deepEqual(actions.splice(0), [id]);
+    }
   } finally { view.dispose(); }
 });
 

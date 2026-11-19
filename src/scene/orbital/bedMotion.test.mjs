@@ -1,3 +1,4 @@
+import { BED_ENTRY, BED_POSITION } from './cabinLayout.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,8 +17,8 @@ function module(file, dependencies) {
 }
 const residentRig = module('./residentRig.ts', { three: THREE });
 const { createResidentRig } = residentRig;
-const { createBedPlayer, advanceBedTime, BED_ENTRY, BED_YAW, BED_DURATION } = module('./bedMotion.ts',
-  { three: THREE, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
+const { createBedPlayer, advanceBedTime, BED_YAW, BED_DURATION } = module('./bedMotion.ts',
+  { three: THREE, './cabinLayout': { BED_ENTRY }, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader } });
 const raw = fs.readFileSync(new URL('../../../assets/public/models/resident/luna-bed-v3.glb', import.meta.url));
 const doc = JSON.parse(raw.subarray(20, 20 + raw.readUInt32LE(12)));
 const animation = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
@@ -49,7 +50,7 @@ test('bed entry matches neutral stance and exit restores original walking', () =
     names.forEach((n, i) => assert(bone(n).getWorldPosition(new THREE.Vector3()).distanceTo(neutral[i]) < .00001, n));
     const original = root.matrixWorld.clone();
     sample(141 / 24); assert(root.matrixWorld.equals(original), 'parent must not add bed translation');
-    assert(bone('Hips').getWorldPosition(new THREE.Vector3()).x < -2.5);
+    assert(bone('Hips').getWorldPosition(new THREE.Vector3()).x < BED_POSITION[0] + .1);
     sample(0); rig.applyPose(.37, 1); root.updateMatrixWorld(true);
     const walking = bone('RightFoot').quaternion.clone();
     sample(3); rig.applyPose(.37, 1);

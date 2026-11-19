@@ -140,17 +140,17 @@ export function RecordPlayer(props: WorldSceneProps) {
         </group></group>
       </ObjectHandle>
     </group>
-    <SoftBox position={[-.2, 1.16, -2.80]} dims={[1.24, .06, .33]} color="#765b43" />
+    <SoftBox position={[-1.13, 1.16, -2.80]} dims={[1.24, .06, .33]} color="#765b43" />
     {records.slice(visiblePage * 6, visiblePage * 6 + 6).map((disc, index) => disc.id === transport.disc.id ? null : <ObjectHandle key={disc.id} id={`music-disc-${disc.id}`} action="insert" hint={`拿取《${disc.title}》${disc.isUserUploaded ? ' · 我的唱片' : ''}`} world={world} payload={{ itemId: disc.id }} position={discPosition(index)}>
       <group rotation={[DISC_LEAN, 0, 0]}><Disc colors={disc.discThemeColor} /></group>
     </ObjectHandle>)}
-    {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pages > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[-.2 + direction * .6, 1.31, -2.81]}><SoftBox dims={[.035, .29, .21]} color="#765b43" /></ObjectHandle>)}
+    {[-1, 1].map(direction => <ObjectHandle key={direction} id="music-rack" action="select" hint={pages > 1 ? '翻动唱片架，查看更多唱片' : '唱片架'} payload={{ direction }} world={world} position={[-1.13 + direction * .6, 1.31, -2.81]}><SoftBox dims={[.035, .29, .21]} color="#765b43" /></ObjectHandle>)}
     <ObjectHandle id="music-import" action="insert" hint="空白唱片 · 导入本地音乐" world={world} position={IMPORT_DISC} onClick={event => {
       event.stopPropagation(); if (!enabled || transport.busy || event.delta >= 9) return;
       props.onImportMusic();
     }}><group rotation={[-Math.PI / 2, 0, 0]}><Disc colors={['#efe4c7', '#c8a879']} radius={.145} /></group></ObjectHandle>
-    <group position={[2.57, 1.4, -2.55]}>
-      <SoftBox dims={[.38, .56, .37]} color="#886448" />
+    <group position={[.61, 1.4, -2.73]}>
+      <SoftBox dims={[.38, .56, .37]} color="#dcb68d" />
       {[.13, -.1].map((y, i) => <mesh key={y} position={[0, y, .19]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[i ? .125 : .065, i ? .125 : .065, .018, 32]} /><meshStandardMaterial color="#35423f" /></mesh>)}
       <ObjectHandle id="music-mute" action="toggle" hint={props.isMuted ? '旋动音箱旋钮，恢复声音' : '旋动音箱旋钮，静音'} world={world} position={[.12, -.21, .21]} drag="x"><mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[.03, .03, .035, 16]} /><meshStandardMaterial color={props.isMuted ? '#7a7f73' : '#d7b46e'} /></mesh></ObjectHandle>
     </group>

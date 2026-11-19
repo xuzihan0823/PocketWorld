@@ -7,6 +7,7 @@ import type { GameCartridgeProps, GameId } from '../../../types/game';
 import type { WorldAction, WorldSceneProps } from '../../../types/world';
 import { ObjectHandle } from '../ObjectHandle';
 import { SoftBox } from '../Primitives';
+import { CRT_SCALE, CRT_SCREEN } from './computerLayout';
 import { ComputerScreen } from './ComputerScreen';
 import { CartridgePickup } from './CartridgePickup';
 import { RecordPlayer } from './RecordPlayer';
@@ -252,11 +253,11 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
       <SoftBox dims={[0.1, 0.05, 0.1]} color="#485d54" />
       <SoftBox dims={[0.025, 0.095, 0.025]} position={[0, 0.04, 0]} rotation={[paused ? -0.4 : 0.4, 0, 0]} color="#cfb976" />
     </ObjectHandle>
-    <ObjectHandle id="computer-exit" action="close" hint="握住电脑侧把手，离开电脑" world={world} position={[2.15, 1.42, -2.29]}>
+    <ObjectHandle id="computer-exit" action="close" hint="握住电脑侧把手，离开电脑" world={world} position={[2.25, 1.47, -2.32]}>
       <SoftBox dims={[0.045, 0.21, 0.08]} color="#8c8e77" />
     </ObjectHandle>
-    <ObjectHandle id="computer" action="inspect" hint="靠近屏幕，选择一张游戏卡带" world={world} position={[1.55, 1.68, -2.36]}>
-      <mesh><planeGeometry args={[0.92, 0.69]} /><meshBasicMaterial color="#182e28" /></mesh>
+    <ObjectHandle id="computer" action="inspect" hint="靠近屏幕，选择一张游戏卡带" world={world} position={CRT_SCREEN}>
+      <mesh scale={CRT_SCALE}><planeGeometry args={[0.92, 0.69]} /><meshBasicMaterial visible={false} /></mesh>
     </ObjectHandle>
     {/* The DOM display must not paint over a physical cartridge moving in front of the CRT. */}
     {(sceneVisible || activeComponent) && <ComputerScreen visible={displayVisible && !pickup && !transfer?.game} interactive={displayVisible && !!activeComponent && presentation !== 'collapsed'}
