@@ -75,9 +75,9 @@
       "license": null,
       "licensePage": null,
       "used": true,
-      "bytes": 799688,
-      "sha256": "b0c94ebcf1b1ae56e9d9f4df558549070b79be6d33dca76df0569cf5d7a84ed6",
-      "processing": "Luna V3 bed motion, authored from user-supplied V2 Blender study (Plask-derived late motion and Mixamo Laying Sleeping upper-body finish). Direct supported seat and right shin/ankle/toe repair, fixed V2 heel contacts. Animation-only GLB, 115 nodes and 230 tracks, no meshes or textures. Editable source assets/models/resident/luna-bed-v3.blend; rebuild scripts/export-luna-bed.py. Original Luna and bed reused unchanged; upstream licenses are not reassigned."
+      "bytes": 799616,
+      "sha256": "6f8197902939e3e250d5540a17054469243890bcc40e7a4f07bca69841c5574a",
+      "processing": "Blender-authored direct seat with a balanced entry and knee-aligned heel landings. The shoulders and elbows position the spread palms on the curved mattress edge, with separate palm-heel and finger-pad contacts. The upper arm and forearm share axial rotation while the palms stay planted. The shins extend earlier on the turn, and the front hem follows the thighs from the seated pose through sleep. The rear hair and side locks settle against the bedding. Retimed from the user-supplied V2 study with Plask-derived body motion and Mixamo Laying Sleeping upper-body finish. The animation-only GLB contains 115 nodes and 230 tracks. Source assets/models/resident/luna-bed-v3.blend, exporter scripts/export-luna-bed.py. Original Luna and bed reused under their existing licenses."
     },
     {
       "file": "resident/luna-looking-around.glb",
