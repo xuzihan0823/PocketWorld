@@ -361,21 +361,104 @@ test('both supporting hands stay on the fitted mattress while the hips rise', as
   const skin = rig.mesh.getObjectByName('Luna_Surface');
   const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
   try {
-    for (const [side, patch] of [['Left', [3643, 3868]], ['Right', [5384, 1603, 3583]]]) {
+    // Contact must occur on the heel of the palm and on a separate finger pad.
+    for (const [side, palm, finger] of [['Left', 14489, 1606], ['Right', 14709, 15424]]) {
       sample(16 / 24);
       const hand = bone(side + 'Hand'), anchor = hand.getWorldPosition(new THREE.Vector3());
       for (let half = 32; half <= 86; half++) {
         sample(half / 48);
-        let gap = Infinity;
-        for (const i of patch) {
+        for (const i of [palm, finger]) {
           const p = skin.localToWorld(skin.getVertexPosition(i, new THREE.Vector3()));
           ray.ray.origin.set(p.x, 2, p.z);
           const hit = ray.intersectObject(fitted, true)[0];
           assert(hit, `${side} hand missed the mattress at frame ${half / 2}`);
-          gap = Math.min(gap, p.y - hit.point.y);
+          const gap = p.y - hit.point.y;
+          assert(gap >= 0 && gap < .002, `${side} support patch ${i} gap ${gap} at frame ${half / 2}`);
         }
-        assert(gap >= 0 && gap < .002, `${side} support gap ${gap} at frame ${half / 2}`);
-        assert(hand.getWorldPosition(new THREE.Vector3()).distanceTo(anchor) < .008, `${side} support slid`);
+        assert(hand.getWorldPosition(new THREE.Vector3()).distanceTo(anchor) < .002, `${side} support slid`);
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('wrists extend in the palm plane and elbows stay bent through support and transfer', () => {
+  const { rig, bone, sample } = instance();
+  const point = name => bone(name).getWorldPosition(new THREE.Vector3());
+  try {
+    for (let tick = 16 * 4; tick <= 115 * 4; tick++) {
+      const frame = tick / 4;
+      sample(frame / 24);
+      for (const side of ['Left', 'Right']) {
+        const p = name => point(side + name);
+        const wrist = p('Hand'), elbow = p('ForeArm');
+        const forearm = wrist.clone().sub(elbow).normalize();
+        const knuckles = ['Index', 'Middle', 'Ring', 'Pinky'].map(digit => p(`Hand${digit}1`));
+        const axis = knuckles.reduce((sum, k) => sum.add(k), new THREE.Vector3()).multiplyScalar(.25).sub(wrist).normalize();
+        const across = knuckles[0].clone().sub(knuckles[3]).projectOnPlane(axis).normalize();
+        const where = `${side} f${frame}`;
+        assert(Math.abs(forearm.dot(across)) < Math.sin(THREE.MathUtils.degToRad(18)), `sideways wrist at ${where}`);
+        assert(forearm.angleTo(elbow.clone().sub(p('Arm'))) > THREE.MathUtils.degToRad(7), `locked elbow at ${where}`);
+        const outward = p('Arm').sub(point((side === 'Left' ? 'Right' : 'Left') + 'Arm')).normalize();
+        assert(elbow.sub(point('Spine2')).dot(outward) > .055, `elbow tucked across torso at ${where}`);
+        if (frame <= 43) {
+          const thumb = p('HandThumb4').sub(knuckles[3]).normalize();
+          assert(thumb.x > .58, `thumb turned away from the bed edge at ${where}`);
+        }
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('the draped front panels cover both skinned thighs from sitting through the staggered lift', () => {
+  const { rig, bone, sample } = instance();
+  const mesh = rig.mesh.getObjectByName('Luna_Surface');
+  const { index, attributes: { skinIndex, skinWeight } } = mesh.geometry;
+  const panel = Array.from({ length: skinIndex.count }, (_, i) => {
+    let slot = 0;
+    for (let j = 1; j < 4; j++) if (skinWeight.getComponent(i, j) > skinWeight.getComponent(i, slot)) slot = j;
+    return mesh.skeleton.bones[skinIndex.getComponent(i, slot)].name.startsWith('Dress_Front');
+  });
+  const vertices = new Map(), triangles = [];
+  for (let i = 0; i < index.count; i += 3) {
+    const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    if (!ids.some(id => panel[id])) continue;
+    triangles.push(ids.map(id => {
+      if (!vertices.has(id)) vertices.set(id, new THREE.Vector3());
+      return vertices.get(id);
+    }));
+  }
+  const ray = new THREE.Ray(), hit = new THREE.Vector3();
+  try {
+    for (let half = 64; half <= 236; half++) {
+      sample(half / 48);
+      for (const [id, v] of vertices) mesh.localToWorld(mesh.getVertexPosition(id, v));
+      // These are skin vertices on the front of each upper thigh. Cast outward in
+      // the moving thigh frame so a fold behind the leg cannot count as coverage.
+      for (const [side, id] of [['Left', 25106], ['Right', 32216]]) {
+        const thigh = bone(side + 'UpLeg');
+        ray.origin.copy(mesh.localToWorld(mesh.getVertexPosition(id, hit)));
+        ray.direction.set(0, 0, 1).transformDirection(mesh.skeleton.boneInverses[mesh.skeleton.bones.indexOf(thigh)])
+          .transformDirection(thigh.matrixWorld);
+        assert(triangles.some(([a, b, c]) => ray.intersectTriangle(a, b, c, false, hit)
+          && hit.distanceTo(ray.origin) > .003 && hit.distanceTo(ray.origin) < .16), `uncovered ${side} thigh at f${half / 2}`);
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('the leading foot clears the trailing calf and ankle throughout the swing', () => {
+  const { rig, sample } = instance();
+  const mesh = rig.mesh.getObjectByName('Luna_Surface');
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  // UV-stable vertex pairs at the heel/calf and foot/ankle crossings of the two arcs.
+  const pairs = [[17178, 14364], [14095, 768], [15131, 3108], [14093, 14112]];
+  try {
+    for (let tick = 84 * 4; tick <= 114 * 4; tick++) {
+      sample(tick / 96);
+      for (const [left, right] of pairs) {
+        mesh.localToWorld(mesh.getVertexPosition(left, a));
+        mesh.localToWorld(mesh.getVertexPosition(right, b));
+        assert(a.distanceTo(b) > .04, `left foot closing on right lower leg at f${tick / 4}`);
       }
     }
   } finally { rig.dispose(); }
