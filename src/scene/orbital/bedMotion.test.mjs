@@ -409,7 +409,7 @@ test('wrists extend in the palm plane and elbows stay bent through support and t
   } finally { rig.dispose(); }
 });
 
-test('the draped front panels cover both skinned thighs from sitting through the staggered lift', () => {
+test('the draped front panels cover both skinned thighs from sitting through sleep', () => {
   const { rig, bone, sample } = instance();
   const mesh = rig.mesh.getObjectByName('Luna_Surface');
   const { index, attributes: { skinIndex, skinWeight } } = mesh.geometry;
@@ -429,7 +429,7 @@ test('the draped front panels cover both skinned thighs from sitting through the
   }
   const ray = new THREE.Ray(), hit = new THREE.Vector3();
   try {
-    for (let half = 64; half <= 236; half++) {
+    for (let half = 64; half <= 444; half++) {
       sample(half / 48);
       for (const [id, v] of vertices) mesh.localToWorld(mesh.getVertexPosition(id, v));
       // These are skin vertices on the front of each upper thigh. Cast outward in
@@ -459,6 +459,69 @@ test('the leading foot clears the trailing calf and ankle throughout the swing',
         mesh.localToWorld(mesh.getVertexPosition(left, a));
         mesh.localToWorld(mesh.getVertexPosition(right, b));
         assert(a.distanceTo(b) > .04, `left foot closing on right lower leg at f${tick / 4}`);
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('the upper arm and forearm limit axial twist during support and transfer', () => {
+  const { rig, bone, sample } = instance();
+  try {
+    const skeleton = rig.mesh.getObjectByName('Luna_Surface').skeleton;
+    const bindRotation = joint => {
+      const inverse = skeleton.boneInverses[skeleton.bones.indexOf(joint)];
+      const rotation = new THREE.Matrix4().extractRotation(inverse.clone().invert());
+      return new THREE.Quaternion().setFromRotationMatrix(rotation);
+    };
+    for (const side of ['Left', 'Right']) {
+      const chain = ['Arm', 'ForeArm', 'Hand'].map(name => bone(side + name));
+      for (const [i, limit] of [[0, 35], [1, 45]]) {
+        const joint = chain[i];
+        const bind = bindRotation(joint.parent).invert().multiply(bindRotation(joint));
+        const axis = chain[i + 1].position.clone().normalize();
+        for (let tick = 16 * 4; tick <= 114 * 4; tick++) {
+          sample(tick / 96);
+          const q = bind.clone().invert().multiply(joint.quaternion);
+          const along = q.x * axis.x + q.y * axis.y + q.z * axis.z;
+          const twist = THREE.MathUtils.radToDeg(2 * Math.atan2(Math.abs(along), Math.abs(q.w)));
+          assert(twist < limit, `${joint.name} twisted ${twist.toFixed(1)}° at f${tick / 4}`);
+        }
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('the front hem follows both thighs as they swing onto the bed and settle', () => {
+  const { rig, bone, sample } = instance();
+  try {
+    const mesh = rig.mesh.getObjectByName('Luna_Surface');
+    const position = mesh.geometry.attributes.position;
+    const point = joint => joint.getWorldPosition(new THREE.Vector3());
+    const vertex = new THREE.Vector3();
+    for (const side of ['Left', 'Right']) {
+      const sign = side === 'Left' ? 1 : -1;
+      const ids = [];
+      // Sample the outward-facing ruffle above this knee in the standing mesh.
+      for (let i = 0; i < position.count; i++) {
+        const x = sign * position.getX(i), y = position.getY(i);
+        if (x > .045 && x < .085 && y > .35 && y < .385 && position.getZ(i) > .093) ids.push(i);
+      }
+      assert(ids.length > 100, `missing ${side} front hem`);
+      const hip = bone(side + 'UpLeg'), knee = bone(side + 'Leg');
+      const otherKnee = bone((side === 'Left' ? 'Right' : 'Left') + 'Leg');
+      for (let half = 64; half <= 444; half++) {
+        sample(half / 48);
+        const fromHip = point(hip), atKnee = point(knee);
+        const axis = atKnee.clone().sub(fromHip).normalize();
+        const normal = axis.clone().cross(atKnee.clone().sub(point(otherKnee)).multiplyScalar(sign)).normalize();
+        const hem = new THREE.Vector3();
+        for (const i of ids) hem.add(mesh.getVertexPosition(i, vertex));
+        mesh.localToWorld(hem.divideScalar(ids.length));
+        const delta = hem.sub(fromHip);
+        const along = delta.dot(axis), above = delta.dot(normal);
+        // The ruffle stays over the lower thigh, with room for the fabric folds.
+        assert(along > .215 && along < .335 && above > .055 && above < .17,
+          `${side} hem at f${half / 2}: along ${along.toFixed(3)} m, above ${above.toFixed(3)} m`);
       }
     }
   } finally { rig.dispose(); }

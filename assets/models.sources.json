@@ -76,8 +76,8 @@
       "licensePage": null,
       "used": true,
       "bytes": 799616,
-      "sha256": "73b1bbc858c510ea1fa0c8df00e50e800cc29f422ae9a64b8a3ba20421e7476b",
-      "processing": "Blender-authored direct seat with a balanced entry and knee-aligned heel landings. The shoulders and elbows position the spread palms on the curved mattress edge, with separate palm-heel and finger-pad contacts. The skirt panels follow each thigh, and the staggered swing arcs clear the opposite ankle and calf. The rear hair and side locks settle against the bedding. Retimed from the user-supplied V2 study with Plask-derived body motion and Mixamo Laying Sleeping upper-body finish. The animation-only GLB contains 115 nodes and 230 tracks. Source assets/models/resident/luna-bed-v3.blend, exporter scripts/export-luna-bed.py. Original Luna and bed reused under their existing licenses."
+      "sha256": "6f8197902939e3e250d5540a17054469243890bcc40e7a4f07bca69841c5574a",
+      "processing": "Blender-authored direct seat with a balanced entry and knee-aligned heel landings. The shoulders and elbows position the spread palms on the curved mattress edge, with separate palm-heel and finger-pad contacts. The upper arm and forearm share axial rotation while the palms stay planted. The shins extend earlier on the turn, and the front hem follows the thighs from the seated pose through sleep. The rear hair and side locks settle against the bedding. Retimed from the user-supplied V2 study with Plask-derived body motion and Mixamo Laying Sleeping upper-body finish. The animation-only GLB contains 115 nodes and 230 tracks. Source assets/models/resident/luna-bed-v3.blend, exporter scripts/export-luna-bed.py. Original Luna and bed reused under their existing licenses."
     },
     {
       "file": "resident/luna-looking-around.glb",
