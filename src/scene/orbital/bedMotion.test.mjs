@@ -235,9 +235,7 @@ test('climb and wake keep the skinned sole, toes and ankle aligned with the bend
   } finally { rig.dispose(); }
 });
 
-// World-space heel landmarks on Luna_Surface that first come within 12 mm of the mattress.
-// Keep each vertex's identity through contact, including the separate vertices on the UV seam.
-test('landing sole vertices stay planted from first contact through sleep', async () => {
+async function fittedBed() {
   const { gltf: bed } = await load(new URL('../../../assets/public/models/replaced/bed.glb', import.meta.url));
   const bounds = new THREE.Box3().setFromObject(bed.scene);
   const size = bounds.getSize(new THREE.Vector3());
@@ -245,9 +243,15 @@ test('landing sole vertices stay planted from first contact through sleep', asyn
   const fitted = new THREE.Group(); // HabitatFurniture's contact fit and placement
   fitted.scale.set(1.72 / size.x, 1.4 / size.y, 2.6 / size.z);
   bed.scene.position.set(-center.x, -bounds.min.y, -center.z);
-  fitted.position.set(-2.6, 0, 1);
+  fitted.position.set(...BED_POSITION);
   fitted.add(bed.scene);
   fitted.updateMatrixWorld(true);
+  return fitted;
+}
+
+// Keep each heel vertex's identity through contact, including the UV seam.
+test('landing sole vertices stay planted from first contact through sleep', async () => {
+  const fitted = await fittedBed();
   const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
   const { rig, sample } = instance();
   try {
@@ -313,3 +317,66 @@ for (const [label, joints, property, limit] of [
     } finally { rig.dispose(); }
   });
 }
+
+test('climb and wake distribute arm rotation and keep each palm aligned with its forearm', () => {
+  const { rig, bone, sample } = instance();
+  try {
+    for (const side of ['Left', 'Right']) {
+      const joints = ['Arm', 'ForeArm', 'Hand'].map(name => bone(side + name));
+      const knuckles = ['Index', 'Middle', 'Ring', 'Pinky'].map(name => bone(`${side}Hand${name}1`));
+      const point = joint => joint.getWorldPosition(new THREE.Vector3());
+      for (const reverse of [false, true]) {
+        const step = (reverse ? 1.35 : 1) / 96;
+        let previous;
+        for (let tick = 0; tick <= Math.ceil(BED_DURATION / step); tick++) {
+          const time = THREE.MathUtils.clamp(reverse ? BED_DURATION - tick * step : tick * step, 0, BED_DURATION);
+          sample(time);
+          const wrist = point(joints[2]), forearm = wrist.clone().sub(point(joints[1]));
+          const bases = knuckles.map(point);
+          const axis = bases.reduce((sum, p) => sum.add(p), new THREE.Vector3()).multiplyScalar(.25).sub(wrist).normalize();
+          const palm = bases[0].clone().sub(bases[3]).cross(axis).normalize();
+          const rotations = joints.map(joint => joint.quaternion.clone().normalize());
+          const where = `${side} at frame ${(time * 24).toFixed(2)}`;
+          assert(forearm.angleTo(axis) < THREE.MathUtils.degToRad(72), `folded wrist: ${where}`);
+          if (time >= 16 / 24 && time <= 43 / 24) {
+            assert(palm.y * (side === 'Left' ? 1 : -1) > Math.cos(THREE.MathUtils.degToRad(32)), `turned palm: ${where}`);
+          }
+          if (previous) {
+            const frames = Math.abs(time - previous.time) * 24;
+            rotations.forEach((q, i) => assert(q.angleTo(previous.rotations[i]) < THREE.MathUtils.degToRad(12) * frames + 1e-6,
+              `${joints[i].name} jumped: ${where}`));
+            for (const [a, b] of [[axis, previous.axis], [palm, previous.palm]]) {
+              assert(a.angleTo(b) < THREE.MathUtils.degToRad(10) * frames + 1e-6, `palm axis jumped: ${where}`);
+            }
+          }
+          previous = { time, rotations, axis, palm };
+        }
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
+test('both supporting hands stay on the fitted mattress while the hips rise', async () => {
+  const fitted = await fittedBed(), { rig, bone, sample } = instance();
+  const skin = rig.mesh.getObjectByName('Luna_Surface');
+  const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
+  try {
+    for (const [side, patch] of [['Left', [3643, 3868]], ['Right', [5384, 1603, 3583]]]) {
+      sample(16 / 24);
+      const hand = bone(side + 'Hand'), anchor = hand.getWorldPosition(new THREE.Vector3());
+      for (let half = 32; half <= 86; half++) {
+        sample(half / 48);
+        let gap = Infinity;
+        for (const i of patch) {
+          const p = skin.localToWorld(skin.getVertexPosition(i, new THREE.Vector3()));
+          ray.ray.origin.set(p.x, 2, p.z);
+          const hit = ray.intersectObject(fitted, true)[0];
+          assert(hit, `${side} hand missed the mattress at frame ${half / 2}`);
+          gap = Math.min(gap, p.y - hit.point.y);
+        }
+        assert(gap >= 0 && gap < .002, `${side} support gap ${gap} at frame ${half / 2}`);
+        assert(hand.getWorldPosition(new THREE.Vector3()).distanceTo(anchor) < .008, `${side} support slid`);
+      }
+    }
+  } finally { rig.dispose(); }
+});
