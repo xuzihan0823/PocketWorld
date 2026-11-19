@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "verifiedAt": "2026-11-14",
+  "verifiedAt": "2026-11-17",
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
     {
@@ -67,9 +67,9 @@
       "license": null,
       "licensePage": null,
       "used": true,
-      "bytes": 799688,
-      "sha256": "b0c94ebcf1b1ae56e9d9f4df558549070b79be6d33dca76df0569cf5d7a84ed6",
-      "processing": "Luna V3 bed motion, authored from user-supplied V2 Blender study (Plask-derived late motion and Mixamo Laying Sleeping upper-body finish). Direct supported seat and right shin/ankle/toe repair, fixed V2 heel contacts. Animation-only GLB, 115 nodes and 230 tracks, no meshes or textures. Editable source assets/models/resident/luna-bed-v3.blend; rebuild scripts/export-luna-bed.py. Original Luna and bed reused unchanged; upstream licenses are not reassigned."
+      "bytes": 799616,
+      "sha256": "932c8848921ed8517d66506faaee669de8a98f2ad19f34d14d53e3a5e1af6f00",
+      "processing": "Luna V3 bed motion, rebuilt from luna-bed-v3.orig.blend with frame-0 alignment to runtime neutral stance, Blender 2-bone IK limbs with continuous pole targets, staggered knee-bent climb trajectory, BVH/raycast bed and pillow clearance guards, and Dress_*/Hair_* follow-through on the 115-bone Luna_Retarget armature. Animation-only GLB, 115 nodes and 230 tracks, no meshes or textures. Editable source assets/models/resident/luna-bed-v3.blend; rebuild scripts/export-luna-bed.py. Original Luna and bed reused unchanged; upstream licenses are not reassigned."
     },
     {
       "file": "resident/luna-looking-around.glb",

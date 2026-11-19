@@ -33,32 +33,31 @@ python scripts/pack-luna-chair.py --output <外部目录>
 
 ## 上床三版
 
-`luna-bed-v3.blend` 是可编辑的 24 fps、0–222 帧动作；运行时使用 [独立动画库](../../public/models/resident/luna-bed-v3.glb)，复用既有 Luna 网格、115 骨骼、贴图与 Walk。制作源包含真实床接触尺寸、角色、关键帧、相机和灯光，不进入网页构建。
+`luna-bed-v3.blend` 是可编辑的 24 fps、0–222 帧动作；运行时使用 [独立动画库](../../public/models/resident/luna-bed-v3.glb)，复用既有 Luna 网格、115 骨骼、贴图与 Walk。制作源包含真实床接触尺寸、角色、关键帧、非破坏性 2-bone IK 控制器（`IK_LeftFoot`、`IK_RightFoot`、`IK_LeftHand`、`IK_RightHand`）与 Pole 目标（`Pole_LeftKnee`、`Pole_RightKnee`、`Pole_LeftElbow`、`Pole_RightElbow`）、相机和灯光，不进入网页构建。
 
 ### 动作与坐标
 
-- 0–48：从运行时中立站姿直接手撑落座，无独立弯腰探床阶段。
-- 48 对齐二版 113；61 对齐二版 126；95 起保持二版 160 以后的转髋、抬腿、脚跟落床与 Mixamo 搭腹收尾。
-- 右小腿保持踝位置，按左侧健康解剖朝向修正轴向扭转；右踝、脚趾在坐姿提前放松，抬腿前短促转动做局部四元数平滑。未把脚锁平。
+- 第 0 帧精确匹配运行态中立站姿，随后微屈膝并轻看向枕侧作预备，左手先撑向床沿稳定重心、缓步落座床边（0–42 帧），左腿先屈膝抬跨被面、右腿错拍约 10–14 帧跟进（46–98 帧），骨盆与肩背先落床缓冲再轻落头部于枕面，双手不对称舒展搭放进入舒缓睡姿（95–222 帧）。
+- `Luna_Retarget` 保留双臂双腿 2-bone IK、关节限位和 Pole 工作动作；运行时使用平滑后的骨骼烘焙。裙摆（`Dress_*`）和发束（`Hair_*`）的随动均已烘焙；发束通过实际蒙皮网格的 BVH 接触搜索调整各节位置、分散右侧发根弯曲，并检查枕面重叠。运行时不需要发束或裙摆物理。
 - Blender 米制 Z 向上；角色缩放 1.43，床按运行时 contact-fit 1.72 × 1.40 × 2.60。运行时入口为 `[-1.48, 0, 0.73]`、朝向 `Math.PI / 2`。外层位置固定，全部上床根运动由 Hips 通道负责。
 - 最后睡姿保持；醒来或取消逆向采样当前动作，返回精确站姿后恢复行走。未新增闭眼或循环睡眠动作。
 
 ### 来源
 
-沿用用户提供的二版 Luna 上床试片。二版前身为用户提供的 Plask XBot 动作，后半段重定向并按真实床适配；Mixamo「Laying Sleeping」只提供最后上身微动与搭腹手势，不包含落腿动作。Luna 与床来自项目既有 Tripo 模型。本次不新增外部模型或纹理，不把来源不明的素材声明为 CC0。运行时登记见 [来源清单](../../models.sources.json)。
+沿用用户提供的二版/三版 Luna 上床制作源。二版前身为用户提供的 Plask XBot 动作与 Mixamo「Laying Sleeping」上身收尾；本轮在 `luna-bed-v3.blend` 内使用 Blender 2-bone IK 与 Pole 目标重做肢体与裙摆姿态后导出。Luna 与床来自项目既有 Tripo 模型。本次不新增外部模型或纹理，不把来源不明的素材声明为 CC0。运行时登记见 [来源清单](../../models.sources.json)。
 
 ### 复建与验证
 
 使用 Blender 5.2.3：
 
 ```powershell
-blender --background --python scripts/export-luna-bed.py
+blender --background assets/models/resident/luna-bed-v3.blend --python scripts/export-luna-bed.py
 npm test
 ```
 
-导出脚本从此制作源和既有 `luna-walk-room.glb` 的绑定矩阵重建动画库，避免 Blender 骨骼坐标轴与 glTF 的差异。不需要临时试片目录。GLB 仅有 115 节点、230 通道，799,688 bytes，无网格、蒙皮或图片。
+导出脚本从此制作源和既有 `luna-walk-room.glb` 的绑定矩阵重建动画库，避免 Blender 骨骼坐标轴与 glTF 的差异。不需要临时试片目录。GLB 仅有 115 节点、230 通道，799,616 bytes（SHA-256：`4c66d9a584ad84d8e365638499b53f512f3f680f5b5df13a4a432a14381d995c`），无网格、蒙皮或图片。
 
-床专项测试覆盖中立首帧、单层根运动、恢复 Walk、暂坐足轴、全段半帧右踝连续性、30/60/120 Hz、后台时间截断、反向取消与减少动态效果。视觉与接触证据存放在仓库外并在 PR 交付；不是通用布料或连续碰撞验证。继承的裙摆/发束局部交叠与二版臀部约 6 mm 接触压入仍有待后续处理。
+床专项测试覆盖中立首帧、单层根运动、恢复 Walk、暂坐足轴、全段半帧右踝连续性、30/60/120 Hz、后台时间截断、反向取消与减少动态效果。当前烘焙的全 223 帧网格审计中，身体、发束和裙摆与床均无 BVH 三角形重叠；发束与角色自身仍有少量交叠，排除原第 0 帧已交叠的顶点后，每帧最多 12 个。渲染和审计输出存放在仓库外。
 
 ## 站立伸懒腰
 
