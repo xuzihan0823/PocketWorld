@@ -1,0 +1,10 @@
+{
+  "blender": "5.2.3 LTS",
+  "imported_bones": 87,
+  "imported_meshes": 7,
+  "unweighted_vertices": 0,
+  "max_influences": 4,
+  "max_weight_sum_error": 1.4528632164001465e-07,
+  "finger_pose_max_displacement_m": 0.03331679564746196,
+  "limb_pose_max_displacement_m": 0.25597595368101245
+}
