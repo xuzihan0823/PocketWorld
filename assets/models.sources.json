@@ -4,6 +4,28 @@
   "runtimeNetwork": "All models are self-hosted under assets/public/models/.",
   "assets": [
     {
+      "file": "resident/luna-chair-cmu113.glb",
+      "source": "CMU Graphics Lab Motion Capture Database, subject 113, trial 15 (Sit in chair and get up), 120 Hz.",
+      "sourcePage": "https://mocap.cs.cmu.edu/search.php?subjectnumber=113",
+      "license": "Free for use, modification and inclusion in commercial products. Direct resale of the motion data, including converted data, is prohibited.",
+      "licensePage": "https://mocap.cs.cmu.edu/",
+      "acknowledgment": "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.",
+      "used": true,
+      "originals": [
+        {
+          "url": "https://mocap.cs.cmu.edu/subjects/113/113.asf",
+          "sha256": "7787c299639b95360a6469542d6543002b0b2d2d1cb6866c20bc11651ea74d63"
+        },
+        {
+          "url": "https://mocap.cs.cmu.edu/subjects/113/113_15.amc",
+          "sha256": "b79c8ca94eb6b42c457780aac0bc13355144a2c56d2f3bec13ce666db9e3effa"
+        }
+      ],
+      "processing": "Blender retarget of AMC frames 161–497 for the fixed desk chair, sampled at 30 Hz. Fitted pelvis, foot IK, both palms on the upholstered armrests, and a synchronized contact reference. Hold the last frame until release, then return along the seated path.",
+      "bytes": 103232,
+      "sha256": "97defa98e42ba8c31263960bec2a6c1511a7cb3a544e7081668b8998d9ffee9c"
+    },
+    {
       "file": "furniture/floor-sofa.glb",
       "source": "Original PocketWorld model and woven textures, authored in Blender from the user's visual reference.",
       "used": true,
