@@ -21,9 +21,9 @@
           "sha256": "b79c8ca94eb6b42c457780aac0bc13355144a2c56d2f3bec13ce666db9e3effa"
         }
       ],
-      "processing": "Blender retarget of AMC frames 161–705 to Luna and the fixed desk chair, sampled at 30 Hz. Frame 497 is held until exit. Bone rotation, planted feet, fitted pelvis and contact reference timing only.",
-      "bytes": 58372,
-      "sha256": "46e469a36b393bf3e84d68cd3ab67a95f6662ee7aa997fb59e272f6288288e07"
+      "processing": "Blender retarget of AMC frames 161–497 for the fixed desk chair, sampled at 30 Hz. Fitted pelvis, foot IK, both palms on the upholstered armrests, and a synchronized contact reference. Hold the last frame until release, then return along the seated path.",
+      "bytes": 103232,
+      "sha256": "97defa98e42ba8c31263960bec2a6c1511a7cb3a544e7081668b8998d9ffee9c"
     },
     {
       "file": "furniture/floor-sofa.glb",

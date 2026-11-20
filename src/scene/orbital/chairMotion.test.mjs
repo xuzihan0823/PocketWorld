@@ -10,7 +10,7 @@ vm.runInNewContext(
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, module,
 );
-const { createChairMotion, stepChairMotion, CHAIR_HOLD_SECONDS, CHAIR_END_SECONDS } = module.exports;
+const { createChairMotion, stepChairMotion, CHAIR_HOLD_SECONDS } = module.exports;
 
 function advance(motion, seconds, { exiting = false, reduced = false, fps = 60 } = {}) {
   let result;
@@ -33,16 +33,16 @@ test('the fixed chair aligns before sitting and holds the supported frame until 
   }
 });
 
-test('a seated exit runs the captured rise forward before leaving its alignment', () => {
+test('a seated exit releases directly along the contact path and restores the floor entry', () => {
   const motion = createChairMotion();
   advance(motion, 6);
   const result = stepChairMotion(motion, .02, true, false);
   assert.equal(result.done, false);
   assert.equal(motion.phase, 'stand');
-  assert.equal(motion.time, CHAIR_HOLD_SECONDS + .02);
+  assert(motion.time < CHAIR_HOLD_SECONDS);
   assert.equal(motion.align, 1);
-  assert(advance(motion, 4, { exiting: true }).done);
-  assert.equal(motion.time, CHAIR_END_SECONDS);
+  assert(advance(motion, 1.8, { exiting: true }).done);
+  assert.equal(motion.time, 0);
   assert.equal(motion.align, 0);
 });
 
@@ -52,7 +52,7 @@ test('cancelling during alignment or sitting finishes at the floor entry', () =>
     advance(motion, seconds);
     const previousTime = motion.time;
     stepChairMotion(motion, .001, true, false);
-    assert(motion.time <= previousTime && previousTime - motion.time <= .0010001);
+    assert(motion.time <= previousTime && previousTime - motion.time < .003);
     assert(advance(motion, 4, { exiting: true }).done);
   }
 });
@@ -63,6 +63,6 @@ test('reduced motion shortens the clip and large resume deltas preserve the exit
   assert.equal(motion.phase, 'seated');
   stepChairMotion(motion, 60, true, false);
   assert.equal(motion.align, 1);
-  assert.equal(motion.time, CHAIR_HOLD_SECONDS + .04);
+  assert(motion.time < CHAIR_HOLD_SECONDS && motion.time > CHAIR_HOLD_SECONDS - .1);
   assert(advance(motion, .65, { exiting: true, reduced: true }).done);
 });

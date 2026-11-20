@@ -13,7 +13,7 @@ blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tm
 
 ## 电脑前固定椅
 
-生活舱四腿椅使用 CMU Graphics Lab 113_15「Sit in chair and get up」。原片为 120 Hz，取第 161–705 帧，避开两端已经由房间寻路负责的走步。Luna 随采集数据前倾、后坐，停在第 497 帧，收到离座指令后继续播放原片的起身。过早取消时从当前帧退回站位。[官方动作目录](https://mocap.cs.cmu.edu/search.php?subjectnumber=113)
+生活舱四腿椅使用 CMU Graphics Lab 113_15「Sit in chair and get up」。原片为 120 Hz，取第 161–497 帧。Luna 随采集数据前倾、后坐，双手从上方搭到两侧扶手，坐稳后保持末帧。收到离座指令时从当前帧回放到站姿，完整离座动作约 1.15 秒，再交还走路控制。[官方动作目录](https://mocap.cs.cmu.edu/search.php?subjectnumber=113)
 
 从 CMU 下载 [113.asf](https://mocap.cs.cmu.edu/subjects/113/113.asf) 和 [113_15.amc](https://mocap.cs.cmu.edu/subjects/113/113_15.amc)，放在同一个仓库外目录。将环境变量 `CMU_SUBJECT_113` 设为该目录，然后运行：
 
@@ -21,7 +21,7 @@ blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tm
 blender --background --python-exit-code 1 --python scripts/bake-luna-chair-cmu.py -- "$CMU_SUBJECT_113"
 ```
 
-脚本读取下述 Blender 制作源的站姿和第 53 帧前缘支撑点。它把骨盆轨迹缩放到固定椅，按采集的膝盖弯曲方向解算双腿并锁定脚掌，再按躯干和手臂的实测方向重定向。运行时的 `luna-chair-cmu113.glb` 提供 30 Hz 骨骼轨迹和接触时钟，后者同步采样 `ChairSit_Contact` 与裙摆顶点缓存。源动作可免费修改并用于商业产品，直接转售原动作或转换格式受限。文件校验值和 NSF 致谢见[素材登记](../../models.sources.json)。[CMU 使用条件](https://mocap.cs.cmu.edu/)
+脚本读取下述 Blender 制作源的站姿和第 53 帧前缘支撑点。它把骨盆轨迹缩放到固定椅，按采集的膝盖弯曲方向解算双腿并锁定脚掌，再按躯干和手臂的实测方向重定向。双手沿用接触制作源第 72 帧的开掌方式，按实际固定椅左右软包的倾斜表面分别校准腕部落点。双骨骼 IK 控制肘腕轨迹，在前臂分担掌心向下的旋转。运行时的 `luna-chair-cmu113.glb` 提供 30 Hz 骨骼轨迹和接触时钟，后者同步采样 `ChairSit_Contact` 与裙摆顶点缓存。源动作可免费修改并用于商业产品，直接转售原动作或转换格式受限。文件校验值和 NSF 致谢见[素材登记](../../models.sources.json)。[CMU 使用条件](https://mocap.cs.cmu.edu/)
 
 ### 原转椅接触制作源
 

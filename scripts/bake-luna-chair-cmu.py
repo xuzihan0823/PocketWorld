@@ -12,7 +12,7 @@ from mathutils import Euler, Matrix, Quaternion, Vector
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = Path(sys.argv[sys.argv.index('--') + 1])
 RESIDENT = ROOT / 'assets/public/models/resident'
-FIRST, HOLD, LAST = 161, 497, 705  # AMC frame numbers, inclusive, 120 Hz
+FIRST, HOLD = 161, 497  # AMC frame numbers, inclusive, 120 Hz
 bpy.ops.wm.open_mainfile(filepath=str(ROOT / 'assets/models/resident/Luna-Sit-ContactFixed.blend'))
 scene = bpy.context.scene
 rig = scene.objects['Luna_ContactCorrected_Baked']
@@ -99,17 +99,77 @@ def hip_position(frame):
 standing_hip = hip_position(1)
 seated_hip = hip_position(53)
 soles = {side: joints[side+'Foot'].matrix.copy() for side in ('Left', 'Right')}
+# The contact reference supplies the open palm, finger chain and elbow bend
+# plane. Move the palm from the curved lip to the flat part of each fixed pad.
+scene.frame_set(72)
+braced = {name: p.matrix.copy() for name, p in joints.items()}
+finger_local = {name: p.parent.matrix.to_quaternion().inverted() @ p.matrix.to_quaternion()
+                for name, p in joints.items() if 'Hand' in name and not name.endswith('Hand')}
+
+def posed_head(p, rotations, hip):
+    if not p.parent:
+        return hip
+    parent = p.parent
+    name = parent.name.removeprefix('mixamorig:')
+    old = parent.matrix.to_quaternion()
+    return posed_head(parent, rotations, hip) + rotations.get(name, old) @ old.inverted() @ (p.head-parent.head)
+
+def brace_arm(side, target, hip, reach):
+    upper, lower, hand = [side+joint for joint in ('Arm', 'ForeArm', 'Hand')]
+    arm, forearm, palm = [joints[name] for name in (upper, lower, hand)]
+    origin = posed_head(arm, target, hip)
+    wrist = posed_head(palm, target, hip)
+    sign = 1 if side == 'Left' else -1
+    rest_point = braced[hand].translation + Vector((-sign*.004, .075, -.0149 if side == 'Left' else -.0103)) / 1.43
+    wrist = wrist.lerp(rest_point, reach)
+    wrist.z += .135 / 1.43 * math.sin(math.pi*reach)
+    delta = wrist-origin
+    axis = delta.normalized()
+    humerus, radius = forearm.head-arm.head, palm.head-forearm.head
+    length = min(delta.length, humerus.length+radius.length-1e-6)
+    along = (length**2 + humerus.length_squared-radius.length_squared)/(2*length)
+    support_rotation = Quaternion((0, 0, 1), sign*.21) @ braced[hand].to_quaternion()
+    hand_rotation = target[hand].slerp(support_rotation, reach)
+    knuckle = joints[side+'HandMiddle1']
+    palm_axis = palm.matrix.to_quaternion().inverted() @ (knuckle.head-palm.head).normalized()
+    # Choose the bend plane closest to putting the elbow behind the palm.
+    old_elbow = posed_head(forearm, target, hip)-origin
+    desired_elbow = delta - (hand_rotation @ palm_axis) * radius.length
+    pole = old_elbow.lerp(desired_elbow, reach)
+    pole = (pole-axis*pole.dot(axis)).normalized()
+    elbow = origin + axis*along + pole*math.sqrt(max(0, humerus.length_squared-along**2))
+    rest_wrist = forearm.bone.matrix_local.to_quaternion().inverted() @ palm.bone.matrix_local.to_quaternion()
+    forearm_roll = hand_rotation @ rest_wrist.inverted()
+    for name, bone, segment, destination, rotation in [
+        (upper, arm, humerus, elbow-origin, target[upper].slerp(braced[upper].to_quaternion(), reach)),
+        (lower, forearm, radius, origin+axis*length-elbow, forearm_roll),
+    ]:
+        local_axis = bone.matrix.to_quaternion().inverted() @ segment
+        target[name] = (rotation @ local_axis).rotation_difference(destination) @ rotation
+    relaxed = target[lower] @ rest_wrist
+    flex = relaxed.rotation_difference(hand_rotation)
+    angle = min(flex.angle, 2*math.pi - flex.angle)
+    wrist_weight = min(ramp((reach-.7)/.3), math.radians(50)/max(angle, 1e-6))
+    target[hand] = relaxed.slerp(hand_rotation, wrist_weight)
+    for name, contact in finger_local.items():
+        if not name.startswith(side):
+            continue
+        joint = joints[name]
+        parent = joint.parent.name.removeprefix('mixamorig:')
+        local = joint.parent.matrix.to_quaternion().inverted() @ joint.matrix.to_quaternion()
+        target[name] = target[parent] @ local.slerp(contact, reach)
+
 hips = []
 tracks = {}
 previous = {}
 times = []
 clock = []
-for number in range(FIRST, LAST + 1, 4):
+for number in range(FIRST, HOLD + 1, 4):
     points = landmarks(frames[number])
     pelvis = points['root']
     # Fit the recorded hip descent and horizontal retreat to Luna's supported
     # front-edge seat. The old deep scoot lifts both soles on this tall chair.
-    start = Vector(frames[FIRST if number <= HOLD else LAST]['root'][:3])
+    start = Vector(frames[FIRST]['root'][:3])
     depth = clamp((start-pelvis).dot(front) / (start-seated['root']).dot(front))
     drop = clamp((start.y-pelvis.y) / (start.y-seated['root'].y))
     support = .55*depth + .45*drop
@@ -117,9 +177,8 @@ for number in range(FIRST, LAST + 1, 4):
     scene.frame_set(1 + int(reference), subframe=reference % 1)
     times.append((number-FIRST)/120)
     clock.extend((reference/30, 0, 0))
-    # Blend only at the walking handoffs. On the support keep the complete
-    # captured forward lean, recovery and independent arm trajectories.
-    weight = ramp((number-FIRST)/44) * ramp((LAST-number)/44)
+    # Fade from the room stance into the captured forward lean and recovery.
+    weight = ramp((number-FIRST)/44)
     hip = standing_hip.lerp(seated_hip, depth**1.6)
     hip.z = standing_hip.z + (seated_hip.z-standing_hip.z)*drop - .0134*drop**3 / 1.43
     # Record a small lateral weight shift in the seat's width allowance.
@@ -168,14 +227,14 @@ for number in range(FIRST, LAST + 1, 4):
     for side in ['Left','Right']:
         joint = side+'Shoulder'
         target[joint] = joints[joint].matrix.to_quaternion()
-    # Retain a relaxed local wrist as the captured elbows sweep back. The
-    # reference's palms were authored to press much wider armrests.
+    # Start the reach with a relaxed wrist before turning toward the padding.
     for side in ('Left', 'Right'):
         parent = joints[side+'ForeArm']
         hand = joints[side+'Hand']
         rest = parent.bone.matrix_local.to_quaternion().inverted() @ hand.bone.matrix_local.to_quaternion()
         pose = parent.matrix.to_quaternion().inverted() @ hand.matrix.to_quaternion()
         target[side+'Hand'] = target[side+'ForeArm'] @ rest.slerp(pose, .24)
+        brace_arm(side, target, hip, ramp((number-217)/200))
     for joint, rotation in target.items():
         local = gltf_world(joint, rotation)
         if joints[joint].parent:

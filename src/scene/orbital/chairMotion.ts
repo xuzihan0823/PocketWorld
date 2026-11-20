@@ -1,14 +1,14 @@
 export const CHAIR_FPS = 30;
 export const CHAIR_SIT_FRAMES = 98; // Frames in the Blender contact cache.
 export const CHAIR_CLIP_ORIGIN = .54;
-// The cropped 120 Hz AMC runs from frame 161 to 705, with a stable seat at 497.
+// The cropped 120 Hz AMC ends on the supported seat at frame 497.
 export const CHAIR_HOLD_SECONDS = (497 - 161) / 120;
-export const CHAIR_END_SECONDS = (705 - 161) / 120;
+const STAND_SECONDS = 1.15;
 
 interface ChairMotion {
   align: number;
   time: number;
-  phase: 'align' | 'sit' | 'seated' | 'stand' | 'cancel' | 'leave';
+  phase: 'align' | 'sit' | 'seated' | 'stand' | 'leave';
 }
 
 export const createChairMotion = (): ChairMotion => ({ align: 0, time: 0, phase: 'align' });
@@ -23,12 +23,10 @@ export function stepChairMotion(motion: ChairMotion, delta: number, exiting: boo
   } else if (!exiting) {
     motion.time = Math.min(CHAIR_HOLD_SECONDS, motion.time + step);
     motion.phase = motion.time === CHAIR_HOLD_SECONDS ? 'seated' : 'sit';
-  } else if ((motion.phase === 'seated' || motion.phase === 'stand') && motion.time < CHAIR_END_SECONDS) {
+  } else if (motion.time > 0) {
     motion.phase = 'stand';
-    motion.time = Math.min(CHAIR_END_SECONDS, motion.time + step);
-  } else if (motion.time > 0 && motion.time < CHAIR_HOLD_SECONDS) {
-    motion.phase = 'cancel';
-    motion.time = Math.max(0, motion.time - step);
+    const retreat = dt * CHAIR_HOLD_SECONDS / (reduced ? .4 : STAND_SECONDS);
+    motion.time = Math.max(0, motion.time - retreat);
   } else {
     motion.phase = 'leave';
     motion.align = Math.max(0, motion.align - dt / alignSeconds);
