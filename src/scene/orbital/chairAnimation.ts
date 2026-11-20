@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CHAIR_CLIP_ORIGIN, CHAIR_FPS, CHAIR_SIT_FRAMES, CHAIR_SIT_SECONDS } from './chairMotion';
+import { CHAIR_CLIP_ORIGIN, CHAIR_FPS, CHAIR_SIT_FRAMES } from './chairMotion';
 import { RESIDENT_SCALE } from './residentRig';
 
 export interface SeatContactCache { frames: number; count: number; quantum: number; values: Int16Array }
@@ -14,14 +14,19 @@ export function readSeatContactCache(buffer: ArrayBuffer): SeatContactCache {
 }
 
 /** Evaluated Blender clearance is baked in pre-skin space. Only the local contact vertices change. */
-export function createChairAnimation(asset: THREE.Object3D, clip: THREE.AnimationClip, cache: SeatContactCache) {
+export function createChairAnimation(asset: THREE.Object3D, reference: THREE.AnimationClip, capture: THREE.AnimationClip, cache: SeatContactCache) {
   const bones = new Map<string, THREE.Bone>();
   asset.traverse(o => { if (o instanceof THREE.Bone) bones.set(o.name, o); });
-  const channels = clip.tracks.map(track => {
+  const timingTrack = capture.tracks.find(track => track.name === 'ChairContactTime.position');
+  if (!timingTrack) throw new Error('Luna CMU seat contact timing missing');
+  const clock = timingTrack.createInterpolant();
+  const recorded = new Map(capture.tracks.map(track => [track.name, track]));
+  const channels = reference.tracks.map(track => {
     const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
     const joint = bones.get(nodeName);
     if (!joint || !['position', 'quaternion', 'scale'].includes(propertyName)) throw new Error(`Invalid seat channel ${track.name}`);
-    return { value: joint[propertyName as 'position' | 'quaternion' | 'scale'], propertyName, curve: track.createInterpolant() };
+    const replacement = recorded.get(track.name);
+    return { captured: !!replacement, value: joint[propertyName as 'position' | 'quaternion' | 'scale'], propertyName, curve: (replacement ?? track).createInterpolant() };
   });
   const surfaces: { geometry: THREE.BufferGeometry; rest: Float32Array; position: THREE.BufferAttribute; mapping: [number, number][] }[] = [];
   asset.traverse(o => {
@@ -59,11 +64,12 @@ export function createChairAnimation(asset: THREE.Object3D, clip: THREE.Animatio
   }
   /** Call after the normal pose. The chair owns every deform bone while its weight is one. */
   function apply(time: number, weight: number) {
-    time = THREE.MathUtils.clamp(time, 0, CHAIR_SIT_SECONDS);
-    deform(time, weight);
+    time = THREE.MathUtils.clamp(time, 0, capture.duration);
+    const referenceTime = clock.evaluate(time)[0];
+    deform(referenceTime, weight);
     if (weight <= 0) return;
-    for (const { value, propertyName, curve } of channels) {
-      const sample = curve.evaluate(time);
+    for (const { value, propertyName, curve, captured } of channels) {
+      const sample = curve.evaluate(captured ? time : referenceTime);
       if (propertyName === 'quaternion') (value as THREE.Quaternion).slerp(rotation.fromArray(sample), weight);
       else (value as THREE.Vector3).lerp(vector.fromArray(sample), weight);
     }

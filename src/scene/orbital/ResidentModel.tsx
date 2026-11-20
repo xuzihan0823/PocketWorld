@@ -32,24 +32,27 @@ export interface ResidentRig {
 }
 
 const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
+const CHAIR = `${import.meta.env.BASE_URL}models/resident/luna-chair-cmu113.glb`;
 const CONTACT = `${import.meta.env.BASE_URL}models/resident/luna-seat-contact.bin`;
 
 function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
   const { scene, animations } = useGLTF(MODEL);
+  const capture = useGLTF(CHAIR).animations.find(clip => clip.name === 'Chair_CMU_113_15');
   const contact = useLoader(THREE.FileLoader, CONTACT, loader => loader.setResponseType('arraybuffer')) as ArrayBuffer;
   const container = useRef<THREE.Group>(null);
   const resident = useMemo(() => {
     const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
     if (!walk) throw new Error('Luna walk animation missing');
     const sit = animations.find(clip => clip.name === 'ChairSit_Contact');
+    if (!capture) throw new Error('Luna CMU 113_15 animation missing');
     if (!sit) throw new Error('Luna contact-corrected sit animation missing');
     const asset = clone(scene), result = createResidentRig(asset, walk);
-    const chair = createChairAnimation(asset, sit, readSeatContactCache(contact));
+    const chair = createChairAnimation(asset, sit, capture, readSeatContactCache(contact));
     const dispose = result.dispose;
     result.applyChairPose = chair.apply;
     result.dispose = () => { chair.dispose(); dispose(); };
     return result;
-  }, [scene, animations, contact]);
+  }, [scene, animations, capture, contact]);
   useLayoutEffect(() => {
     const group = container.current!;
     const restoreSkin = applyResidentSkin(resident.mesh);
@@ -80,7 +83,7 @@ class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFa
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useLoader.clear(THREE.FileLoader, CONTACT); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useGLTF.clear(CHAIR); useLoader.clear(THREE.FileLoader, CONTACT); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 

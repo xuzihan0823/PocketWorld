@@ -11,11 +11,23 @@ node scripts/luna-library-neutral.mjs > /tmp/luna-neutral.json
 blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tmp/luna-neutral.json
 ```
 
-## 转椅坐姿
+## 电脑前固定椅
 
-`Luna-Sit-ContactFixed.blend` 基于用户提供的接触修正版，加入撑扶手、后挪和收手的关键帧，保留 115 骨骼、真实转椅和接触修形修改器。第 53 帧是脚掌着地的前缘坐姿；第 65–85 帧支撑、抬髋后挪并落稳；第 98 帧双手已回到膝上。在 `ChairSit_ScootBack` 第 49–97 帧调整双侧上臂、前臂与手腕旋转。伸手时双肘向后让开，两掌略向外、掌心朝下压住扶手后再收手。离座逆放同一组关键帧。前裙随大腿抬起，后裙收进坐垫与靠背之间。源文件 SHA-256 为 `2e776a69b87a1c6bb69d5ee4518aadd68aa6a17da7583cb39d25c9383dc14221`。角色与 Mixamo 行走素材沿用既有项目输入，未收到独立许可声明；不将其标记为 CC0。
+生活舱四腿椅使用 CMU Graphics Lab 113_15「Sit in chair and get up」。原片为 120 Hz，取第 161–705 帧，避开两端已经由房间寻路负责的走步。Luna 随采集数据前倾、后坐，停在第 497 帧，收到离座指令后继续播放原片的起身。过早取消时从当前帧退回站位。[官方动作目录](https://mocap.cs.cmu.edu/search.php?subjectnumber=113)
 
-### 运行资源
+从 CMU 下载 [113.asf](https://mocap.cs.cmu.edu/subjects/113/113.asf) 和 [113_15.amc](https://mocap.cs.cmu.edu/subjects/113/113_15.amc)，放在同一个仓库外目录。将环境变量 `CMU_SUBJECT_113` 设为该目录，然后运行：
+
+```sh
+blender --background --python-exit-code 1 --python scripts/bake-luna-chair-cmu.py -- "$CMU_SUBJECT_113"
+```
+
+脚本读取下述 Blender 制作源的站姿和第 53 帧前缘支撑点。它把骨盆轨迹缩放到固定椅，按采集的膝盖弯曲方向解算双腿并锁定脚掌，再按躯干和手臂的实测方向重定向。运行时的 `luna-chair-cmu113.glb` 提供 30 Hz 骨骼轨迹和接触时钟，后者同步采样 `ChairSit_Contact` 与裙摆顶点缓存。源动作可免费修改并用于商业产品，直接转售原动作或转换格式受限。文件校验值和 NSF 致谢见[素材登记](../../models.sources.json)。[CMU 使用条件](https://mocap.cs.cmu.edu/)
+
+### 原转椅接触制作源
+
+`Luna-Sit-ContactFixed.blend` 基于用户提供的接触修正版，加入撑扶手、后挪和收手的关键帧，保留 115 骨骼、真实转椅和接触修形修改器。第 53 帧是脚掌着地的前缘坐姿；第 65–85 帧支撑、抬髋后挪并落稳；第 98 帧双手已回到膝上。在 `ChairSit_ScootBack` 第 49–97 帧调整双侧上臂、前臂与手腕旋转。伸手时双肘向后让开，两掌略向外、掌心朝下压住扶手后再收手。原动作的离座使用倒放。前裙随大腿抬起，后裙收进坐垫与靠背之间。源文件 SHA-256 为 `2e776a69b87a1c6bb69d5ee4518aadd68aa6a17da7583cb39d25c9383dc14221`。角色与 Mixamo 行走素材沿用既有项目输入，未收到独立许可声明；不将其标记为 CC0。
+
+#### 接触参考资源
 
 - `assets/public/models/resident/luna-walk-room.glb`：保留 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–98 帧，30 fps，时间归零后 97/30 秒）。31,140 个三角形，10,406,152 bytes。
 - 同目录 `luna-seat-contact.bin`：98 帧、3,251 个局部顶点的蒙皮前修形，1,911,608 bytes。不能只替换 GLB 而遗漏该文件；普通 glTF 查看器只显示骨骼动作，不会自动应用此缓存。
@@ -23,7 +35,7 @@ blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tm
 
 原始 4096 × 4096 底色 JPEG 来自用户提供的 Tripo GLB，在 Git 提交 `2e1ff72` 的 `art/resident/animated-transfer/walk-repair/luna-walk-repaired.glb` 中也有相同副本。法线与粗糙度／金属度图保留 2048 × 2048。当前材质将法线强度设为 0.18、金属系数设为 0，并复用底色作为 0.55 强度的自发光，用来减轻室内近景的发际线和眼周暗块。
 
-### 复建
+#### 复建接触参考
 
 使用 Blender 5.2.3 与 Python 3。所有中间文件必须输出到仓库外。以下路径为示例，`<外部目录>` 替换为实际绝对路径：
 
@@ -38,7 +50,7 @@ python scripts/pack-luna-chair.py --output <外部目录>
 
 缓存为小端：20 bytes 头（`PWSC`、uint32 版本 1、uint32 帧数、uint32 顶点数、float32 量化步长），随后为帧优先的 int16 XYZ 位移。GLB 的 `_CONTACT_ID` 对应缓存行，-1 表示不修形；轴采用 glTF 的 X/Y/Z。量化分量误差上界约为 0.99 微米（世界坐标）。骨骼采样时间与缓存第零帧必须对齐。
 
-### 验证边界
+#### 接触参考的验证边界
 
 制作脚本检查原生 98 帧的接触面；运行时单测检查时间原点、绑定、独立实例、恢复、骨长与有限坐标。网页动作和导出后网格还需单独验收，不能用原生检查替代浏览器检查。验证结果及截图放在任务 PR，临时模型、报告和录屏不提交。
 

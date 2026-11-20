@@ -18,7 +18,7 @@ import { readingStand, shelfOrigin, shelfPoint, shelfYaw } from './library/catal
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
 import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
-import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
+import { CHAIR_HOLD_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
 import { BED_YAW, BED_DURATION, advanceBedTime, createBedPlayer, loadBedClip } from './bedMotion';
 import { canReachDrawer, drawerObstacle, DRAWER_CLEAR_Z, DRAWER_TRAVEL, type DrawerInteraction } from './drawerInteraction';
 import { SlipperPair } from './Slippers';
@@ -570,7 +570,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (p.sceneId === 'habitat' && s.posture === 'chair') {
       const cm = chairMotion.current;
       const result = stepChairMotion(cm, dt, s.exiting, p.reducedMotion);
-      s.blend = cm.time / CHAIR_SIT_SECONDS;
+      s.blend = Math.min(1, cm.time / CHAIR_HOLD_SECONDS);
       s.sit = result.weight; s.lie = 0;
       const start = chairFront(pose, result.offset), u = ease(cm.align);
       root.position.set(THREE.MathUtils.lerp(seatEntry[0], start[0], u), 0, THREE.MathUtils.lerp(seatEntry[1], start[1], u));
