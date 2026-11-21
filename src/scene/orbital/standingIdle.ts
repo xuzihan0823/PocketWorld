@@ -30,6 +30,11 @@ function fadeGesture(state: IdleState, dt: number) {
   }
 }
 
+export function sampleYawn(state: IdleState, time: number, duration: number) {
+  state.yawnTime = time;
+  state.yawnWeight = smooth(time / STANDING_IDLE.yawnBlend) * smooth((duration - time) / STANDING_IDLE.yawnBlend);
+}
+
 export function stepIdle(state: IdleState, delta: number, eligible: boolean, duration: number, random = Math.random,
   lookDuration = 0, restEligible = eligible) {
   const dt = THREE.MathUtils.clamp(delta, 0, .05);
@@ -87,9 +92,7 @@ export function stepIdle(state: IdleState, delta: number, eligible: boolean, dur
     }
   }
   if (state.yawnTime < 0) return;
-  state.yawnTime += dt;
-  state.yawnWeight = smooth(state.yawnTime / STANDING_IDLE.yawnBlend)
-    * smooth((duration - state.yawnTime) / STANDING_IDLE.yawnBlend);
+  sampleYawn(state, state.yawnTime + dt, duration);
   if (state.yawnTime >= duration) {
     state.yawnTime = -1;
     state.yawnWeight = 0;

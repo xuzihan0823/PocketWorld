@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CABIN_LEFT, CABIN_RIGHT } from './cabinLayout';
 import { EARTH_RADIUS, earthPositionForAspect } from './cabinView';
-import type { SpacecraftFlightState } from './spacecraftFlight';
+import { BASE_EARTH_SPIN_SPEED, type SpacecraftFlightState } from './spacecraftFlight';
 import {
   skyVertex, skyFragment, starVertex, starFragment, particleVertex, particleFragment,
   planetVertex, earthFragment, cloudFragment, atmosphereFragment,
@@ -211,13 +211,14 @@ function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthP
   );
 }
 
-function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunState; position: [number, number, number]; flight?: SpacecraftFlightState }) {
+function Earth({ clock, sun, position, flight, orbitalRestTime }: { clock: CosmicClock; sun: SunState; position: [number, number, number]; flight?: SpacecraftFlightState; orbitalRestTime: React.RefObject<number> }) {
   const spin = useRef<THREE.Group>(null);
   const radius = EARTH_RADIUS;
   const uniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun.direction } }), [clock, sun]);
   useFrame(() => {
     if (!spin.current) return;
-    spin.current.rotation.y = flight ? flight.earthSpinAngle : clock.value * 0.008;
+    spin.current.rotation.y = (flight?.earthSpinAngle ?? clock.value * BASE_EARTH_SPIN_SPEED)
+      + (orbitalRestTime.current ?? 0) * BASE_EARTH_SPIN_SPEED;
     spin.current.rotation.z = flight ? flight.earthOrbitSweep * 0.35 : 0;
   });
   return (
@@ -248,7 +249,7 @@ function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunS
  * Also advances the compressed orbital day and writes it into `sun` (see sunCycle.ts).
  * Reduced motion keeps the Sun at its starting position unless `?sun=` pins a phase.
  */
-export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: SpacecraftFlightState }> = ({ reducedMotion, sun, flight }) => {
+export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: SpacecraftFlightState; orbitalRestTime: React.RefObject<number> }> = ({ reducedMotion, sun, flight, orbitalRestTime }) => {
   const distant = useRef<THREE.Group>(null);
   const worldPosition = useMemo(() => new THREE.Vector3(), []);
   const clock = useMemo<CosmicClock>(() => ({ value: 0 }), []);
@@ -272,7 +273,8 @@ export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: 
     else if (overrides.phase === null && (!reducedMotion || boost > 0.01)) {
       phase.current = (phase.current + step * overrides.speed * timeScale / SUN_CYCLE_SECONDS) % 1;
     }
-    const sample = sampleSun(orbit, phase.current);
+    const restPhase = overrides.phase === null ? (orbitalRestTime.current ?? 0) / SUN_CYCLE_SECONDS : 0;
+    const sample = sampleSun(orbit, phase.current + restPhase);
     sun.direction.set(...sample.direction);
     sun.light.set(...roomLightDirection(sample.direction));
     sun.daylight.value = sample.daylight;
@@ -284,7 +286,7 @@ export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: 
     <>
       <group ref={distant} name="cosmos">
         <CelestialSphere earthPosition={earthPosition} clock={clock} sun={sun} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
-        <Earth position={earthPosition} clock={clock} sun={sun} flight={flight} />
+        <Earth position={earthPosition} clock={clock} sun={sun} flight={flight} orbitalRestTime={orbitalRestTime} />
       </group>
       <Drift clock={clock} sun={sun} flight={flight} />
     </>

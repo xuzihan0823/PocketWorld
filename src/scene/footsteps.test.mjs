@@ -518,7 +518,7 @@ test('the fixed desk chair has room to board from the front', () => {
   } finally { view.dispose(); }
 });
 
-test('the static bed blocks walking without offering keyboard interaction, and nightstand controls are reachable', () => {
+test('bed collision, bedside rest, and nightstand controls coexist', () => {
   const actions = [];
   const view = mount('orbital', { onAction: action => actions.push(action.objectId) });
   try {
@@ -534,6 +534,26 @@ test('the static bed blocks walking without offering keyboard interaction, and n
     for (let i = 0; i < 60; i++) view.frame(1 / 60);
     view.key('KeyA', 'keyup');
     assert.ok(view.root.position.x >= x + .86 + cabinLayout.RESIDENT_RADIUS, 'the bed remains a solid obstacle');
+
+    const [restX, restZ] = cabinLayout.BED_REST_SPOT;
+    view.root.position.set(restX + 0.3, 0, restZ);
+    view.key('KeyE');
+    assert.deepEqual(actions, [], 'the action waits for arrival');
+    for (let i = 0; i < 120 && !actions.length; i++) view.frame(1 / 60);
+    assert.deepEqual(actions.splice(0), ['bed']);
+    assert.ok(Math.hypot(view.root.position.x - restX, view.root.position.z - restZ) < 0.06);
+    assert.equal(view.root.userData.posture, 'standing');
+
+    view.root.position.set(0, 0, 0.55);
+    const click = () => view.props.interaction.current([x, 0.9, z], { sceneId: 'habitat', objectId: 'bed', kind: 'rest' }, () => actions.push('bed'));
+    click();
+    view.key('Escape');
+    for (let i = 0; i < 240; i++) view.frame(1 / 60);
+    assert.deepEqual(actions, [], 'Escape cancels the approach before rest begins');
+    click();
+    for (let i = 0; i < 900 && !actions.length; i++) view.frame(1 / 60);
+    assert.deepEqual(actions.splice(0), ['bed']);
+    assert.ok(Math.hypot(view.root.position.x - restX, view.root.position.z - restZ) < 0.06);
 
     for (const [px, pz, id] of [
       [cabinLayout.NIGHTSTAND_X - .11, cabinLayout.NIGHTSTAND_Z + .77, 'lamp'],
