@@ -1,4 +1,4 @@
-import { BED_POSITION, LAMP_POSITION, PLANT_POSITION, TRASH_CAN } from './cabinLayout';
+import { BED_POSITION, LAMP_POSITION, PLANT_POSITION, TRASH_CAN, WARDROBE_POSITION, WARDROBE_SIZE } from './cabinLayout';
 import React, { Suspense, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { CLOSED_OBJECT, type WorldModelProps } from '../../types/world';
@@ -13,6 +13,7 @@ import { FloorSofa } from './FloorSofa';
 import { AssetBoundary, ReusableAsset } from './ReusableAsset';
 import { cloneSuppliedModel } from './supplied-model';
 import { CHAIR_POSES } from './chairPose';
+import { outfitActionHint } from './wardrobe/outfit';
 
 function FurnitureBed() {
   return <group position={BED_POSITION}>
@@ -127,6 +128,13 @@ export const HabitatFurniture: React.FC<WorldModelProps & { sofaTime: React.RefO
       </group>
     </> : <>
       <FurnitureBed />
+      <ObjectHandle id="wardrobe" panorama onClick={event => event.stopPropagation()} action="toggle"
+        hint={outfitActionHint(world.outfit ?? 'everyday')} world={world} position={WARDROBE_POSITION}>
+        <mesh name="Interactable_Wardrobe">
+          <boxGeometry args={WARDROBE_SIZE} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+      </ObjectHandle>
       <FurnitureChair world={world} />
       <ObjectHandle id="sofa" panorama onClick={event => event.stopPropagation()} action={world.objects.sofa?.active ? 'stand' : 'sit'}
         hint={world.objects.sofa?.active ? '起身' : '坐进懒人沙发'} world={world}>

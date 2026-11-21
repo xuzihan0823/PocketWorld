@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { MusicDisc } from './types/interactable';
 import type { GameId } from './types/game';
-import type { WorldFeatureAdapters } from './types/world';
+import type { WorldAction, WorldFeatureAdapters } from './types/world';
 import { PRESET_MUSIC_DISCS, generateDiscColorsFromName, roomAudio } from './scene/audioEngine';
 import { OrbitalScene } from './scene/orbital/OrbitalScene';
 import { useLibrary } from './scene/orbital/library/useLibrary';
@@ -9,6 +9,15 @@ import { LibrarySurface } from './scene/orbital/library/LibrarySurface';
 import { useWorldController } from './scene/orbital/useWorldController';
 import { DustPrompt } from './scene/orbital/OrbitalDustPrompt';
 import { readInitialViewMode, type SpacecraftViewMode } from './scene/orbital/spacecraftFlight';
+import {
+  initialOutfit,
+  nextOutfit,
+  outfitErrorNotice,
+  outfitLoadingNotice,
+  outfitSwitchedNotice,
+  rememberOutfit,
+  type ResidentOutfit,
+} from './scene/orbital/wardrobe/outfit';
 import './scene/orbital/orbital.css';
 
 export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters }) => {
@@ -17,6 +26,12 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const [viewMode, setViewMode] = useState<SpacecraftViewMode>(() =>
     readInitialViewMode(typeof window !== 'undefined' ? window.location.search : '', baseWorld.reducedMotion),
   );
+  const [outfit, setOutfit] = useState<ResidentOutfit>(() =>
+    initialOutfit(typeof window !== 'undefined' ? window.location.search : ''),
+  );
+  const outfitRef = useRef(outfit);
+  outfitRef.current = outfit;
+  const pendingOutfitSwitch = useRef<ResidentOutfit | null>(null);
   const [boosting, setBoosting] = useState(false);
   const [discs, setDiscs] = useState<MusicDisc[]>(PRESET_MUSIC_DISCS);
   const [activeGame, setActiveGame] = useState<GameId | null>(null);
@@ -32,8 +47,36 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     window.clearTimeout(hintTimer.current);
     hintTimer.current = window.setTimeout(() => setAnnouncement(''), 5500);
   }, []);
+  const onOutfitLoading = useCallback((next: ResidentOutfit) => {
+    if (pendingOutfitSwitch.current === next) onFeatureError(outfitLoadingNotice(next));
+  }, [onFeatureError]);
+  const onOutfitReady = useCallback((ready: ResidentOutfit) => {
+    if (pendingOutfitSwitch.current === ready) {
+      pendingOutfitSwitch.current = null;
+      onFeatureError(outfitSwitchedNotice(ready));
+    }
+  }, [onFeatureError]);
+  const onOutfitError = useCallback((failed: ResidentOutfit, fallback: ResidentOutfit) => {
+    pendingOutfitSwitch.current = null;
+    outfitRef.current = fallback;
+    setOutfit(fallback);
+    rememberOutfit(fallback);
+    onFeatureError(outfitErrorNotice(failed));
+  }, [onFeatureError]);
   const library = useLibrary({ sceneId: baseWorld.sceneId, reducedMotion: baseWorld.reducedMotion, onAction: baseWorld.onAction, onReturn: baseWorld.onReturn, error: onFeatureError });
-  const world = { ...baseWorld, library, onAction: library.dispatch, onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); } };
+  const dispatchAction = useCallback((action: WorldAction) => {
+    if (action.sceneId === 'habitat' && action.objectId === 'wardrobe' && action.kind === 'toggle') {
+      const next = nextOutfit(outfitRef.current);
+      outfitRef.current = next;
+      pendingOutfitSwitch.current = next;
+      setOutfit(next);
+      rememberOutfit(next);
+      void baseWorld.onAction(action);
+      return;
+    }
+    return library.dispatch(action);
+  }, [baseWorld.onAction, library.dispatch]);
+  const world = { ...baseWorld, library, outfit, onAction: dispatchAction, onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); } };
   const books = library.data.books.map(book => ({ id: book.id, title: book.title, author: book.author, pages: [book.text] }));
   const enterCabin = useCallback(() => {
     void roomAudio.unlock();
@@ -160,7 +203,8 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     onDrop={event => { event.preventDefault(); inputDepth.current = 0; setDraggingFile(false); importFiles(event.dataTransfer.files); }}>
     <OrbitalScene {...world} viewMode={viewMode} boosting={boosting} onViewModeChange={setViewMode} onEnterCabin={enterCabin}
       books={books} adapters={adapters} onImportMusic={onImportMusic} discs={discs} activeDisc={audio.disc} isMusicPlaying={audio.isPlaying} isMuted={audio.isMuted}
-      onSelectDisc={onSelectDisc} onToggleMusic={onToggleMusic} onToggleMute={onToggleMute} activeGame={activeGame} onGameChange={setActiveGame} onFeatureError={onFeatureError} />
+      onSelectDisc={onSelectDisc} onToggleMusic={onToggleMusic} onToggleMute={onToggleMute} activeGame={activeGame} onGameChange={setActiveGame} onFeatureError={onFeatureError}
+      onOutfitLoading={onOutfitLoading} onOutfitReady={onOutfitReady} onOutfitError={onOutfitError} />
     <LibrarySurface library={library} />
     <header className="orbital-header">
       <div className="orbital-wordmark"><span className="orbital-emblem" aria-hidden="true" /><span>pocketworld<span className="orbital-wordmark-dot">.</span></span></div>

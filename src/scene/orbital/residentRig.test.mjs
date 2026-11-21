@@ -211,3 +211,54 @@ test('hair and skirt follow movement without shifting body bones and settle afte
     assert(angles.Hair_ < .00001 && angles.Dress_ < .00001, 'contact and reduced motion use the base pose');
   } finally { rig.dispose(); }
 });
+
+test('free-standing upright posture removes spine hunch and matches walk torso alignment', () => {
+  const bindScene = clone(gltf.scene);
+  bindScene.updateMatrixWorld(true);
+  const bindWorld = name => bindScene.getObjectByName('mixamorig' + name).getWorldQuaternion(new THREE.Quaternion());
+  const pitchFromBind = (root, name) => {
+    const q = root.getObjectByName('mixamorig' + name).getWorldQuaternion(new THREE.Quaternion())
+      .multiply(bindWorld(name).invert());
+    return new THREE.Euler().setFromQuaternion(q, 'XYZ').x;
+  };
+  const { asset, rig, mesh } = instance();
+  try {
+    rig.applyPose(0, 0, 1);
+    rig.mesh.updateMatrixWorld(true);
+
+    // 1. Spine stays upright relative to bind pose (eliminating the +12 deg Spine2 / +22 deg Neck hunch).
+    for (const name of ['Hips', 'Spine', 'Spine1', 'Spine2']) {
+      const pitch = pitchFromBind(asset, name);
+      assert(Math.abs(pitch) < .06, `${name} should stay upright relative to bind pose (${pitch})`);
+    }
+    const neckPitch = pitchFromBind(asset, 'Neck');
+    assert(Math.abs(neckPitch) < .12, `Neck should stay upright (${neckPitch})`);
+
+    // 2. Knees straighten from the old ~20 deg crouch while both soles stay planted on the floor.
+    const pos = name => asset.getObjectByName('mixamorig' + name).getWorldPosition(new THREE.Vector3());
+    const hip = pos('LeftUpLeg'), knee = pos('LeftLeg'), ankle = pos('LeftFoot');
+    const kneeFlex = Math.PI - hip.clone().sub(knee).angleTo(ankle.clone().sub(knee));
+    assert(kneeFlex < .24, `standing knee flexion should stay light (${kneeFlex} rad)`);
+
+    const point = new THREE.Vector3(), sole = new THREE.Box3();
+    let minY = Infinity;
+    for (let i = 0; i < mesh.geometry.attributes.position.count; i++) {
+      mesh.localToWorld(mesh.getVertexPosition(i, point));
+      minY = Math.min(minY, point.y);
+      if (point.y < .025) sole.expandByPoint(point);
+    }
+    assert(minY >= -.002 && minY < .005, `upright standing sole height ${minY}`);
+    for (const p of [pos('Hips'), pos('Neck')]) {
+      assert(p.z > sole.min.z + .02 && p.z < sole.max.z - .02, 'upright body stays inside foot support');
+    }
+
+    // 3. Standing-to-walk chest pitch jump stays small (no hunch-to-upright pop).
+    const standChest = pitchFromBind(asset, 'Spine2');
+    for (const phase of [0, .25, .5, .75]) {
+      rig.applyPose(phase, 1, 1);
+      rig.mesh.updateMatrixWorld(true);
+      const walkChest = pitchFromBind(asset, 'Spine2');
+      assert(Math.abs(walkChest - standChest) < .09, `chest pitch jump at phase=${phase}: ${walkChest - standChest}`);
+    }
+  } finally { rig.dispose(); }
+});

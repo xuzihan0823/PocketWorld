@@ -81,6 +81,10 @@ export const PLUSH_DOLLS: readonly PlushDollPlacement[] = [
 // The table top is a fixed part of the authored cabin mesh.
 export const NIGHTSTAND_X = -2.52;
 export const NIGHTSTAND_Z = -2.825;
+// Built-in wardrobe cabinet on the aft-port wall (measured from Wardrobe_Nightstand in open-cabin.glb).
+export const WARDROBE_POSITION: [number, number, number] = [-5.72, 1.53, -2.715];
+export const WARDROBE_SIZE: [number, number, number] = [1.50, 3.06, 0.86];
+export const WARDROBE_STAND: [number, number] = [-5.72, -1.92];
 export const COMPUTER_STAND: [number, number] = [1.55, -1.36];
 export const LAMP_POSITION: [number, number, number] = [NIGHTSTAND_X - .31, .829, NIGHTSTAND_Z];
 export const PLANT_POSITION: [number, number, number] = [NIGHTSTAND_X + .31, .829, NIGHTSTAND_Z - .09];

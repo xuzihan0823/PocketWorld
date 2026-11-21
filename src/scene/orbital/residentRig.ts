@@ -150,6 +150,12 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     for (const { value, curve } of channels) value.fromArray(curve.evaluate(t));
   };
 
+  // Capture upright bind-pose spine orientations before sampling the walk cycle
+  // so the free-standing upright stance stays straight without inheriting walk hunch.
+  asset.updateMatrixWorld(true);
+  const spineNames = ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head'] as const;
+  const bindSpineWorld = new Map(spineNames.map(name => [name, bone(name).getWorldQuaternion(new THREE.Quaternion())]));
+
   // Build a two-foot neutral pose using the planted phase of each leg, and
   // average the upper body at the two mid-swing phases for a relaxed stance.
   const leftLeg = ['UpLeg', 'Leg', 'Foot', 'ToeBase'].map(name => bone('Left' + name));
@@ -282,18 +288,62 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   }));
   const followMotion = createFollowMotion(bones.values(), bone('Head'));
   const neutral = Array.from(bones.values(), joint => ({ joint, pose: capture(joint) }));
+
+  // Build an upright free-standing pose from the same planted feet so standing
+  // stays tall and straight without the walking S-bend hunch or bent-knee squat,
+  // while leaving `neutral` untouched for baked sofa/chair/library handoffs.
+  const setWorldRotation = (joint: THREE.Bone, rotation: THREE.Quaternion) => {
+    joint.quaternion.copy(joint.parent!.getWorldQuaternion(new THREE.Quaternion()).invert()).multiply(rotation);
+    joint.updateWorldMatrix(false, true);
+  };
+  const uprightTargets: readonly (readonly [typeof spineNames[number], number])[] = [
+    ['Hips', -.020],
+    ['Spine', -.010],
+    ['Spine1', -.010],
+    ['Spine2', .025],
+    ['Neck', .085],
+    ['Head', -.030],
+  ];
+  const worldDelta = new THREE.Quaternion(), euler = new THREE.Euler();
+  const standHip = hips.getWorldPosition(new THREE.Vector3());
+  standHip.y += .008 / RESIDENT_SCALE;
+  standHip.z -= .006 / RESIDENT_SCALE;
+  hips.position.copy(hips.parent!.worldToLocal(standHip));
+  for (const [name, targetPitch] of uprightTargets) {
+    const joint = bone(name);
+    const bindQ = bindSpineWorld.get(name)!;
+    worldDelta.copy(joint.getWorldQuaternion(new THREE.Quaternion())).multiply(bindQ.clone().invert());
+    euler.setFromQuaternion(worldDelta, 'XYZ');
+    worldDelta.setFromEuler(euler.set(targetPitch, euler.y * .25, euler.z * .25, 'XYZ')).multiply(bindQ);
+    setWorldRotation(joint, worldDelta);
+  }
+  // Keep shoulders naturally seated on the straightened ribcage and gently align
+  // only the upper arms downward so elbows hang vertically beneath the shoulders.
+  const armDrop = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), .14);
+  for (const side of ['Left', 'Right'] as const) {
+    const arm = bone(side + 'Arm');
+    setWorldRotation(arm, armDrop.clone().multiply(arm.getWorldQuaternion(new THREE.Quaternion())));
+  }
+  hips.updateWorldMatrix(false, true);
+  plantResidentLeg(leftLeg, leftSupport.point, leftSupport.sole);
+  plantResidentLeg(rightLeg, rightSupport.point, rightSupport.sole);
+  asset.updateMatrixWorld(true);
+  const upright = neutral.map(({ joint }) => capture(joint));
+  for (const { joint, pose } of neutral) restore(joint, pose);
+  asset.updateMatrixWorld(true);
+
   const walkPose = neutral.map(({ joint }) => capture(joint));
   const axisX = new THREE.Vector3(1, 0, 0);
   const fold = new THREE.Quaternion();
   asset.scale.setScalar(RESIDENT_SCALE);
   mesh.add(asset);
 
-  function applyPose(phase: number, walkWeight: number) {
+  function applyPose(phase: number, walkWeight: number, uprightWeight = 0) {
     if (walkWeight === 1) sample(phase);
-    else applyBlendedPose(phase, walkWeight);
+    else applyBlendedPose(phase, walkWeight, uprightWeight);
   }
 
-  function applyBlendedPose(phase: number, walkWeight: number) {
+  function applyBlendedPose(phase: number, walkWeight: number, uprightWeight: number) {
     if (walkWeight > 0) {
       sample(phase);
       neutral.forEach(({ joint }, i) => {
@@ -303,10 +353,17 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
       });
     }
     for (const { joint, pose } of neutral) restore(joint, pose);
+    if (uprightWeight > 0) neutral.forEach(({ joint }, i) => {
+      joint.position.lerp(upright[i].position, uprightWeight);
+      joint.quaternion.slerp(upright[i].quaternion, uprightWeight);
+      joint.scale.lerp(upright[i].scale, uprightWeight);
+    });
     // The controller's bones rotate in a room-aligned basis. Convert each
     // local rotation into the imported joint's parent frame before skinning.
-    for (const { control: joint, target, parentBasis, neutral: rest } of controlMap)
+    for (const { control: joint, target, parentBasis, neutral: rest } of controlMap) {
+      if (uprightWeight > 0 && joint.quaternion.x === 0 && joint.quaternion.y === 0 && joint.quaternion.z === 0 && joint.quaternion.w === 1) continue;
       target.quaternion.copy(parentBasis).multiply(joint.quaternion).multiply(rest);
+    }
     for (const { target, parentBasis, neutral: rest, front, side } of dress) {
       const x = front ? skirtFront.rotation.x * .75 : side ? skirtFront.rotation.x * .34 : skirtBack.rotation.x;
       target.quaternion.copy(parentBasis).multiply(fold.setFromAxisAngle(axisX, x)).multiply(rest);

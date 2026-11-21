@@ -23,6 +23,7 @@ function load(path, dependencies, globals = {}) {
 }
 
 const cabinLayout = load('./orbital/cabinLayout.ts', {});
+const wardrobeOutfit = load('./orbital/wardrobe/outfit.ts', {});
 const catalog = load('./orbital/library/catalog.ts', {});
 
 function libraryDependencies(residentRig) {
@@ -95,6 +96,8 @@ function mount(kind, overrides = {}, idleLibrary) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/OrbitalDustPrompt': { DustPrompt: 'DustPrompt' },
     './scene/orbital/spacecraftFlight': { readInitialViewMode: () => 'cabin' },
+    './wardrobe/outfit': wardrobeOutfit,
+    './scene/orbital/wardrobe/outfit': wardrobeOutfit,
     './standingIdle': load('./orbital/standingIdle.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
@@ -837,4 +840,45 @@ test('loaded looking gesture ignores Space and is interrupted by movement, focus
       }
     } finally { view.dispose(); }
   }
+});
+
+test('the habitat wardrobe triggers outfit toggle via E and remote click approach without affecting observatory', () => {
+  const performed = [];
+  const hints = [];
+  const view = mount('orbital', {
+    outfit: 'everyday',
+    onAction: action => performed.push(action),
+    onHover: (id, hint) => hints.push({ id, hint }),
+  });
+  try {
+    const [wx, wz] = cabinLayout.WARDROBE_STAND;
+    view.root.position.set(wx, 0, wz);
+    view.frame(1 / 60);
+    assert.ok(hints.some(h => h.id === 'wardrobe' && h.hint === 'E · 换上云朵连帽衫'));
+    view.key('KeyE');
+    assert.deepEqual(performed.map(a => [a.objectId, a.kind]), [['wardrobe', 'toggle']]);
+
+    // When wearing hoodie, prompt updates to switching back.
+    view.props.outfit = 'hoodie';
+    view.frame(1 / 60);
+    assert.ok(hints.some(h => h.id === 'wardrobe' && h.hint === 'E · 换回日常裙装'));
+
+    // Clicking the wardrobe from the bedside rug routes Luna into the nook and toggles.
+    let remote = 0;
+    view.root.position.set(-4.0, 0, 0.25);
+    view.props.interaction.current(cabinLayout.WARDROBE_POSITION, { sceneId: 'habitat', objectId: 'wardrobe', kind: 'toggle' }, () => remote++);
+    assert.equal(remote, 0);
+    for (let i = 0; i < 600 && !remote; i++) view.frame(1 / 60);
+    assert.equal(remote, 1, 'Luna should walk around the bed to the wardrobe and toggle outfit');
+    assert.ok(Math.hypot(view.root.position.x - wx, view.root.position.z - wz) <= 1.15);
+  } finally { view.dispose(); }
+
+  const obsActions = [];
+  const obs = mount('orbital', { sceneId: 'observatory', onAction: action => obsActions.push(action) });
+  try {
+    obs.root.position.set(...cabinLayout.WARDROBE_STAND);
+    obs.frame(1 / 60);
+    obs.key('KeyE');
+    assert.deepEqual(obsActions, [], 'observatory has no wardrobe toggle');
+  } finally { obs.dispose(); }
 });

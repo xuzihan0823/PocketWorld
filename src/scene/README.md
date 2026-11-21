@@ -11,6 +11,7 @@
 - `orbital/library/` 管理书柜存档、文本导入、实体书和取还书动作。
 - `orbital/schedule/` 管理日程迁移、同步、纸页、贴纸、纸团和相关测试。
 - `orbital/clock/` 管理床头黄铜闹钟的 3D 动态表盘指针、闹钟与倒计时设定、经典版合成闹铃与特供版内置音频开头铃声、本机持久化及相关测试。
+- `orbital/wardrobe/` 管理 Luna 服装目录（日常裙装 / 云朵连帽衫）、`?outfit=` 入口参数、本机持久化、按需资源缓存与服装回归测试。
 - `orbital/media/` 管理电脑屏幕布局、游戏卡带单击插入、拖放与加载、唱片交互、实体键盘和相关测试。
 - `orbital/` 根目录保留舱室、家具、住民、交互基础组件、材质与场景样式。
 - `orbital/chairMotion.ts` 管理固定椅的入座、离座与取消；`chairAnimation.ts` 采样坐姿与局部接触缓存。资源与复建方法见 [Luna 制作源](../../assets/models/resident/README.md)。

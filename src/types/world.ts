@@ -1,4 +1,5 @@
 import type { LibraryController } from '../scene/orbital/library/useLibrary';
+import type { ResidentOutfit } from '../scene/orbital/wardrobe/outfit';
 import type { MutableRefObject } from 'react';
 import type { MusicDisc } from './interactable';
 
@@ -32,6 +33,7 @@ export interface WorldModelProps {
   objects: Record<string, WorldObjectState>;
   books: BookContent[];
   library?: LibraryController;
+  outfit?: ResidentOutfit;
   focusedObject: string | null;
   onApproach?: (point: [number, number, number], action: WorldAction, perform: () => void) => boolean;
   onAction: (action: WorldAction) => void;
@@ -54,6 +56,9 @@ export interface WorldSceneProps extends WorldModelProps {
   activeGame: 'mario' | 'shooter' | null;
   onGameChange: (game: 'mario' | 'shooter' | null) => void;
   onFeatureError: (message: string) => void;
+  onOutfitLoading?: (outfit: ResidentOutfit) => void;
+  onOutfitReady?: (outfit: ResidentOutfit) => void;
+  onOutfitError?: (failed: ResidentOutfit, fallback: ResidentOutfit) => void;
   adapters?: WorldFeatureAdapters;
 }
 export interface WorldActionContext {

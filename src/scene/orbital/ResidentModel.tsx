@@ -1,11 +1,19 @@
-import React, { Suspense, useLayoutEffect, useMemo, useRef, type MutableRefObject } from 'react';
-import { Html, useGLTF } from '@react-three/drei';
-import { useLoader, type ThreeElements } from '@react-three/fiber';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { Html } from '@react-three/drei';
+import type { ThreeElements } from '@react-three/fiber';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
 import { createResidentRig } from './residentRig';
 import { applyResidentSkin } from './residentSkin';
 import { createChairAnimation, readSeatContactCache } from './chairAnimation';
+import { initialOutfit, type ResidentOutfit } from './wardrobe/outfit';
+import {
+  clearResidentBundle,
+  getCachedResidentBundle,
+  loadResidentBundle,
+  preloadResidentBundle,
+  type ResidentBundle,
+} from './wardrobe/residentAssets';
 
 export { HIP_HEIGHT } from './residentRig';
 export interface ResidentLeg {
@@ -24,44 +32,49 @@ export interface ResidentArm {
 export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone; head?: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
-  applyPose: (phase: number, walkWeight: number) => void;
+  applyPose: (phase: number, walkWeight: number, uprightWeight?: number) => void;
   followMotion: (dt: number, enabled: boolean, yaw: number, dx: number, dz: number, phase: number) => void;
   applyArmCorrectives: (enabled: boolean) => void;
   applyChairPose?: (time: number, weight: number) => void;
   dispose: () => void;
 }
 
-const MODEL = `${import.meta.env.BASE_URL}models/resident/luna-walk-room.glb`;
-const CONTACT = `${import.meta.env.BASE_URL}models/resident/luna-seat-contact.bin`;
-
-function LoadedResident({ rig }: { rig: MutableRefObject<ResidentRig | null> }) {
-  const { scene, animations } = useGLTF(MODEL);
-  const contact = useLoader(THREE.FileLoader, CONTACT, loader => loader.setResponseType('arraybuffer')) as ArrayBuffer;
+function MountedResident({
+  bundle,
+  rig,
+  onReady,
+}: {
+  bundle: ResidentBundle;
+  rig: MutableRefObject<ResidentRig | null>;
+  onReady?: (outfit: ResidentOutfit) => void;
+}) {
   const container = useRef<THREE.Group>(null);
+  const readyRef = useRef(onReady);
+  readyRef.current = onReady;
   const resident = useMemo(() => {
-    const walk = animations.find(clip => clip.name === 'Walk_Grounded_Loop');
-    if (!walk) throw new Error('Luna walk animation missing');
-    const sit = animations.find(clip => clip.name === 'ChairSit_Contact');
-    if (!sit) throw new Error('Luna contact-corrected sit animation missing');
-    const asset = clone(scene), result = createResidentRig(asset, walk);
-    const chair = createChairAnimation(asset, sit, readSeatContactCache(contact));
+    const asset = clone(bundle.scene);
+    const result = createResidentRig(asset, bundle.walk);
+    const chair = createChairAnimation(asset, bundle.sit, readSeatContactCache(bundle.contact));
     const dispose = result.dispose;
     result.applyChairPose = chair.apply;
     result.dispose = () => { chair.dispose(); dispose(); };
     return result;
-  }, [scene, animations, contact]);
+  }, [bundle]);
+
   useLayoutEffect(() => {
     const group = container.current!;
     const restoreSkin = applyResidentSkin(resident.mesh);
     group.add(resident.mesh);
     rig.current = resident;
+    readyRef.current?.(bundle.outfit);
     return () => {
-      rig.current = null;
+      if (rig.current === resident) rig.current = null;
       group.remove(resident.mesh);
       restoreSkin();
       resident.dispose();
     };
-  }, [resident, rig]);
+  }, [bundle.outfit, resident, rig]);
+
   return <group ref={container} />;
 }
 
@@ -74,20 +87,88 @@ function ModelStatus({ failed = false }: { failed?: boolean }) {
   </group>;
 }
 
-class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFailure?: () => void }, { failed: boolean }> {
+class ResidentBoundary extends React.Component<{ children: React.ReactNode; onFailure?: () => void; onRetry: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidCatch() { this.props.onFailure?.(); }
   render() {
     if (!this.state.failed) return this.props.children;
-    return <group onPointerDown={event => { event.stopPropagation(); useGLTF.clear(MODEL); useLoader.clear(THREE.FileLoader, CONTACT); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
+    return <group onPointerDown={event => { event.stopPropagation(); this.props.onRetry(); this.setState({ failed: false }); }}><ModelStatus failed /></group>;
   }
 }
 
-export function ResidentModel({ rig, onFailure, ...props }: ThreeElements['group'] & { rig: MutableRefObject<ResidentRig | null>; onFailure?: () => void }) {
+export type ResidentModelProps = ThreeElements['group'] & {
+  rig: MutableRefObject<ResidentRig | null>;
+  outfit?: ResidentOutfit;
+  onFailure?: () => void;
+  onOutfitLoading?: (outfit: ResidentOutfit) => void;
+  onOutfitReady?: (outfit: ResidentOutfit) => void;
+  onOutfitError?: (failed: ResidentOutfit, fallback: ResidentOutfit) => void;
+};
+
+export function ResidentModel({
+  rig,
+  outfit = 'everyday',
+  onFailure,
+  onOutfitLoading,
+  onOutfitReady,
+  onOutfitError,
+  ...props
+}: ResidentModelProps) {
+  const [bundle, setBundle] = useState<ResidentBundle | null>(() => getCachedResidentBundle(outfit));
+  const [initialFailed, setInitialFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const bundleRef = useRef(bundle);
+  bundleRef.current = bundle;
+  const callbacks = useRef({ onFailure, onOutfitLoading, onOutfitReady, onOutfitError });
+  callbacks.current = { onFailure, onOutfitLoading, onOutfitReady, onOutfitError };
+
+  useEffect(() => {
+    const cached = getCachedResidentBundle(outfit);
+    if (cached) {
+      setInitialFailed(false);
+      if (bundleRef.current === cached) callbacks.current.onOutfitReady?.(cached.outfit);
+      else setBundle(cached);
+      return;
+    }
+    let live = true;
+    setInitialFailed(false);
+    if (bundleRef.current) callbacks.current.onOutfitLoading?.(outfit);
+    void loadResidentBundle(outfit).then(next => {
+      if (!live) return;
+      setInitialFailed(false);
+      setBundle(next);
+    }).catch(() => {
+      if (!live) return;
+      clearResidentBundle(outfit);
+      const current = bundleRef.current;
+      if (current) {
+        callbacks.current.onOutfitError?.(outfit, current.outfit);
+      } else {
+        setInitialFailed(true);
+        callbacks.current.onFailure?.();
+      }
+    });
+    return () => { live = false; };
+  }, [outfit, attempt]);
+
+  const retry = () => {
+    clearResidentBundle(outfit);
+    setInitialFailed(false);
+    setAttempt(count => count + 1);
+  };
+
   return <group {...props}>
-    <ResidentBoundary onFailure={onFailure}><Suspense fallback={<ModelStatus />}><LoadedResident rig={rig} /></Suspense></ResidentBoundary>
+    <ResidentBoundary onFailure={onFailure} onRetry={retry}>
+      {bundle
+        ? <MountedResident bundle={bundle} rig={rig} onReady={onOutfitReady} />
+        : initialFailed
+          ? <group onPointerDown={event => { event.stopPropagation(); retry(); }}><ModelStatus failed /></group>
+          : <ModelStatus />}
+    </ResidentBoundary>
   </group>;
 }
 
-useGLTF.preload(MODEL);
+if (typeof window !== 'undefined') {
+  preloadResidentBundle(initialOutfit());
+}

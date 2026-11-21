@@ -57,6 +57,25 @@ blender --background --factory-startup --python-exit-code 1 \
 
 直接在 Blender 修改形态键后，给同一命令追加 `--from-blend assets/models/resident/Luna-ArmContact.blend` 将修改导出。打包只添加稀疏目标，保留原始顶点顺序、坐姿接触索引、骨骼、动作和贴图数据。偏头与拢手的角度来自 Luna 本地动作试演，由网页按时间包络播放。
 
+## 云朵连帽衫服装（衣柜换装）
+
+[`Luna-CloudHoodie.blend`](Luna-CloudHoodie.blend) 基于用户提供的浅蓝云朵连帽衫 Tripo GLB 制作，完整绑定到 Luna 既有 115 骨骼（`Luna_ContactCorrected_Baked`），保持骨骼休息矩阵与全套室内动作（`Walk_Grounded_Loop`、`ChairSit_Contact`、`luna-yawn.glb`、`luna-looking-around.glb`、`luna-sofa-low-sit.glb`、`luna-library.glb`）原生兼容，按需在点击床左侧衣柜、靠近按 `E` 或访问 `?outfit=hoodie` 时加载。
+
+- **面部精修与下颌权重校准**：补齐右眉上方刘海 4 面微小缝隙、沿 `-Y` 轻雕 `+1.8 mm` 柔和鼻梁轮廓，并将整段下巴与下颌顶点完整归入 `mixamorig:Head` 刚性头骨区消除垂颈尖角；在 2K 底色贴图上按 3D 网格重心坐标精准绘制柔和鼻尖点、珊瑚粉微笑嘴角、眼下暖桃腮红、清晰眉睫与双眼高光点，同时先解包后重新打包修改后的贴图并把材质自发光降至 `0.32`、粗糙度抬升至 `0.68–0.96`，在保持暖桃肤色微调的同时清晰呈现五官层次。
+- **平底针织袜脚**：在脚踝（`z = 0.084`）处移除原高跟靴，以 Luna 原始光脚模板重塑无分趾圆润平底针织袜脚并精确保留 `+16°` 绑定跖屈角与脚踝/脚掌/脚趾权重，使站立和行走时双脚掌贴地放平。
+- **手臂自然下垂的衣服挤压形态键**：先对 Tripo 原模粘连的腋下袖身进行平面切分，并以共享腋下折脊与 3 圈同心环结构化封闭躯干侧壁与袖内壁（保证 `z < 0.630` 零跨区桥接面且坐姿抬臂无空洞），在腋下折脊上方（`z >= 0.634`）平滑过渡插肩袖权重；再于独立场景 `Hoodie_ClothSim` 中对平滑代理笼执行无循环依赖的 Blender Cloth 自碰撞模拟，叠加整袖 6.8° 蓬松外展缓冲、`C∞` 平滑分离面 `x_sep(y, z)`（保护正面云朵口袋、蝴蝶结与袖外侧丝带，严控袖内壁局部压平上限 `<= 1.2 cm` 防止内壁穿出外袖）反解出蒙皮前稀疏形态键 `LeftArmContact` 与 `RightArmContact`。运行时由 `residentRig.ts` 按左右臂下垂程度与前伸幅度独立驱动，抬手或进入椅子/沙发/取书姿态时自动释放。
+- **运行资源**：
+  - `assets/public/models/resident/luna-cloud-hoodie.glb`：`4,588,948` bytes（4.38 MiB），44,938 三角面，38,514 顶点（100% 四骨归一化蒙皮），含 `Walk_Grounded_Loop`、`ChairSit_Contact`、`_CONTACT_ID` 与针对挺直站姿标定的稀疏 `LeftArmContact`/`RightArmContact` 形态键；材质采用哑光抓绒参数（`normalScale = 0.20`、`metallicFactor = 0`、粗糙度 `0.68–0.96`、底色复用为 `0.32` 强度自发光）。
+  - `assets/public/models/resident/luna-cloud-hoodie-seat.bin`：`605,072` bytes，98 帧、1,029 个局部坐姿接触顶点的 `PWSC` v1 缓存（针对 `Luna-Sit-ContactFixed.blend` 真实固定椅烘焙）。
+- **复建命令**（Blender 5.2.3 LTS，外部源模型与诊断渲染均留在仓库外）：
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 `
+  --python scripts/build-luna-cloud-hoodie.py -- `
+  --input "<用户提供的云朵连帽衫.glb>" `
+  --review-dir "<仓库外诊断渲染目录>"
+```
+
 ## 站立伸懒腰
 
 用户提供的 Mixamo `Yawn.fbx` 为 30 FPS、1–251 帧骨骼动作。`scripts/export-luna-yawn.py` 将上身世界旋转相对绑定姿态的变化转换到 Luna 的绑定坐标，导出 `luna-yawn.glb`，232,092 bytes、54 条旋转轨道、8.33 秒。骨盆、腿和脚沿用运行时中立站姿。首次普通待机时加载，运行时淡入淡出整段动作。

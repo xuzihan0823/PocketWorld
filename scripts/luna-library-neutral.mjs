@@ -25,8 +25,8 @@ const path = new URL('../assets/public/models/resident/luna-walk-room.glb', impo
 const { gltf, mesh } = await load(path);
 const { createResidentRig, RESIDENT_SCALE } = loadTS(new URL('../src/scene/orbital/residentRig.ts', import.meta.url));
 const rig = createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
-rig.applyPose(0, 0);
 const armContact = process.argv.includes('--arm-contact');
+rig.applyPose(0, 0, armContact ? 1 : 0);
 if (armContact) {
   const { createIdleState, createIdlePlayer } = loadTS(new URL('../src/scene/orbital/standingIdle.ts', import.meta.url));
   const idle = createIdleState();
