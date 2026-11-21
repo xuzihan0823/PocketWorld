@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { MusicDisc } from './types/interactable';
 import type { GameId } from './types/game';
-import type { WorldFeatureAdapters } from './types/world';
+import type { WorldAction, WorldFeatureAdapters } from './types/world';
 import { PRESET_MUSIC_DISCS, generateDiscColorsFromName, roomAudio } from './scene/audioEngine';
 import { OrbitalScene } from './scene/orbital/OrbitalScene';
 import { useLibrary } from './scene/orbital/library/useLibrary';
@@ -33,7 +33,11 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     hintTimer.current = window.setTimeout(() => setAnnouncement(''), 5500);
   }, []);
   const library = useLibrary({ sceneId: baseWorld.sceneId, reducedMotion: baseWorld.reducedMotion, onAction: baseWorld.onAction, onReturn: baseWorld.onReturn, error: onFeatureError });
-  const world = { ...baseWorld, library, onAction: library.dispatch, onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); } };
+  const world = {
+    ...baseWorld, library,
+    onAction: (action: WorldAction) => { if (!baseWorld.bedRest) library.dispatch(action); },
+    onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); },
+  };
   const books = library.data.books.map(book => ({ id: book.id, title: book.title, author: book.author, pages: [book.text] }));
   const enterCabin = useCallback(() => {
     void roomAudio.unlock();
@@ -41,12 +45,12 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     setViewMode(current => (current === 'orbit' || current === 'approach' ? 'entering-cabin' : current));
   }, []);
   const leaveCabin = useCallback(() => {
-    if (world.focusedObject || activeGame || library.flow.current.phase !== 'idle') return;
+    if (world.bedRest || world.focusedObject || activeGame || library.flow.current.phase !== 'idle') return;
     void roomAudio.unlock();
     setBoosting(false);
     world.onHover(null);
     setViewMode(current => (current === 'cabin' ? 'leaving-cabin' : current));
-  }, [world.focusedObject, world.onHover, activeGame, library.flow]);
+  }, [world.bedRest, world.focusedObject, world.onHover, activeGame, library.flow]);
   const activateBoost = useCallback((active: boolean) => {
     if (active) {
       void roomAudio.unlock();
@@ -87,7 +91,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
         }
         return;
       }
-      if (viewMode === 'entering-cabin' || viewMode === 'leaving-cabin') return;
+      if (world.bedRest || viewMode === 'entering-cabin' || viewMode === 'leaving-cabin') return;
       if (event.code === 'Escape') {
         if (activeGame && world.focusedObject === 'computer') return;
         event.preventDefault();
@@ -110,7 +114,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', clearBoost);
     };
-  }, [viewMode, world.onReturn, world.onAction, world.sceneId, world.focusedObject, activeGame, activateBoost, enterCabin, leaveCabin, library.flow]);
+  }, [viewMode, world.bedRest, world.onReturn, world.onAction, world.sceneId, world.focusedObject, activeGame, activateBoost, enterCabin, leaveCabin, library.flow]);
   useEffect(() => () => {
     window.clearTimeout(hintTimer.current);
     roomAudio.stopMusic();
@@ -149,10 +153,10 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const orbitGuide = viewMode === 'approach' ? '宇宙很大。这里，刚刚好。'
     : viewMode === 'orbit' ? (boosting ? '推进加速中 · 绕地巡航与时间加速' : '长按空格加速绕地 · 按 E 或点击飞船进入舱室')
     : '';
-  const status = viewMode !== 'cabin'
+  const status = world.bedRest ? '' : viewMode !== 'cabin'
     ? orbitGuide
     : (announcement || world.error || audio.error || focusGuide || world.hover?.hint || (world.focusedObject ? '操作物品继续探索 · Esc / 双指轻触退回' : ''));
-  const showFlightControls = !world.focusedObject && !activeGame && library.flow.current.phase === 'idle' && (viewMode === 'orbit' || viewMode === 'approach' || viewMode === 'cabin');
+  const showFlightControls = !world.bedRest && !world.focusedObject && !activeGame && library.flow.current.phase === 'idle' && (viewMode === 'orbit' || viewMode === 'approach' || viewMode === 'cabin');
   return <main className={`orbital-app${draggingFile ? ' is-importing' : ''}${world.focusedObject ? ' is-focused' : ''}${viewMode !== 'cabin' ? ' is-orbit' : ''}`} aria-label="PocketWorld 轨道居住舱"
     onDragEnter={event => { if (viewMode !== 'cabin' || world.focusedObject !== 'music-player' || !event.dataTransfer.types.includes('Files')) return; event.preventDefault(); inputDepth.current += 1; setDraggingFile(true); }}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
@@ -187,6 +191,9 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     </nav>}
     {audio.isPlaying && <aside className="orbital-now-playing"><span className="orbital-record-dot" /><div><small>NOW PLAYING</small><p>{audio.disc.title}</p></div></aside>}
     {draggingFile && <div className="orbital-drop-message"><span className="orbital-drop-disc" /><p>让这段音乐，留在这里。</p><small>松手制作一张自己的唱片</small></div>}
+    {world.bedRest && <div className={`orbital-rest is-${world.bedRest}`}>
+      <p role="status" aria-hidden={world.bedRest === 'waking'}>正在休息…</p>
+    </div>}
     <input ref={fileInput} type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac" hidden onChange={event => importFiles(event.target.files)} />
     <span className="sr-only">键盘：舱外视角长按空格或 Shift 加速绕地飞行与时间流逝，E 或回车进入舱室；舱内 F 返回舱外视角，WASD 行走，E、Q、R 依次与身边最近的物品互动，M 静音，Esc 返回。</span>
   </main>;

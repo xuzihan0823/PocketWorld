@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
+import type { AnimationClip } from 'three';
 import { CLOSED_OBJECT, type WorldAction, type WorldActionContext, type WorldFeatureAdapters, type WorldMotion, type WorldObjectState, type WorldSceneId, type WorldTransition } from '../../types/world';
+import { loadYawn } from './standingIdle';
+import { SUN_CYCLE_SECONDS } from './sunCycle';
+
+const BED_REST_SECONDS = 2.2;
+const WAKE_REVEAL_SECONDS = 0.4;
+const WAKE_STRETCH_SECONDS = 5.2;
+export type BedRestPhase = 'resting' | 'waking' | null;
+export interface WakeStretch { clip: AnimationClip; progress: number }
 
 export function nextObjectState(previous: WorldObjectState, action: WorldAction): WorldObjectState {
   switch (action.kind) {
@@ -29,6 +38,10 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
   const [gestureActive, setGestureActive] = useState(false);
   const [hover, setHover] = useState<{ id: string; hint: string } | null>(null);
   const motion = useRef<WorldMotion>({ progress: 0, sceneProgress: 0 });
+  const orbitalRestTime = useRef(0);
+  const wakeStretch = useRef<WakeStretch | null>(null);
+  const bedRest: BedRestPhase = transition.action?.kind !== 'rest' ? null
+    : transition.phase === 'active' ? 'waking' : 'resting';
   const live = useRef({ sceneId, sceneObjects, focusedObject });
   live.current = { sceneId, sceneObjects, focusedObject };
   const sequence = useRef(0);
@@ -49,7 +62,8 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
   useEffect(() => () => { cancelPending(); }, [cancelPending]);
 
   const onAction = useCallback(async (request: WorldAction) => {
-    if (request.sceneId !== live.current.sceneId) return;
+    if (request.sceneId !== live.current.sceneId || pending.current?.context.action.kind === 'rest') return;
+    if (request.kind === 'rest' && (request.sceneId !== 'habitat' || request.objectId !== 'bed' || live.current.focusedObject)) return;
     const displayed = live.current;
     cancelPending();
     setGestureActive(false);
@@ -65,7 +79,12 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
     const abort = new AbortController();
     const context: WorldActionContext = { action, signal: abort.signal, transitionId: id, previous };
     const destination = action.kind === 'travel' ? action.payload?.destination ?? snapshot.sceneId : snapshot.sceneId;
+    const restTimeBefore = orbitalRestTime.current;
     const rollback = () => {
+      if (action.kind === 'rest') {
+        orbitalRestTime.current = restTimeBefore;
+        wakeStretch.current = null;
+      }
       live.current = snapshot;
       setSceneObjects(snapshot.sceneObjects);
       setSceneId(snapshot.sceneId);
@@ -78,6 +97,44 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
     try {
       await adapterRef.current?.actions?.[action.kind]?.prepare?.(context);
       if (abort.signal.aborted) return;
+      const finish = async () => {
+        const rest = action.kind === 'rest';
+        if (rest) wakeStretch.current = null;
+        try {
+          await adapterRef.current?.actions?.[action.kind]?.commit?.(context);
+          if (abort.signal.aborted) return;
+          setSceneId(destination);
+          setTransition({ id, phase: rest ? 'idle' : 'active', action: rest ? null : action, fromScene: destination, toScene: destination });
+          pending.current = null;
+        } catch (failure) {
+          if (abort.signal.aborted) return;
+          rollback();
+          pending.current = null;
+          setError(failure instanceof Error ? failure.message : '这次操作没有完成，请再试一次。');
+          setTransition({ id, phase: 'error', action: null, fromScene: snapshot.sceneId, toScene: snapshot.sceneId });
+        }
+      };
+      if (action.kind === 'rest') {
+        setHover(null);
+        let clip: AnimationClip | undefined;
+        if (!reducedMotion.current) {
+          void loadYawn().then(value => { clip = value; }).catch(() => { /* Rest still completes without the clip. */ });
+        }
+        setTransition({ id, phase: 'entering', action, fromScene: destination, toScene: destination });
+        transaction.timeline = gsap.timeline()
+          // Advance after the cover has become opaque, before the room is revealed.
+          .call(() => { orbitalRestTime.current += SUN_CYCLE_SECONDS / 2; }, [], 0.55)
+          .call(() => {
+            setTransition({ id, phase: 'active', action, fromScene: destination, toScene: destination });
+            const wake = clip ? { clip, progress: 0 } : null;
+            wakeStretch.current = wake;
+            const reveal = gsap.timeline();
+            transaction.timeline = wake
+              ? reveal.to(wake, { progress: 1, duration: WAKE_STRETCH_SECONDS, ease: 'none' }).call(() => { void finish(); })
+              : reveal.call(() => { void finish(); }, [], WAKE_REVEAL_SECONDS);
+          }, [], BED_REST_SECONDS);
+        return;
+      }
       const followsVisibleState = ['toggle', 'open', 'sit', 'turn-page'].includes(action.kind);
       const next = nextObjectState(followsVisibleState ? visiblePrevious : previous, action);
       setSceneObjects(current => {
@@ -98,21 +155,6 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
       motion.current.progress = 0;
       motion.current.sceneProgress = 0;
       setTransition({ id, phase: action.kind === 'travel' ? 'leaving' : 'entering', action, fromScene: snapshot.sceneId, toScene: destination });
-      const finish = async () => {
-        try {
-          await adapterRef.current?.actions?.[action.kind]?.commit?.(context);
-          if (abort.signal.aborted) return;
-          setSceneId(destination);
-          setTransition({ id, phase: 'active', action, fromScene: destination, toScene: destination });
-          pending.current = null;
-        } catch (failure) {
-          if (abort.signal.aborted) return;
-          rollback();
-          pending.current = null;
-          setError(failure instanceof Error ? failure.message : '这次操作没有完成，请再试一次。');
-          setTransition({ id, phase: 'error', action: null, fromScene: snapshot.sceneId, toScene: snapshot.sceneId });
-        }
-      };
       const duration = reducedMotion.current ? 0.12 : action.kind === 'travel' ? 1.8 : 0.9;
       transaction.timeline = gsap.timeline({ onComplete: () => { void finish(); } });
       transaction.timeline.to(motion.current, { progress: 1, sceneProgress: 1, duration, ease: 'power2.inOut' });
@@ -129,6 +171,7 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
   }, [cancelPending]);
 
   const onReturn = useCallback(() => {
+    if (pending.current?.context.action.kind === 'rest') return;
     cancelPending();
     const current = live.current;
     if (current.focusedObject) setSceneObjects(all => ({ ...all, [current.sceneId]: { ...all[current.sceneId], [current.focusedObject!]: { ...(all[current.sceneId][current.focusedObject!] ?? CLOSED_OBJECT), open: false, active: false } } }));
@@ -146,5 +189,5 @@ export function useWorldController(adapters?: WorldFeatureAdapters) {
   }, [cancelPending]);
 
   const onHover = useCallback((id: string | null, hint = '') => setHover(id ? { id, hint } : null), []);
-  return { sceneId, sceneObjects, objects: sceneObjects[sceneId], focusedObject, transition, motion, onAction, onReturn, onHover, hover, gestureActive, onGesture: setGestureActive, error, setError, reducedMotion: reducedMotion.current };
+  return { sceneId, sceneObjects, objects: sceneObjects[sceneId], focusedObject, transition, motion, bedRest, wakeStretch, orbitalRestTime, onAction, onReturn, onHover, hover, gestureActive, onGesture: setGestureActive, error, setError, reducedMotion: reducedMotion.current };
 }

@@ -8,6 +8,7 @@ export const RESIDENT_RADIUS = 0.23;
 export const WALK_BOUNDS = { left: CABIN_LEFT + .25 + RESIDENT_RADIUS, right: 3.76, back: -2.96, front: 2.96 };
 
 export const BED_POSITION: [number, number, number] = [-4.05, 0, -1.897];
+export const BED_REST_SPOT: [number, number] = [BED_POSITION[0], BED_POSITION[2] + 1.3 + RESIDENT_RADIUS + 0.25];
 
 // Armless floor sofa at the open corner in front of the bedside rug.
 export const FLOOR_SOFA = {

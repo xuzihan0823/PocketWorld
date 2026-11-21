@@ -3,7 +3,7 @@ import type { MutableRefObject } from 'react';
 import type { MusicDisc } from './interactable';
 
 export type WorldSceneId = 'habitat' | 'observatory';
-export type WorldActionKind = 'inspect' | 'open' | 'close' | 'read' | 'write' | 'plan' | 'toggle' | 'select' | 'insert' | 'eject' | 'water' | 'pet' | 'travel' | 'turn-page' | 'sit' | 'stand';
+export type WorldActionKind = 'inspect' | 'open' | 'close' | 'read' | 'write' | 'plan' | 'toggle' | 'select' | 'insert' | 'eject' | 'water' | 'pet' | 'travel' | 'turn-page' | 'sit' | 'stand' | 'rest';
 export type WorldPhase = 'idle' | 'preparing' | 'leaving' | 'entering' | 'active' | 'returning' | 'error';
 export interface WorldAction {
   sceneId: WorldSceneId;

@@ -82,3 +82,23 @@
   .world-page h2 { font-size: 25px; }
 }
 @media (prefers-reduced-motion: reduce) { .orbital-app * { scroll-behavior: auto; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+.orbital-rest {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #f2eee7;
+  touch-action: none;
+  animation: orbital-rest-cover 320ms ease-out both;
+}
+.orbital-rest p {
+  margin: 0;
+  font-size: 1.125rem;
+  letter-spacing: 0.16em;
+}
+.orbital-rest.is-waking { animation: orbital-rest-reveal 400ms ease-in-out both; }
+@keyframes orbital-rest-cover { from { opacity: 0; } to { opacity: 1; } }
+@keyframes orbital-rest-reveal { from { opacity: 1; } to { opacity: 0; } }

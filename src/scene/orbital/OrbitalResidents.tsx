@@ -1,5 +1,5 @@
 import { SOFA_ENTRY, SOFA_STEPS, loadSofaClip, sofaPlayer } from './sofaMotion';
-import { BED_POSITION, COMPUTER_STAND, FLOOR_SOFA, PLUSH_DOLLS, PLUSH_FLOOR_BOUNDS, TRASH_CAN, NIGHTSTAND_X, NIGHTSTAND_Z, RESIDENT_RADIUS, WALK_BOUNDS } from './cabinLayout';
+import { BED_POSITION, BED_REST_SPOT, COMPUTER_STAND, FLOOR_SOFA, PLUSH_DOLLS, PLUSH_FLOOR_BOUNDS, TRASH_CAN, NIGHTSTAND_X, NIGHTSTAND_Z, RESIDENT_RADIUS, WALK_BOUNDS } from './cabinLayout';
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -17,9 +17,10 @@ import { createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibrary
 import { readingStand, shelfOrigin, shelfPoint, shelfYaw } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
-import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
+import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, sampleYawn, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
 import { SlipperPair } from './Slippers';
+import type { BedRestPhase, WakeStretch } from './useWorldController';
 import { PlushDolls } from './PlushDolls';
 import { createPlushBodies, isValidPlushBody, plushObstacleBoxes, resolveMoverAgainstPlush, stepPlushDolls, type PlushBody } from './plushMotion';
 
@@ -32,6 +33,8 @@ type ResidentsProps = WorldModelProps & {
   onArrive: () => void;
   enabled: boolean;
   approachEnabled: boolean;
+  bedRest: BedRestPhase;
+  wakeStretch: React.RefObject<WakeStretch | null>;
   sofaTime: React.MutableRefObject<number | null>;
   interaction: React.MutableRefObject<NonNullable<WorldModelProps['onApproach']> | null>;
 };
@@ -240,7 +243,9 @@ export function OrbitalResidents(props: ResidentsProps) {
   const act = (objectId: string, kind: WorldActionKind) => {
     const p = current.current;
     const action: WorldAction = { sceneId: p.sceneId, objectId, kind };
-    if (kind === 'sit') {
+    if (kind === 'rest') {
+      p.interaction.current?.([BED_REST_SPOT[0], 0, BED_REST_SPOT[1]], action, () => current.current.onAction(action));
+    } else if (kind === 'sit') {
       const pose = CHAIR_POSES[p.sceneId];
       const [x, z] = objectId === 'sofa' ? SOFA_ENTRY : [pose.x, pose.z];
       p.interaction.current?.([x, 0, z], action, () => current.current.onAction(action));
@@ -266,6 +271,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       { id: 'chair', kind: 'sit', hint: '坐下', point: [pose.x, pose.z], reach: CHAIR_REACH },
     ];
     if (p.sceneId === 'habitat') {
+      targets.push({ id: 'bed', kind: 'rest', hint: '休息一下', point: BED_REST_SPOT, reach: .75 });
       targets.push({ id: 'sofa', kind: 'sit', hint: '坐进懒人沙发', point: SOFA_ENTRY, reach: .85 });
       targets.push({ id: 'clock', kind: 'inspect', hint: '设置闹钟', point: [NIGHTSTAND_X + .22, NIGHTSTAND_Z + .64], reach: 0.46 });
     }
@@ -322,7 +328,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       p.onHover('chair', '前方空间不足，请先移开挡路的物品');
       return;
     }
-    const fixed = task.action.objectId === 'sofa' ? SOFA_ENTRY : undefined;
+    const fixed = task.action.objectId === 'sofa' ? SOFA_ENTRY : task.action.kind === 'rest' ? BED_REST_SPOT : undefined;
     const path = approachRoute(start, task.point, obstacles(room, pose), fixed);
     if (path) state.current.path = path;
     else { cancelApproach(); p.onHover(task.action.objectId, '前方空间不足，请先移开挡路的物品'); }
@@ -330,12 +336,12 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => {
     const request: NonNullable<WorldModelProps['onApproach']> = (point, action, perform) => {
       const root = resident.current, p = current.current, s = state.current;
-      if (!root || action.sceneId !== p.sceneId) return false;
+      if (!root || p.bedRest || action.sceneId !== p.sceneId) return false;
       if (action.kind === 'stand') { cancelApproach(); perform(); return true; }
       const pose = CHAIR_POSES[p.sceneId];
-      const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : action.objectId === 'pet' ? CAT : [point[0], point[2]];
+      const target: Point = action.objectId === 'chair' ? [pose.x, pose.z] : action.objectId === 'pet' ? CAT : action.kind === 'rest' ? BED_REST_SPOT : [point[0], point[2]];
       if (s.posture === 'standing' && !s.exiting
-        && action.objectId !== 'chair' && action.objectId !== 'sofa'
+        && action.objectId !== 'chair' && action.objectId !== 'sofa' && action.kind !== 'rest'
         && Math.hypot(root.position.x - target[0], root.position.z - target[1]) <= 1.15) {
         cancelApproach(); perform(); return true;
       }
@@ -589,7 +595,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       if (!s.path.length && s.external && p.enabled && !s.exiting) {
         const request = approach.current;
-        const fixed = request?.action.objectId === 'chair' || request?.action.objectId === 'sofa';
+        const fixed = request?.action.objectId === 'chair' || request?.action.objectId === 'sofa' || request?.action.kind === 'rest';
         const target = request?.action.objectId === 'sofa' ? SOFA_ENTRY : request?.action.objectId === 'chair' ? seatEntry : request?.point;
         const distance = target ? Math.hypot(root.position.x - target[0], root.position.z - target[1]) : 0;
         const radius = fixed ? 0.06 : 1.15;
@@ -695,15 +701,21 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (librarySample && librarySample.coverProgress === undefined) resetArms(rig.current, 1);
       else applyLibraryPose(rig.current, root, p.sceneId, libraryCoverFlow(flow, librarySample), dt, authored);
     }
+    if (p.bedRest) root.rotation.y = angle(root.rotation.y, 0, p.reducedMotion || p.bedRest === 'waking' ? 1 : 1 - Math.exp(-dt * 10));
     const standingAtRest = !!rig.current && p.enabled && !p.focusedObject
       && !document.hidden && s.posture === 'standing' && wanted === 'standing' && !s.exiting
       && !walking && distance < .00001 && walkWeight.current === 0
       && !keys.current.size && !idleInput.current && !s.path.length && !s.external
       && !approach.current && !libraryActive;
     stepIdle(idle.current, rawDelta, standingAtRest && !p.reducedMotion, idleMotion.current.clip?.duration ?? 0,
-      Math.random, idleMotion.current.lookClip?.duration ?? 0, standingAtRest);
+      Math.random, idleMotion.current.lookClip?.duration ?? 0, standingAtRest || !!p.bedRest);
     idleInput.current = false;
     const im = idleMotion.current;
+    const wake = p.bedRest === 'waking' ? p.wakeStretch.current : null;
+    if (wake) {
+      if (im.clip !== wake.clip) { im.clip = wake.clip; im.rig = null; }
+      sampleYawn(idle.current, wake.progress * wake.clip.duration, wake.clip.duration);
+    }
     if (idle.current.elapsed >= STANDING_IDLE.delay && !im.lookClip && !im.lookLoading && idle.current.elapsed >= im.lookRetryAt) {
       im.lookLoading = true;
       void loadLookingAround().then(clip => { if (mounted.current) { im.lookClip = clip; im.rig = null; } })
