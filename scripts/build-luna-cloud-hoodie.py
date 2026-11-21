@@ -2671,6 +2671,9 @@ def main():
     glb_path, seat_path = str(args.glb_out.resolve()), str(args.seat_out.resolve())
     subprocess.run(["node", str(ROOT / "scripts/finish-luna-cloud-hoodie.mjs"),
                     glb_path, glb_path, seat_path, seat_path], cwd=ROOT, check=True)
+    subprocess.run([bpy.app.binary_path, "--background", "--factory-startup", "--python-exit-code", "1",
+                    "--python", str(ROOT / "scripts/refine-luna-hoodie-folds.py"),
+                    "--", glb_path, glb_path], cwd=ROOT, check=True)
 
     if args.review_dir:
         render_diagnostic_board(obj, arm_obj, args.review_dir.resolve(), relaxed_basis, runtime_influences)

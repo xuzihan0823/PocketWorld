@@ -241,6 +241,21 @@ test('fitted cloud hoodie clears both flanks through standing and yawn and eases
   const clip = gltf.animations.find(c => c.name === 'Luna_Yawn');
   const { rig, mesh, dispose } = mountHoodie();
   const { position, skinIndex, skinWeight } = mesh.geometry.attributes;
+  const normals = mesh.geometry.morphAttributes.normal;
+  assert.equal(normals.length, mesh.morphTargetInfluences.length);
+  for (const target of normals) {
+    assert.equal(target.count, position.count);
+    const delta = new THREE.Vector3();
+    let affected = 0;
+    for (let i = 0; i < position.count; i++) {
+      const length = delta.fromBufferAttribute(target, i).length();
+      assert.ok(Number.isFinite(length) && length <= .301);
+      if (length === 0) continue;
+      affected++;
+      assert.ok(position.getY(i) > .56 && position.getY(i) < .791 && Math.abs(position.getX(i)) < .215);
+    }
+    assert.ok(affected > 0, 'morph normals must follow the cloth correction without changing the face');
+  }
   const indices = mesh.geometry.index.array, names = mesh.skeleton.bones.map(bone => bone.name);
   const groups = [[], [], [], []], label = [], arm = [], edges = new Map();
   for (let i = 0; i < position.count; i++) {
