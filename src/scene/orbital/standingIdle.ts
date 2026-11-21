@@ -140,6 +140,8 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
     return { joint, curve: track.createInterpolant() };
   }) ?? [];
   const yawnChannels = bind(clip), lookChannels = bind(lookClip);
+  let fittedHoodie = false;
+  root.traverse(object => { fittedHoodie ||= object.userData.hoodieClearance === true; });
   const spine = bone('Spine2'), neck = bone('Neck'), head = bone('Head');
   const arms = (['Right', 'Left'] as const).map(side => {
     const direction = side === 'Left' ? 1 : -1;
@@ -208,6 +210,17 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
     for (const { joint, curve } of state.lookTime >= 0 ? lookChannels : yawnChannels) {
       rotation.fromArray(curve.evaluate(time));
       joint.quaternion.slerp(rotation, gestureWeight);
+    }
+    if (fittedHoodie && state.lookTime < 0) {
+      // Give the fleece sleeves room on the way up without altering the rest or overhead pose.
+      const elbowArc = smooth((time - .23) / .31) * (1 - smooth((time - 2.51) / .83));
+      const rightSweep = smooth((time - 2.66) / .39) * (1 - smooth((time - 3.36) / .24));
+      const leftRelease = smooth((time - 2.96) / .12) * (1 - smooth((time - 3.22) / .14));
+      root.getWorldQuaternion(modelRotation);
+      for (const { direction, parts } of arms) {
+        modelOffset(parts[1].joint, direction < 0 ? -.56 * rightSweep : 0, 0,
+          direction * (.47 * elbowArc + (direction > 0 ? .12 * leftRelease : 0)), gestureWeight);
+      }
     }
   };
 }

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as THREE from 'three';
+import { MeshBVH } from 'three-mesh-bvh';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { load } from '../load-for-validation.mjs';
 
@@ -232,6 +233,80 @@ test('LeftArmContact and RightArmContact shape keys compress when arms hang and 
     assert.equal(mesh.morphTargetInfluences[rightIdx], 0);
   } finally {
     actor.dispose();
+  }
+});
+
+test('fitted cloud hoodie clears both flanks through standing and yawn and eases shoulder strain', async () => {
+  const { gltf } = await load(new URL('../../../../assets/public/models/resident/luna-yawn.glb', import.meta.url));
+  const clip = gltf.animations.find(c => c.name === 'Luna_Yawn');
+  const { rig, mesh, dispose } = mountHoodie();
+  const { position, skinIndex, skinWeight } = mesh.geometry.attributes;
+  const indices = mesh.geometry.index.array, names = mesh.skeleton.bones.map(bone => bone.name);
+  const groups = [[], [], [], []], label = [], arm = [], edges = new Map();
+  for (let i = 0; i < position.count; i++) {
+    const scores = [0, 0, 0];
+    for (let k = 0; k < 4; k++) {
+      const bone = names[skinIndex.getComponent(i, k)], w = skinWeight.getComponent(i, k);
+      if (/Left(?:Arm|ForeArm|Shoulder)$/.test(bone)) scores[0] += w;
+      if (/Right(?:Arm|ForeArm|Shoulder)$/.test(bone)) scores[1] += w;
+      if (/Spine\d?$|Hips$/.test(bone)) scores[2] += w;
+    }
+    label.push(scores.findIndex(w => w > .9) + 1);
+    arm.push(Math.max(scores[0], scores[1]));
+  }
+  const p = new THREE.Vector3(), q = new THREE.Vector3();
+  for (let i = 0; i < indices.length; i += 3) {
+    const tri = Array.from(indices.subarray(i, i + 3));
+    const y = tri.reduce((sum, id) => sum + position.getY(id), 0) / 3;
+    const part = label[tri[0]];
+    // Only the disjoint surfaces below the shared armhole seam should never overlap.
+    if (y >= .488 && y < .633 && part && tri.every(id => label[id] === part)) groups[part].push(...tri);
+    if (y > .61 && y < .75) for (let k = 0; k < 3; k++) {
+      const [a, b] = [tri[k], tri[(k + 1) % 3]].sort((x, y) => x - y);
+      if (Math.abs(arm[a] - arm[b]) < .04) continue;
+      const rest = p.fromBufferAttribute(position, a).distanceTo(q.fromBufferAttribute(position, b));
+      if (rest >= .0015) edges.set(a * position.count + b, { a, b, rest });
+    }
+  }
+  assert.ok(groups.slice(1).every(group => group.length > 1000) && edges.size > 1000);
+  const posed = position.clone();
+  const geoms = groups.slice(1).map(group => new THREE.BufferGeometry().setAttribute('position', posed).setIndex(group.slice()));
+  const bvhs = geoms.map(geometry => new MeshBVH(geometry));
+  const identity = new THREE.Matrix4();
+  const player = createIdlePlayer(rig.mesh, clip);
+  const idle = createIdleState(() => .5);
+  const smooth = THREE.MathUtils.smoothstep;
+  const stretch = Object.entries(mesh.morphTargetDictionary)
+    .filter(([name]) => name.startsWith('HoodieStretch_')).map(([, index]) => index);
+  assert.ok(stretch.length > 0);
+  try {
+    for (const [phase, time] of [
+      ...Array.from({ length: 20 }, (_, i) => [i * .6, -1]),
+      ...Array.from({ length: 84 }, (_, i) => [0, i * .1]),
+    ]) {
+      const yawnWeight = smooth(time, 0, .85) * smooth(clip.duration - time, 0, .85);
+      rig.applyPose(0, 0, 1);
+      player({ ...idle, phase, weight: 1, restWeight: 1, yawnTime: time, yawnWeight });
+      rig.applyArmCorrectives(true, time, yawnWeight);
+      rig.mesh.updateMatrixWorld(true);
+      for (let i = 0; i < position.count; i++) mesh.getVertexPosition(i, p).toArray(posed.array, 3 * i);
+      bvhs.forEach(tree => tree.refit());
+      for (const sleeve of bvhs.slice(0, 2)) {
+        assert.equal(sleeve.bvhcast(bvhs[2], identity, { intersectsTriangles: (a, b) => a.intersectsTriangle(b) }),
+          false, `sleeve/flank contact at phase ${phase}, yawn ${time}`);
+      }
+      if (time >= 4 && time < 7) {
+        assert.ok(stretch.some(index => mesh.morphTargetInfluences[index] > 0));
+        const ratios = [...edges.values()].map(({ a, b, rest }) =>
+          p.fromBufferAttribute(posed, a).distanceTo(q.fromBufferAttribute(posed, b)) / rest).sort((a, b) => a - b);
+        assert.ok(ratios[Math.floor(.95 * ratios.length)] < 3.8, `armhole strain at ${time}`);
+      }
+    }
+    rig.applyArmCorrectives(false, 5.2, 1);
+    assert.ok(mesh.morphTargetInfluences.every(weight => weight === 0));
+  } finally {
+    geoms.forEach(geometry => geometry.dispose());
+    dispose();
   }
 });
 

@@ -2668,6 +2668,9 @@ def main():
     # Step 8: Save editable .blend and pack sleek runtime .glb
     setup_blend_viewport_and_save(obj, arm_obj, args.blend_out.resolve())
     pack_runtime_glb(obj, arm_obj, args.base_luna.resolve(), args.glb_out.resolve(), scratch_dir)
+    glb_path, seat_path = str(args.glb_out.resolve()), str(args.seat_out.resolve())
+    subprocess.run(["node", str(ROOT / "scripts/finish-luna-cloud-hoodie.mjs"),
+                    glb_path, glb_path, seat_path, seat_path], cwd=ROOT, check=True)
 
     if args.review_dir:
         render_diagnostic_board(obj, arm_obj, args.review_dir.resolve(), relaxed_basis, runtime_influences)

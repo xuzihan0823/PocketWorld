@@ -748,7 +748,8 @@ export function OrbitalResidents(props: ResidentsProps) {
       rig.current.followMotion(rawDelta,
         !interactionPose && !libraryActive && !p.focusedObject && !p.reducedMotion && !document.hidden,
         root.rotation.y, root.position.x - frameX, root.position.z - frameZ, s.walkTime);
-      rig.current.applyArmCorrectives(!interactionPose && !libraryActive);
+      rig.current.applyArmCorrectives(!interactionPose && !libraryActive,
+        p.reducedMotion ? -1 : idle.current.yawnTime, idle.current.yawnWeight);
     }
     if (library && rig.current) library.tick(dt);
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;

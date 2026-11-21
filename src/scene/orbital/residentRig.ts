@@ -383,10 +383,30 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     return targets.length ? [{ upper: bone(side + 'Arm'), elbow: bone(side + 'ForeArm'),
       wrist: bone(side + 'Hand'), targets }] : [];
   });
+  const fittedHoodie = skinned.some(object => object.userData.hoodieClearance === true);
+  const yawnCorrectives = skinned.flatMap(object => {
+    const weights = object.morphTargetInfluences;
+    const frames = Object.entries(object.morphTargetDictionary ?? {}).flatMap(([name, index]) => {
+      const match = /^HoodieStretch_(\d+)$/.exec(name);
+      return match ? [{ time: Number(match[1]) / 100, index }] : [];
+    }).sort((a, b) => a.time - b.time);
+    const duration = Number(object.userData.hoodieStretchDuration);
+    return weights && frames.length && duration > frames[frames.length - 1].time ? [{ weights, frames, duration }] : [];
+  });
   const down = new THREE.Vector3(), facing = new THREE.Vector3();
   const shoulderPoint = new THREE.Vector3(), elbowPoint = new THREE.Vector3(), wristPoint = new THREE.Vector3();
   const direction = new THREE.Vector3(), orientation = new THREE.Quaternion();
-  function applyArmCorrectives(enabled: boolean) {
+  function applyArmCorrectives(enabled: boolean, yawnTime = -1, yawnWeight = 0) {
+    for (const { weights, frames, duration } of yawnCorrectives) {
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        const previous = frames[i - 1]?.time ?? 0;
+        const next = frames[i + 1]?.time ?? duration;
+        weights[frame.index] = enabled && yawnTime >= 0 ? yawnWeight * (yawnTime <= frame.time
+          ? THREE.MathUtils.smoothstep(yawnTime, previous, frame.time)
+          : 1 - THREE.MathUtils.smoothstep(yawnTime, frame.time, next)) : 0;
+      }
+    }
     if (!correctives.length) return;
     if (enabled) {
       down.copy(hips.getWorldPosition(shoulderPoint)).sub(neckBone.getWorldPosition(elbowPoint)).normalize();
@@ -401,9 +421,13 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
         const upperDown = direction.copy(elbowPoint).sub(shoulderPoint).normalize().dot(down);
         const lowerDown = direction.copy(wristPoint).sub(elbowPoint).normalize().dot(down);
         const reachForward = direction.copy(wristPoint).sub(shoulderPoint).normalize().dot(facing);
-        weight = THREE.MathUtils.smoothstep(upperDown, .925, .989)
-          * THREE.MathUtils.smoothstep(lowerDown, .76, .925)
-          * (1 - THREE.MathUtils.smoothstep(reachForward, .14, .31));
+        // The thick fleece needs its contact shape through the whole breathing cycle.
+        weight = fittedHoodie
+          ? THREE.MathUtils.smoothstep(upperDown, .875, .947)
+            * (1 - THREE.MathUtils.smoothstep(reachForward, .28, .60))
+          : THREE.MathUtils.smoothstep(upperDown, .925, .989)
+            * THREE.MathUtils.smoothstep(lowerDown, .76, .925)
+            * (1 - THREE.MathUtils.smoothstep(reachForward, .14, .31));
       }
       for (const { index, weights } of targets) weights[index] = weight;
     }

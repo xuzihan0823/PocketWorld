@@ -34,7 +34,7 @@ export interface ResidentRig {
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
   applyPose: (phase: number, walkWeight: number, uprightWeight?: number) => void;
   followMotion: (dt: number, enabled: boolean, yaw: number, dx: number, dz: number, phase: number) => void;
-  applyArmCorrectives: (enabled: boolean) => void;
+  applyArmCorrectives: (enabled: boolean, yawnTime?: number, yawnWeight?: number) => void;
   applyChairPose?: (time: number, weight: number) => void;
   dispose: () => void;
 }
