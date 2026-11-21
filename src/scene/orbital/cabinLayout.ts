@@ -1,7 +1,6 @@
-// Room-local metres. The starboard side and window stay fixed as the port side widens.
+// Authored room coordinates. The upper deck reuses the original port-side coordinates.
 export const CABIN_LEFT = -6.57;
 export const CABIN_RIGHT = 4.24;
-export const CABIN_CENTER_X = (CABIN_LEFT + CABIN_RIGHT) / 2;
 
 export const CAT_HOME = [3.02, 2.38] as const;
 export const CAT_YAW = -.75;
@@ -12,6 +11,26 @@ export const CAT_CUSHION_TOP = .08;
 export const HABITAT_SPAWN: [number, number] = [2.52, 1.10];
 export const RESIDENT_RADIUS = 0.23;
 export const WALK_BOUNDS = { left: CABIN_LEFT + .25 + RESIDENT_RADIUS, right: 3.76, back: -2.96, front: 2.96 };
+
+export const CABIN_DIVIDER_X = -1.86;
+export const UPPER_DECK_OFFSET: [number, number, number] = [CABIN_DIVIDER_X - CABIN_LEFT, 3.82, 0];
+// Matches the finished return-wall trim in scripts/export-open-cabin.py.
+export const BEDROOM_WALL_FRONT = 1.20;
+export const BEDROOM_WALL_OUTSET = .135;
+export type CabinDeck = 'lower' | 'upper';
+
+export const DECK_WALK_BOUNDS = {
+  lower: { ...WALK_BOUNDS, left: CABIN_DIVIDER_X + RESIDENT_RADIUS + .035 },
+  upper: { ...WALK_BOUNDS, right: CABIN_DIVIDER_X - RESIDENT_RADIUS - .035 },
+};
+
+export function deckFromAuthoredX(x: number): CabinDeck {
+  return x < CABIN_DIVIDER_X ? 'upper' : 'lower';
+}
+
+export function authoredCabinPoint(point: [number, number, number], deck: CabinDeck): [number, number, number] {
+  return deck === 'upper' ? [point[0] - UPPER_DECK_OFFSET[0], point[1] - UPPER_DECK_OFFSET[1], point[2]] : point;
+}
 
 export const BED_POSITION: [number, number, number] = [-4.05, 0, -1.897];
 
@@ -88,7 +107,7 @@ export const PLUSH_DOLLS: readonly PlushDollPlacement[] = [
   },
 ];
 
-// The table top is a fixed part of the authored cabin mesh.
+// Bedside props share the nightstand's authored upper-deck placement.
 export const NIGHTSTAND_X = -2.52;
 export const NIGHTSTAND_Z = -2.825;
 export const COMPUTER_STAND: [number, number] = [1.55, -1.36];

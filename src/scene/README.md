@@ -4,7 +4,7 @@
 
 ## 职责分布
 
-- `orbital/OrbitalScene.tsx` 组合镜头、灯光、舱室、家具、住民与交互表面。
+- `orbital/OrbitalScene.tsx` 组合镜头、灯光、舱室、家具、住民与交互表面。`orbital/cabinView.ts` 负责双层全景和楼层取景，`orbital/cabinStairs.ts` 与 `orbital/CabinStructure.tsx` 共用楼梯尺寸、踏步高度和层间走位。
 - `orbital/HabitatShell.tsx` 载入两面实体舱壁、拼花地板和固定陈设；`orbital/SpacecraftHull.tsx` 与 `orbital/spacecraftFlight.ts` 负责轨道飞船外壳、开场推近运镜、长按加速绕地与时间倍速，以及 `orbit ↔ cabin` 剖面切入过渡；`orbital/Cosmos.tsx` 渲染完整 360° 宇宙星空、银河、太阳、地球与轨道微粒背景。初始构图与横竖屏取景由 `orbital/cabinView.ts` 计算。
 - `orbital/useWorldController.ts` 管理世界状态、动作适配器和转场生命周期。
 - `orbital/wardrobe/` 管理住民装扮选择和模型资源。高衣柜复用生活舱网格，点击后自动走近，近距离可用交互键换装。[模型与坐姿修形](../../assets/models/resident/README.md)
@@ -27,13 +27,13 @@
 
 ## 舱体模型
 
-[可编辑 Blender 场景](../../assets/models/cabin/open-cabin.blend) 按舱壁、拼花地板、收纳、墙饰、书柜上架和编织物分组，木纹贴图以及拖鞋的绒面颜色和法线贴图均已打包在文件中。在仓库根目录运行以下命令可重新生成 [运行时模型](../../assets/public/models/cabin/open-cabin.glb)。导出按集合合并网格。可交互家具由运行时挂在各自的动作节点上。
+[可编辑 Blender 场景](../../assets/models/cabin/open-cabin.blend) 按舱壁、拼花地板、收纳、墙饰、书柜上架和编织物分组，木纹贴图以及拖鞋的绒面颜色和法线贴图均已打包在文件中。在仓库根目录运行以下命令可重新生成 [运行时模型](../../assets/public/models/cabin/open-cabin.glb)。导出脚本切分拼花地板和固定陈设，将全景窗收进一层后墙，并生成二层的转角侧墙、墙裙、木框舷窗和简洁墙饰。二层资源在 Three.js 中整体上移，楼梯和栏杆由运行时几何生成。可交互家具各有自己的动作节点。
 
 ```sh
 blender --background assets/models/cabin/open-cabin.blend --python scripts/export-open-cabin.py
 ```
 
-生活舱左前角的[落地沙发制作源](../../assets/models/furniture/floor-sofa.blend)独立保存了坐靠软包、滚边、搭毯和流苏。布料贴图已打包，修改后在仓库根目录重新导出即可。
+生活舱二层左前角的[落地沙发制作源](../../assets/models/furniture/floor-sofa.blend)独立保存了坐靠软包、滚边、搭毯和流苏。布料贴图已打包，修改后在仓库根目录重新导出即可。
 
 ```sh
 blender --background assets/models/furniture/floor-sofa.blend --python scripts/export-floor-sofa.py

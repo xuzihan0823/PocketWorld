@@ -2,7 +2,8 @@ import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { PLUSH_DOLLS, type PlushDollPlacement } from './cabinLayout';
+import { PLUSH_DOLLS, deckFromAuthoredX, type PlushDollPlacement } from './cabinLayout';
+import { CabinUpperDeck } from './CabinUpperDeck';
 import { AssetBoundary } from './ReusableAsset';
 import { isValidPlushBody, plushFloorY, plushSupportHeight, type PlushBody } from './plushMotion';
 
@@ -74,12 +75,15 @@ function LoadedPlushDoll({ doll, index, bodies }: PlushDollItemProps) {
 
 export function PlushDolls({ bodies }: { bodies: React.MutableRefObject<PlushBody[]> }) {
   return <>
-    {PLUSH_DOLLS.map((doll, index) => (
-      <AssetBoundary key={doll.id}>
+    {PLUSH_DOLLS.map((doll, index) => {
+      const item = <AssetBoundary>
         <Suspense fallback={null}>
           <LoadedPlushDoll doll={doll} index={index} bodies={bodies} />
         </Suspense>
-      </AssetBoundary>
-    ))}
+      </AssetBoundary>;
+      return deckFromAuthoredX(doll.position[0]) === 'upper'
+        ? <CabinUpperDeck key={doll.id}>{item}</CabinUpperDeck>
+        : <React.Fragment key={doll.id}>{item}</React.Fragment>;
+    })}
   </>;
 }

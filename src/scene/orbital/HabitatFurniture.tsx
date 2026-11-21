@@ -111,7 +111,19 @@ function FurnitureHatch() {
   </group>;
 }
 
-export const HabitatFurniture: React.FC<WorldModelProps & { sofaTime: React.RefObject<number | null> }> = world => {
+export function HabitatBedroom({ world, sofaTime }: { world: WorldModelProps; sofaTime: React.RefObject<number | null> }) {
+  return <>
+    <FurnitureBed />
+    <ObjectHandle id="sofa" panorama onClick={event => event.stopPropagation()} action={world.objects.sofa?.active ? 'stand' : 'sit'}
+      hint={world.objects.sofa?.active ? '起身' : '坐进懒人沙发'} world={world}>
+      <AssetBoundary><Suspense fallback={null}><FloorSofa sample={sofaTime} /></Suspense></AssetBoundary>
+    </ObjectHandle>
+    <FurnitureLamp world={world} />
+    <FurniturePlant world={world} observatory={false} />
+  </>;
+}
+
+export const HabitatFurniture: React.FC<WorldModelProps> = world => {
   const observatory = world.sceneId === 'observatory';
   return <group name={`Furniture_${world.sceneId}`}>
     <FurnitureDesk world={world} />
@@ -126,17 +138,11 @@ export const HabitatFurniture: React.FC<WorldModelProps & { sofaTime: React.RefO
         <Cylinder radius={0.25} height={0.035} position={[0, 0.018, 0]} color={C.ink} />
       </group>
     </> : <>
-      <FurnitureBed />
       <FurnitureChair world={world} />
-      <ObjectHandle id="sofa" panorama onClick={event => event.stopPropagation()} action={world.objects.sofa?.active ? 'stand' : 'sit'}
-        hint={world.objects.sofa?.active ? '起身' : '坐进懒人沙发'} world={world}>
-        <AssetBoundary><Suspense fallback={null}><FloorSofa sample={world.sofaTime} /></Suspense></AssetBoundary>
-      </ObjectHandle>
       <ReusableAsset name="Furniture_TrashCan" path="furniture/trash-can.glb"
         height={TRASH_CAN.height} position={TRASH_CAN.position} rotation={[0, TRASH_CAN.yaw, 0]} />
     </>}
-    <FurnitureLamp world={world} />
-    <FurniturePlant world={world} observatory={observatory} />
+    {observatory && <><FurnitureLamp world={world} /><FurniturePlant world={world} observatory /></>}
     <FurnitureHatch />
   </group>;
 };

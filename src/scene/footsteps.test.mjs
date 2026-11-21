@@ -23,6 +23,7 @@ function load(path, dependencies, globals = {}) {
 }
 
 const cabinLayout = load('./orbital/cabinLayout.ts', {});
+const cabinStairs = load('./orbital/cabinStairs.ts', { './cabinLayout.ts': cabinLayout });
 const catalog = load('./orbital/library/catalog.ts', {});
 
 function libraryDependencies(residentRig) {
@@ -78,6 +79,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': residentRig,
     './cabinLayout': cabinLayout,
+    './cabinStairs': cabinStairs,
     './wardrobe/outfit': load('./orbital/wardrobe/outfit.ts', {}),
     './sofaMotion': load('./orbital/sofaMotion.ts', { three: THREE, './cabinLayout': cabinLayout, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './journalLayout': load('./orbital/journalLayout.ts', {}),
@@ -469,7 +471,7 @@ test('manual movement cancels the pending approach', () => {
   const view = mount('orbital');
   let performed = 0;
   try {
-    view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
+    view.props.interaction.current(cabinLayout.CLOCK_POSITION, { sceneId: 'habitat', objectId: 'clock', kind: 'inspect' }, () => performed++);
     view.frame(1 / 60);
     view.key('KeyD');
     for (let i = 0; i < 600; i++) view.frame(1 / 60);
@@ -565,6 +567,50 @@ test('the static bed blocks walking without offering keyboard interaction, and n
   } finally { view.dispose(); }
 });
 
+test('a floor click uses the staircase before walking to the upper deck, then an approach can descend', () => {
+  const deckView = { current: { deck: 'lower', stairAscent: null } };
+  const view = mount('orbital', { deckView, walkTarget: [-3.05, 0, .8] });
+  try {
+    const ascent = [];
+    for (let i = 0; i < 1700; i++) {
+      view.frame(1 / 60);
+      if (deckView.current.stairAscent !== null) ascent.push(deckView.current.stairAscent);
+      if (deckView.current.deck === 'upper' && Math.abs(view.root.position.x + 3.05) < .04) break;
+    }
+    assert.equal(deckView.current.deck, 'upper');
+    assert.ok(ascent.length > 30 && ascent[0] === 0 && ascent.at(-1) === 1);
+    assert.ok(ascent.every((value, index) => index === 0 || value >= ascent[index - 1]));
+    assert.ok(Math.hypot(view.root.position.x + 3.05, view.root.position.z - .8) < .06);
+
+    const [x, z] = cabinLayout.CAT_HOME;
+    let reached = false;
+    view.props.interaction.current([x, 0, z], { sceneId: 'habitat', objectId: 'pet', kind: 'pet' }, () => { reached = true; });
+    assert.equal(reached, false);
+    for (let i = 0; i < 1700 && !reached; i++) view.frame(1 / 60);
+    assert.equal(reached, true);
+    assert.equal(deckView.current.deck, 'lower');
+    assert.equal(deckView.current.stairAscent, null);
+  } finally { view.dispose(); }
+});
+
+test('the port edge only starts a stair crossing at the landing', () => {
+  const deckView = { current: { deck: 'lower', stairAscent: null } };
+  const view = mount('orbital', { deckView });
+  const [x, z] = cabinStairs.stairLanding('lower');
+  try {
+    view.root.position.set(x, 0, 0);
+    view.key('KeyA');
+    for (let i = 0; i < 100; i++) view.frame(1 / 60);
+    assert.equal(deckView.current.stairAscent, null);
+    assert.ok(view.root.position.x >= cabinLayout.DECK_WALK_BOUNDS.lower.left);
+    view.key('KeyA', 'keyup');
+    view.root.position.set(x, 0, z);
+    view.key('KeyA');
+    for (let i = 0; i < 700 && deckView.current.deck !== 'upper'; i++) view.frame(1 / 60);
+    assert.equal(deckView.current.deck, 'upper');
+  } finally { view.dispose(); }
+});
+
 test('crowded nightstand items map E, Q and R to the three nearest props', () => {
   const performed = [];
   const view = mount('orbital', { onAction: action => performed.push(action.objectId) });
@@ -598,9 +644,9 @@ test('Space leaves a pending walk-to-object interaction in place', () => {
   const view = mount('orbital');
   let performed = 0;
   try {
-    view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
+    view.props.interaction.current(cabinLayout.CLOCK_POSITION, { sceneId: 'habitat', objectId: 'clock', kind: 'inspect' }, () => performed++);
     assert.equal(view.key('Space').defaultPrevented, false);
-    for (let i = 0; i < 900 && !performed; i++) view.frame(1 / 60);
+    for (let i = 0; i < 1500 && !performed; i++) view.frame(1 / 60);
     assert.equal(performed, 1);
   } finally { view.dispose(); }
 });
@@ -609,7 +655,7 @@ test('a newer click replaces the pending interaction', () => {
   const view = mount('orbital');
   let first = 0, second = 0;
   try {
-    view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => first++);
+    view.props.interaction.current(cabinLayout.CLOCK_POSITION, { sceneId: 'habitat', objectId: 'clock', kind: 'inspect' }, () => first++);
     view.frame(1 / 60);
     view.props.interaction.current([-0.95, 0.3, 1.95], { sceneId: 'habitat', objectId: 'pet', kind: 'pet' }, () => second++);
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
@@ -622,7 +668,7 @@ test('Escape cancels a pending interaction before the object opens', () => {
   const view = mount('orbital');
   let performed = 0;
   try {
-    view.props.interaction.current([-3.3, 1, -1.8], { sceneId: 'habitat', objectId: 'book-01', kind: 'read' }, () => performed++);
+    view.props.interaction.current(cabinLayout.CLOCK_POSITION, { sceneId: 'habitat', objectId: 'clock', kind: 'inspect' }, () => performed++);
     view.frame(1 / 60);
     assert.equal(view.key('Escape').defaultPrevented, true, 'App must not also handle this cancellation');
     for (let i = 0; i < 900; i++) view.frame(1 / 60);
@@ -652,7 +698,7 @@ test('mouse selection requires the matching focus and preserves the drag hit poi
     createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
   };
   const component = load('./orbital/ObjectHandle.tsx', {
-    react, three: THREE, '../../types/world': load('../types/world.ts', {}),
+    react, three: THREE, './cabinLayout': cabinLayout, '../../types/world': load('../types/world.ts', {}),
   }, { window: new EventTarget() }).ObjectHandle;
   const handle = focusedObject => component({ id: 'lamp', action: 'toggle', hint: '', drag: 'y', world: {
     sceneId: 'observatory', focusedObject, onGesture() {}, onHover() {},

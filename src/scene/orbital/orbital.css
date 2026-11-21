@@ -17,6 +17,9 @@
 .orbital-dust-canvas { display: block; pointer-events: none; }
 .orbital-app:has(.library-surface) .orbital-dust-prompt { display: none; }
 .orbital-flight-bar { position: absolute; right: 38px; bottom: max(30px, env(safe-area-inset-bottom)); z-index: 4; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+.orbital-floor-views { position: absolute; right: 38px; bottom: max(78px, calc(env(safe-area-inset-bottom) + 48px)); z-index: 4; display: flex; gap: 6px; }
+.orbital-floor-views .orbital-flight-pill { min-width: 48px; min-height: 44px; }
+.orbital-floor-views button[aria-pressed=true] { background: #695339; border-color: #e0c49b; color: #fff4df; }
 .orbital-flight-pill { min-height: 36px; padding: 7px 14px; border: 1px solid rgba(229, 220, 196, 0.24); border-radius: 999px; background: rgba(11, 12, 26, 0.56); backdrop-filter: blur(8px); color: #ece6d8; font: 500 11px/1.2 'Avenir Next', 'PingFang SC', sans-serif; letter-spacing: 1.4px; cursor: pointer; user-select: none; touch-action: manipulation; transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease; }
 .orbital-flight-pill:hover { background: rgba(24, 24, 46, 0.78); border-color: rgba(229, 220, 196, 0.48); }
 .orbital-flight-pill.is-primary { border-color: rgba(212, 178, 126, 0.48); color: #f6e7c8; }
@@ -76,6 +79,7 @@
   .orbital-now-playing { left: 24px; bottom: max(28px, env(safe-area-inset-bottom)); }
   .orbital-now-playing p { max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .orbital-flight-bar { right: 16px; left: 16px; justify-content: center; bottom: max(22px, env(safe-area-inset-bottom)); }
+  .orbital-floor-views { left: 16px; right: 16px; justify-content: center; bottom: max(76px, calc(env(safe-area-inset-bottom) + 54px)); }
   .orbital-flight-pill { min-height: 44px; padding: 10px 16px; font-size: 12px; }
   .world-book-text { font-size: 22px; line-height: 1.6; }
   .world-page textarea { font-size: 22px; line-height: 29px; }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { ThreeElements, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
+import { UPPER_DECK_OFFSET, authoredCabinPoint } from './cabinLayout';
 import { SCENE_ORIGINS, type WorldAction, type WorldActionKind, type WorldModelProps } from '../../types/world';
 
 interface ObjectHandleProps extends Omit<ThreeElements['group'], 'id' | 'onPointerDown' | 'onPointerUp' | 'onPointerMove'> {
@@ -49,7 +50,8 @@ export function ObjectHandle({ id, action, hint, world, panorama = false, accept
     if (!enabled || event.button !== 0 || held.current || (acceptsHit && !acceptsHit(event.point))) return;
     event.stopPropagation();
     const origin = SCENE_ORIGINS[world.sceneId];
-    const point: [number, number, number] = [event.point.x - origin[0], event.point.y - origin[1], event.point.z - origin[2]];
+    const hit: [number, number, number] = [event.point.x - origin[0], event.point.y - origin[1], event.point.z - origin[2]];
+    const point = world.sceneId === 'habitat' && hit[1] >= UPPER_DECK_OFFSET[1] - .12 ? authoredCabinPoint(hit, 'upper') : hit;
     held.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId, target: event.target, point };
     (event.target as Element).setPointerCapture?.(event.pointerId);
     world.onGesture(true);

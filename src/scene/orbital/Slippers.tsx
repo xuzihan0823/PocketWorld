@@ -2,7 +2,8 @@ import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { WALK_BOUNDS } from './cabinLayout';
+import { DECK_WALK_BOUNDS, deckFromAuthoredX } from './cabinLayout';
+import { CabinUpperDeck } from './CabinUpperDeck';
 import { createSlipperPair, slipperFloorY, slipperSupportHeight, stepSlippers, type SlipperRect } from './slipperMotion';
 import { extractSlipperModel, SLIPPER_MODEL_URL } from './slipperModel';
 
@@ -55,8 +56,9 @@ export function SlipperPair({ resident, room, reducedMotion }: SlipperPairProps)
       z: root.position.z,
       vx: previous && dt > 0 ? (root.position.x - previous.x) / dt : 0,
       vz: previous && dt > 0 ? (root.position.z - previous.z) / dt : 0,
-      active: posture === 'standing' || posture === 'standing-up',
-    }, room.boxes, WALK_BOUNDS, reducedMotion);
+      active: !root.userData.onStairs && deckFromAuthoredX(root.position.x) === 'upper'
+        && (posture === 'standing' || posture === 'standing-up'),
+    }, room.boxes, DECK_WALK_BOUNDS.upper, reducedMotion);
     const sides = [model.left, model.right];
     bodies.current.forEach((body, index) => {
       const group = groups[index]!;
@@ -74,10 +76,10 @@ export function SlipperPair({ resident, room, reducedMotion }: SlipperPairProps)
   });
 
   if (!model) return null;
-  return <>
+  return <CabinUpperDeck>
     {[model.left, model.right].map((side, index) => <group key={index} ref={index ? right : left}
       name={index ? 'Slipper_Right' : 'Slipper_Left'} position={[side.center[0], (Number.isFinite(side.baseY) ? side.baseY : 0.0134) + (Number.isFinite(side.halfHeight) ? side.halfHeight : 0.056), side.center[1]]}>
       {side.parts.map((part, partIndex) => <mesh key={partIndex} geometry={part.geometry} material={part.material} castShadow receiveShadow />)}
     </group>)}
-  </>;
+  </CabinUpperDeck>;
 }
