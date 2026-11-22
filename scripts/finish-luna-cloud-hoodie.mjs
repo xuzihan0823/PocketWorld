@@ -7,9 +7,9 @@ import ts from 'typescript';
 import * as THREE from 'three';
 import { load } from '../src/scene/orbital/load-for-validation.mjs';
 
-const [input, output, seatInput, seatOutput] = process.argv.slice(2);
+const [input, output, seatInput, seatOutput, poseOutput] = process.argv.slice(2);
 assert.ok(input && output && seatInput && seatOutput,
-  'usage: node scripts/finish-luna-cloud-hoodie.mjs <base.glb> <out.glb> <base-seat.bin> <out-seat.bin>');
+  'usage: node scripts/finish-luna-cloud-hoodie.mjs <base.glb> <out.glb> <base-seat.bin> <out-seat.bin> [pose-data.json]');
 const raw = readFileSync(input);
 assert.equal(raw.readUInt32LE(0), 0x46546c67);
 const end = 20 + raw.readUInt32LE(12);
@@ -215,12 +215,19 @@ try {
   const matrix = new THREE.Matrix3(), inverseSkin = new THREE.Matrix3();
   const delta = new THREE.Vector3(), offset = new THREE.Vector3();
   const boneMatrix = new THREE.Matrix4();
+  const frames = {};
   function bake(time) {
     const weight = smooth(time, 0, STANDING_IDLE.yawnBlend) * smooth(clip.duration - time, 0, STANDING_IDLE.yawnBlend);
     rig.applyPose(0, 0, 1);
     player({ ...idle, weight: 1, restWeight: 1, yawnTime: time, yawnWeight: weight });
     rig.applyArmCorrectives(true);
     gltf.scene.updateMatrixWorld(true);
+    const name = `HoodieStretch_${Math.round(100 * time)}`;
+    if (poseOutput) {
+      frames[name] = surface.skeleton.bones.map((bone, j) => boneMatrix
+        .multiplyMatrices(bone.matrixWorld, surface.skeleton.boneInverses[j])
+        .premultiply(surface.bindMatrixInverse).multiply(surface.bindMatrix).toArray());
+    }
     for (const a of nodes) {
       a.start ??= new THREE.Vector3();
       a.posed ??= new THREE.Vector3();
@@ -259,12 +266,13 @@ try {
       if (Math.abs(matrix.determinant()) < .08 || weight < .01) continue;
       a.bindDelta.copy(a.posed).sub(a.start).applyMatrix3(matrix.invert()).divideScalar(weight).clampLength(0, .045);
     }
-    appendTarget(`HoodieStretch_${Math.round(100 * time)}`);
+    appendTarget(name);
   }
   for (const time of [.90, 1.90, 2.65, 3.45, 4.30, 5.20, 6.15, 6.85, 7.45]) bake(time);
   rig.dispose();
   save(resolve(output));
   writeFileSync(seatOutput, originalSeat);
+  if (poseOutput) writeFileSync(poseOutput, JSON.stringify({ frames, unfitted: Array.from(original) }));
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

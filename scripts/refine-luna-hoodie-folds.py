@@ -1,7 +1,7 @@
 """Blender pass for the fitted hoodie's shoulder morphs, preserving runtime GLB indices.
 
 blender --background --factory-startup --python-exit-code 1 \
-  --python scripts/refine-luna-hoodie-folds.py -- fitted.glb refined.glb [review.blend]
+  --python scripts/refine-luna-hoodie-folds.py -- fitted.glb refined.glb pose-data.json [review.blend]
 """
 import json
 import os
@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 import bpy
 import numpy as np
+from mathutils import Matrix
 
 
 def write_glb(path, doc, binary):
@@ -31,7 +32,169 @@ def unit(v):
     return v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-9)
 
 
-def refine(source, output, review=None):
+def smooth(lo, hi, x):
+    t = np.clip((x - lo) / (hi - lo), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def qmul(a, b):
+    aw, av = a[..., :1], a[..., 1:]
+    bw, bv = b[..., :1], b[..., 1:]
+    return np.concatenate((aw * bw - np.sum(av * bv, axis=-1, keepdims=True), aw * bv + bw * av + np.cross(av, bv)), axis=-1)
+
+
+def qconj(q):
+    return q * np.array([1, -1, -1, -1])
+
+
+def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, joints, unfitted):
+    """Return the bind-space offset that reproduces the relaxed posed surface with linear skinning."""
+    all_linear = matrices[:, :3, :3]
+    all_translate = matrices[:, :3, 3]
+    rotation = np.array([tuple(Matrix(r.tolist()).to_quaternion().normalized()) for r in all_linear])
+    dual = .5 * qmul(np.c_[np.zeros(len(rotation)), all_translate], rotation)
+    real = rotation[indices]
+    signs = np.where((real * real[:, :1, :]).sum(axis=-1) < 0, -1., 1.)
+    weighted = weights * signs
+    product = (real * weighted[:, :, None]).sum(axis=1)
+    total = np.linalg.norm(product, axis=1, keepdims=True)
+    product /= np.maximum(total, 1e-9)
+    dual = (dual[indices] * weighted[:, :, None]).sum(axis=1) / np.maximum(total, 1e-9)
+    blend = (all_linear[indices] * weights[:, :, None, None]).sum(axis=1)
+    translation = (all_translate[indices] * weights[:, :, None]).sum(axis=1)
+    transform = lambda points: np.einsum('nij,nj->ni', blend, points) + translation
+    original = transform(base + previous)
+    rigid = qmul(qmul(product, np.c_[np.zeros(len(base)), base]), qconj(product))[:, 1:]
+    rigid += 2 * qmul(dual, qconj(product))[:, 1:]
+    is_arm = np.array([n.endswith(('Arm', 'Shoulder')) and ('Left' in n or 'Right' in n) for n in names])
+    is_body = np.array([n.endswith(('Spine', 'Spine1', 'Spine2', 'Hips')) for n in names])
+    arm = (is_arm[indices] * weights).sum(axis=1)
+    cloth = ((is_arm | is_body)[indices] * weights).sum(axis=1)
+    x, y = np.abs(base[:, 0]), base[:, 1]
+    mask = smooth(.894, .995, cloth) * smooth(.044, .085, x) * smooth(.443, .50, y) * (1 - smooth(.745, .805, y))
+    # Keep fullness around the elbow instead of letting a weighted matrix flatten it.
+    rotation_mix = .88 * mask * smooth(.14, .56, arm)
+    wanted = original + (rigid - transform(base)) * rotation_mix[:, None]
+    body = np.array([next(i for i, n in enumerate(names) if n.endswith(body_name))
+                     for body_name in ('Spine', 'Spine1', 'Spine2')])
+    body_w = np.column_stack((1 - smooth(.55, .65, y), smooth(.55, .65, y) * (1 - smooth(.64, .73, y)),
+                              smooth(.55, .65, y) * smooth(.64, .73, y)))
+    body_p = (np.einsum('kij,nj->nki', all_linear[body], base) + all_translate[body])
+    torso_pin = mask * smooth(.02, .14, arm) * (1 - smooth(.14, .53, arm)) * (1 - smooth(.625, .695, y))
+    wanted += ((body_p * body_w[:, :, None]).sum(axis=1) - wanted) * (torso_pin * .82)[:, None]
+    for side, sign in (('Left', 1), ('Right', -1)):
+        upper, elbow = [next(i for i, name in enumerate(names) if name.endswith(side + bone))
+                        for bone in ('Arm', 'ForeArm')]
+        shoulder = all_linear[upper] @ joints[upper] + all_translate[upper]
+        end = all_linear[upper] @ joints[elbow] + all_translate[upper]
+        axis = unit((end - shoulder)[None, :])[0]
+        activated = smooth(-.26, .42, axis[1])
+        contact = ((base[:, 0] * sign > 0) * mask * smooth(.20, .56, arm)
+                   * (1 - smooth(.66, .745, y)))
+        along = (wanted - shoulder) @ axis
+        radial = wanted - (shoulder + np.maximum(along, .012)[:, None] * axis)
+        length = np.linalg.norm(radial, axis=1)
+        lower = smooth(-.012, .026, -radial[:, 1])
+        armhole = contact * smooth(-.045, .015, along) * (1 - smooth(.070, .117, along))
+        # Pull the excess underarm gusset onto the sleeve root rather than lifting the sidewall.
+        excess = np.maximum(length - .042, 0)
+        wanted -= unit(radial) * (excess * armhole * lower * activated * .95)[:, None]
+        # The idle fix narrows the flank in the base mesh. Restore its original ease
+        # once the arm is raised and no longer needs that clearance.
+        restore = np.maximum(0, (unfitted[:, 0] - base[:, 0]) * sign)
+        restore *= smooth(.82, .995, cloth) * (1 - smooth(.22, .48, arm)) * (base[:, 0] * sign > 0)
+        restore *= smooth(.46, .51, y) * (1 - smooth(.65, .708, y)) * smooth(-.08, .41, axis[1])
+        wanted += restore[:, None] * np.array([sign, 0, 0]) * .98
+        mask = np.maximum(mask, smooth(.0001, .007, restore))
+        wrist = next(i for i, name in enumerate(names) if name.endswith(side + 'Hand'))
+        bent_elbow = all_linear[elbow] @ joints[elbow] + all_translate[elbow]
+        hand = all_linear[wrist] @ joints[wrist] + all_translate[wrist]
+        def along_segment(start, finish):
+            segment = finish - start
+            u = np.clip((wanted - start) @ segment / (segment @ segment), 0, 1)
+            return wanted - (start + u[:, None] * segment)
+        upper_radial = along_segment(shoulder, bent_elbow)
+        fore_radial = along_segment(bent_elbow, hand)
+        radial = np.where(np.linalg.norm(upper_radial, axis=1, keepdims=True) <
+                          np.linalg.norm(fore_radial, axis=1, keepdims=True), upper_radial, fore_radial)
+        radius = np.linalg.norm(radial, axis=1)
+        elbow_panel = ((base[:, 0] * sign > 0) * smooth(.67, .91, arm) * smooth(.086, .134, x)
+                       * smooth(.506, .551, y) * (1 - smooth(.648, .692, y)))
+        excess = np.maximum(radius - .045, 0)
+        wanted -= unit(radial) * (excess * elbow_panel * smooth(.044, .069, radius) * .96)[:, None]
+        mask = np.maximum(mask, elbow_panel)
+
+    # The scan fuses a few locks of hair to the shoulder. Let that tiny bridge relax;
+    # keep the rest of the hair and the face at their original poses.
+    hair_bones = np.array(['Hair_' in name for name in names])
+    hair = (hair_bones[indices] * weights).sum(axis=1)
+    seams = triangles[(hair[triangles].max(axis=1) > .6) & (cloth[triangles].max(axis=1) > .45)]
+    for_hair = np.unique(seams.ravel())
+    hair_mask = np.zeros(len(base))
+    hair_mask[for_hair] = smooth(.5, .85, hair[for_hair]) * smooth(.07, .11, x[for_hair]) * (1 - smooth(.75, .785, y[for_hair]))
+    mask = np.maximum(mask, hair_mask * .55)
+    # Weld coincident UV corners only in the solver, never in the shipping mesh.
+    _, first, at = np.unique(base, axis=0, return_index=True, return_inverse=True)
+    rest = base[first]
+    links = at[triangles[:, [[0, 1], [1, 2], [2, 0]]]].reshape(-1, 2)
+    links = np.unique(np.sort(links, axis=1), axis=0)
+    links = links[links[:, 0] != links[:, 1]]
+    a, b = links.T
+    l0 = np.linalg.norm(rest[a] - rest[b], axis=1)
+    # The source joins a small hair patch to the fleece. Ease the actual stitched
+    # edges; spread the offset away from the seam instead of moving each hair lock.
+    is_hair, is_cloth = hair[first] > .65, (cloth[first] > .56) & (hair[first] < .25)
+    paired = (is_hair[a] & is_cloth[b]) | (is_hair[b] & is_cloth[a])
+    paired &= (l0 < .017) & (hair_mask[first][a] + hair_mask[first][b] > .1)
+    a_h, b_c = np.where(is_hair[a[paired]], a[paired], b[paired]), np.where(is_cloth[b[paired]], b[paired], a[paired])
+    gap = wanted[first][b_c] - wanted[first][a_h]
+    gap_length = np.linalg.norm(gap, axis=1, keepdims=True)
+    gap *= np.minimum(.042, np.maximum(gap_length - l0[paired, None] * 1.7, 0) * .70) / np.maximum(gap_length, 1e-9)
+    force = np.zeros((len(first), 3))
+    np.add.at(force, a_h, gap)
+    degree = np.bincount(a_h, minlength=len(first))
+    force /= np.maximum(degree, 1)[:, None]
+    hair_edge = (is_hair[a] & is_hair[b]) & (l0 < .013)
+    links_from = np.r_[a[hair_edge], b[hair_edge]]
+    links_to = np.r_[b[hair_edge], a[hair_edge]]
+    degree_h = np.maximum(np.bincount(links_from, minlength=len(first)), 1)[:, None]
+    source = force.copy()
+    for _ in range(8):
+        values = np.zeros_like(force)
+        np.add.at(values, links_from, force[links_to])
+        force = .88 * values / degree_h
+        force[degree > 0] = source[degree > 0]
+    freedom = smooth(.00015, .006, np.linalg.norm(force, axis=1)) * (1 - smooth(.757, .787, rest[:, 1]))
+    wanted += (force * freedom[:, None])[at]
+    mask = np.maximum(mask, freedom[at] * .75)
+    active = (mask[first][a] + mask[first][b] > .015) & (l0 > .0006)
+    a, b, l0 = a[active], b[active], l0[active]
+    root = original[first]
+    target = wanted[first]
+    posed = target.copy()
+    mobility = mask[first] * (.36 + .64 * smooth(.06, .60, arm[first]))
+    total = mobility[a] + mobility[b]
+    counts = np.maximum(np.bincount(np.r_[a, b], minlength=len(first)), 1.)[:, None]
+    limits = l0[:, None] * 1.22 + .00065
+    # Project stretched edges back toward their material lengths without collapsing compressed folds.
+    for _ in range(225):
+        edge = posed[b] - posed[a]
+        length = np.linalg.norm(edge, axis=1, keepdims=True)
+        pull = edge * np.maximum(length - limits, 0) / np.maximum(length, 1e-9)
+        pull *= .95 / np.maximum(total[:, None], 1e-8)
+        change = np.column_stack([np.bincount(a, pull[:, k] * mobility[a], minlength=len(first))
+                                  - np.bincount(b, pull[:, k] * mobility[b], minlength=len(first)) for k in range(3)])
+        posed += change / counts + (target - posed) * .009
+    displacement = posed - root
+    displacement *= np.minimum(1., .070 * mask[first, None] / np.maximum(np.linalg.norm(displacement, axis=1, keepdims=True), 1e-9))
+    inverse = np.linalg.pinv(blend, rcond=.18)
+    delta = np.einsum('nij,nj->ni', inverse, displacement[at])
+    delta *= np.minimum(1, .079 / np.maximum(np.linalg.norm(delta, axis=1, keepdims=True), 1e-9))
+    delta[np.linalg.norm(delta, axis=1) < .0002] = 0
+    return delta.astype(np.float32)
+
+
+def refine(source, output, pose_data, review=None):
     raw = source.read_bytes()
     magic, version, length, json_size, chunk = struct.unpack_from('<4sIIII', raw)
     assert (magic, version, length, chunk) == (b'glTF', 2, len(raw), 0x4E4F534A)
@@ -46,7 +209,7 @@ def refine(source, output, review=None):
 
     def read(index):
         a = doc['accessors'][index]
-        dim = {'SCALAR': 1, 'VEC3': 3, 'VEC4': 4}[a['type']]
+        dim = {'SCALAR': 1, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}[a['type']]
         dtype = {5121: 'u1', 5123: '<u2', 5125: '<u4', 5126: '<f4'}[a['componentType']]
         if 'bufferView' in a:
             v = doc['bufferViews'][a['bufferView']]
@@ -86,6 +249,10 @@ def refine(source, output, review=None):
         return index
 
     base = read(attributes['POSITION'])
+    bind = read(doc['skins'][0]['inverseBindMatrices']).reshape(-1, 4, 4).transpose(0, 2, 1)
+    bind_joints = np.linalg.inv(bind)[:, :3, 3]
+    recorded = json.loads(pose_data.read_text())
+    unfitted = np.asarray(recorded['unfitted'], dtype=np.float32).reshape(base.shape)
     original_normals = read(attributes['NORMAL'])
     tri = read(primitive['indices']).reshape(-1, 3)
     joints, weights = (read(attributes[key]) for key in ('JOINTS_0', 'WEIGHTS_0'))
@@ -105,12 +272,6 @@ def refine(source, output, review=None):
     welded, first, at = np.unique(base_xyz, axis=0, return_index=True, return_inverse=True)
     welded_tri = at[tri]
     welded_tri = welded_tri[(welded_tri[:, 0] != welded_tri[:, 1]) & (welded_tri[:, 1] != welded_tri[:, 2]) & (welded_tri[:, 2] != welded_tri[:, 0])]
-    links = np.unique(np.concatenate([welded_tri[:, [0, 1]], welded_tri[:, [0, 2]], welded_tri[:, [1, 2]]]).reshape(-1, 2), axis=0)
-    links = np.unique(np.sort(links, axis=1), axis=0)
-    a, b = np.r_[links[:, 0], links[:, 1]], np.r_[links[:, 1], links[:, 0]]
-    amount = 1 / np.maximum(.0015, np.linalg.norm(welded[a] - welded[b], axis=1))
-    total = np.maximum(np.bincount(a, amount, minlength=len(welded)), 1e-9)
-    local_mask = mask[first]
     normals_mesh = bpy.data.meshes.new('Working welded shoulder normals')
     normals_mesh.from_pydata(welded.tolist(), [], welded_tri.tolist())
 
@@ -157,13 +318,9 @@ def refine(source, output, review=None):
         assert np.allclose(before, base_xyz + to_blender(before_delta), atol=1e-6, rtol=0), name
         deformed = before.copy()
         if name.startswith('HoodieStretch_') and 430 <= int(name.rsplit('_', 1)[1]) <= 685:
-            delta = to_blender(before_delta)[first]
-            avg = np.column_stack([np.bincount(a, amount * delta[b, axis], minlength=len(welded)) / total for axis in range(3)])
-            correction = (avg - delta) * (.38 * local_mask[:, None])
-            size = np.linalg.norm(correction, axis=1, keepdims=True)
-            correction *= np.minimum(1, .0016 / np.maximum(size, 1e-9))
-            correction[size[:, 0] < .000035] = 0
-            deformed += correction[at]
+            matrices = np.asarray(recorded['frames'][name]).reshape(-1, 4, 4).transpose(0, 2, 1)
+            addition = sleeve_volume(matrices, base, before_delta, joints, weights, bone_names, tri, bind_joints, unfitted)
+            deformed += to_blender(addition)
             block.data.foreach_set('co', np.ascontiguousarray(deformed[blender_to_gltf]).ravel())
             block.data.foreach_get('co', imported.ravel())
             deformed = imported[gltf_to_blender]
@@ -192,5 +349,5 @@ def refine(source, output, review=None):
 
 if __name__ == '__main__':
     values = sys.argv[sys.argv.index('--') + 1:]
-    assert len(values) in (2, 3), __doc__
+    assert len(values) in (3, 4), __doc__
     print(json.dumps(refine(*(Path(value) for value in values))))

@@ -317,6 +317,26 @@ test('fitted cloud hoodie clears both flanks through standing and yawn and eases
         assert.ok(ratios[Math.floor(.95 * ratios.length)] < 3.8, `armhole strain at ${time}`);
       }
     }
+    // When the arms clear the torso, the standing compression must not leave the fleece cinched.
+    const time = 6.85;
+    rig.applyPose(0, 0, 1);
+    player({ ...idle, restWeight: 1, weight: 1, yawnTime: time, yawnWeight: 1 });
+    rig.applyArmCorrectives(true, time, 1);
+    rig.mesh.updateMatrixWorld(true);
+    for (let i = 0; i < position.count; i++) mesh.getVertexPosition(i, p).toArray(posed.array, 3 * i);
+    rig.applyArmCorrectives(false, time, 1);
+    for (const side of [-1, 1]) {
+      const ease = [];
+      for (let i = 0; i < position.count; i++) {
+        const x = side * position.getX(i), y = position.getY(i);
+        if (x >= .04 && x <= .103 && y >= .53 && y <= .63 && arm[i] <= .2) {
+          ease.push(side * (posed.getX(i) - mesh.getVertexPosition(i, p).x));
+        }
+      }
+      ease.sort((a, b) => a - b);
+      assert.ok(ease.length > 100 && ease[Math.floor(ease.length * .75)] > .02,
+        `raised sleeve must preserve loose fabric at flank ${side}`);
+    }
     rig.applyArmCorrectives(false, 5.2, 1);
     assert.ok(mesh.morphTargetInfluences.every(weight => weight === 0));
   } finally {

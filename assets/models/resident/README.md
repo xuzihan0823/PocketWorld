@@ -64,9 +64,9 @@ blender --background --factory-startup --python-exit-code 1 \
 - **面部精修与下颌权重校准**：补齐右眉上方刘海 4 面微小缝隙、沿 `-Y` 轻雕 `+1.8 mm` 柔和鼻梁轮廓，并将整段下巴与下颌顶点完整归入 `mixamorig:Head` 刚性头骨区消除垂颈尖角；在 2K 底色贴图上按 3D 网格重心坐标精准绘制柔和鼻尖点、珊瑚粉微笑嘴角、眼下暖桃腮红、清晰眉睫与双眼高光点，同时先解包后重新打包修改后的贴图并把材质自发光降至 `0.32`、粗糙度抬升至 `0.68–0.96`，在保持暖桃肤色微调的同时清晰呈现五官层次。
 - **平底针织袜脚**：在脚踝（`z = 0.084`）处移除原高跟靴，以 Luna 原始光脚模板重塑无分趾圆润平底针织袜脚并精确保留 `+16°` 绑定跖屈角与脚踝/脚掌/脚趾权重，使站立和行走时双脚掌贴地放平。
 - **手臂自然下垂的衣服挤压形态键**：先对 Tripo 原模粘连的腋下袖身进行平面切分，并以共享腋下折脊与 3 圈同心环结构化封闭躯干侧壁与袖内壁（保证 `z < 0.630` 零跨区桥接面且坐姿抬臂无空洞），在腋下折脊上方（`z >= 0.634`）平滑过渡插肩袖权重；再于独立场景 `Hoodie_ClothSim` 中对平滑代理笼执行无循环依赖的 Blender Cloth 自碰撞模拟，叠加整袖 6.8° 蓬松外展缓冲、`C∞` 平滑分离面 `x_sep(y, z)`（保护正面云朵口袋、蝴蝶结与袖外侧丝带，严控袖内壁局部压平上限 `<= 1.2 cm` 防止内壁穿出外袖）反解出蒙皮前稀疏形态键 `LeftArmContact` 与 `RightArmContact`。运行时由 `residentRig.ts` 按左右臂下垂程度与前伸幅度独立驱动，抬手或进入椅子/沙发/取书姿态时自动释放。
-- **运行时肩袖贴合**：Blender 导出后执行 `scripts/finish-luna-cloud-hoodie.mjs`，修整内袖与侧腰，沿腋下接缝平滑蒙皮权重，并按原伸懒腰动作烘焙 9 个稀疏局部修形，浏览器只插值权重。椅面缓存按新底网重新量化，接触点骨权重与原烘焙保持一致。`.blend` 保存的是后处理前的可编辑源。随后由 `scripts/refine-luna-hoodie-folds.py` 在 Blender 内柔化抬臂肩袖折面，并给形态键烘焙局部法线修正；只写回形态键数据，不重排运行时顶点或改动动作、坐姿缓存。
+- **运行时肩袖贴合**：Blender 导出后执行 `scripts/finish-luna-cloud-hoodie.mjs`，修整内袖与侧腰，沿腋下接缝平滑蒙皮权重，并按原伸懒腰动作烘焙 9 个稀疏局部修形，浏览器只插值权重。椅面缓存按新底网重新量化，接触点骨权重与原烘焙保持一致。`.blend` 保存的是后处理前的可编辑源。随后由 `scripts/refine-luna-hoodie-folds.py` 采样实际骨骼变换，在 Blender 内恢复抬臂侧腰留量、重塑肘弯外缘，并松弛贴肩发梢与衣料的连接边，烘焙局部形态和法线；只写回形态键数据，不重排运行时顶点或改动动作、坐姿缓存。
 - **运行资源**：
-  - `assets/public/models/resident/luna-cloud-hoodie.glb`：`5,311,648` bytes（5.07 MiB），44,938 三角面，38,514 顶点（100% 四骨归一化蒙皮），含 `Walk_Grounded_Loop`、`ChairSit_Contact`、`_CONTACT_ID` 与针对挺直站姿标定的稀疏 `LeftArmContact`/`RightArmContact` 形态键；材质采用哑光抓绒参数（`normalScale = 0.20`、`metallicFactor = 0`、粗糙度 `0.68–0.96`、底色复用为 `0.32` 强度自发光）。
+  - `assets/public/models/resident/luna-cloud-hoodie.glb`：`5,773,404` bytes（5.51 MiB），44,938 三角面，38,514 顶点（100% 四骨归一化蒙皮），含 `Walk_Grounded_Loop`、`ChairSit_Contact`、`_CONTACT_ID` 与针对挺直站姿标定的稀疏 `LeftArmContact`/`RightArmContact` 形态键；材质采用哑光抓绒参数（`normalScale = 0.20`、`metallicFactor = 0`、粗糙度 `0.68–0.96`、底色复用为 `0.32` 强度自发光）。
   - `assets/public/models/resident/luna-cloud-hoodie-seat.bin`：`605,072` bytes，98 帧、1,029 个局部坐姿接触顶点的 `PWSC` v1 缓存（针对 `Luna-Sit-ContactFixed.blend` 真实固定椅烘焙，并与新底网对齐）。
 - **复建命令**（Blender 5.2.3 LTS，外部源模型与诊断渲染均留在仓库外）：
 
