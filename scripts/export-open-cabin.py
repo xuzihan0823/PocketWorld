@@ -1,6 +1,7 @@
 """Export the two deck sets and the observatory shell from open-cabin.blend."""
 from pathlib import Path
-from math import cos, pi, sin, tau
+from math import cos, hypot, pi, sin, tau
+import sys
 
 import bmesh
 import bpy
@@ -256,123 +257,377 @@ def bedroom_walls():
     return parts
 
 
-def create_lower_sea_salt_rug():
-    """Author a crisp low-profile sea-salt woven cotton rug with braided border & cream fringe on Floor 1."""
-    # Woven cotton albedo texture (512x512): sea-salt field + ice-mist stripe + ivory outer border.
-    sz = 512
+LOWER_RUG_CENTER = (0.65, -0.22)  # Blender XY (Three.js X=0.65, Z=0.22)
+LOWER_RUG_HALF = (1.66, 1.43)
+LOWER_RUG_CORNER = 0.30
+UPPER_RUG_CENTER = (-4.05, -0.115)  # Blender XY (Three.js X=-4.05, Z=0.115)
+UPPER_RUG_RADII = (1.08, 0.62)
+LEGACY_UPPER_RUG_NAMES = {
+    "Oval bedside rug",
+    "Braided border",
+    "Braided border.001",
+    "Braided border.002",
+    "Braided border.003",
+}
+
+
+def _blur2d(arr, passes=1):
+    out = arr.astype(np.float32, copy=True)
+    for _ in range(passes):
+        out = (
+            out * 0.25
+            + (np.roll(out, 1, 0) + np.roll(out, -1, 0) + np.roll(out, 1, 1) + np.roll(out, -1, 1)) * 0.125
+            + (
+                np.roll(np.roll(out, 1, 0), 1, 1)
+                + np.roll(np.roll(out, 1, 0), -1, 1)
+                + np.roll(np.roll(out, -1, 0), 1, 1)
+                + np.roll(np.roll(out, -1, 0), -1, 1)
+            )
+            * 0.0625
+        )
+    return out
+
+
+def _plush_tuft_fields(sz, cell_nx, cell_ny, seed):
+    """Vectorized Voronoi plush wool tuft field + combed nap wave + microfiber grain."""
+    rng = np.random.default_rng(seed)
     yy, xx = np.mgrid[0:sz, 0:sz].astype(np.float32) / float(sz)
-    # Fine orthogonal cotton basketweave grain
-    warp = np.sin(xx * tau * 96.0) * 0.5 + 0.5
-    weft = np.sin(yy * tau * 84.0) * 0.5 + 0.5
-    weave = (warp * 0.52 + weft * 0.48 - 0.5) * 0.042
-    slub = np.sin(xx * tau * 17.0 + np.sin(yy * tau * 9.0) * 0.6) * 0.012
-    # Distance to nearest rug edge in UV space [0..0.5]
-    edge = np.minimum(np.minimum(xx, 1.0 - xx), np.minimum(yy, 1.0 - yy))
-    # Subtle soft geometric diamond/stripe motif inside the sea-salt field
-    stripe_band = ((edge >= 0.072) & (edge < 0.106)).astype(np.float32)
-    outer_border = (edge < 0.056).astype(np.float32)
-    pin_line = ((edge >= 0.056) & (edge < 0.064)).astype(np.float32)
-    # Delicate diagonal herringbone weave modulation inside the main field
-    chevron = np.sin((xx * 26.0 + np.abs((yy * 18.0) % 2.0 - 1.0) * 2.0) * tau) * 0.014
 
-    base_r = np.full((sz, sz), 0.305, dtype=np.float32) + chevron
-    base_g = np.full((sz, sz), 0.432, dtype=np.float32) + chevron * 0.9
-    base_b = np.full((sz, sz), 0.542, dtype=np.float32) + chevron * 0.78
+    # Low-frequency combed plush nap swirl (gives soft velvety light/dark patches)
+    nap_u = _blur2d(rng.normal(0.0, 1.0, (sz // 4, sz // 4)), 6)
+    nap_v = _blur2d(rng.normal(0.0, 1.0, (sz // 4, sz // 4)), 6)
+    nap_u = np.repeat(np.repeat(nap_u, 4, axis=0), 4, axis=1)[:sz, :sz]
+    nap_v = np.repeat(np.repeat(nap_v, 4, axis=0), 4, axis=1)[:sz, :sz]
+    nap_u = _blur2d(nap_u, 3)
+    nap_v = _blur2d(nap_v, 3)
+    nap_norm = np.sqrt(nap_u * nap_u + nap_v * nap_v + 1e-4)
+    nap_dx = nap_u / nap_norm
+    nap_dy = nap_v / nap_norm
 
-    # Warm honey-mustard woven inner framing band (#D4AC65)
-    base_r = base_r * (1.0 - stripe_band) + 0.832 * stripe_band
-    base_g = base_g * (1.0 - stripe_band) + 0.675 * stripe_band
-    base_b = base_b * (1.0 - stripe_band) + 0.396 * stripe_band
-    # Thin deep indigo pinstripe (#2F465C)
-    base_r = base_r * (1.0 - pin_line) + 0.185 * pin_line
-    base_g = base_g * (1.0 - pin_line) + 0.275 * pin_line
-    base_b = base_b * (1.0 - pin_line) + 0.362 * pin_line
-    # Warm cream-ivory woven outer border (#F0EAE0)
-    base_r = base_r * (1.0 - outer_border) + 0.942 * outer_border
-    base_g = base_g * (1.0 - outer_border) + 0.916 * outer_border
-    base_b = base_b * (1.0 - outer_border) + 0.876 * outer_border
+    # Subtle warp of tuft coordinates along combed nap direction
+    gx = xx * cell_nx + nap_dx * 0.18
+    gy = yy * cell_ny + nap_dy * 0.18
+    ix = np.floor(gx).astype(np.int32)
+    iy = np.floor(gy).astype(np.int32)
 
-    rgba = np.ones((sz, sz, 4), dtype=np.float32)
-    rgba[..., 0] = np.clip(base_r + weave + slub, 0.0, 1.0)
-    rgba[..., 1] = np.clip(base_g + weave + slub * 0.9, 0.0, 1.0)
-    rgba[..., 2] = np.clip(base_b + weave + slub * 0.8, 0.0, 1.0)
+    jx_grid = rng.uniform(0.14, 0.86, (cell_ny, cell_nx)).astype(np.float32)
+    jy_grid = rng.uniform(0.14, 0.86, (cell_ny, cell_nx)).astype(np.float32)
+    rand_grid = rng.uniform(0.0, 1.0, (cell_ny, cell_nx)).astype(np.float32)
+    ht_grid = rng.uniform(0.55, 1.0, (cell_ny, cell_nx)).astype(np.float32)
 
-    img = bpy.data.images.new("SeaSalt_Rug_Weave", width=sz, height=sz, alpha=False)
-    img.colorspace_settings.name = "sRGB"
+    min_d2 = np.full((sz, sz), 1e9, dtype=np.float32)
+    best_u = np.zeros((sz, sz), dtype=np.float32)
+    best_v = np.zeros((sz, sz), dtype=np.float32)
+    best_rand = np.zeros((sz, sz), dtype=np.float32)
+    best_ht = np.ones((sz, sz), dtype=np.float32)
+
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            nx = (ix + dx) % cell_nx
+            ny = (iy + dy) % cell_ny
+            cx = (ix + dx).astype(np.float32) + jx_grid[ny, nx]
+            cy = (iy + dy).astype(np.float32) + jy_grid[ny, nx]
+            ddx = gx - cx
+            ddy = gy - cy
+            d2 = ddx * ddx + ddy * ddy
+            mask = d2 < min_d2
+            min_d2 = np.where(mask, d2, min_d2)
+            best_u = np.where(mask, np.clip(cx / cell_nx, 0.0, 1.0), best_u)
+            best_v = np.where(mask, np.clip(cy / cell_ny, 0.0, 1.0), best_v)
+            best_rand = np.where(mask, rand_grid[ny, nx], best_rand)
+            best_ht = np.where(mask, ht_grid[ny, nx], best_ht)
+
+    dist = np.sqrt(min_d2)
+    mound = np.clip(1.0 - np.power(np.clip(dist / 0.68, 0.0, 1.0), 1.65), 0.0, 1.0) * best_ht
+    micro = _blur2d(rng.normal(0.0, 1.0, (sz, sz)), 1)
+    height = _blur2d(mound * 0.78 + np.clip(micro * 0.16 + 0.12, 0.0, 0.28), 1)
+    nap_sheen = (nap_dx * 0.65 - nap_dy * 0.76) * 0.5 + 0.5
+    return xx, yy, mound, height, best_u, best_v, best_rand, nap_sheen
+
+
+def _pack_image(name, rgba, colorspace="sRGB"):
+    old = bpy.data.images.get(name)
+    if old is not None:
+        bpy.data.images.remove(old)
+    sz = rgba.shape[0]
+    img = bpy.data.images.new(name, width=sz, height=sz, alpha=False)
+    img.colorspace_settings.name = colorspace
     img.pixels.foreach_set(rgba.ravel())
     img.pack()
+    return img
 
-    rug_mat = bpy.data.materials.new("Rug | sea-salt cotton weave")
-    rug_mat.use_nodes = True
-    nt = rug_mat.node_tree
+
+def _normal_from_height(height, strength=2.6):
+    dx = (np.roll(height, -1, 1) - np.roll(height, 1, 1)) * strength
+    dy = (np.roll(height, -1, 0) - np.roll(height, 1, 0)) * strength
+    n_vec = np.stack((-dx, -dy, np.ones_like(height)), axis=-1)
+    n_vec /= np.linalg.norm(n_vec, axis=-1, keepdims=True)
+    rgba = np.ones((height.shape[0], height.shape[1], 4), dtype=np.float32)
+    rgba[..., :3] = n_vec * 0.5 + 0.5
+    return rgba
+
+
+def _make_plush_rug_material(name, albedo_img, normal_img, base_rgb, normal_strength=0.45, roughness=0.96, sheen=0.72):
+    old = bpy.data.materials.get(name)
+    if old is not None:
+        bpy.data.materials.remove(old)
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = (*base_rgb, 1.0)
+    nt = mat.node_tree
     bsdf = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    bsdf.inputs["Roughness"].default_value = 0.92
-    tex = nt.nodes.new("ShaderNodeTexImage")
-    tex.image = img
-    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = 0.0
+    if "Specular IOR Level" in bsdf.inputs:
+        bsdf.inputs["Specular IOR Level"].default_value = 0.14
+    if "Sheen Weight" in bsdf.inputs:
+        bsdf.inputs["Sheen Weight"].default_value = sheen
+    if "Sheen Roughness" in bsdf.inputs:
+        bsdf.inputs["Sheen Roughness"].default_value = 0.78
 
-    fringe_mat = finish("Rug | ivory cotton fringe", "efeae1", roughness=0.94)
+    atex = nt.nodes.new("ShaderNodeTexImage")
+    atex.image = albedo_img
+    nt.links.new(atex.outputs["Color"], bsdf.inputs["Base Color"])
 
-    # Rounded-rectangle flatweave body: Three.js X in [-1.01, +2.31], Z in [-1.21, +1.65]
-    # Blender coords: X = Three.js X, Y = -Three.js Z, Z = Three.js Y
-    cx, cy = 0.65, -0.22
-    hx, hy = 1.66, 1.43
-    corner = 0.22
-    arc_steps = 6
-    ring = []
+    ntex = nt.nodes.new("ShaderNodeTexImage")
+    ntex.image = normal_img
+    nmap = nt.nodes.new("ShaderNodeNormalMap")
+    nmap.inputs["Strength"].default_value = normal_strength
+    nt.links.new(ntex.outputs["Color"], nmap.inputs["Color"])
+    nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
+
+def _rounded_rect_sdf(px, py, hx, hy, corner):
+    qx = np.abs(px) - (hx - corner)
+    qy = np.abs(py) - (hy - corner)
+    out_d = np.sqrt(np.maximum(qx, 0.0) ** 2 + np.maximum(qy, 0.0) ** 2)
+    in_d = np.minimum(np.maximum(qx, qy), 0.0)
+    return out_d + in_d - corner
+
+
+def _rounded_rect_perimeter(hx, hy, corner, arc_steps=8, edge_steps=10):
+    """Build a uniform-density rounded rectangle loop in Blender XY."""
+    pts = []
     corners = [
         (hx - corner, hy - corner, 0.0),
         (-hx + corner, hy - corner, pi * 0.5),
         (-hx + corner, -hy + corner, pi),
         (hx - corner, -hy + corner, pi * 1.5),
     ]
-    for ox, oy, a0 in corners:
-        for s in range(arc_steps + 1):
+    for ci, (ox, oy, a0) in enumerate(corners):
+        for s in range(arc_steps):
             ang = a0 + (pi * 0.5) * (s / arc_steps)
-            ring.append((ox + corner * cos(ang), oy + corner * sin(ang)))
+            pts.append((ox + corner * cos(ang), oy + corner * sin(ang)))
+        # Straight segment to the start of the next corner arc
+        ang_end = a0 + pi * 0.5
+        p0 = (ox + corner * cos(ang_end), oy + corner * sin(ang_end))
+        nox, noy, na0 = corners[(ci + 1) % 4]
+        p1 = (nox + corner * cos(na0), noy + corner * sin(na0))
+        for e in range(edge_steps):
+            t = e / edge_steps
+            pts.append((p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t))
+    return pts
 
+
+def _build_pillowed_rug_mesh(mesh_name, outer_pts, hx, hy, ring_specs, fluff_amp, seed_phase):
+    """Build a smooth, pole-safe pillowed cushion mesh in local coordinates with organic plush loft."""
     bm = bmesh.new()
-    n = len(ring)
-    # Outer skirt rests cleanly just above Floor_Parquet (0.0005 m) and ramps gently to 0.0045 m top
-    bot_verts = [bm.verts.new((cx + px, cy + py, 0.0005)) for px, py in ring]
-    top_verts = [bm.verts.new((cx + px * 0.988, cy + py * 0.988, 0.0045)) for px, py in ring]
-    center_v = bm.verts.new((cx, cy, 0.0048))
+    n = len(outer_pts)
+    rings = []
+    for ring_scale, z_base, edge_wave in ring_specs:
+        ring = []
+        for idx, (px, py) in enumerate(outer_pts):
+            ang = tau * idx / n
+            wave = 1.0 + edge_wave * (
+                0.55 * sin(ang * 13.0 + seed_phase)
+                + 0.30 * cos(ang * 23.0 - seed_phase * 1.3)
+                + 0.15 * sin(ang * 37.0 + seed_phase * 0.7)
+            )
+            rx = px * ring_scale * wave
+            ry = py * ring_scale * wave
+            # Gentle organic wool-pile cushion micro-loft across the top plateau
+            loft = fluff_amp * (1.0 - min(1.0, (ring_scale / 0.96) ** 4)) * (
+                0.50 * sin(rx * 5.2 + ry * 3.8 + seed_phase)
+                + 0.30 * cos(rx * 9.4 - ry * 7.6)
+                + 0.20 * sin(rx * 15.0 + ry * 14.0)
+            )
+            ring.append(bm.verts.new((rx, ry, z_base + loft)))
+        rings.append(ring)
+
+    for r in range(len(rings) - 1):
+        lo = rings[r]
+        hi = rings[r + 1]
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((lo[i], lo[j], hi[j], hi[i]))
+
+    inner = rings[-1]
+    center_z = ring_specs[-1][1] + fluff_amp * 0.15
+    center_v = bm.verts.new((0.0, 0.0, center_z))
     for i in range(n):
         j = (i + 1) % n
-        bm.faces.new((bot_verts[i], bot_verts[j], top_verts[j], top_verts[i]))
-        bm.faces.new((top_verts[i], top_verts[j], center_v))
+        bm.faces.new((inner[i], inner[j], center_v))
+
     bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
     # Match the existing UV layer name ("UVMap") on open-cabin.blend rugs so join_as merges UVs cleanly.
     uv_layer = bm.loops.layers.uv.new("UVMap")
     for face in bm.faces:
-        face.smooth = False
+        face.smooth = True
         for loop in face.loops:
             co = loop.vert.co
-            u = max(0.0, min(1.0, (co.x - (cx - hx)) / (2.0 * hx)))
-            v = max(0.0, min(1.0, (co.y - (cy - hy)) / (2.0 * hy)))
+            u = max(0.0, min(1.0, (co.x + hx) / (2.0 * hx)))
+            v = max(0.0, min(1.0, (co.y + hy) / (2.0 * hy)))
             loop[uv_layer].uv = (u, v)
 
-    mesh = bpy.data.meshes.new("Lower_SeaSalt_Rug")
+    old = bpy.data.meshes.get(mesh_name)
+    if old is not None:
+        bpy.data.meshes.remove(old)
+    mesh = bpy.data.meshes.new(mesh_name)
     bm.to_mesh(mesh)
     bm.free()
-    rug_obj = link_mesh("Lower_SeaSalt_Rug", mesh, rug_mat)
+    return mesh
 
-    # Subtle woven ivory cotton fringe along the left (-X) and right (+X) straight edges
-    parts = [rug_obj]
-    tassel_count = 26
-    y_span = (hy - corner - 0.05) * 2.0
-    for side in (-1, 1):
-        edge_x = cx + side * (hx + 0.032)
-        for idx in range(tassel_count):
-            ty = cy - y_span * 0.5 + y_span * (idx + 0.5) / tassel_count
-            parts.append(bedroom_box(
-                f"Rug fringe {side}_{idx}",
-                (edge_x, 0.0018, -ty),
-                (0.068, 0.0026, 0.022),
-                fringe_mat,
-                0.0008,
-            ))
-    return parts
+
+def create_lower_plush_rug():
+    """Author a thick, pillowy sea-salt vintage denim & cream hand-tufted plush rug on Floor 1."""
+    sz = 384
+    cx, cy = LOWER_RUG_CENTER
+    hx, hy = LOWER_RUG_HALF
+    corner = LOWER_RUG_CORNER
+
+    _, _, mound, height, cell_u, cell_v, cell_rand, nap_sheen = _plush_tuft_fields(sz, 88, 76, seed=20261122)
+
+    # Evaluate rounded-rectangle border distance at each Voronoi tuft center so border edges
+    # follow natural hand-tufted yarn clusters rather than crisp printed stripes.
+    cpx = (cell_u * 2.0 - 1.0) * hx
+    cpy = (cell_v * 2.0 - 1.0) * hy
+    edge_dist = -_rounded_rect_sdf(cpx, cpy, hx, hy, corner)
+
+    outer_cream = (edge_dist < 0.165).astype(np.float32)
+    honey_band = ((edge_dist >= 0.165) & (edge_dist < 0.265)).astype(np.float32)
+    denim_field = (edge_dist >= 0.265).astype(np.float32)
+
+    # Rich vintage sea-salt denim blue plush (#527896) with cozy melange yarn variance
+    heather = (cell_rand - 0.5) * 0.055
+    r = denim_field * (0.318 + heather * 0.7) + honey_band * (0.845 + heather * 0.5) + outer_cream * (0.948 + heather * 0.3)
+    g = denim_field * (0.468 + heather * 0.85) + honey_band * (0.692 + heather * 0.45) + outer_cream * (0.922 + heather * 0.3)
+    b = denim_field * (0.588 + heather * 0.95) + honey_band * (0.408 + heather * 0.35) + outer_cream * (0.882 + heather * 0.25)
+
+    # Plush root-to-tip depth + creamy tip light scattering + brushed nap wave
+    ao = 0.62 + 0.44 * mound
+    tip_glow = np.power(mound, 2.2) * 0.12
+    nap_mod = 0.94 + 0.12 * nap_sheen
+
+    rgba = np.ones((sz, sz, 4), dtype=np.float32)
+    rgba[..., 0] = np.clip(r * ao * nap_mod + tip_glow * 0.98, 0.0, 1.0)
+    rgba[..., 1] = np.clip(g * ao * nap_mod + tip_glow * 0.96, 0.0, 1.0)
+    rgba[..., 2] = np.clip(b * ao * nap_mod + tip_glow * 0.92, 0.0, 1.0)
+
+    albedo_img = _pack_image("Lower_Plush_Rug_Albedo", rgba, "sRGB")
+    normal_img = _pack_image("Lower_Plush_Rug_Normal", _normal_from_height(height, strength=3.0), "Non-Color")
+    rug_mat = _make_plush_rug_material(
+        "Rug | sea-salt tufted plush",
+        albedo_img,
+        normal_img,
+        (0.24, 0.37, 0.47),
+        normal_strength=0.52,
+        roughness=0.96,
+        sheen=0.72,
+    )
+
+    outer_pts = _rounded_rect_perimeter(hx, hy, corner, arc_steps=8, edge_steps=10)
+    ring_specs = [
+        (0.992, 0.0005, 0.0030),
+        (0.996, 0.0042, 0.0045),
+        (0.988, 0.0086, 0.0040),
+        (0.972, 0.0110, 0.0025),
+        (0.930, 0.0118, 0.0010),
+        (0.840, 0.0121, 0.0000),
+        (0.680, 0.0123, 0.0000),
+        (0.480, 0.0124, 0.0000),
+        (0.280, 0.0124, 0.0000),
+        (0.120, 0.0123, 0.0000),
+    ]
+    mesh = _build_pillowed_rug_mesh("Lower_Plush_Rug", outer_pts, hx, hy, ring_specs, fluff_amp=0.0008, seed_phase=0.4)
+    rug_obj = link_mesh("Lower_Plush_Rug", mesh, rug_mat)
+    rug_obj.location = (cx, cy, 0.0)
+    return [rug_obj]
+
+
+def create_upper_plush_rug(collection=None):
+    """Author a thick, cloud-soft warm cream lambswool oval plush rug on Floor 2 under the slippers."""
+    sz = 384
+    cx, cy = UPPER_RUG_CENTER
+    rx, ry = UPPER_RUG_RADII
+
+    _, _, mound, height, _, _, cell_rand, nap_sheen = _plush_tuft_fields(sz, 68, 42, seed=20261129)
+
+    # Warm creamy cloud-lambswool palette: warm oat roots (#C9B8A0) rising to milky cream tips (#FDF9F0)
+    fleece_var = (cell_rand - 0.5) * 0.036
+    base_r = 0.958 + fleece_var * 0.8
+    base_g = 0.928 + fleece_var * 0.9
+    base_b = 0.878 + fleece_var * 1.1
+
+    root_r, root_g, root_b = 0.77, 0.70, 0.61
+    pile_mix = np.clip(0.26 + 0.78 * np.power(mound, 0.78), 0.0, 1.0)
+    tip_glow = np.power(mound, 2.0) * 0.065
+    nap_mod = 0.955 + 0.09 * nap_sheen
+
+    rgba = np.ones((sz, sz, 4), dtype=np.float32)
+    rgba[..., 0] = np.clip((root_r * (1.0 - pile_mix) + base_r * pile_mix) * nap_mod + tip_glow, 0.0, 1.0)
+    rgba[..., 1] = np.clip((root_g * (1.0 - pile_mix) + base_g * pile_mix) * nap_mod + tip_glow * 0.98, 0.0, 1.0)
+    rgba[..., 2] = np.clip((root_b * (1.0 - pile_mix) + base_b * pile_mix) * nap_mod + tip_glow * 0.95, 0.0, 1.0)
+
+    albedo_img = _pack_image("Upper_Plush_Rug_Albedo", rgba, "sRGB")
+    normal_img = _pack_image("Upper_Plush_Rug_Normal", _normal_from_height(height, strength=3.4), "Non-Color")
+    rug_mat = _make_plush_rug_material(
+        "Rug | cream lambswool plush",
+        albedo_img,
+        normal_img,
+        (0.86, 0.80, 0.71),
+        normal_strength=0.58,
+        roughness=0.97,
+        sheen=0.78,
+    )
+
+    segs = 72
+    outer_pts = [(rx * cos(tau * i / segs), ry * sin(tau * i / segs)) for i in range(segs)]
+    # Top stays safely <= 0.0126 m so the slippers (baseY = 0.0134 m) rest cleanly on top without clipping.
+    ring_specs = [
+        (0.990, 0.0004, 0.0055),
+        (0.995, 0.0040, 0.0075),
+        (0.986, 0.0084, 0.0065),
+        (0.968, 0.0108, 0.0040),
+        (0.925, 0.0116, 0.0015),
+        (0.820, 0.0119, 0.0000),
+        (0.650, 0.0121, 0.0000),
+        (0.450, 0.0121, 0.0000),
+        (0.240, 0.0121, 0.0000),
+        (0.110, 0.0120, 0.0000),
+    ]
+    mesh = _build_pillowed_rug_mesh("Oval plush rug", outer_pts, rx, ry, ring_specs, fluff_amp=0.0005, seed_phase=1.9)
+    obj = bpy.data.objects.new("Oval plush rug", mesh)
+    obj.location = (cx, cy, 0.0)
+    mesh.materials.append(rug_mat)
+    target_col = collection or bpy.context.scene.collection
+    target_col.objects.link(obj)
+    return obj
+
+
+def update_blend_with_upper_plush_rug():
+    """Replace the legacy flat braided bedside rug inside open-cabin.blend with the sculpted plush rug."""
+    textiles_col = next(c for c in bpy.context.scene.collection.children if c.name.startswith("06"))
+    for obj in list(textiles_col.objects):
+        if obj.name in LEGACY_UPPER_RUG_NAMES or obj.name == "Oval plush rug":
+            bpy.data.objects.remove(obj, do_unlink=True)
+    create_upper_plush_rug(collection=textiles_col)
+    bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / "assets/models/cabin/open-cabin.blend"))
+
+
+if "--update-blend" in sys.argv:
+    update_blend_with_upper_plush_rug()
+    collections = {collection.name[:2]: list(collection.objects) for collection in bpy.context.scene.collection.children}
+    depsgraph = bpy.context.evaluated_depsgraph_get()
 
 
 deck_base = []
@@ -416,8 +671,15 @@ lower_parquet = cut_x(copy_mesh(parquet), DIVIDER_X, False, cap=False)
 bpy.data.objects.remove(parquet, do_unlink=True)
 rugs = collections["06"]
 lower_rugs = [obj for obj in rugs if obj.location.x >= DIVIDER_X]
-lower_rugs.extend(create_lower_sea_salt_rug())
-upper_rugs = [obj for obj in rugs if obj.location.x < DIVIDER_X]
+lower_rugs.extend(create_lower_plush_rug())
+upper_rugs = [obj for obj in rugs if obj.location.x < DIVIDER_X and obj.name not in LEGACY_UPPER_RUG_NAMES]
+for obj in list(rugs):
+    if obj.name in LEGACY_UPPER_RUG_NAMES:
+        bpy.data.objects.remove(obj, do_unlink=True)
+if not any(obj.name == "Oval plush rug" for obj in upper_rugs):
+    upper_rugs.insert(0, create_upper_plush_rug())
+else:
+    upper_rugs.sort(key=lambda o: 0 if o.name == "Oval plush rug" else 1)
 wardrobe_prefixes = ("Wardrobe", "Sliding panel", "Recessed brass pull", "Pull inset")
 wardrobe = [obj for obj in collections["03"] if obj.name.startswith(wardrobe_prefixes)]
 nightstand = [obj for obj in collections["03"] if obj not in wardrobe]

@@ -117,3 +117,46 @@ export const COMPUTER_STAND: [number, number] = [1.55, -1.36];
 export const LAMP_POSITION: [number, number, number] = [NIGHTSTAND_X - .31, .829, NIGHTSTAND_Z];
 export const PLANT_POSITION: [number, number, number] = [NIGHTSTAND_X + .31, .829, NIGHTSTAND_Z - .09];
 export const CLOCK_POSITION: [number, number, number] = [NIGHTSTAND_X + .34, 1.02, NIGHTSTAND_Z + .21];
+
+// Plush rug placements aligned with scripts/export-open-cabin.py (Three.js XZ metres).
+export const LOWER_PLUSH_RUG = {
+  center: [0.65, 0.22] as readonly [number, number],
+  halfSize: [1.66, 1.43] as readonly [number, number],
+  cornerRadius: 0.30,
+  baseY: 0.0114,
+  pileHeight: 0.026,
+} as const;
+
+export const UPPER_PLUSH_RUG = {
+  center: [-4.05, 0.115] as readonly [number, number],
+  radii: [1.08, 0.62] as readonly [number, number],
+  baseY: 0.0112,
+  pileHeight: 0.025,
+} as const;
+
+/** Signed distance inside a rounded rectangle (> 0 inside, 0 on border, < 0 outside). */
+export function roundedRectInwardDistance(
+  px: number,
+  pz: number,
+  hx: number,
+  hz: number,
+  corner: number,
+): number {
+  const qx = Math.abs(px) - (hx - corner);
+  const qz = Math.abs(pz) - (hz - corner);
+  const out = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
+  const inside = Math.min(Math.max(qx, qz), 0);
+  return -(out + inside - corner);
+}
+
+/** Whether an authored habitat floor coordinate rests on either the lower or upper plush rug. */
+export function isOnHabitatRug(x: number, z: number): boolean {
+  if (x < CABIN_DIVIDER_X) {
+    const [cx, cz] = UPPER_PLUSH_RUG.center;
+    const [rx, rz] = UPPER_PLUSH_RUG.radii;
+    return Math.hypot((x - cx) / rx, (z - cz) / rz) <= 1.0;
+  }
+  const [cx, cz] = LOWER_PLUSH_RUG.center;
+  const [hx, hz] = LOWER_PLUSH_RUG.halfSize;
+  return roundedRectInwardDistance(x - cx, z - cz, hx, hz, LOWER_PLUSH_RUG.cornerRadius) >= 0;
+}

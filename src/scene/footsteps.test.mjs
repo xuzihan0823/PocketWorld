@@ -236,6 +236,34 @@ test('walking after Space advances the resident and plays footsteps', () => {
   } finally { view.dispose(); }
 });
 
+test('walking across the lower and upper habitat plush rugs emits muffled rug footsteps', () => {
+  const view = mount('orbital');
+  try {
+    // 1. Lower floor plush rug interior
+    view.root.position.set(0.2, 0, 0.3);
+    view.key('KeyD');
+    for (let i = 0; i < 45; i++) view.frame(1 / 60);
+    view.key('KeyD', 'keyup');
+    assert.ok(view.sounds.some(s => s.surface === 'rug'), 'expected rug footsteps on lower plush rug');
+
+    // 2. Upper bedroom oval plush rug interior
+    view.sounds.length = 0;
+    view.root.position.set(-4.35, 0, 0.12);
+    view.key('KeyD');
+    for (let i = 0; i < 45; i++) view.frame(1 / 60);
+    view.key('KeyD', 'keyup');
+    assert.ok(view.sounds.some(s => s.surface === 'rug'), 'expected rug footsteps on upper plush rug');
+
+    // 3. Open oak parquet floor outside both rugs
+    view.sounds.length = 0;
+    view.root.position.set(2.65, 0, 0.6);
+    view.key('KeyS');
+    for (let i = 0; i < 45; i++) view.frame(1 / 60);
+    view.key('KeyS', 'keyup');
+    assert.ok(view.sounds.length > 0 && view.sounds.every(s => s.surface === 'wood'), 'expected wood footsteps off the rugs');
+  } finally { view.dispose(); }
+});
+
 test('the floor sofa blocks walking from the rug only inside the habitat', () => {
   const [x, , z] = cabinLayout.FLOOR_SOFA.position;
   for (const sceneId of ['habitat', 'observatory']) {

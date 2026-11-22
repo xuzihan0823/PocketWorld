@@ -13,6 +13,7 @@ import { FloorSofa } from './FloorSofa';
 import { AssetBoundary, ReusableAsset } from './ReusableAsset';
 import { cloneSuppliedModel } from './supplied-model';
 import { CHAIR_POSES } from './chairPose';
+import { ObservatoryPlushRugPile } from './PlushRugs';
 
 function FurnitureBed() {
   return <group position={BED_POSITION}>
@@ -130,6 +131,7 @@ export const HabitatFurniture: React.FC<WorldModelProps> = world => {
     <FurnitureBookcase world={world} />
     {observatory ? <>
       <SoftBox dims={[2.9, 0.025, 2.2]} position={[-1.5, 0.013, 0.8]} radius={0.01} color="#748f8a" />
+      <ObservatoryPlushRugPile />
       <FurnitureChair world={world} />
       <ReusableAsset path="furniture/throw_pillows_01.glb" width={0.52} position={[-1.65, 0.76, 0.9]} rotation={[0, 0.42, 0]} />
       <group position={[-0.25, 0, 0.85]}>

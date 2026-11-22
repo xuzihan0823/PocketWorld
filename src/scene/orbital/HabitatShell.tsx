@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { AssetBoundary } from './ReusableAsset';
 import { extractSlipperModel, isSlipperMaterial } from './slipperModel';
 import { ObjectHandle } from './ObjectHandle';
+import { LowerPlushRugPile, UpperPlushRugPile } from './PlushRugs';
 import type { WorldModelProps } from '../../types/world';
 
 interface HabitatShellProps {
@@ -56,6 +57,7 @@ function CabinModel({ world, deck }: Pick<HabitatShellProps, 'world' | 'deck'>) 
   });
   return <>
     <primitive object={cabin.shell} dispose={null} />
+    {variant === 'habitat' && (deck === 'upper' ? <UpperPlushRugPile /> : <LowerPlushRugPile />)}
     {cabin.wardrobe && <ObjectHandle id="wardrobe" action="open" panorama world={world} hint="打开衣柜"
       onClick={event => event.stopPropagation()}>
       <primitive object={cabin.wardrobe} dispose={null} />
