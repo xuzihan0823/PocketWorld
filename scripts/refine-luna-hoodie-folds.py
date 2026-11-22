@@ -3,6 +3,7 @@
 blender --background --factory-startup --python-exit-code 1 \
   --python scripts/refine-luna-hoodie-folds.py -- fitted.glb refined.glb pose-data.json [review.blend]
 """
+import heapq
 import json
 import os
 import struct
@@ -40,6 +41,115 @@ def qmul(a, b):
 
 def qconj(q):
     return q * np.array([1, -1, -1, -1])
+
+
+def cuff_falloff(base, panels, triangles):
+    """Geodesic distance from the bare hand across the connected cuff fabric."""
+    points, at = np.unique(np.round(base, 6), axis=0, return_inverse=True)
+    edges = np.unique(np.sort(at[triangles[:, [0, 1, 1, 2, 2, 0]]].reshape(-1, 2), axis=1), axis=0)
+    graph = [[] for _ in points]
+    for (a, b), length in zip(edges, np.linalg.norm(points[edges[:, 0]] - points[edges[:, 1]], axis=1)):
+        graph[a].append((b, length))
+        graph[b].append((a, length))
+    distance = np.full(len(points), np.inf)
+    seeds = np.unique(at[np.isin(panels, (4, 5))])
+    distance[seeds] = 0
+    queue = [(0., i) for i in seeds]
+    while queue:
+        d, a = heapq.heappop(queue)
+        if d > distance[a] or d >= .048:
+            continue
+        for b, edge in graph[a]:
+            if d + edge < distance[b]:
+                distance[b] = d + edge
+                heapq.heappush(queue, (distance[b], b))
+    return smooth(.002, .042, distance[at])
+
+
+def hanging_fleece(base, old, panels, joints, weights, names, poses, side, cuff):
+    """Compress the opposed cloth walls in ribcage space over the breathing cycle."""
+    sign = 1 if side == "Left" else -1
+    key = 0 if sign == 1 else 1
+    sleeve = panels == (2 if sign == 1 else 3)
+    flank = (panels == 1) & (sign * base[:, 0] > .03)
+    active = (sleeve | flank) & (base[:, 1] > .425) & (base[:, 1] < .715)
+    source = base[active]
+    delta = old.copy()
+    # Bare hands and ornaments on other body parts retain their bone positions.
+    delta[~(sleeve | flank)] = 0
+    height = source[:, 1]
+    fabric = sleeve[active]
+    shoulder = 1 - smooth(.687, .716, height)
+    hem = smooth(.425, .478, height)
+    amount = shoulder * hem * np.where(fabric, cuff[active], 1.)
+    delta[sleeve] *= cuff[sleeve, None]
+    best = np.zeros(len(source))
+    shift = np.zeros_like(source)
+    spine = next(i for i, n in enumerate(names) if n.endswith("Spine1"))
+    # Project the bare hand envelope into ribcage space. This lets the
+    # waistband yield at the thumb without pushing the wrist or the fingers.
+    hand = (panels == (4 if sign == 1 else 5)) | (sleeve & (cuff < .94))
+    samples = []
+    step = .004
+    origin = np.array([.34, -.16])
+    grid = np.full((130, 110), 1., dtype=float)
+    for pose in poses:
+        w = pose["weights"][key]
+        if w < .6:
+            continue
+        matrices = np.asarray(pose["matrices"]).reshape(-1, 4, 4).transpose(0, 2, 1)
+        local = np.linalg.inv(matrices[spine]) @ matrices
+        samples.append((w, local))
+        palm_skin = (local[joints[hand]] * weights[hand, :, None, None]).sum(axis=1)
+        palm = np.einsum("nij,nj->ni", palm_skin[:, :3, :3], base[hand]) + palm_skin[:, :3, 3]
+        cells = np.clip(np.rint((palm[:, 1:] - origin) / step).astype(int), 0, np.array(grid.shape) - 1)
+        np.minimum.at(grid, (cells[:, 0], cells[:, 1]), sign * palm[:, 0])
+    # A bounded-slope envelope interpolates across finger triangles and gives
+    # the hem a continuous indentation instead of individual knuckle imprints.
+    for _ in range(26):
+        pad = np.pad(grid, 1, mode="edge")
+        grid = np.minimum.reduce([grid, pad[:-2, 1:-1] + .0018, pad[2:, 1:-1] + .0018,
+                                  pad[1:-1, :-2] + .0018, pad[1:-1, 2:] + .0018])
+    for w, local in samples:
+        skin = (local[joints[active]] * weights[active, :, None, None]).sum(axis=1)
+        placed = np.einsum("nij,nj->ni", skin[:, :3, :3], source + w * delta[active]) + skin[:, :3, 3]
+        x = sign * placed[:, 0]
+        depth = placed[:, 2]
+        # The torso is widest midway from front to back. Taper the contact
+        # surface around the ribs so the front pocket and rear hem retain loft.
+        wall = .084 + .003 * np.exp(-((height - .55) / .065) ** 2)
+        wall -= .22 * (np.sqrt((depth - .017) ** 2 + .012 ** 2) - .012)
+        where = np.clip((placed[:, 1:] - origin) / step, 0, np.array(grid.shape) - 1.00001)
+        iy, iz = where.astype(int).T
+        fy, fz = (where - where.astype(int)).T
+        palm = ((1 - fy) * ((1 - fz) * grid[iy, iz] + fz * grid[iy, iz + 1])
+                + fy * ((1 - fz) * grid[iy + 1, iz] + fz * grid[iy + 1, iz + 1]))
+        # Keep an oval sleeve even where its inner and outer walls were both
+        # inside the shirt in the uncorrected pose. Taper back into the cuff.
+        inner = .031 + .008 * smooth(.50, .65, height)
+        width = .64 * .010 * np.logaddexp(0, (x - inner) / .010)
+        loft = smooth(.47, .555, height)
+        sleeve_wall = wall + .001 + loft * width
+        sleeve_push = .011 * np.logaddexp(0, (sleeve_wall - x) / .011)
+        torso_wall = np.minimum(wall - .001, palm - .009)
+        shirt_push = .007 * np.logaddexp(0, (x - torso_wall) / .007)
+        pressure = amount * np.where(fabric, sleeve_push, shirt_push) / w
+        use = pressure > best
+        if not np.any(use):
+            continue
+        direction = np.zeros((np.count_nonzero(use), 3))
+        direction[:, 0] = np.where(fabric[use], sign, -sign)
+        # Give displaced inner fleece some room fore and aft, preserving a
+        # rounded sleeve cross-section where it contacts the shirt.
+        direction[:, 2] = np.where(fabric[use], .22 * np.tanh((depth[use] - .025) / .028), 0.)
+        shift[use] = np.linalg.solve(skin[use, :3, :3], (direction * pressure[use, None])[:, :, None])[:, :, 0]
+        best[use] = pressure[use]
+    delta[active] += shift
+    # Round off corrections in the deepest folds to keep the sleeve wall soft.
+    length = np.linalg.norm(delta, axis=1, keepdims=True)
+    excess = np.maximum(length - .049, 0)
+    bounded = np.minimum(length, .049) + .0108 * np.tanh(excess / .0108)
+    return delta * (bounded / np.maximum(length, 1e-12))
 
 
 def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, joints, unfitted):
@@ -340,7 +450,7 @@ def refine(source, output, pose_data, review=None):
 
     def read(index):
         a = doc['accessors'][index]
-        dim = {'SCALAR': 1, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}[a['type']]
+        dim = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}[a['type']]
         dtype = {5121: 'u1', 5123: '<u2', 5125: '<u4', 5126: '<f4'}[a['componentType']]
         if 'bufferView' in a:
             v = doc['bufferViews'][a['bufferView']]
@@ -439,6 +549,29 @@ def refine(source, output, pose_data, review=None):
     imported = np.empty_like(base_xyz)
     blocks[0].data.foreach_get('co', imported.ravel())
     assert np.allclose(imported[gltf_to_blender], base_xyz, atol=1e-6, rtol=0), 'Blender vertex mapping changed'
+    panels = read(attributes['_GARMENT_PART']).ravel()
+    uv = read(attributes['TEXCOORD_0'])
+    material = surface.data.materials[0]
+    image = next(node.image for node in material.node_tree.nodes if node.type == 'TEX_IMAGE' and node.image.colorspace_settings.name == 'sRGB')
+    pixels = np.empty(len(image.pixels), np.float32)
+    image.pixels.foreach_get(pixels)
+    width, rows = image.size
+    colors = pixels.reshape(rows, width, 4)[rows - 1 - ((uv[:, 1] * rows).astype(int) % rows),
+                                            (uv[:, 0] * width).astype(int) % width]
+    # The hem crosses the leg-weight boundary. Carry the compression over the
+    # lowest textile rings, with the skin of the thighs pinned.
+    lower_hem = ((panels == 0) & (base[:, 1] > .421) & (base[:, 1] <= .456)
+                 & (np.abs(base[:, 0]) < .14) & (colors[:, 0] - colors[:, 1] < .12))
+    panels[lower_hem] = 1
+    cuff = cuff_falloff(base, panels, tri)
+    # Sparse vertex tags keep the authoring labels available for rig checks.
+    # Most vertices (hair, face and legs) use the implicit value zero.
+    used = np.flatnonzero(panels)
+    doc['accessors'][attributes['_GARMENT_PART']] = {
+        'componentType': 5121, 'type': 'SCALAR', 'count': len(base),
+        'sparse': {'count': len(used),
+                   'indices': {'bufferView': add_view(used.astype('<u2').tobytes()), 'componentType': 5123},
+                   'values': {'bufferView': add_view(panels[used].astype('u1').tobytes())}}}
     source_normals = to_blender(original_normals)
     stats = {}
     for name, target in zip(names, primitive['targets']):
@@ -449,6 +582,13 @@ def refine(source, output, pose_data, review=None):
         assert np.allclose(before, base_xyz + to_blender(before_delta), atol=1e-6, rtol=0), name
         deformed = before.copy()
         sleeve_shading = None
+        if name in ('LeftArmContact', 'RightArmContact'):
+            fitted = hanging_fleece(base, before_delta, panels, joints, weights, bone_names,
+                                    recorded['standing'], name.removesuffix('ArmContact'), cuff)
+            deformed = base_xyz + to_blender(fitted)
+            block.data.foreach_set('co', np.ascontiguousarray(deformed[blender_to_gltf]).ravel())
+            add_target(fitted, .000075, bounds=True)
+            doc['accessors'][target['POSITION']] = doc['accessors'].pop()
         if name.startswith('HoodieStretch_') and 345 <= int(name.rsplit('_', 1)[1]) <= 745:
             matrices = np.asarray(recorded['frames'][name]).reshape(-1, 4, 4).transpose(0, 2, 1)
             addition, sleeve_shading, sleeve_weight = sleeve_volume(matrices, base, before_delta, joints, weights, bone_names, tri, bind_joints, unfitted)
@@ -469,6 +609,9 @@ def refine(source, output, pose_data, review=None):
         normal_delta = (unit(rotated) - source_normals) * amount_normal
         length_normal = np.linalg.norm(normal_delta, axis=1, keepdims=True)
         normal_delta *= np.minimum(1, .30 / np.maximum(length_normal, 1e-9))
+        if name in ('LeftArmContact', 'RightArmContact'):
+            coverage = smooth(.0003, .003, np.linalg.norm(deformed - base_xyz, axis=1))
+            normal_delta = (unit(rotated) - source_normals) * coverage[:, None]
         if name in recorded['frames']:
             # Three.js linearly blends normal transforms. At a bent elbow
             # this can point away from the final sleeve even when its vertices
@@ -504,6 +647,13 @@ def refine(source, output, pose_data, review=None):
     if review:
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(review.resolve()))
+    # glTF supports normalized unsigned-short skin weights. Preserve each
+    # vertex's exact unit sum after rounding without changing its bone set.
+    quantized = np.rint(weights / weights.sum(axis=1, keepdims=True) * 65535).astype(np.int32)
+    quantized[np.arange(len(weights)), weights.argmax(axis=1)] += 65535 - quantized.sum(axis=1)
+    doc['accessors'][attributes['WEIGHTS_0']] = {
+        'bufferView': add_view(quantized.astype('<u2').tobytes()), 'componentType': 5123,
+        'count': len(weights), 'type': 'VEC4', 'normalized': True}
     # Replacing sparse shape positions releases their old payloads. Keep
     # the runtime download limited to views still referenced by an accessor or image.
     refs = []

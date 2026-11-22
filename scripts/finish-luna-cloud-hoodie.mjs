@@ -27,7 +27,7 @@ const smooth = THREE.MathUtils.smoothstep;
 function accessor(index) {
   const a = doc.accessors[index], view = doc.bufferViews[a.bufferView];
   const Type = { 5121: Uint8Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array }[a.componentType];
-  const size = { SCALAR: 1, VEC3: 3, VEC4: 4 }[a.type];
+  const size = { SCALAR: 1, VEC3: 3, VEC4: 4, MAT4: 16 }[a.type];
   assert.ok(Type && size && !a.sparse && !view.byteStride);
   return new Type(bin.buffer, bin.byteOffset + view.byteOffset + (a.byteOffset ?? 0), a.count * size);
 }
@@ -55,7 +55,59 @@ const joints = accessor(primitive.attributes.JOINTS_0);
 const weights = accessor(primitive.attributes.WEIGHTS_0);
 const vertices = position.length / 3;
 assert.ok(vertices <= 65535, 'Sparse target index width');
+// The scanned cuff wraps over the heel of the palm. Give that continuous
+// band one wrist transform; the distal finger joints still articulate.
 const original = position.slice();
+const parts = accessor(primitive.attributes._GARMENT_PART);
+const inverseBind = accessor(doc.skins[0].inverseBindMatrices);
+function jointPosition(j) {
+  return new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().fromArray(inverseBind, 16 * j).invert());
+}
+for (const [side, sleeve, hand] of [['Left', 2, 4], ['Right', 3, 5]]) {
+  const wrist = names.indexOf('mixamorig' + side + 'Hand');
+  const elbow = names.indexOf('mixamorig' + side + 'ForeArm');
+  const origin = jointPosition(wrist), axis = origin.clone().sub(jointPosition(elbow)).normalize();
+  const opening = new Set();
+  for (let k = 0; k < indices.length; k += 3) {
+    const face = [indices[k], indices[k + 1], indices[k + 2]];
+    if (face.some(j => parts[j] === sleeve) && face.some(j => parts[j] === hand)) {
+      for (const j of face) opening.add(j);
+    }
+  }
+  const point = new THREE.Vector3(), center = new THREE.Vector3();
+  const ring = Array.from(opening, j => new THREE.Vector3().fromArray(position, 3 * j));
+  for (const sample of ring) center.add(sample);
+  center.divideScalar(ring.length);
+  // Place the ribbing just beyond the wrist. The source opening lies over
+  // the thumb base; the short graded shift preserves the attached palm.
+  const lift = origin.clone().addScaledVector(axis, .016).sub(center);
+  for (let i = 0; i < vertices; i++) {
+    if (parts[i] !== sleeve && parts[i] !== hand) continue;
+    point.fromArray(original, 3 * i);
+    const along = point.clone().sub(origin).dot(axis);
+    if (Math.abs(along - .035) < .092) {
+      let distance = Infinity;
+      for (const sample of ring) distance = Math.min(distance, point.distanceToSquared(sample));
+      const reach = parts[i] === sleeve ? .072 : .050;
+      const amount = 1 - smooth(Math.sqrt(distance), .004, reach);
+      point.addScaledVector(lift, amount).toArray(position, 3 * i);
+    }
+    const influence = smooth(along, -.032, -.006) * (1 - smooth(along, .039, .073));
+    if (influence <= 0) continue;
+    const blend = new Map([[elbow, influence * .80], [wrist, influence * .20]]);
+    for (let k = 0; k < 4; k++) {
+      const j = joints[4 * i + k];
+      blend.set(j, (blend.get(j) ?? 0) + (1 - influence) * weights[4 * i + k]);
+    }
+    const sorted = [...blend.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const total = sorted.reduce((sum, [, value]) => sum + value, 0);
+    for (let k = 0; k < 4; k++) {
+      joints[4 * i + k] = sorted[k]?.[0] ?? 0;
+      weights[4 * i + k] = (sorted[k]?.[1] ?? 0) / total;
+    }
+  }
+}
+
 const byPosition = new Map(), nodes = [], nodeAt = new Array(vertices);
 for (let i = 0; i < vertices; i++) {
   const [x, y, z] = position.subarray(3 * i, 3 * i + 3);
@@ -287,23 +339,34 @@ try {
     const previewIdle = createIdlePlayer(previewRig.mesh, clip);
     const preview = [];
     const fps = 15;
-    for (let frame = 0; frame <= Math.ceil(clip.duration * fps); frame++) {
-      const time = Math.min(frame / fps, clip.duration);
-      const weight = smooth(time, 0, STANDING_IDLE.yawnBlend) * smooth(clip.duration - time, 0, STANDING_IDLE.yawnBlend);
+    function samplePose(phase, weight, time, gestureWeight, restWeight = 1) {
       previewRig.applyPose(0, 0, 1);
-      previewIdle({ ...idle, weight: 1, restWeight: 1, yawnTime: time, yawnWeight: weight });
-      previewRig.applyArmCorrectives(true, time, weight);
+      previewIdle({ ...idle, phase, weight, restWeight, yawnTime: time, yawnWeight: gestureWeight });
+      previewRig.applyArmCorrectives(true, time, gestureWeight);
       final.gltf.scene.updateMatrixWorld(true);
       const surface = final.mesh;
-      preview.push({
+      return {
         matrices: surface.skeleton.bones.map((bone, j) => boneMatrix
           .multiplyMatrices(bone.matrixWorld, surface.skeleton.boneInverses[j])
           .premultiply(surface.bindMatrixInverse).multiply(surface.bindMatrix).toArray()),
         weights: [...surface.morphTargetInfluences],
-      });
+      };
     }
+    const idleFrames = Math.round(STANDING_IDLE.breathPeriod * fps);
+    for (let frame = 0; frame < idleFrames; frame++) {
+      const weight = smooth(frame, 0, fps / 2) * (1 - smooth(frame, idleFrames - fps, idleFrames - 1));
+      preview.push(samplePose(frame / fps, weight, -1, 0));
+    }
+    for (let frame = 0; frame <= Math.ceil(clip.duration * fps); frame++) {
+      const time = Math.min(frame / fps, clip.duration);
+      const blend = smooth(time, 0, STANDING_IDLE.yawnBlend) * smooth(clip.duration - time, 0, STANDING_IDLE.yawnBlend);
+      preview.push(samplePose(0, 1, time, blend));
+    }
+    const standing = [samplePose(0, 0, -1, 0)];
+    for (let i = 0; i < 72; i++) standing.push(samplePose(i + .23 * (i % 3), 1, -1, 0));
+    for (let i = 0; i < 5; i++) standing.push(samplePose(0, 0, -1, 0, i / 5));
     previewRig.dispose();
-    writeFileSync(poseOutput, JSON.stringify({ frames, preview, fps, unfitted: Array.from(original) }));
+    writeFileSync(poseOutput, JSON.stringify({ frames, preview, standing, idleFrames, fps, unfitted: Array.from(original) }));
   }
 } finally {
   rmSync(scratch, { recursive: true, force: true });

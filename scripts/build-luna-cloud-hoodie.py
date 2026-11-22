@@ -1265,6 +1265,27 @@ def segment_and_skin(obj, ref_luna_obj, arm_obj):
             # inner puffy ribbed cuff has d_axis = 0.062..0.082 so stays strictly in SLEEVE!
             region[i] = hand_tag if (along > -0.005 and d_axis < 0.052) else sleeve_tag
 
+    # Follow the painted wrist opening. Blue cuff vertices can lie much
+    # closer to a thumb segment than to the forearm in the scanned A-pose.
+    image = next(node.image for node in obj.data.materials[0].node_tree.nodes
+                 if node.type == "TEX_IMAGE" and node.image.colorspace_settings.name == "sRGB")
+    pixels = np.empty(len(image.pixels), dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    width, height = image.size
+    palette = pixels.reshape(height, width, 4)
+    uvs = np.empty((len(mesh.loops), 2), dtype=np.float32)
+    mesh.uv_layers.active.data.foreach_get("uv", uvs.ravel())
+    samples = palette[(uvs[:, 1] * height).astype(int) % height, (uvs[:, 0] * width).astype(int) % width]
+    loop_ids = np.empty(len(mesh.loops), dtype=np.int32)
+    mesh.loops.foreach_get("vertex_index", loop_ids)
+    skin = (samples[:, 0] - samples[:, 2] > .073) & (samples[:, 0] - samples[:, 1] > .054)
+    votes = np.bincount(loop_ids, weights=skin, minlength=n_verts)
+    total = np.bincount(loop_ids, minlength=n_verts)
+    for i, part in enumerate(region):
+        if part in ("SLEEVE_L", "SLEEVE_R", "HAND_L", "HAND_R"):
+            cloth = coords[i].z >= .536 or votes[i] < .5 * max(1, total[i])
+            region[i] = ("SLEEVE_" if cloth else "HAND_") + part[-1]
+
     # Clean up any single isolated vertex on the cut seam whose neighbors all belong to SLEEVE_L / SLEEVE_R
     for _ in range(2):
         for i in range(n_verts):
@@ -1888,15 +1909,7 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
     ol_proxy = count_overlaps(posed)
     print(f"Sleeve-torso BVH overlaps: raw={ol_raw}, after smooth proxy cloth={ol_proxy}")
 
-    # --- 3. Smooth C-infinity Separating-Sheet + Volumetric Cushion Solver (MATHEMATICALLY ZERO CLIPPING!) ---
-    # Key design principle:
-    #   1) Thick double-layer plush fleece naturally cushions hanging arms ~4.5 deg outward from below the armpit
-    #      (cohesive rigid-like arc across SLEEVE + HAND so wrist stays 100% centered inside cuff & bows never warp!).
-    #   2) Construct a C-infinity smooth separating surface x_sep(y, z) between the torso flank and the inner sleeve
-    #      wall across the ENTIRE contact strip (z = 0.42..0.655), strictly protecting the front cloud pocket & pink
-    #      pocket bows (x_sep >= 0.090 in front) and ribcage core (x_sep >= 0.076 on side/back).
-    #   3) Enforce s * x_torso <= x_sep(y, z) - half_gap AND s * x_sleeve >= x_sep(y, z) + half_gap EVERYWHERE,
-    #      followed by BVH micro-clearance that NEVER pulls cleared vertices back across x_sep -> ZERO overlaps!
+    # Keep the ribcage and fleece on opposite sides of a smooth contact surface.
     def smooth_2d_grid(grid, mask, sigma_cells=1.8, passes=4):
         """Gaussian smooth a 2D field over valid cells (normalized convolution so empty border cells don't pull values to 0)."""
         g = grid.copy()
@@ -1919,12 +1932,11 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
             m = np.clip(den, 0.0, 1.0)
         return g
 
-    for s, s_tag, h_tag, s_faces in (
-        (1.0, "SLEEVE_L", "HAND_L", sleeve_l_faces),
-        (-1.0, "SLEEVE_R", "HAND_R", sleeve_r_faces),
+    for s, s_tag, s_faces in (
+        (1.0, "SLEEVE_L", sleeve_l_faces),
+        (-1.0, "SLEEVE_R", sleeve_r_faces),
     ):
         arm_bone = arm_obj.pose.bones[f"mixamorig:{'Left' if s > 0 else 'Right'}Arm"]
-        fa_bone = arm_obj.pose.bones[f"mixamorig:{'Left' if s > 0 else 'Right'}ForeArm"]
         hand_bone = arm_obj.pose.bones[f"mixamorig:{'Left' if s > 0 else 'Right'}Hand"]
         p_sh = arm_bone.head.copy()
         p_wr = hand_bone.head.copy()
@@ -1934,22 +1946,8 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
             if region[i] == "TORSO" and s * raw_posed[i, 0] > 0.045 and 0.420 < raw_posed[i, 2] < 0.715
         ]
         sleeve_all = [i for i in range(n_verts) if region[i] == s_tag]
-        hand_all = [i for i in range(n_verts) if region[i] == h_tag]
-
-        # Step 3a: Cohesive 6.8-deg outward plush-fleece cushion pivot starting smoothly below the shoulder
-        # (t_arm 0.08..0.42 moves upper sleeve + inner/outer walls + bows + cuff + hand together as ONE plump cylinder
-        # so the inner sleeve wall NEVER needs >1.1cm local push and NEVER punches through the outer sleeve!)
-        cushion_angle = math.radians(6.8) * (-s)
-        rot_cushion = Matrix.Rotation(cushion_angle, 3, "Y")
-        cushion_base = np.zeros_like(posed)
-        for i in sleeve_all + hand_all:
-            pt = Vector(raw_posed[i])
-            _, t_arm = point_to_segment_dist(pt, p_sh, p_wr)
-            blend = smoothstep(t_arm, 0.08, 0.42)
-            pivoted = p_sh + (rot_cushion @ (pt - p_sh))
-            delta = np.array(pivoted - pt, dtype=np.float64) * blend
-            cushion_base[i] = delta
-            posed[i] = raw_posed[i] + delta + (cloth_field[i] * 0.35 if region[i] == s_tag else 0.0)
+        # Contact alters the fleece. The wrist and hand follow the armature.
+        posed[sleeve_all] = raw_posed[sleeve_all] + .35 * cloth_field[sleeve_all]
 
         # Step 3b: Build C-infinity smooth separating surface x_sep(y, z) over the entire contact region!
         ny, nz = 40, 48
@@ -2060,7 +2058,7 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
 
         # Step 3d: Gentle region smoothing STRICTLY respecting the x_sep safety barrier & sleeve thickness cap!
         tot_t = posed - raw_posed
-        extra_s = posed - (raw_posed + cushion_base)
+        extra_s = posed - (raw_posed)
         sm_t = gaussian_smooth_field(raw_posed, tot_t, torso_side, sigma=0.011)
         sm_s = gaussian_smooth_field(raw_posed, extra_s, sleeve_all, sigma=0.012)
         for i in torso_side:
@@ -2081,24 +2079,24 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
             posed[i] = cand
 
         for i in sleeve_all:
-            pt = Vector(raw_posed[i] + cushion_base[i])
+            pt = Vector(raw_posed[i])
             _, t_arm = point_to_segment_dist(pt, p_sh, p_wr)
             arm_c = p_sh.lerp(p_wr, t_arm)
             rel_x = (pt.x - arm_c.x) * s
             med = 1.0 - smoothstep(rel_x, -0.010, 0.024)
             wr_env = smoothstep((pt - p_wr).length, 0.014, 0.038)
             d_ex = sm_s[i] * (0.06 + 0.94 * med) * wr_env
-            cand = raw_posed[i] + cushion_base[i] + d_ex
+            cand = raw_posed[i] + d_ex
             z = cand[2]
             z_env = (1.0 - smoothstep(z, 0.585, 0.638)) * wr_env
             if z_env > 0.01:
                 x_lim = eval_x_sep(cand[1], z) + 0.0020
                 if s * cand[0] < x_lim:
                     cand[0] += s * min(x_lim - s * cand[0], 0.011) * z_env
-            d_ex_final = cand - (raw_posed[i] + cushion_base[i])
+            d_ex_final = cand - (raw_posed[i])
             d_len = float(np.linalg.norm(d_ex_final))
             if d_len > 0.012:
-                cand = raw_posed[i] + cushion_base[i] + d_ex_final * (0.012 / d_len)
+                cand = raw_posed[i] + d_ex_final * (0.012 / d_len)
             posed[i] = cand
 
         # Step 3e: Smooth Gaussian-filtered BVH micro-clearance pass (capped strictly to preserve sleeve thickness!)
@@ -2133,7 +2131,7 @@ def build_cloth_sim_and_arm_shape_keys(obj, arm_obj, region, base_glb: Path):
                 if abs(inc_s[vi, 0]) > 1e-6:
                     cand = posed[vi].copy()
                     cand[0] += inc_s[vi, 0]
-                    d_ex = cand - (raw_posed[vi] + cushion_base[vi])
+                    d_ex = cand - (raw_posed[vi])
                     if float(np.linalg.norm(d_ex)) <= 0.013:
                         posed[vi] = cand
 
@@ -2339,6 +2337,11 @@ def bake_chair_seat_contact(obj, arm_obj, region, sit_blend: Path, seat_out: Pat
     ids = np.full(n_verts, -1.0, dtype=np.float32)
     ids[contact_indices] = np.arange(len(contact_indices), dtype=np.float32)
     attr.data.foreach_set("value", ids)
+    # Keep the actual sewn panels identifiable at UV splits and at the cuff,
+    # where cloth and fingers can have the same bone weights.
+    panels = {"TORSO": 1, "SLEEVE_L": 2, "SLEEVE_R": 3, "HAND_L": 4, "HAND_R": 5}
+    panel = obj.data.attributes.new("_GARMENT_PART", "FLOAT", "POINT")
+    panel.data.foreach_set("value", np.asarray([panels.get(name, 0) for name in region], dtype=np.float32))
     print(f"Wrote seat contact cache: {seat_out.name} ({len(contact_indices)} verts, {seat_out.stat().st_size} bytes)")
 
     bpy.data.objects.remove(seat_obj, do_unlink=True)
@@ -2575,6 +2578,8 @@ def attach_sleeve_normals(surface, rig, doc, binary):
             sparse = a["sparse"]
             ids = view(sparse["indices"], sparse["count"], types[sparse["indices"]["componentType"]])
             data[ids] = view(sparse["values"], len(ids) * width, dtype).reshape(-1, width)
+        if a.get("normalized"):
+            return data.astype(np.float32) / np.iinfo(data.dtype).max
         return data
 
     mesh = surface.data
@@ -2781,8 +2786,10 @@ def save_finished_garment(glb_path, pose_path, blend_path):
     shapes.animation_data.action.name = "连帽衫 · 同步袖型"
     final.render.fps = pose["fps"]
     final.frame_end = len(pose["preview"])
-    for label, seconds in (("站立", 0), ("抬臂", 3.7), ("伸展", 5.2), ("收臂", 6.85)):
-        final.timeline_markers.new(label, frame=1 + round(seconds * final.render.fps))
+    final.timeline_markers.new("自然站定", frame=1)
+    final.timeline_markers.new("呼吸", frame=1 + pose["idleFrames"] // 4)
+    for label, seconds in (("伸懒腰开始", 0), ("抬臂", 3.7), ("伸展", 5.2), ("收臂", 6.85)):
+        final.timeline_markers.new(label, frame=1 + pose["idleFrames"] + round(seconds * final.render.fps))
     final.frame_set(1)
     # A saved camera and soft studio lights make F12 and viewport playback
     # useful in Blender without any game or external texture paths.

@@ -157,8 +157,12 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
       clasp: new THREE.Quaternion(...CLASP[`${side}${part}`]).normalize(),
       base: new THREE.Quaternion(),
     }));
-    return { direction, fingers, parts };
+    const thumb = bone(side + 'HandThumb1'), thumbTip = bone(side + 'HandThumb3');
+    const index = bone(side + 'HandIndex2');
+    return { direction, fingers, parts, thumb, thumbTip, index };
   });
+  const thumbBase = new THREE.Vector3(), thumbAxis = new THREE.Vector3(), palmAxis = new THREE.Vector3();
+  const thumbTurn = new THREE.Quaternion(), identity = new THREE.Quaternion();
   const rotation = new THREE.Quaternion(), euler = new THREE.Euler();
   const modelRotation = new THREE.Quaternion(), basis = new THREE.Quaternion(), inverseBasis = new THREE.Quaternion();
   const modelOffset = (joint: THREE.Object3D, x: number, y: number, z: number, weight: number) => {
@@ -183,14 +187,23 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
       modelOffset(spine, .018 * listen + .043 * clasp, .058 * listen, -.018 * listen, 1);
       modelOffset(neck, .14 * listen + .20 * clasp, .23 * listen - .038 * clasp, -.12 * listen + .032 * clasp, 1);
       modelOffset(head, .064 * listen + .10 * clasp, .10 * listen, -.094 * listen, 1);
-      for (const { direction, fingers, parts } of arms) {
+      for (const { direction, fingers, parts, thumb, thumbTip, index } of arms) {
         const [{ joint: shoulder }, { joint: upper }, { joint: forearm }, { joint: hand }] = parts;
         if (clasp) for (const part of parts) part.base.copy(part.joint.quaternion).multiply(part.clasp);
         modelOffset(shoulder, 0, 0, direction * .025, restWeight);
-        // The plush sleeves occupy the space beside the ribs in the relaxed stance.
-        modelOffset(upper, -.125, 0, direction * (fittedHoodie ? .11 : -.15), restWeight);
-        modelOffset(forearm, -.155, 0, -direction * .038, restWeight);
-        modelOffset(hand, .085, -direction * .065, -direction * .025, restWeight);
+        // Let the elbow settle below the shoulder and bring the wrist alongside the hip.
+        modelOffset(upper, fittedHoodie ? -.175 : -.125, 0, direction * (fittedHoodie ? -.087 : -.15), restWeight);
+        modelOffset(forearm, -.155, 0, -direction * (fittedHoodie ? .285 : .038), restWeight);
+        modelOffset(hand, .085, -direction * .065, direction * (fittedHoodie ? .11 : -.025), restWeight);
+        if (fittedHoodie && restWeight) {
+          // Rest the thumb alongside the index finger with the palm facing the hip.
+          thumb.getWorldPosition(thumbBase);
+          thumb.parent!.getWorldQuaternion(inverseBasis).invert();
+          thumbTip.getWorldPosition(thumbAxis).sub(thumbBase).applyQuaternion(inverseBasis).normalize();
+          index.getWorldPosition(palmAxis).sub(thumbBase).applyQuaternion(inverseBasis).normalize();
+          thumbTurn.setFromUnitVectors(thumbAxis, palmAxis);
+          thumb.quaternion.premultiply(thumbTurn.slerp(identity, 1 - .54 * restWeight * (1 - clasp)));
+        }
         modelOffset(shoulder, 0, 0, direction * breath * STANDING_IDLE.shoulderRoll, weight);
         modelOffset(upper, (sway - .38) * STANDING_IDLE.armSwing, 0, -direction * sway * .018, weight);
         modelOffset(forearm, -STANDING_IDLE.elbowRelax * (.60 + .40 * breath), 0, 0, weight);

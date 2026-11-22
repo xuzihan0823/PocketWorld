@@ -148,18 +148,18 @@
       "source": "User-supplied pastel-blue cloud hoodie character GLB (Tripo) rigged onto the existing 115-bone Luna armature from luna-walk-room.glb and Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 9954540,
-      "sha256": "e4b91473f54c0d0159a59bb90a2a12e69a4490762f6998667ef4b0df4a73995d",
-      "processing": "Built with Blender 5.3 from the supplied scan and the existing Luna armature. Retains the refined face texture, matte fleece, flat knit socks, 115 bones, walking and chair clips. Both inner sleeves and torso sidewalls are sewn up to the armpit and mapped to the fleece atlas. The finishing passes fit the relaxed stance and bake 15 pose samples for shoulder, elbow, waist and sleeve normals. See assets/models/resident/README.md for the build entry point."
+      "bytes": 10327892,
+      "sha256": "fabd967f8a935274d8598734f13e0fcc42971d76b3f1832e2ba9507b112418f6",
+      "processing": "Built with Blender 5.3 from the supplied scan and the existing Luna armature. Retains the refined face texture, matte fleece, flat knit socks, 115 bones, walking and chair clips. Both inner sleeves and torso sidewalls are sewn up to the armpit and mapped to the fleece atlas. The wrist opening follows the forearm and palm. Independent contact shapes fit the sleeves and hem through relaxed standing and breathing; 15 stretch samples preserve the shoulder, elbow, waist and sleeve normals. See assets/models/resident/README.md for the build entry point."
     },
     {
       "file": "resident/luna-cloud-hoodie-seat.bin",
       "source": "Baked in Blender 5.3 against the desk chair collider in Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 583904,
-      "sha256": "179214ece2774a480932d85b7dc287ffe82895381300f01cbcef70458aef0798",
-      "processing": "PWSC v1 chair contact cache (98 frames, 993 vertices), baked and rebased by the hoodie build pipeline."
+      "bytes": 645056,
+      "sha256": "d162884619942db784036c09385711df3f17aa54520fdf32c98bca20e5791ff6",
+      "processing": "PWSC v1 chair contact cache (98 frames, 1097 vertices), baked and rebased by the hoodie build pipeline."
     },
     {
       "file": "cat/cat.glb",

@@ -184,7 +184,7 @@ test('LeftArmContact and RightArmContact shape keys compress when arms hang and 
     const rightIdx = mesh.morphTargetDictionary?.RightArmContact;
     assert.ok(leftIdx !== undefined && rightIdx !== undefined, 'Both arm contact shape keys must exist');
 
-    // Verify morph attributes carry meaningful compression displacements (5mm..60mm in bind units).
+    // Bound fabric travel against the forearm and keep the exposed hand entirely on the skeleton.
     for (const [name, idx] of [['LeftArmContact', leftIdx], ['RightArmContact', rightIdx]]) {
       const attr = mesh.geometry.morphAttributes.position[idx];
       let maxMag = 0;
@@ -192,10 +192,12 @@ test('LeftArmContact and RightArmContact shape keys compress when arms hang and 
       for (let i = 0; i < attr.count; i++) {
         const mag = Math.hypot(attr.getX(i), attr.getY(i), attr.getZ(i));
         if (mag > 1e-4) nonZero++;
+        const part = mesh.geometry.attributes._garment_part.getX(i);
+        if (part === 4 || part === 5) assert.equal(mag, 0, 'bare hands must follow their bones');
         if (mag > maxMag) maxMag = mag;
       }
-      assert.ok(nonZero > 500, `${name} should affect torso/sleeve contact area (${nonZero} verts)`);
-      assert.ok(maxMag > 0.005 && maxMag < 0.06, `${name} peak displacement bounded (${maxMag})`);
+      assert.ok(nonZero > 500);
+      assert.ok(maxMag > .005 && maxMag < .06, `${name} peak displacement bounded (${maxMag})`);
     }
 
     // 1. Neutral walk-stop stance engages both shape keys moderately; relaxed standing idle engages strongly.
@@ -236,6 +238,59 @@ test('LeftArmContact and RightArmContact shape keys compress when arms hang and 
   }
 });
 
+test('relaxed hoodie arms hang alongside the hips without intersecting the sweatshirt or shorts', () => {
+  const { rig, mesh, dispose } = mountHoodie();
+  try {
+    const { position, _garment_part: panel } = mesh.geometry.attributes;
+    const index = mesh.geometry.index;
+    const groups = [[], [], []];
+    for (let i = 0; i < index.count; i += 3) {
+      const face = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+      const parts = face.map(vertex => panel.getX(vertex));
+      if (parts.every(part => part === 1)) groups[0].push(...face);
+      // Above this height the sleeve is sewn to the bodice at the armhole.
+      else if (face.every(vertex => position.getY(vertex) < .695)) {
+        if (parts.every(part => part === 2 || part === 4)) groups[1].push(...face);
+        if (parts.every(part => part === 3 || part === 5)) groups[2].push(...face);
+      }
+    }
+    assert.ok(groups.every(ids => ids.length > 12000), 'both complete sleeves and the bodice are present');
+    const posed = position.clone();
+    const trees = groups.map(ids => new MeshBVH(new THREE.BufferGeometry().setAttribute('position', posed).setIndex(ids)));
+    const selected = new Set(groups.flat());
+    const identity = new THREE.Matrix4(), vertex = new THREE.Vector3();
+    const player = createIdlePlayer(rig.mesh), idle = createIdleState(() => .5);
+    const limbs = ['Left', 'Right'].map(side => ['Arm', 'Hand'].map(name => rig.mesh.getObjectByName('mixamorig' + side + name)));
+    const poses = [
+      ...Array.from({ length: 11 }, (_, i) => ({ phase: 0, restWeight: i / 10, weight: 0 })),
+      // 72 s is the common period of breathing (4.8 s) and weight shift (9 s).
+      ...Array.from({ length: 144 }, (_, i) => ({ phase: i * .5, restWeight: 1, weight: 1 })),
+    ];
+    for (const pose of poses) {
+      rig.applyPose(0, 0, 1);
+      player({ ...idle, ...pose });
+      rig.applyArmCorrectives(true);
+      rig.mesh.updateMatrixWorld(true);
+      if (pose.restWeight === 1) {
+        for (const [arm, hand] of limbs) {
+          const shoulder = mesh.worldToLocal(arm.getWorldPosition(new THREE.Vector3()));
+          const wrist = mesh.worldToLocal(hand.getWorldPosition(new THREE.Vector3()));
+          const angle = Math.atan2(Math.abs(wrist.x - shoulder.x), shoulder.y - wrist.y);
+          assert.ok(angle < THREE.MathUtils.degToRad(pose.phase ? 16.5 : 12), 'wrist hangs below the shoulder');
+        }
+      }
+      for (const i of selected) mesh.getVertexPosition(i, vertex).toArray(posed.array, 3 * i);
+      trees.forEach(tree => tree.refit());
+      for (const sleeve of trees.slice(1)) {
+        const hit = sleeve.bvhcast(trees[0], identity, { intersectsTriangles: (a, b) => a.intersectsTriangle(b) });
+        assert.equal(hit, false, 'sleeve or hand intersects the torso at phase ' + pose.phase + ', rest ' + pose.restWeight);
+      }
+    }
+  } finally {
+    dispose();
+  }
+});
+
 test('fitted cloud hoodie clears both flanks through standing and yawn and eases shoulder strain', async () => {
   const { gltf } = await load(new URL('../../../../assets/public/models/resident/luna-yawn.glb', import.meta.url));
   const clip = gltf.animations.find(c => c.name === 'Luna_Yawn');
@@ -243,7 +298,7 @@ test('fitted cloud hoodie clears both flanks through standing and yawn and eases
   const { position, skinIndex, skinWeight } = mesh.geometry.attributes;
   const normals = mesh.geometry.morphAttributes.normal;
   assert.equal(normals.length, mesh.morphTargetInfluences.length);
-  for (const target of normals) {
+  for (const [targetIndex, target] of normals.entries()) {
     assert.equal(target.count, position.count);
     const delta = new THREE.Vector3();
     let affected = 0;
@@ -252,7 +307,12 @@ test('fitted cloud hoodie clears both flanks through standing and yawn and eases
       assert.ok(Number.isFinite(length) && length <= 2.001);
       if (length === 0) continue;
       affected++;
-      assert.ok(position.getY(i) > .47 && position.getY(i) < .793 && Math.abs(position.getX(i)) < .234);
+      if (targetIndex < 2) {
+        const part = mesh.geometry.attributes._garment_part.getX(i);
+        assert.ok(part === 1 || part === targetIndex + 2, 'contact normals follow only the ipsilateral cloth');
+      } else {
+        assert.ok(position.getY(i) > .47 && position.getY(i) < .793 && Math.abs(position.getX(i)) < .234);
+      }
     }
     assert.ok(affected > 0, 'morph normals must follow the cloth correction without changing the face');
   }
