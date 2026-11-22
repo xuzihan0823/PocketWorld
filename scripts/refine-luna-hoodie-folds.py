@@ -32,11 +32,6 @@ def unit(v):
     return v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-9)
 
 
-def smooth(lo, hi, x):
-    t = np.clip((x - lo) / (hi - lo), 0, 1)
-    return t * t * (3 - 2 * t)
-
-
 def qmul(a, b):
     aw, av = a[..., :1], a[..., 1:]
     bw, bv = b[..., :1], b[..., 1:]
@@ -82,6 +77,10 @@ def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, 
     body_p = (np.einsum('kij,nj->nki', all_linear[body], base) + all_translate[body])
     torso_pin = mask * smooth(.02, .14, arm) * (1 - smooth(.14, .53, arm)) * (1 - smooth(.625, .695, y))
     wanted += ((body_p * body_w[:, :, None]).sum(axis=1) - wanted) * (torso_pin * .82)[:, None]
+    sleeve_sections = []
+    elbow_guides = []
+    sleeve_normals = np.zeros_like(base)
+    sleeve_normal_weight = np.zeros(len(base))
     for side, sign in (('Left', 1), ('Right', -1)):
         upper, elbow = [next(i for i, name in enumerate(names) if name.endswith(side + bone))
                         for bone in ('Arm', 'ForeArm')]
@@ -109,20 +108,73 @@ def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, 
         wrist = next(i for i, name in enumerate(names) if name.endswith(side + 'Hand'))
         bent_elbow = all_linear[elbow] @ joints[elbow] + all_translate[elbow]
         hand = all_linear[wrist] @ joints[wrist] + all_translate[wrist]
-        def along_segment(start, finish):
-            segment = finish - start
-            u = np.clip((wanted - start) @ segment / (segment @ segment), 0, 1)
-            return wanted - (start + u[:, None] * segment)
-        upper_radial = along_segment(shoulder, bent_elbow)
-        fore_radial = along_segment(bent_elbow, hand)
-        radial = np.where(np.linalg.norm(upper_radial, axis=1, keepdims=True) <
-                          np.linalg.norm(fore_radial, axis=1, keepdims=True), upper_radial, fore_radial)
-        radius = np.linalg.norm(radial, axis=1)
-        elbow_panel = ((base[:, 0] * sign > 0) * smooth(.67, .91, arm) * smooth(.086, .134, x)
-                       * smooth(.506, .551, y) * (1 - smooth(.648, .692, y)))
-        excess = np.maximum(radius - .045, 0)
-        wanted -= unit(radial) * (excess * elbow_panel * smooth(.044, .069, radius) * .96)[:, None]
-        mask = np.maximum(mask, elbow_panel)
+        # Sweep each sleeve section around the bent arm. The inside and the
+        # ribboned outside of a section must travel around the same elbow.
+        # Independent nearest-bone rotations flatten one wall against the other.
+        s0, e0, w0 = joints[[upper, elbow, wrist]]
+        u0, v0 = e0 - s0, w0 - e0
+        lu, lv = np.linalg.norm(u0), np.linalg.norm(v0)
+        u0, v0 = u0 / lu, v0 / lv
+        along = (base - s0) @ u0
+        after_elbow = (base - e0) @ v0
+        along = np.where(along < lu, along, lu + after_elbow)
+        u1 = (bent_elbow - shoulder) / lu
+        v1 = (hand - bent_elbow) / lv
+        # Integrate a linear tangent blend across the elbow so both the
+        # centreline and its tangent remain continuous at the two joins.
+        bend = .049
+        a = np.clip(along - lu + bend, 0., 2 * bend)
+        fore = a * a / (4 * bend) + np.maximum(along - lu - bend, 0.)
+        upper_len = along - fore
+        center0 = s0 + upper_len[:, None] * u0 + fore[:, None] * v0
+        center1 = shoulder + upper_len[:, None] * u1 + fore[:, None] * v1
+        mix = a[:, None] / (2 * bend)
+        qa, qb = rotation[upper], rotation[elbow]
+        if np.dot(qa, qb) < 0:
+            qb = -qb
+        q = unit((1 - mix) * qa + mix * qb)
+        radial = base - center0
+        radial = qmul(qmul(q, np.c_[np.zeros(len(base)), radial]), qconj(q))[:, 1:]
+        target_sleeve = center1 + radial
+        sleeve = (base[:, 0] * sign > 0) * smooth(.48, .94, arm) * smooth(.003, .050, along)
+        sleeve *= 1 - smooth(lu + lv - .032, lu + lv + .012, along)
+        wanted += (target_sleeve - wanted) * sleeve[:, None]
+        mask = np.maximum(mask, sleeve)
+        tangent = unit((1 - mix) * u1 + mix * v1)
+        radial -= tangent * np.sum(radial * tangent, axis=1, keepdims=True)
+        sleeve_sections.append((center1, tangent, radial, sleeve, along, lu + lv))
+        # The scanned inner and outer walls lie at very different distances
+        # from the bone. Parameterize the loft by the same horizontal cloth
+        # rows on both walls, so the inside cannot fold back at the elbow.
+        row = np.where(y >= e0[1], (y - s0[1]) / u0[1], lu + (y - e0[1]) / v0[1])
+        bend_width = .070
+        blend_t = np.clip((row - lu + bend_width) / (2 * bend_width), 0, 1)
+        fore_len = bend_width * blend_t ** 2 + np.maximum(row - lu - bend_width, 0)
+        axis = unit((1 - blend_t[:, None]) * u1 + blend_t[:, None] * v1)
+        middle = shoulder + (row - fore_len)[:, None] * u1 + fore_len[:, None] * v1
+        bind_center = s0 + (row - fore_len)[:, None] * u0 + fore_len[:, None] * v0
+        # Use a radial frame transported about the bend plane. This frame
+        # has no wrist twist and remains continuous through a flexed elbow.
+        roll = unit((1 - blend_t[:, None]) * qa + blend_t[:, None] * qb)
+        depth_axis = qmul(qmul(roll, np.tile([0., 0., 0., 1.], (len(base), 1))), qconj(roll))[:, 1:]
+        depth_axis = unit(depth_axis - axis * (axis * depth_axis).sum(axis=1, keepdims=True))
+        width_axis = unit(np.cross(depth_axis, axis))
+        dx, dz = base[:, 0] - bind_center[:, 0], base[:, 2] - bind_center[:, 2]
+        # The slanted bind arm has wider horizontal cuts than normal sections.
+        angle = np.arctan2(dz, dx * abs(u0[1]))
+        radius = .038 + .008 * np.exp(-((row - lu - .035) / .052) ** 2)
+        outward = np.cos(angle)[:, None] * width_axis + np.sin(angle)[:, None] * depth_axis
+        distance = radius * (.90 + .10 * np.clip(np.hypot(dx * abs(u0[1]), dz) / radius, .6, 1.4))
+        influence = (base[:, 0] * sign > 0) * smooth(.52, .91, arm)
+        influence *= smooth(.514, .549, y) * (1 - smooth(.639, .684, y))
+        elbow_guides.append((middle + outward * distance[:, None], influence))
+        # Average the split corners onto the same rounded sleeve. Scan normals
+        # on the rim otherwise keep a hard shadow where the two panels meet.
+        facing = (base[:, 0] * sign > 0) * smooth(.19, .78, arm)
+        facing *= smooth(.50, .53, y) * (1 - smooth(.65, .705, y))
+        sleeve_normals += outward * facing[:, None]
+        sleeve_normal_weight = np.maximum(sleeve_normal_weight, facing)
+
 
     # The scan fuses a few locks of hair to the shoulder. Let that tiny bridge relax;
     # keep the rest of the hair and the face at their original poses.
@@ -167,6 +219,28 @@ def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, 
     freedom = smooth(.00015, .006, np.linalg.norm(force, axis=1)) * (1 - smooth(.757, .787, rest[:, 1]))
     wanted += (force * freedom[:, None])[at]
     mask = np.maximum(mask, freedom[at] * .75)
+    # Fair both sides of the *posed* join, including the cuff and the few
+    # scanned hair corners sewn into the shoulder. Pulling only long edges
+    # leaves compressed triangles folded over at the base of the sleeve.
+    seam_distance = np.abs(x - (.128 - .305 * (y - .51)))
+    seam_band = (1 - smooth(.014, .052, seam_distance)) * (1 - smooth(.028, .058, -base[:, 2]))
+    arm_band = smooth(.22, .78, arm) * smooth(.07, .125, x)
+    hair_join = smooth(.058, .083, x) * (1 - smooth(.118, .157, x)) * smooth(.733, .765, y)
+    coverage = np.maximum(np.maximum(seam_band, arm_band), hair_join)
+    coverage *= smooth(.49, .535, y) * (1 - smooth(.780, .813, y))
+    coverage *= 1 - smooth(.177, .229, x)
+    mask = np.maximum(mask, coverage)
+    welded_target = wanted[first].copy()
+    influence = coverage[first][:, None]
+    from_ = np.r_[a, b]
+    to = np.r_[b, a]
+    edge_weight = 1 / np.maximum(np.r_[l0, l0], .003)
+    mass = np.maximum(np.bincount(from_, edge_weight, minlength=len(first)), 1)
+    for _ in range(65):
+        summed = np.column_stack([np.bincount(from_, edge_weight * welded_target[to, k],
+                                               minlength=len(first)) for k in range(3)])
+        welded_target += .72 * influence * (summed / mass[:, None] - welded_target)
+    wanted = welded_target[at]
     active = (mask[first][a] + mask[first][b] > .015) & (l0 > .0006)
     a, b, l0 = a[active], b[active], l0[active]
     root = original[first]
@@ -177,21 +251,78 @@ def sleeve_volume(matrices, base, previous, indices, weights, names, triangles, 
     counts = np.maximum(np.bincount(np.r_[a, b], minlength=len(first)), 1.)[:, None]
     limits = l0[:, None] * 1.22 + .00065
     # Project stretched edges back toward their material lengths without collapsing compressed folds.
-    for _ in range(225):
+    for _ in range(200):
         edge = posed[b] - posed[a]
         length = np.linalg.norm(edge, axis=1, keepdims=True)
         pull = edge * np.maximum(length - limits, 0) / np.maximum(length, 1e-9)
         pull *= .95 / np.maximum(total[:, None], 1e-8)
         change = np.column_stack([np.bincount(a, pull[:, k] * mobility[a], minlength=len(first))
                                   - np.bincount(b, pull[:, k] * mobility[b], minlength=len(first)) for k in range(3)])
-        posed += change / counts + (target - posed) * .009
+        posed += change / counts + (target - posed) * .012
+    # Smoothing removes the saw-tooth crease but also shrinks a closed
+    # cross-section. Restore the loft around the actual bent centreline.
+    for center, tangent, radial, sleeve, along, length in sleeve_sections:
+        center, tangent, radial = center[first], tangent[first], radial[first]
+        u = along[first] / length
+        offset = posed - center
+        axial = np.sum(offset * tangent, axis=1, keepdims=True)
+        cross_section = offset - axial * tangent
+        direction = unit(unit(cross_section) * .32 + unit(radial) * .68)
+        radius = np.linalg.norm(radial, axis=1)
+        # Preserve the fuller forearm and gathered cuff; only the elbow
+        # rounds off substantially in the bent pose.
+        profile = .037 + .015 * np.exp(-((u - .75) / .20) ** 2)
+        radius = np.clip(.48 * radius + .52 * profile, .029, .064)
+        restored = center + axial * tangent + direction * radius[:, None]
+        influence = sleeve[first] * smooth(.06, .28, u)
+        posed += (restored - posed) * (.95 * influence[:, None])
+    # Even out the closest rings at the sewn shoulder after restoring volume.
+    for _ in range(65):
+        edge = posed[b] - posed[a]
+        size = np.linalg.norm(edge, axis=1, keepdims=True)
+        pull = edge * np.maximum(size - limits, 0) / np.maximum(size, 1e-9)
+        pull /= np.maximum(total[:, None], 1e-8)
+        correction = np.column_stack([np.bincount(a, pull[:, k] * mobility[a], minlength=len(first))
+                                      - np.bincount(b, pull[:, k] * mobility[b], minlength=len(first)) for k in range(3)])
+        posed += .94 * correction / counts
     displacement = posed - root
-    displacement *= np.minimum(1., .070 * mask[first, None] / np.maximum(np.linalg.norm(displacement, axis=1, keepdims=True), 1e-9))
-    inverse = np.linalg.pinv(blend, rcond=.18)
+    displacement *= np.minimum(1., .103 * mask[first, None] / np.maximum(np.linalg.norm(displacement, axis=1, keepdims=True), 1e-9))
+    inverse = np.linalg.pinv(blend, rcond=.09)
     delta = np.einsum('nij,nj->ni', inverse, displacement[at])
-    delta *= np.minimum(1, .079 / np.maximum(np.linalg.norm(delta, axis=1, keepdims=True), 1e-9))
+    delta *= np.minimum(1, .125 / np.maximum(np.linalg.norm(delta, axis=1, keepdims=True), 1e-9))
+    # A nearly folded joint may not reproduce the full sculpt after the
+    # bounded inverse-skin step. Check that reproduced surface and distribute
+    # any remaining strain across the sewn rows and their immediate neighbours.
+    current = transform(base + previous + delta)[first]
+    source = current.copy()
+    neighbours = at[triangles[:, [[0, 1], [1, 2], [2, 0]]]].reshape(-1, 2)
+    l, r = np.unique(np.sort(neighbours, axis=1), axis=0).T
+    rest_length = np.linalg.norm(rest[l] - rest[r], axis=1)
+    move = smooth(.58, .613, rest[:, 1]) * (1 - smooth(.754, .796, rest[:, 1]))
+    move *= smooth(.035, .065, np.abs(rest[:, 0]))
+    keep = (move[l] + move[r] > .01) & (rest_length > .0005)
+    l, r, rest_length = l[keep], r[keep], rest_length[keep]
+    summed = np.maximum((move[l] + move[r])[:, None], 1e-8)
+    limit = (1.70 * rest_length + .0004)[:, None]
+    for _ in range(180):
+        diff = current[r] - current[l]
+        size = np.linalg.norm(diff, axis=1, keepdims=True)
+        active = size[:, 0] > limit[:, 0]
+        if not np.any(active):
+            break
+        lo, hi = l[active], r[active]
+        force = diff[active] * (1 - limit[active] / size[active]) / summed[active]
+        degree = np.maximum(np.bincount(np.r_[lo, hi], minlength=len(first)), 1)[:, None]
+        correction = np.column_stack([np.bincount(lo, force[:, k], minlength=len(first)) -
+                                      np.bincount(hi, force[:, k], minlength=len(first)) for k in range(3)])
+        current += move[:, None] * (.84 * correction / degree + .001 * (source - current))
+    # Apply the round inner elbow after the bounded inverse solve so the
+    # skinned triangles actually follow the designed silhouette.
+    for guide, coverage in elbow_guides:
+        current += (guide[first] - current) * (.96 * coverage[first, None])
+    delta += np.einsum('nij,nj->ni', np.linalg.pinv(blend, rcond=.025), (current - source)[at])
     delta[np.linalg.norm(delta, axis=1) < .0002] = 0
-    return delta.astype(np.float32)
+    return delta.astype(np.float32), unit(sleeve_normals), sleeve_normal_weight
 
 
 def refine(source, output, pose_data, review=None):
@@ -317,15 +448,17 @@ def refine(source, output, pose_data, review=None):
         before = imported[gltf_to_blender]
         assert np.allclose(before, base_xyz + to_blender(before_delta), atol=1e-6, rtol=0), name
         deformed = before.copy()
-        if name.startswith('HoodieStretch_') and 430 <= int(name.rsplit('_', 1)[1]) <= 685:
+        sleeve_shading = None
+        if name.startswith('HoodieStretch_') and 345 <= int(name.rsplit('_', 1)[1]) <= 745:
             matrices = np.asarray(recorded['frames'][name]).reshape(-1, 4, 4).transpose(0, 2, 1)
-            addition = sleeve_volume(matrices, base, before_delta, joints, weights, bone_names, tri, bind_joints, unfitted)
+            addition, sleeve_shading, sleeve_weight = sleeve_volume(matrices, base, before_delta, joints, weights, bone_names, tri, bind_joints, unfitted)
             deformed += to_blender(addition)
             block.data.foreach_set('co', np.ascontiguousarray(deformed[blender_to_gltf]).ravel())
             block.data.foreach_get('co', imported.ravel())
             deformed = imported[gltf_to_blender]
             axis_delta = before_delta + to_gltf(deformed - before)
-            target['POSITION'] = add_target(axis_delta, 1e-9, bounds=True)
+            add_target(axis_delta, .000075, bounds=True)
+            doc['accessors'][target['POSITION']] = doc['accessors'].pop()
         # Rotate the original split normals by the local shape's normal change, rather than replacing face/UV normals.
         shape = normals((base_xyz + to_blender(before_delta) + deformed - before)[first])
         cross = np.cross(rest_normals, shape)
@@ -336,14 +469,69 @@ def refine(source, output, pose_data, review=None):
         normal_delta = (unit(rotated) - source_normals) * amount_normal
         length_normal = np.linalg.norm(normal_delta, axis=1, keepdims=True)
         normal_delta *= np.minimum(1, .30 / np.maximum(length_normal, 1e-9))
-        target['NORMAL'] = add_target(to_gltf(normal_delta), .022)
+        if name in recorded['frames']:
+            # Three.js linearly blends normal transforms. At a bent elbow
+            # this can point away from the final sleeve even when its vertices
+            # form a round section. Transport the artist's split normals onto
+            # the posed surface, then solve the normal morph back into bind space.
+            matrices = np.asarray(recorded['frames'][name]).reshape(-1, 4, 4).transpose(0, 2, 1)
+            skin = (matrices[joints] * weights[:, :, None, None]).sum(axis=1)
+            linear = skin[:, :3, :3]
+            final_pose = np.einsum('nij,nj->ni', linear, to_gltf(deformed)) + skin[:, :3, 3]
+            actual = to_gltf(normals(to_blender(final_pose[first])))
+            predicted = unit(np.einsum('nij,nj->ni', linear, to_gltf(rest_normals)))
+            shaded = unit(np.einsum('nij,nj->ni', linear, original_normals))
+            cross = np.cross(predicted, actual)
+            dot = np.sum(predicted * actual, axis=1, keepdims=True)
+            twist = np.cross(cross, shaded)
+            desired = unit(shaded + twist + np.cross(cross, twist) / np.maximum(1 + dot, .02))
+            seam_distance = np.abs(x - (.128 - .305 * (height - .51)))
+            sewn = (1 - smooth(.014, .046, seam_distance)) * (1 - smooth(.033, .056, -base[:, 2]))
+            sewn *= smooth(.505, .54, height) * (1 - smooth(.70, .74, height))
+            desired = unit(desired + (actual - desired) * sewn[:, None])
+            if sleeve_shading is not None:
+                desired = unit(desired + (sleeve_shading - desired) * sleeve_weight[:, None])
+            bind_normal = unit(np.einsum('nij,nj->ni', np.linalg.pinv(linear, rcond=.12), desired))
+            coverage = smooth(.82, .99, cloth) * smooth(.035, .071, x) * smooth(.47, .52, height)
+            coverage *= (1 - smooth(.747, .792, height)) * (1 - smooth(.193, .233, x))
+            if sleeve_shading is not None:
+                coverage = np.maximum(coverage, sleeve_weight * smooth(.035, .07, x) * (1 - smooth(.206, .231, x)))
+            normal_delta = to_blender((bind_normal - original_normals) * coverage[:, None])
+        target['NORMAL'] = add_target(to_gltf(normal_delta), .056)
         stats[name] = {'max_position_change_mm': round(1000 * float(np.linalg.norm(deformed - before, axis=1).max()), 3),
                        'normal_vertices': doc['accessors'][target['NORMAL']].get('sparse', {}).get('count', 0)}
     bpy.data.meshes.remove(normals_mesh)
     if review:
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(filepath=str(review.resolve()))
-    write_glb(output, doc, binary)
+    # Replacing sparse shape positions releases their old payloads. Keep
+    # the runtime download limited to views still referenced by an accessor or image.
+    refs = []
+    def collect_views(value):
+        if isinstance(value, list):
+            for item in value:
+                collect_views(item)
+        elif isinstance(value, dict):
+            if 'bufferView' in value:
+                refs.append(value)
+            for item in value.values():
+                collect_views(item)
+    collect_views(doc)
+    packed = bytearray()
+    views = []
+    remap = {}
+    for old in sorted({ref['bufferView'] for ref in refs}):
+        view = doc['bufferViews'][old].copy()
+        start = view.get('byteOffset', 0)
+        view['byteOffset'] = len(packed)
+        packed.extend(binary[start:start + view['byteLength']])
+        packed.extend(bytes(-len(packed) % 4))
+        remap[old] = len(views)
+        views.append(view)
+    for ref in refs:
+        ref['bufferView'] = remap[ref['bufferView']]
+    doc['bufferViews'] = views
+    write_glb(output, doc, packed)
     return stats
 
 

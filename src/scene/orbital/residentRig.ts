@@ -423,8 +423,8 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
         const reachForward = direction.copy(wristPoint).sub(shoulderPoint).normalize().dot(facing);
         // The thick fleece needs its contact shape through the whole breathing cycle.
         weight = fittedHoodie
-          ? THREE.MathUtils.smoothstep(upperDown, .875, .947)
-            * (1 - THREE.MathUtils.smoothstep(reachForward, .28, .60))
+          ? THREE.MathUtils.smoothstep(upperDown, .69, .90)
+            * (1 - THREE.MathUtils.smoothstep(reachForward, .33, .64))
           : THREE.MathUtils.smoothstep(upperDown, .925, .989)
             * THREE.MathUtils.smoothstep(lowerDown, .76, .925)
             * (1 - THREE.MathUtils.smoothstep(reachForward, .14, .31));

@@ -1,6 +1,6 @@
 """Build the rigged, flat-sock-footed, cloth-simulated Cloud Hoodie Luna in Blender.
 
-Pipeline (all authored in Blender 5.2.3 LTS):
+Pipeline (verified with Blender 5.3):
   1. Load the user-supplied Tripo Cloud Hoodie GLB, normalize cm -> m, weld seam
      duplicates (preserving UVs), drop tiny internal Tripo noise islands, gently
      round the 2mm chin point, and smoothly align left/right hands onto Luna's
@@ -12,7 +12,7 @@ Pipeline (all authored in Blender 5.2.3 LTS):
      (preserving the exact bind-pose heel angle so standing & walking plant dead-flat
      on the floor, with smooth rounded knit toe box and seamless slouch-sock bridge).
   4. Calibrate cozy matte fleece/knit PBR material (soft matte roughness, normal 0.20,
-     basecolor ambient fill 0.45 matching Luna's cabin lighting & residentSkin.ts).
+     basecolor ambient fill 0.32 matching Luna's cabin lighting & residentSkin.ts).
   5. Bind to Luna's exact 115-bone armature with semantic region-aware skinning
      (strict torso/sleeve isolation, exact per-finger weighting, silky back-hair
      transition, zero Dress_* drag on hoodie back, exact Luna foot weights, 4-bone
@@ -215,6 +215,11 @@ def sample_uv_palette(obj):
     return best_sock[1], best_hoodie[1]
 
 
+# The sleeve begins just below the shoulder trim. Ending this cut at the elbow
+# leaves the upper arm sewn to the ribs and lifts the whole side panel on a reach.
+ARMHOLE_HEIGHT = 0.705
+
+
 def separate_underarm_seams(obj, cloth_uv: Vector):
     """Split the Tripo-fused sleeve-to-torso crease below the true armpit and cap smoothly."""
     bm = bmesh.new()
@@ -232,7 +237,7 @@ def separate_underarm_seams(obj, cloth_uv: Vector):
             c = f.calc_center_median()
             if c.y > 0.044 or c.y < -0.145:
                 continue
-            if not (0.442 <= c.z <= 0.648):
+            if not (0.442 <= c.z <= ARMHOLE_HEIGHT + 0.008):
                 continue
             if abs(side * c.x - x_cut(c.z)) < 0.032:
                 cand_faces.append(f)
@@ -255,114 +260,79 @@ def separate_underarm_seams(obj, cloth_uv: Vector):
         cut_edges = [
             g for g in res["geom_cut"]
             if isinstance(g, bmesh.types.BMEdge)
-            and all(0.440 <= v.co.z < 0.644 and -0.148 < v.co.y < 0.042 for v in g.verts)
+            and all(0.440 <= v.co.z < ARMHOLE_HEIGHT and -0.148 < v.co.y < 0.042 for v in g.verts)
         ]
-        if not cut_edges:
-            continue
-
-        bmesh.ops.split_edges(bm, edges=cut_edges)
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-
-        # Find the large boundary cycle created by the bisect cut (torso U-chain + sleeve U-chain meeting at front/back armpit)
-        cut_boundary = [
-            e for e in bm.edges
-            if e.is_boundary and e.link_faces
-            and all(0.435 <= v.co.z <= 0.652 and -0.155 < v.co.y < 0.050 for v in e.verts)
-            and abs((0.5 * (e.verts[0].co + e.verts[1].co) - plane_co).dot(plane_no)) < 0.006
-        ]
-        # Walk largest closed boundary cycle among cut_boundary
-        adj_b = {}
-        edge_lookup = {}
-        for e in cut_boundary:
-            a, b = e.verts[0], e.verts[1]
-            adj_b.setdefault(a, []).append(b)
-            adj_b.setdefault(b, []).append(a)
-            edge_lookup[(a, b)] = e
-            edge_lookup[(b, a)] = e
-
-        seen_v = set()
-        best_cycle = []
-        for e in cut_boundary:
-            start = e.verts[0]
-            if start in seen_v:
-                continue
-            cyc = [start]
-            prev, cur = None, start
-            for _ in range(len(cut_boundary) + 4):
-                nxts = [n for n in adj_b.get(cur, []) if n != prev]
-                if not nxts:
-                    break
-                nxt = nxts[0]
-                if nxt == start:
-                    break
-                cyc.append(nxt)
-                prev, cur = cur, nxt
-            for v in cyc:
-                seen_v.add(v)
-            if len(cyc) > len(best_cycle):
-                best_cycle = cyc
-
-        if len(best_cycle) < 8:
-            print(f"WARN: small cut cycle on side {side}: {len(best_cycle)}")
-            continue
-
-        # Classify every edge along the cycle as TORSO (-1) or SLEEVE (+1) based on its adjacent face center
-        n_cyc = len(best_cycle)
-        edge_side = []
-        for idx in range(n_cyc):
-            va, vb = best_cycle[idx], best_cycle[(idx + 1) % n_cyc]
-            be = edge_lookup.get((va, vb))
-            if be and be.link_faces:
-                fc = be.link_faces[0].calc_center_median()
-                edge_side.append(-1 if (fc - plane_co).dot(plane_no) < 0.0 else 1)
-            else:
-                edge_side.append(0)
-
-        # Find the two contiguous runs (TORSO U-chain and SLEEVE U-chain) around the closed cycle
-        runs = []
-        i_run = 0
-        while i_run < n_cyc:
-            st = edge_side[i_run]
-            j_run = i_run
-            while j_run < n_cyc and edge_side[j_run] == st:
-                j_run += 1
-            runs.append([st, i_run, j_run])
-            i_run = j_run
-        if len(runs) > 1 and runs[0][0] == runs[-1][0]:
-            # Merge wrap-around run
-            runs[0] = [runs[0][0], runs[-1][1], runs[0][2] + n_cyc]
-            runs.pop()
-
-        torso_runs = [r for r in runs if r[0] == -1]
-        sleeve_runs = [r for r in runs if r[0] == 1]
-        if not torso_runs or not sleeve_runs:
-            print(f"WARN: could not split torso/sleeve runs on side {side}: runs={runs}")
-            continue
-        t_run = max(torso_runs, key=lambda r: r[2] - r[1])
-        s_run = max(sleeve_runs, key=lambda r: r[2] - r[1])
-
-        torso_chain = [best_cycle[k % n_cyc] for k in range(t_run[1], t_run[2] + 1)]
-        sleeve_chain = [best_cycle[k % n_cyc] for k in range(s_run[1], s_run[2] + 1)]
-
-        # Ensure torso_chain and sleeve_chain both run from FRONT (low y) -> BACK (high y)
-        if torso_chain[0].co.y > torso_chain[-1].co.y:
-            torso_chain.reverse()
-        if sleeve_chain[0].co.y > sleeve_chain[-1].co.y:
-            sleeve_chain.reverse()
+        # Follow the connected U-shaped underarm cut before splitting it. Other
+        # intersections higher up can belong to hair or the shoulder decoration.
+        incident = {}
+        for edge in cut_edges:
+            for v in edge.verts:
+                incident.setdefault(v, []).append(edge)
+        seed = min(incident, key=lambda v: v.co.z)
+        connected = {seed}
+        stack = [seed]
+        while stack:
+            v = stack.pop()
+            for edge in incident[v]:
+                other = edge.other_vert(v)
+                if other not in connected:
+                    connected.add(other)
+                    stack.append(other)
+        ends = [v for v in connected if len(incident[v]) == 1]
+        if len(ends) != 2 or any(len(incident[v]) > 2 for v in connected):
+            raise ValueError(f"Open underarm seam expected on side {side}")
+        current = min(ends, key=lambda v: v.co.y)
+        ordered = []
+        previous = None
+        while True:
+            edge = next((e for e in incident[current] if e != previous), None)
+            if edge is None:
+                break
+            following = edge.other_vert(current)
+            faces = sorted(edge.link_faces, key=lambda f: (f.calc_center_median() - plane_co).dot(plane_no))
+            if len(faces) != 2:
+                raise ValueError(f"Non-manifold source at underarm on side {side}")
+            ordered.append((edge, current.co.copy(), following.co.copy(), faces))
+            previous, current = edge, following
+        bmesh.ops.split_edges(bm, edges=[record[0] for record in ordered])
+        # Each adjacent face retains its own copy of the cut edge. Recover both
+        # rims by face membership, even when a UV split has the same coordinate.
+        torso_chain, sleeve_chain = [], []
+        for _, start, finish, faces in ordered:
+            for chain, face in zip((torso_chain, sleeve_chain), faces):
+                a = min(face.verts, key=lambda v: (v.co - start).length_squared)
+                b = min(face.verts, key=lambda v: (v.co - finish).length_squared)
+                if not chain:
+                    chain.append(a)
+                elif chain[-1] != a:
+                    raise ValueError(f"Discontinuous underarm rim on side {side}")
+                chain.append(b)
 
         t_front, t_back = torso_chain[0], torso_chain[-1]
         s_front, s_back = sleeve_chain[0], sleeve_chain[-1]
 
         # Push torso rim strictly inward (-plane_no) and sleeve rim strictly outward (+plane_no)
         # while fading smoothly to 0 at the front/back armpit endpoints!
-        for chain, push_dir in ((torso_chain, -1.0), (sleeve_chain, +1.0)):
-            for idx_c, v in enumerate(chain):
-                if idx_c in (0, len(chain) - 1):
-                    continue
-                apex_fade = max(0.30, 1.0 - smoothstep(v.co.z, 0.626, 0.642))
-                v.co += plane_no * (push_dir * 0.0008 * apex_fade)
+        # Ease both rims into rounded panels. Carry the displacement a short
+        # distance into the original sleeve so the cut edge is not a hard crease.
+        for chain, direction in ((torso_chain, -1.), (sleeve_chain, 1.)):
+            widths = {}
+            for v in chain[1:-1]:
+                u = smoothstep(v.co.z, .508, .55) * (1 - smoothstep(v.co.z, .665, ARMHOLE_HEIGHT))
+                widths[v] = .001 + (.012 if direction > 0 else .003) * u
+            frontier = dict(widths)
+            for _ in range(5):
+                following = {}
+                for v, width in frontier.items():
+                    for edge in v.link_edges:
+                        nb = edge.other_vert(v)
+                        if nb in chain or nb in widths:
+                            continue
+                        following[nb] = max(following.get(nb, 0.), width * .58)
+                widths.update(following)
+                frontier = following
+            for v, width in widths.items():
+                v.co.x += side * direction * width
 
         # Build a 100% WATERTIGHT, 2-MANIFOLD real-tailoring armpit gusset:
         # Shared armpit roof crease spine R_1..R_P running cleanly from front armpit to back armpit!
@@ -377,8 +347,6 @@ def separate_underarm_seams(obj, cloth_uv: Vector):
             pos.z += 0.0025 * math.sin(math.pi * frac)
             roof_verts.append(bm.verts.new(pos))
 
-        cap_faces_torso = []
-        cap_faces_sleeve = []
         cap_faces_apex = []
 
         # Close front & back apex transition edges with consistent opposite half-edge winding
@@ -395,79 +363,68 @@ def separate_underarm_seams(obj, cloth_uv: Vector):
             except ValueError:
                 pass
 
-        # Close the TORSO side wall (torso_chain [front->back] + roof_verts [back->front])
-        torso_loop_verts = list(torso_chain) + list(reversed(roof_verts))
-        # Close the SLEEVE inner wall (sleeve_chain [back->front] + roof_verts [front->back]) -> opposite winding on shared spine!
-        sleeve_loop_verts = list(reversed(sleeve_chain)) + list(roof_verts)
+        def stitch_wall(chain, sidewall):
+            # Cross-sections run around the arm, with a row at each height.
+            # A pole in the middle of the panel would create long triangles
+            # from the cuff to the elbow which cannot bend around the joint.
+            bottom = min(range(len(chain)), key=lambda k: chain[k].co.z)
+            front, back = list(reversed(chain[:bottom + 1])), chain[bottom:]
+            roof = [chain[0], *roof_verts, chain[-1]]
 
-        # Build 100% WATERTIGHT, 2-MANIFOLD, ZERO-DUPLICATE-EDGE walls using 3 concentric inset rings
-        # into a private interior pole on each side (guaranteed star-convex in (y, z) with ZERO shared diagonals!).
-        def build_concentric_wall(loop_verts, push_dir):
-            n_l = len(loop_verts)
-            # Compute centroid projected cleanly onto the bisect plane, tucked 3.5mm into this side's interior!
-            c_raw = sum((v.co for v in loop_verts), Vector((0.0, 0.0, 0.0))) / float(n_l)
-            # Project onto plane_co/plane_no and offset strictly to push_dir side
-            c_plane = c_raw - plane_no * (c_raw - plane_co).dot(plane_no)
-            c_pos = c_plane + plane_no * (push_dir * 0.0035)
-            v_center = bm.verts.new(c_pos)
+            def lengths(points):
+                distance = [0.]
+                for a, b in zip(points, points[1:]):
+                    distance.append(distance[-1] + (b.co - a.co).length)
+                return [d / distance[-1] for d in distance]
 
-            # 3 concentric rings from boundary (t=0) toward interior pole (t=1):
-            # t=0.14 stays at z~0.634 right under roof_verts (smooth raglan zone!), then 0.48, 0.78 -> pole
-            rings = [loop_verts]
-            for t_ring in (0.14, 0.48, 0.78):
-                # Extra inward tuck peaks smoothly in the middle of the wall so torso & sleeve walls never touch!
-                tuck = push_dir * (0.0028 * math.sin(math.pi * t_ring))
-                ring = []
-                for bv in loop_verts:
-                    p = bv.co.lerp(c_pos, t_ring) + plane_no * tuck
-                    # Strictly enforce safe side of x_cut(z) below the armpit roof (z < 0.637)
-                    if p.z < 0.637:
-                        lim = x_cut(p.z) + push_dir * 0.0012
-                        if push_dir < 0 and side * p.x > lim:
-                            p.x = side * lim
-                        elif push_dir > 0 and side * p.x < lim:
-                            p.x = side * lim
-                    ring.append(bm.verts.new(p))
-                rings.append(ring)
+            def at(points, dist, t):
+                k = min(len(dist) - 2, max(0, int(np.searchsorted(dist, t)) - 1))
+                return points[k].co.lerp(points[k + 1].co, (t - dist[k]) / (dist[k + 1] - dist[k]))
 
-            w_faces = []
-            desired = plane_no * (-push_dir)
-            # Stitch consecutive rings with clean triangulated quads
-            for r_idx in range(len(rings) - 1):
-                ra, rb = rings[r_idx], rings[r_idx + 1]
-                for k in range(n_l):
-                    kn = (k + 1) % n_l
-                    for tri_vs in ((ra[k], ra[kn], rb[kn]), (ra[k], rb[kn], rb[k])):
-                        try:
-                            nf = bm.faces.new(tri_vs)
-                            nf.normal_update()
-                            if nf.normal.dot(desired) < 0.0:
-                                nf.normal_flip()
-                            nf.smooth = True
-                            for l in nf.loops:
-                                l[uv_layer].uv = cloth_uv
-                            w_faces.append(nf)
-                        except ValueError:
-                            pass
-            # Stitch innermost ring cleanly to center pole
-            last_r = rings[-1]
-            for k in range(n_l):
-                kn = (k + 1) % n_l
-                try:
-                    nf = bm.faces.new((last_r[k], last_r[kn], v_center))
-                    nf.normal_update()
-                    if nf.normal.dot(desired) < 0.0:
-                        nf.normal_flip()
-                    nf.smooth = True
-                    for l in nf.loops:
-                        l[uv_layer].uv = cloth_uv
-                    w_faces.append(nf)
-                except ValueError:
-                    pass
-            return w_faces
+            def triangle(a, b, c):
+                if a == b or a == c or b == c:
+                    return
+                verts = (a, b, c) if side * sidewall < 0 else (a, c, b)
+                face = bm.faces.new(verts)
+                face.smooth = True
+                for loop in face.loops:
+                    # A small fleece swatch gives the inner panel a finite UV
+                    # basis even at the armpit where the camera can see it.
+                    point = loop.vert.co
+                    loop[uv_layer].uv = Vector((1.05 + .85 * smoothstep(point.y, -.09, .05),
+                                                .03 + .94 * smoothstep(point.z, .50, .72)))
 
-        cap_faces_torso.extend(build_concentric_wall(torso_loop_verts, -1.0))
-        cap_faces_sleeve.extend(build_concentric_wall(sleeve_loop_verts, +1.0))
+            def join_rails(left, left_t, right, right_t):
+                a = b = 0
+                while a + 1 < len(left) or b + 1 < len(right):
+                    if b + 1 == len(right) or (a + 1 < len(left) and left_t[a + 1] <= right_t[b + 1]):
+                        triangle(left[a], right[b], left[a + 1])
+                        a += 1
+                    else:
+                        triangle(left[a], right[b], right[b + 1])
+                        b += 1
+
+            front_t, back_t = lengths(front), lengths(back)
+            samples = np.linspace(0., 1., 37)
+            rails = [(front, front_t)]
+            for k in range(1, len(roof) - 1):
+                across = k / (len(roof) - 1)
+                rail = [chain[bottom]]
+                for u in samples[1:-1]:
+                    a, b = at(front, front_t, u), at(back, back_t, u)
+                    co = a.lerp(b, across)
+                    arch = math.sin(math.pi * across) * math.sin(math.pi * u)
+                    co.x -= side * sidewall * (.025 if sidewall > 0 else .007) * arch
+                    co.z += .0025 * math.sin(math.pi * across) * u ** 3
+                    rail.append(bm.verts.new(co))
+                rail.append(roof[k])
+                rails.append((rail, samples))
+            rails.append((back, back_t))
+            for (a, a_t), (b, b_t) in zip(rails, rails[1:]):
+                join_rails(a, a_t, b, b_t)
+
+        stitch_wall(torso_chain, -1)
+        stitch_wall(sleeve_chain, 1)
 
         for nf in cap_faces_apex:
             nf.normal_update()
@@ -477,7 +434,7 @@ def separate_underarm_seams(obj, cloth_uv: Vector):
 
         print(
             f"Capped underarm side={side:+.0f}: torso_chain={len(torso_chain)}, sleeve_chain={len(sleeve_chain)}, "
-            f"torso_wall={len(cap_faces_torso)} tris, sleeve_wall={len(cap_faces_sleeve)} tris"
+            f"cut height={ARMHOLE_HEIGHT:.3f}"
         )
 
     bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=1e-6)
@@ -821,6 +778,51 @@ def build_flat_sock_feet_from_luna(obj, ref_luna_obj, arm_obj, sock_uv: Vector):
     print(f"Built anatomical flat knit sock feet from Luna template; verts={len(obj.data.vertices)}, polys={len(obj.data.polygons)}")
 
 
+def finish_small_surface_details(obj):
+    """Give flat palette faces a finite texture footprint and separate two sewn layers."""
+    mesh = obj.data
+    uv = mesh.uv_layers.active.data
+    for face in mesh.polygons:
+        loops = list(face.loop_indices)
+        points = [uv[i].uv.copy() for i in loops]
+        twice_area = sum(a.x * b.y - b.x * a.y for a, b in zip(points, points[1:] + points[:1]))
+        if abs(twice_area) > 1e-12:
+            continue
+        # Use the dominant projection of each face. The original palette
+        # sample stays at its centre and the three corners stay in that texel.
+        origin = sum(points, Vector((0., 0.))) / len(points)
+        axis = max(range(3), key=lambda i: abs(face.normal[i]))
+        u, v = (axis + 1) % 3, (axis + 2) % 3
+        positions = [mesh.vertices[mesh.loops[i].vertex_index].co - face.center for i in loops]
+        extent = max(max(abs(q[u]), abs(q[v])) for q in positions)
+        if extent > 0:
+            for i, q in zip(loops, positions):
+                uv[i].uv = origin + Vector((q[u], q[v])) * (.00014 / extent)
+
+    # These two layers almost coincide in the source scan at the nape and
+    # at the underside of the left sock. Follow topology from the outer
+    # triangle so the facing layer does not receive the same displacement.
+    adjacent = [set() for _ in mesh.vertices]
+    for edge in mesh.edges:
+        a, b = edge.vertices
+        adjacent[a].add(b)
+        adjacent[b].add(a)
+    for center in ((.022828, .040542, .776771), (-.076256, -.084954, .002510)):
+        face = min(mesh.polygons, key=lambda p: (p.center - Vector(center)).length_squared)
+        rim = set(face.vertices)
+        seen = set()
+        direction = face.normal.copy()
+        if center[2] < .01:
+            direction.z = 0.
+            direction.normalize()
+        for distance in (.0018, .00075, .00020):
+            for i in rim:
+                mesh.vertices[i].co += direction * distance
+            seen.update(rim)
+            rim = {j for i in rim for j in adjacent[i]} - seen
+    mesh.update()
+
+
 def enhance_anime_face_mesh(obj):
     """Close any tiny bangs slit and sculpt a delicate 3D anime nose ridge on Luna_Surface."""
     bm = bmesh.new()
@@ -1062,6 +1064,49 @@ def configure_cozy_matte_material(obj, scratch_dir: Path):
         img.reload()
         img.pack()
 
+    # Reserve the last eighth of each map for the previously unseen inner
+    # panels. The scan bakes colour into the fleece, so a single sampled
+    # texel would read as a grey plane when the elbow turns toward the camera.
+    uv = obj.data.uv_layers.active.data
+    def panel_atlas(px, kind):
+        height, width, _ = px.shape
+        cut = width * 7 // 8
+        source_x = np.linspace(0, width - 1, cut)
+        left = source_x.astype(int)
+        weight = (source_x - left)[None, :, None]
+        result = np.empty_like(px)
+        result[:, :cut] = px[:, left] * (1 - weight) + px[:, np.minimum(left + 1, width - 1)] * weight
+        if kind == 'colour':
+            # Sample clean blue fleece on the original outer upper sleeve.
+            samples = []
+            for poly in obj.data.polygons:
+                c = poly.center
+                if .628 < c.z < .666 and .109 < abs(c.x) < .151 and c.y < -.02:
+                    for li in poly.loop_indices:
+                        u, v = uv[li].uv
+                        if u <= 1:
+                            rgb = px[min(height-1, max(0, int(v*height))),
+                                     min(width-1, max(0, int(u*width))), :3]
+                            if rgb[2] > rgb[0] * 1.06 and rgb[0] > .19:
+                                samples.append(rgb)
+            if not samples:
+                raise ValueError('Could not sample sleeve fleece from source atlas')
+            colour = np.median(samples, axis=0)
+            x, y = np.meshgrid(np.linspace(0, 1, width-cut), np.linspace(0, 1, height))
+            # Soft reflected light around the sleeve and shallow diagonal folds
+            # match the painted shading on the adjoining scanned fabric.
+            shade = .95 + .07 * np.cos((x - .52) * 2 * math.pi)
+            for center, slope, strength in ((.23,.065,.09), (.47,-.075,.055), (.76,.06,.035)):
+                line = y - center - slope * np.sin(math.pi*x)
+                shade += strength * (np.exp(-((line-.020)/.025)**2) - np.exp(-(line/.024)**2))
+            result[:, cut:, :3] = np.clip(colour * shade[:, :, None], 0, 1)
+        elif kind == 'normal':
+            result[:, cut:, :3] = (.5, .5, 1)
+        else:
+            result[:, cut:, :3] = (1, .85, 0)
+        result[:, cut:, 3] = 1
+        return result
+
     # Lift RM green channel roughness to cozy matte fleece/knit (~0.68-0.96), zero metallic,
     # paint refined 3D-projected anime face features onto basecolor, and pack optimized textures!
     tex_dir = scratch_dir / "optimized_textures"
@@ -1077,14 +1122,21 @@ def configure_cozy_matte_material(obj, scratch_dir: Path):
             px[:, :, 1] = np.clip(0.58 + 0.36 * px[:, :, 1], 0.68, 0.96)
             px[:, :, 2] = 0.0
             px[:, :, 3] = 1.0
-            save_modified_image(img, tex_dir / "hoodie_rm.png", "PNG", px_arr=px, scale_to=1024)
+            save_modified_image(img, tex_dir / "hoodie_rm.png", "PNG", px_arr=panel_atlas(px, "roughness"), scale_to=1024)
         elif "basecolor" in lname:
             w, h = img.size
             px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
             paint_anime_face_features(obj, px)
-            save_modified_image(img, tex_dir / "hoodie_basecolor.jpg", "JPEG", px_arr=px)
+            save_modified_image(img, tex_dir / "hoodie_basecolor.jpg", "JPEG", px_arr=panel_atlas(px, "colour"))
         elif "normal" in lname:
-            save_modified_image(img, tex_dir / "hoodie_normal.jpg", "JPEG")
+            w, h = img.size
+            px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+            save_modified_image(img, tex_dir / "hoodie_normal.jpg", "JPEG", px_arr=panel_atlas(px, "normal"))
+
+    for loop in uv:
+        u, v = loop.uv
+        loop.uv = ((u * .875) if u <= 1 else .875 + (u - 1) * .125, v)
+
 
 
 def point_to_segment_dist(p: Vector, a: Vector, b: Vector):
@@ -1179,15 +1231,26 @@ def segment_and_skin(obj, ref_luna_obj, arm_obj):
                 if nb in seen:
                     continue
                 p = coords[nb]
-                if s * p.x <= 0.068 or p.z > 0.752 or p.z < 0.440:
+                if s * p.x <= 0.059 or p.z > 0.752 or p.z < 0.440:
                     continue
                 # Stay strictly on the SLEEVE side of the bisect cut plane (NEVER leak onto the TORSO seam rim!)
-                if p.z < 0.640 and s * p.x < x_cut(p.z) + 0.00002:
+                if p.z < ARMHOLE_HEIGHT - 0.003 and s * p.x < x_cut(p.z) + 0.00002:
                     continue
                 if p.y > 0.050 and p.z > 0.65:
                     continue
                 seen.add(nb)
                 q.append(nb)
+        # Below the underarm, membership follows the cut fabric. Spatial
+        # nearest-bone labels can jump across the two close inner walls.
+        lower_limit = ARMHOLE_HEIGHT - 0.016
+        lower = {i for i in seeds if coords[i].z < lower_limit}
+        queue = deque(lower)
+        while queue:
+            for nb in adj[queue.popleft()]:
+                if nb not in lower and coords[nb].z < lower_limit:
+                    lower.add(nb)
+                    queue.append(nb)
+        seen = {i for i in seen if coords[i].z >= lower_limit} | lower
         for i in range(n_verts):
             if region[i] in (sleeve_tag, hand_tag) and i not in seen:
                 region[i] = "TORSO"
@@ -1320,9 +1383,9 @@ def segment_and_skin(obj, ref_luna_obj, arm_obj):
             w_sh = t_sh
             w_hand = t_fore * t_cuff
 
-            # Smooth raglan torso blend at top shoulder cap AND right at the uncut armpit roof crease (z >= 0.630)
+            # Smooth raglan torso blend at top shoulder cap AND right at the uncut armpit roof crease
             t_cap = (1.0 - smoothstep(abs(p.x), 0.070, 0.096)) * smoothstep(p.z, 0.695, 0.738) * 0.40
-            t_pit = (1.0 - smoothstep(abs(p.x), 0.084, 0.112)) * smoothstep(p.z, 0.630, 0.655) * (1.0 - smoothstep(p.z, 0.665, 0.700)) * 0.42
+            t_pit = (1.0 - smoothstep(abs(p.x), 0.084, 0.112)) * smoothstep(p.z, ARMHOLE_HEIGHT - 0.012, ARMHOLE_HEIGHT + 0.012) * (1.0 - smoothstep(p.z, 0.725, 0.745)) * 0.42
             t_torso = min(0.55, t_cap + t_pit)
             if t_torso > 0.01:
                 rem = 1.0 - t_torso
@@ -1423,12 +1486,12 @@ def segment_and_skin(obj, ref_luna_obj, arm_obj):
                 continue
             if sg in ("HAIR", "HEAD"):
                 nbs = [nb for nb in adj[i] if smooth_group[region[nb]] in ("HAIR", "HEAD") and coords[nb].y > 0.025]
-            elif sg in ("BODY", "SLEEVE_L", "SLEEVE_R") and coords[i].z >= 0.634:
-                # Allow silky raglan weight blending across the uncut armpit/shoulder arch (strictly z >= 0.634!)
+            elif sg in ("BODY", "SLEEVE_L", "SLEEVE_R") and coords[i].z >= ARMHOLE_HEIGHT - 0.012:
+                # Allow silky raglan weight blending across the uncut armpit/shoulder arch
                 nbs = [
                     nb for nb in adj[i]
                     if smooth_group[region[nb]] == sg
-                    or (coords[nb].z >= 0.634 and smooth_group[region[nb]] in ("BODY", "SLEEVE_L", "SLEEVE_R"))
+                    or (coords[nb].z >= ARMHOLE_HEIGHT - 0.012 and smooth_group[region[nb]] in ("BODY", "SLEEVE_L", "SLEEVE_R"))
                 ]
             else:
                 nbs = [nb for nb in adj[i] if smooth_group[region[nb]] == sg]
@@ -2493,6 +2556,283 @@ def setup_blend_viewport_and_save(obj, arm_obj, blend_out: Path):
     print(f"Saved editable Blender source: {blend_out} ({blend_out.stat().st_size:,} bytes)")
 
 
+def attach_sleeve_normals(surface, rig, doc, binary):
+    """Expose glTF morph normals as a native Blender modifier driven by the shape keys."""
+    prim = doc["meshes"][0]["primitives"][0]
+    types = {5121: "u1", 5123: "<u2", 5125: "<u4", 5126: "<f4"}
+
+    def view(values, count, dtype):
+        offset = doc["bufferViews"][values["bufferView"]].get("byteOffset", 0) + values.get("byteOffset", 0)
+        return np.frombuffer(binary, dtype, count, offset)
+
+    def accessor(index, width):
+        a = doc["accessors"][index]
+        dtype = types[a["componentType"]]
+        data = np.zeros((a["count"], width), dtype=dtype)
+        if "bufferView" in a:
+            data[:] = view(a, data.size, dtype).reshape(data.shape)
+        if "sparse" in a:
+            sparse = a["sparse"]
+            ids = view(sparse["indices"], sparse["count"], types[sparse["indices"]["componentType"]])
+            data[ids] = view(sparse["values"], len(ids) * width, dtype).reshape(-1, width)
+        return data
+
+    mesh = surface.data
+    corners = accessor(prim["indices"], 1).ravel()
+    axes = lambda v: np.column_stack((v[:, 0], -v[:, 2], v[:, 1]))
+    vertices = np.asarray([v.co[:] for v in mesh.vertices])
+    loops = np.asarray([lp.vertex_index for lp in mesh.loops])
+    if not np.allclose(vertices[loops], axes(accessor(prim["attributes"]["POSITION"], 3))[corners], atol=1e-6, rtol=0):
+        raise ValueError("Final sleeve normal corners do not match the editable mesh")
+
+    tree = bpy.data.node_groups.new("连帽衫 · 袖片修形法线", "GeometryNodeTree")
+    tree.interface.new_socket(name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry")
+    tree.interface.new_socket(name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry")
+    links, nodes = tree.links, tree.nodes
+
+    def normal_field(name, index, row):
+        attribute = mesh.attributes.new(name, "FLOAT_VECTOR", "CORNER")
+        vectors = np.ascontiguousarray(axes(accessor(index, 3))[corners], dtype=np.float32)
+        attribute.data.foreach_set("vector", vectors.ravel())
+        node = nodes.new("GeometryNodeInputNamedAttribute")
+        node.data_type = "FLOAT_VECTOR"
+        node.inputs["Name"].default_value = name
+        node.location = (-600, row)
+        return node.outputs["Attribute"]
+
+    current = normal_field("Sleeve normal · basis", prim["attributes"]["NORMAL"], 200)
+    shapes = mesh.shape_keys
+    for n, (name, target) in enumerate(zip(doc["meshes"][0]["extras"]["targetNames"], prim["targets"])):
+        row = -165 * n
+        field = normal_field("Sleeve normal · " + name, target["NORMAL"], row)
+        scale = nodes.new("ShaderNodeVectorMath")
+        scale.operation = "SCALE"
+        scale.location = (-330, row)
+        links.new(field, scale.inputs[0])
+        driver = scale.inputs["Scale"].driver_add("default_value").driver
+        driver.type = "AVERAGE"
+        variable = driver.variables.new()
+        variable.type = "SINGLE_PROP"
+        var = variable.targets[0]
+        var.id_type, var.id = "KEY", shapes
+        var.data_path = shapes.key_blocks[name].path_from_id("value")
+        add = nodes.new("ShaderNodeVectorMath")
+        add.operation = "ADD"
+        add.location = (-80, row)
+        links.new(current, add.inputs[0])
+        links.new(scale.outputs["Vector"], add.inputs[1])
+        current = add.outputs["Vector"]
+    # Blender's free corner normals stay in object space through the
+    # Armature modifier. Skin the normal after the mesh deforms, using the
+    # actual bone pose and the same four weights as the exported garment.
+    palette = bpy.data.node_groups.new("Luna · 骨骼变换", "GeometryNodeTree")
+    palette.interface.new_socket(name="Bone", in_out="INPUT", socket_type="NodeSocketInt")
+    palette.interface.new_socket(name="Transform", in_out="OUTPUT", socket_type="NodeSocketMatrix")
+    palette_input, palette_output = palette.nodes.new("NodeGroupInput"), palette.nodes.new("NodeGroupOutput")
+    switch = palette.nodes.new("GeometryNodeIndexSwitch")
+    switch.data_type = "MATRIX"
+    palette.links.new(palette_input.outputs[0], switch.inputs["Index"])
+    palette.links.new(switch.outputs[0], palette_output.inputs[0])
+    bone_ids = doc["skins"][0]["joints"]
+    while len(switch.index_switch_items) < len(bone_ids):
+        switch.index_switch_items.new()
+    for j, node_id in enumerate(bone_ids):
+        name = doc["nodes"][node_id]["name"]
+        bone = rig.pose.bones.get(name) or rig.pose.bones[name.replace(":", "")]
+        pose = palette.nodes.new("GeometryNodeBoneInfo")
+        pose.inputs["Armature"].default_value = rig
+        pose.inputs["Bone Name"].default_value = bone.name
+        pose.location = (-650, -170 * j)
+        inv = palette.nodes.new("FunctionNodeInvertMatrix")
+        inv.location = (-430, -170 * j)
+        palette.links.new(pose.outputs["Rest Pose"], inv.inputs[0])
+        product = palette.nodes.new("FunctionNodeMatrixMultiply")
+        product.location = (-220, -170 * j)
+        palette.links.new(pose.outputs["Pose"], product.inputs[0])
+        palette.links.new(inv.outputs[0], product.inputs[1])
+        palette.links.new(product.outputs[0], switch.inputs[j + 1])
+    switch.location, palette_input.location, palette_output.location = (20, 0), (-200, 180), (260, 0)
+    # Split UV vertices address the same editable point and carry identical
+    # bone influences. Retain one four-weight tuple per editable vertex.
+    corner_to_source = np.zeros(len(mesh.vertices), dtype=np.int32)
+    corner_to_source[loops] = corners
+    joint_ids = accessor(prim["attributes"]["JOINTS_0"], 4)[corner_to_source]
+    values = accessor(prim["attributes"]["WEIGHTS_0"], 4)[corner_to_source]
+    accumulated = None
+    for k in range(4):
+        fields = []
+        for prefix, kind, array in (("Bone index", "INT", joint_ids[:, k]), ("Bone weight", "FLOAT", values[:, k])):
+            name = f"{prefix} {k + 1}"
+            attr = mesh.attributes.new(name, kind, "POINT")
+            attr.data.foreach_set("value", np.ascontiguousarray(array, dtype=np.int32 if kind == "INT" else np.float32))
+            field = nodes.new("GeometryNodeInputNamedAttribute")
+            field.data_type = kind
+            field.inputs["Name"].default_value = name
+            field.location = (180, -400 * k - (160 if kind == "FLOAT" else 0))
+            fields.append(field.outputs["Attribute"])
+        lookup = nodes.new("GeometryNodeGroup")
+        lookup.node_tree = palette
+        lookup.location = (410, -400 * k)
+        links.new(fields[0], lookup.inputs["Bone"])
+        direction = nodes.new("FunctionNodeTransformDirection")
+        direction.location = (620, -400 * k)
+        links.new(current, direction.inputs["Direction"])
+        links.new(lookup.outputs[0], direction.inputs["Transform"])
+        weighted = nodes.new("ShaderNodeVectorMath")
+        weighted.operation = "SCALE"
+        weighted.location = (840, -400 * k)
+        links.new(direction.outputs[0], weighted.inputs[0])
+        links.new(fields[1], weighted.inputs["Scale"])
+        if accumulated is None:
+            accumulated = weighted.outputs["Vector"]
+        else:
+            add = nodes.new("ShaderNodeVectorMath")
+            add.operation = "ADD"
+            add.location = (1050, -400 * k)
+            links.new(accumulated, add.inputs[0])
+            links.new(weighted.outputs[0], add.inputs[1])
+            accumulated = add.outputs["Vector"]
+    current = accumulated
+    normalize = nodes.new("ShaderNodeVectorMath")
+    normalize.operation = "NORMALIZE"
+    normalize.location = (1290, 0)
+    links.new(current, normalize.inputs[0])
+    result = nodes.new("GeometryNodeSetMeshNormal")
+    result.mode, result.domain = "FREE", "CORNER"
+    result.location = (1510, 120)
+    input_node, output_node = nodes.new("NodeGroupInput"), nodes.new("NodeGroupOutput")
+    input_node.location, output_node.location = (1290, 270), (1730, 120)
+    links.new(input_node.outputs["Geometry"], result.inputs["Mesh"])
+    links.new(normalize.outputs["Vector"], result.inputs["Custom Normal"])
+    links.new(result.outputs["Mesh"], output_node.inputs["Geometry"])
+    modifier = surface.modifiers.new("袖片法线 · 随修形变化", "NODES")
+    modifier.node_group = tree
+
+
+def save_finished_garment(glb_path, pose_path, blend_path):
+    """Keep the shipping mesh, its editable shape keys and preview action in the source file."""
+    bpy.context.scene.name = "Hoodie_Pattern"
+    final = bpy.data.scenes.new("Luna · 云朵连帽衫")
+    bpy.context.window.scene = final
+    previous = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(glb_path), merge_vertices=True, import_pack_images=True)
+    imported = set(bpy.data.objects) - previous
+    surface = next(o for o in imported if o.type == "MESH" and o.data.shape_keys)
+    rig = next(o for o in imported if o.type == "ARMATURE")
+    surface.name = "Luna · 连帽衫成品"
+    rig.name = "Luna · 成品骨架"
+    for action in bpy.data.actions:
+        action.use_fake_user = True
+    # Preserve the imported walk and chair Actions. The selected timeline
+    # plays the stretch and all cloth shapes together and remains editable.
+    rig.animation_data_clear()
+    shapes = surface.data.shape_keys
+    shapes.animation_data_clear()
+    raw, binary = read_glb(Path(glb_path))
+    attach_sleeve_normals(surface, rig, raw, binary)
+    # The studio garment is viewed at close range under ray-traced lights.
+    # Relax the two sewn rims on the posed cage before evaluating its smooth
+    # subdivision surface. Keep both operations editable in the .blend.
+    seam = surface.vertex_groups.new(name="袖缝 · 布片过渡")
+    for v in surface.data.vertices:
+        x, _, z = v.co
+        rim = abs(abs(x) - (.128 - .305 * (z - .51)))
+        weight = ((1 - smoothstep(rim, .024, .061)) * smoothstep(z, .49, .52)
+                  * (1 - smoothstep(z, .67, .725)))
+        if weight > 0:
+            seam.add([v.index], weight, "REPLACE")
+    smoothing = surface.modifiers.new("袖缝 · 缓和折脊", "SMOOTH")
+    smoothing.vertex_group, smoothing.factor, smoothing.iterations = seam.name, .85, 14
+    surface.modifiers.move(len(surface.modifiers) - 1, 1)
+    subdivision = surface.modifiers.new("针织表面 · 工作室细分", "SUBSURF")
+    subdivision.levels = subdivision.render_levels = 1
+
+    names = [raw["nodes"][i]["name"] for i in raw["skins"][0]["joints"]]
+    targets = raw["meshes"][0]["extras"]["targetNames"]
+    pose = json.loads(Path(pose_path).read_text("utf-8"))
+    rest = {b.name: b.bone.matrix_local.copy() for b in rig.pose.bones}
+    to_blender = Matrix.Rotation(math.pi / 2, 4, "X")
+    basis = rig.matrix_world.inverted_safe() @ surface.matrix_world @ to_blender
+    inverse = basis.inverted_safe()
+    bones = [rig.pose.bones.get(name) or rig.pose.bones[name.replace(":", "")] for name in names]
+    previous_quat = {}
+    for frame, sample in enumerate(pose["preview"], 1):
+        matrices = {b.name: basis @ Matrix(np.asarray(m).reshape(4,4).T.tolist()) @ inverse @ rest[b.name]
+                    for b, m in zip(bones, sample["matrices"])}
+        for b in bones:
+            kwargs = {}
+            if b.parent:
+                kwargs = {"parent_matrix": matrices.get(b.parent.name, b.parent.bone.matrix_local),
+                          "parent_matrix_local": b.parent.bone.matrix_local}
+            local = b.bone.convert_local_to_pose(matrices[b.name], rest[b.name], invert=True, **kwargs)
+            location, rotation, scale = local.decompose()
+            if b.name in previous_quat:
+                rotation.make_compatible(previous_quat[b.name])
+            previous_quat[b.name] = rotation.copy()
+            b.rotation_mode = "QUATERNION"
+            b.location, b.rotation_quaternion, b.scale = location, rotation, scale
+            for channel in ("location", "rotation_quaternion", "scale"):
+                b.keyframe_insert(channel, frame=frame, group=b.name)
+        for name, weight in zip(targets, sample["weights"]):
+            key = shapes.key_blocks[name]
+            key.value = float(weight)
+            key.keyframe_insert("value", frame=frame)
+    rig.animation_data.action.name = "Luna · 站立与伸懒腰"
+    shapes.animation_data.action.name = "连帽衫 · 同步袖型"
+    final.render.fps = pose["fps"]
+    final.frame_end = len(pose["preview"])
+    for label, seconds in (("站立", 0), ("抬臂", 3.7), ("伸展", 5.2), ("收臂", 6.85)):
+        final.timeline_markers.new(label, frame=1 + round(seconds * final.render.fps))
+    final.frame_set(1)
+    # A saved camera and soft studio lights make F12 and viewport playback
+    # useful in Blender without any game or external texture paths.
+    studio = bpy.data.collections.new("服装预览 · 相机与灯光")
+    final.collection.children.link(studio)
+    def studio_object(name, data, location, target):
+        item = bpy.data.objects.new(name, data)
+        studio.objects.link(item)
+        item.location = location
+        item.rotation_euler = (Vector(target) - item.location).to_track_quat("-Z", "Y").to_euler()
+        return item
+    camera = bpy.data.cameras.new("服装正面")
+    camera.type = "ORTHO"
+    camera.ortho_scale = 1.12
+    final.camera = studio_object("服装正面", camera, (.055, -2.25, .62), (0, 0, .53))
+    for label, xyz, watts, width in (("柔光", (-1.35, -1.65, 2.20), 95, 1.7),
+                                      ("补光", (1.4, -.85, 1.15), 51, 1.5),
+                                      ("轮廓光", (.4, 1., 1.8), 68, 1.15)):
+        lamp = bpy.data.lights.new(label, "AREA")
+        lamp.energy, lamp.shape, lamp.size = watts, "DISK", width
+        studio_object(label, lamp, xyz, (0, 0, .58))
+    final.world = bpy.data.worlds.new("服装预览背景")
+    final.world.use_nodes = True
+    sky = final.world.node_tree.nodes.get("Background")
+    sky.inputs["Color"].default_value = (.23, .26, .31, 1)
+    sky.inputs["Strength"].default_value = .45
+    final.render.engine = "CYCLES"
+    final.cycles.samples = 16
+    final.cycles.use_denoising = True
+    final.render.resolution_x, final.render.resolution_y = 600, 760
+    final.render.resolution_percentage = 100
+    bpy.ops.object.select_all(action="DESELECT")
+    surface.select_set(True)
+    bpy.context.view_layer.objects.active = surface
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type == "VIEW_3D":
+                view = area.spaces.active
+                view.region_3d.view_perspective = "ORTHO"
+                view.region_3d.view_location = (0, 0, .57)
+                view.region_3d.view_distance = 1.60
+                view.region_3d.view_rotation = Vector((-.06, 1, -.04)).to_track_quat("-Z", "Y")
+                view.overlay.show_overlays = False
+                view.shading.type = "MATERIAL"
+    bpy.ops.file.pack_all()
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(Path(blend_path).resolve()), compress=True)
+    print("Saved final Blender scene", final.name, len(bones), "bones,", len(targets), "shape keys")
+
+
 def render_diagnostic_board(obj, arm_obj, review_dir: Path, relaxed_basis, runtime_influences):
     """Render comprehensive before/after and multi-pose diagnostic evidence."""
     review_dir.mkdir(parents=True, exist_ok=True)
@@ -2646,6 +2986,7 @@ def main():
     separate_underarm_seams(obj, cloth_uv)
     build_flat_sock_feet_from_luna(obj, ref_luna, arm_obj, sock_uv)
     configure_cozy_matte_material(obj, scratch_dir)
+    finish_small_surface_details(obj)
 
     # Step 5: Semantic region-aware 115-bone skinning (inheriting Luna's exact foot/toe weights!)
     region = segment_and_skin(obj, ref_luna, arm_obj)
@@ -2678,8 +3019,9 @@ def main():
                         "--python", str(ROOT / "scripts/refine-luna-hoodie-folds.py"),
                         "--", glb_path, glb_path, poses], cwd=ROOT, check=True)
 
-    if args.review_dir:
-        render_diagnostic_board(obj, arm_obj, args.review_dir.resolve(), relaxed_basis, runtime_influences)
+        if args.review_dir:
+            render_diagnostic_board(obj, arm_obj, args.review_dir.resolve(), relaxed_basis, runtime_influences)
+        save_finished_garment(glb_path, poses, args.blend_out)
 
     print("BUILD LUNA CLOUD HOODIE COMPLETE!")
 

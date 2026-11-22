@@ -187,7 +187,8 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
         const [{ joint: shoulder }, { joint: upper }, { joint: forearm }, { joint: hand }] = parts;
         if (clasp) for (const part of parts) part.base.copy(part.joint.quaternion).multiply(part.clasp);
         modelOffset(shoulder, 0, 0, direction * .025, restWeight);
-        modelOffset(upper, -.125, 0, -direction * .15, restWeight);
+        // The plush sleeves occupy the space beside the ribs in the relaxed stance.
+        modelOffset(upper, -.125, 0, direction * (fittedHoodie ? .11 : -.15), restWeight);
         modelOffset(forearm, -.155, 0, -direction * .038, restWeight);
         modelOffset(hand, .085, -direction * .065, -direction * .025, restWeight);
         modelOffset(shoulder, 0, 0, direction * breath * STANDING_IDLE.shoulderRoll, weight);
@@ -213,13 +214,14 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
     }
     if (fittedHoodie && state.lookTime < 0) {
       // Give the fleece sleeves room on the way up without altering the rest or overhead pose.
-      const elbowArc = smooth((time - .23) / .31) * (1 - smooth((time - 2.51) / .83));
-      const rightSweep = smooth((time - 2.66) / .39) * (1 - smooth((time - 3.36) / .24));
+      const liftArc = smooth(time / .24) * (1 - smooth((time - 2.83) / .95));
+      const lowerArc = smooth((time - 7.03) / .34) * (1 - smooth((time - 7.96) / .37));
+      const rightSweep = smooth((time - 2.66) / .39) * (1 - smooth((time - 3.58) / .32));
       const leftRelease = smooth((time - 2.96) / .12) * (1 - smooth((time - 3.22) / .14));
       root.getWorldQuaternion(modelRotation);
       for (const { direction, parts } of arms) {
-        modelOffset(parts[1].joint, direction < 0 ? -.56 * rightSweep : 0, 0,
-          direction * (.47 * elbowArc + (direction > 0 ? .12 * leftRelease : 0)), gestureWeight);
+        modelOffset(parts[1].joint, direction < 0 ? -.66 * rightSweep : 0, 0,
+          direction * (.78 * liftArc + .48 * lowerArc + (direction > 0 ? .12 * leftRelease : 0)), gestureWeight);
       }
     }
   };

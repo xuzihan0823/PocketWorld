@@ -85,7 +85,7 @@ for (let i = 0; i < indices.length; i += 3) for (let k = 0; k < 3; k++) {
 }
 const blendNodes = nodes.filter(a => a.blend > .001 && a.neighbors.size);
 for (const a of blendNodes) a.mass = [...a.neighbors.values()].reduce((sum, w) => sum + w, 0);
-for (let pass = 0; pass < 36; pass++) {
+for (let pass = 0; pass < 20; pass++) {
   for (const a of blendNodes) {
     const factor = .68 * a.blend;
     for (let j = 0; j < names.length; j++) a.next[j] = a.current[j] * (1 - factor);
@@ -115,7 +115,7 @@ for (let i = 0; i < vertices; i++) {
     * smooth(a, .085, .105) * (1 - smooth(a, .13, .21));
   const flank = smooth(chest, .65, .98) * smooth(y, .453, .516) * (1 - smooth(y, .635, .668))
     * smooth(a, .053, .083) * (1 - smooth(z, .07, .123));
-  position[3 * i] += Math.sign(x) * (.044 * sleeve - .044 * flank);
+  position[3 * i] += Math.sign(x) * (.012 * sleeve - .011 * flank);
 }
 
 // Transport the original smooth normals across the fitted surface, preserving UV splits.
@@ -143,7 +143,14 @@ for (const node of nodes) {
 }
 const bounds = new THREE.Box3().setFromArray(position);
 Object.assign(doc.accessors[primitive.attributes.POSITION], { min: bounds.min.toArray(), max: bounds.max.toArray() });
-for (let i = 0; i < vertices; i++) p.fromArray(normals, 3 * i).applyQuaternion(nodeAt[i].reorient).normalize().toArray(normals, 3 * i);
+for (let i = 0; i < vertices; i++) {
+  const node = nodeAt[i];
+  const distance = Math.abs(Math.abs(node.x) - (.128 - .305 * (node.y - .51)));
+  const seam = (1 - smooth(distance, .014, .043)) * smooth(node.y, .505, .53)
+    * (1 - smooth(node.y, .696, .722)) * (1 - smooth(-node.z, .035, .055));
+  p.fromArray(normals, i * 3).applyQuaternion(node.reorient).normalize();
+  p.lerp(node.after, seam).normalize().toArray(normals, i * 3);
+}
 mesh.extras.hoodieClearance = true;
 
 // Keep the original chair contact in pre-skin space despite the fitted base mesh.
@@ -268,11 +275,36 @@ try {
     }
     appendTarget(name);
   }
-  for (const time of [.90, 1.90, 2.65, 3.45, 4.30, 5.20, 6.15, 6.85, 7.45]) bake(time);
+  for (const time of [.90, 1.90, 2.65, 3.45, 3.75, 4.05, 4.30, 4.75, 5.20, 5.70, 6.15, 6.50, 6.85, 7.15, 7.45]) bake(time);
   rig.dispose();
   save(resolve(output));
   writeFileSync(seatOutput, originalSeat);
-  if (poseOutput) writeFileSync(poseOutput, JSON.stringify({ frames, unfitted: Array.from(original) }));
+  if (poseOutput) {
+    // Record the same bone matrices and shape values the wardrobe uses so
+    // the editable Blender scene can play the finished garment in context.
+    const final = await load(resolve(output));
+    const previewRig = createResidentRig(final.gltf.scene, final.gltf.animations.find(c => c.name === 'Walk_Grounded_Loop'));
+    const previewIdle = createIdlePlayer(previewRig.mesh, clip);
+    const preview = [];
+    const fps = 15;
+    for (let frame = 0; frame <= Math.ceil(clip.duration * fps); frame++) {
+      const time = Math.min(frame / fps, clip.duration);
+      const weight = smooth(time, 0, STANDING_IDLE.yawnBlend) * smooth(clip.duration - time, 0, STANDING_IDLE.yawnBlend);
+      previewRig.applyPose(0, 0, 1);
+      previewIdle({ ...idle, weight: 1, restWeight: 1, yawnTime: time, yawnWeight: weight });
+      previewRig.applyArmCorrectives(true, time, weight);
+      final.gltf.scene.updateMatrixWorld(true);
+      const surface = final.mesh;
+      preview.push({
+        matrices: surface.skeleton.bones.map((bone, j) => boneMatrix
+          .multiplyMatrices(bone.matrixWorld, surface.skeleton.boneInverses[j])
+          .premultiply(surface.bindMatrixInverse).multiply(surface.bindMatrix).toArray()),
+        weights: [...surface.morphTargetInfluences],
+      });
+    }
+    previewRig.dispose();
+    writeFileSync(poseOutput, JSON.stringify({ frames, preview, fps, unfitted: Array.from(original) }));
+  }
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

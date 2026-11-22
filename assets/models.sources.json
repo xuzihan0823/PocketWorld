@@ -148,18 +148,18 @@
       "source": "User-supplied pastel-blue cloud hoodie character GLB (Tripo) rigged onto the existing 115-bone Luna armature from luna-walk-room.glb and Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 5773404,
-      "sha256": "2ba29bf01208ca7750cffade12a336e283efd11682cea7aa2d4bb6995f7b9fd7",
-      "processing": "Built in Blender 5.2.3 LTS by scripts/build-luna-cloud-hoodie.py -> assets/models/resident/Luna-CloudHoodie.blend. Refines anime face geometry and 2K basecolor texture (closes right-brow bangs slit, sculpts +1.8mm 3D nose ridge, anchors full chin/jawline to Head, paints 3D-projected nose/smiling mouth/cheek blush/eyebrow & iris catchlights), caps the underarm seam with watertight 3-ring concentric torso & sleeve walls + smooth raglan armpit blending, replaces high-heeled boots with flat knit sock feet derived from Luna's foot template, binds all 115 bones with normalized max-4 weights, preserves Walk_Grounded_Loop and ChairSit_Contact clips, and authors sparse LeftArmContact/RightArmContact corrective shape keys via cycle-free proxy cloth simulation + cohesive 6.8-deg fleece cushion pivot + C-infinity separating-sheet solver (<=1.2cm local sleeve flattening). Matte fleece PBR (normalScale 0.20, metallicFactor 0, lifted 0.68-0.96 roughness, baseColor emissive 0.32); loaded on demand via wardrobe toggle or ?outfit=hoodie. See assets/models/resident/README.md. Postprocessed by scripts/finish-luna-cloud-hoodie.mjs for local flank clearance, blended armhole weights and sparse yawn shape keys. Blender pass scripts/refine-luna-hoodie-folds.py restores raised-arm flank ease, re-rounds the elbow in the sampled pose, relaxes fused hair-shoulder edges, and bakes local morph normals."
+      "bytes": 9954540,
+      "sha256": "e4b91473f54c0d0159a59bb90a2a12e69a4490762f6998667ef4b0df4a73995d",
+      "processing": "Built with Blender 5.3 from the supplied scan and the existing Luna armature. Retains the refined face texture, matte fleece, flat knit socks, 115 bones, walking and chair clips. Both inner sleeves and torso sidewalls are sewn up to the armpit and mapped to the fleece atlas. The finishing passes fit the relaxed stance and bake 15 pose samples for shoulder, elbow, waist and sleeve normals. See assets/models/resident/README.md for the build entry point."
     },
     {
       "file": "resident/luna-cloud-hoodie-seat.bin",
-      "source": "Baked in Blender 5.2.3 LTS from Luna-CloudHoodie.blend against the real desk chair collider in Luna-Sit-ContactFixed.blend.",
+      "source": "Baked in Blender 5.3 against the desk chair collider in Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 605072,
-      "sha256": "2cbaa66a9438b763c8168ee0f295814e0a3109a85c9b4f8cd8a0c96b33faff20",
-      "processing": "PWSC v1 pre-skin chair contact cache (98 frames, 1,029 vertices) generated alongside luna-cloud-hoodie.glb by scripts/build-luna-cloud-hoodie.py. Rebased against the fitted hoodie mesh while preserving chair-contact bone weights."
+      "bytes": 583904,
+      "sha256": "179214ece2774a480932d85b7dc287ffe82895381300f01cbcef70458aef0798",
+      "processing": "PWSC v1 chair contact cache (98 frames, 993 vertices), baked and rebased by the hoodie build pipeline."
     },
     {
       "file": "cat/cat.glb",
