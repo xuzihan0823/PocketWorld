@@ -16,7 +16,7 @@ import { authoredBookStand, libraryHeldBalance, residentLibraryTarget } from './
 import { createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibraryMotion, type LibraryMotion } from './library/libraryMotion';
 import { readingStand, shelfOrigin, shelfPoint, shelfYaw } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
-import { WALK_SPEED } from './residentRig';
+import { fitHoodieSofaSleeves, WALK_SPEED } from './residentRig';
 import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
 import { SlipperPair } from './Slippers';
@@ -501,7 +501,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     let walking = false;
     const sofa = sofaMotion.current;
     if (sofa.clip && rig.current && sofa.rig !== rig.current) {
-      sofa.apply = sofaPlayer(rig.current.mesh, sofa.clip);
+      sofa.apply = fitHoodieSofaSleeves(rig.current.mesh, sofaPlayer(rig.current.mesh, sofa.clip));
       sofa.rig = rig.current;
     }
     if (p.sceneId === 'habitat' && s.posture === 'chair') {

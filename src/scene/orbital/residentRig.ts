@@ -63,7 +63,7 @@ function followSpring(frequency: number) {
   };
 }
 
-function createFollowMotion(bones: Iterable<THREE.Bone>, head: THREE.Bone) {
+function createFollowMotion(bones: Iterable<THREE.Bone>, head: THREE.Bone, hemResponse: number) {
   const inverse = new THREE.Quaternion();
   const forward = head.getWorldQuaternion(inverse).invert();
   const headForward = new THREE.Vector3(0, 0, 1).applyQuaternion(forward);
@@ -75,7 +75,7 @@ function createFollowMotion(bones: Iterable<THREE.Bone>, head: THREE.Bone) {
     const hair = match[1] === 'Hair';
     const depth = Number(match[3]);
     const weight = (hair ? [.17, .34, .42, .40] : [.21, .41, .48])[depth - 1]
-      * (hair && match[2].startsWith('Front') ? .45 : 1);
+      * (hair ? (match[2].startsWith('Front') ? .45 : 1) : hemResponse);
     joint.getWorldQuaternion(inverse).invert();
     return [{
       joint, hair, weight,
@@ -121,6 +121,28 @@ function createFollowMotion(bones: Iterable<THREE.Bone>, head: THREE.Bone) {
   };
 }
 
+/** Carry the thick cuffs past the pocket during the first part of the sofa descent. */
+export function fitHoodieSofaSleeves(root: THREE.Object3D, sample: (time: number) => void) {
+  let hoodie = false;
+  root.traverse(object => { hoodie ||= object.userData.hoodieClearance === true; });
+  if (!hoodie) return sample;
+  const arms = ['Left', 'Right'].map(side => root.getObjectByName('mixamorig' + side + 'Arm')!);
+  const model = new THREE.Quaternion(), parent = new THREE.Quaternion(), turn = new THREE.Quaternion();
+  const euler = new THREE.Euler();
+  return (time: number) => {
+    sample(time);
+    const reach = -.16 * (1 - THREE.MathUtils.smoothstep(time, 0, .415));
+    const spread = .20 * (1 - THREE.MathUtils.smoothstep(time, .36, .72));
+    if (!spread && !reach) return;
+    root.getWorldQuaternion(model);
+    arms.forEach((arm, i) => {
+      arm.parent!.getWorldQuaternion(parent).invert().multiply(model);
+      turn.setFromEuler(euler.set(reach, 0, i ? -spread : spread));
+      arm.quaternion.premultiply(turn.premultiply(parent).multiply(parent.invert()));
+    });
+  };
+}
+
 export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip): ResidentRig {
   const bones = new Map<string, THREE.Bone>();
   const skinned: THREE.SkinnedMesh[] = [];
@@ -139,6 +161,30 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     if (!value) throw new Error(`Luna is missing bone ${name}`);
     return value;
   };
+  const fittedHoodie = skinned.some(object => object.userData.hoodieClearance === true);
+  // Start from the sleeve's actual bind axes. Carry the bulk beside the
+  // arm and let the forearm relax without turning the wrist away from the hip.
+  const fleeceArms = fittedHoodie ? (['Left', 'Right'] as const).map(side => {
+    const chain = ['Shoulder', 'Arm', 'ForeArm', 'Hand'].map(part => bone(side + part));
+    return { chain, bind: chain.map(b => b.quaternion.clone()), sign: side === 'Left' ? 1 : -1 };
+  }) : [];
+  const parentFrame = new THREE.Quaternion(), offset = new THREE.Quaternion(), modelFrame = new THREE.Quaternion();
+  const fleeceEuler = new THREE.Euler();
+  function turnInModel(joint: THREE.Bone, x: number, y: number, z: number) {
+    joint.parent!.getWorldQuaternion(parentFrame).invert().multiply(modelFrame);
+    offset.setFromEuler(fleeceEuler.set(x, y, z));
+    joint.quaternion.premultiply(offset.premultiply(parentFrame).multiply(parentFrame.invert()));
+  }
+  function relaxFleeceArms(phase: number, walking: boolean) {
+    if (!fleeceArms.length) return;
+    asset.getWorldQuaternion(modelFrame);
+    for (const { chain, bind, sign } of fleeceArms) {
+      chain.forEach((bone, i) => bone.quaternion.copy(bind[i]));
+      const swing = walking ? .17 * sign * Math.sin(2 * Math.PI * phase) : 0;
+      turnInModel(chain[1], .352 + swing, sign * .448, -sign * .330);
+      turnInModel(chain[2], -.287 - .5 * swing, 0, sign * .119);
+    }
+  }
   const channels = clip.tracks.map(track => {
     const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
     const target = bones.get(nodeName);
@@ -286,7 +332,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     neutral: target.getWorldQuaternion(new THREE.Quaternion()),
     front: target.name.includes('Front'), side: /^Dress_(Left|Right)_/.test(target.name),
   }));
-  const followMotion = createFollowMotion(bones.values(), bone('Head'));
+  const followMotion = createFollowMotion(bones.values(), bone('Head'), fittedHoodie ? .28 : 1);
   const neutral = Array.from(bones.values(), joint => ({ joint, pose: capture(joint) }));
 
   // Build an upright free-standing pose from the same planted feet so standing
@@ -328,6 +374,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   plantResidentLeg(leftLeg, leftSupport.point, leftSupport.sole);
   plantResidentLeg(rightLeg, rightSupport.point, rightSupport.sole);
   asset.updateMatrixWorld(true);
+  relaxFleeceArms(0, false);
   const upright = neutral.map(({ joint }) => capture(joint));
   for (const { joint, pose } of neutral) restore(joint, pose);
   asset.updateMatrixWorld(true);
@@ -338,14 +385,19 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   asset.scale.setScalar(RESIDENT_SCALE);
   mesh.add(asset);
 
+  let contactWalkWeight = 0;
   function applyPose(phase: number, walkWeight: number, uprightWeight = 0) {
-    if (walkWeight === 1) sample(phase);
-    else applyBlendedPose(phase, walkWeight, uprightWeight);
+    contactWalkWeight = walkWeight;
+    if (walkWeight === 1) {
+      sample(phase);
+      relaxFleeceArms(phase, true);
+    } else applyBlendedPose(phase, walkWeight, uprightWeight);
   }
 
   function applyBlendedPose(phase: number, walkWeight: number, uprightWeight: number) {
     if (walkWeight > 0) {
       sample(phase);
+      relaxFleeceArms(phase, true);
       neutral.forEach(({ joint }, i) => {
         walkPose[i].position.copy(joint.position);
         walkPose[i].quaternion.copy(joint.quaternion);
@@ -383,7 +435,6 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     return targets.length ? [{ upper: bone(side + 'Arm'), elbow: bone(side + 'ForeArm'),
       wrist: bone(side + 'Hand'), targets }] : [];
   });
-  const fittedHoodie = skinned.some(object => object.userData.hoodieClearance === true);
   const yawnCorrectives = skinned.flatMap(object => {
     const weights = object.morphTargetInfluences;
     const frames = Object.entries(object.morphTargetDictionary ?? {}).flatMap(([name, index]) => {
@@ -423,7 +474,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
         const reachForward = direction.copy(wristPoint).sub(shoulderPoint).normalize().dot(facing);
         // The thick fleece needs its contact shape through the whole breathing cycle.
         weight = fittedHoodie
-          ? THREE.MathUtils.smoothstep(upperDown, .69, .90)
+          ? (1 - THREE.MathUtils.smoothstep(contactWalkWeight, 0, 1)) * THREE.MathUtils.smoothstep(upperDown, .69, .90)
             * (1 - THREE.MathUtils.smoothstep(reachForward, .33, .64))
           : THREE.MathUtils.smoothstep(upperDown, .925, .989)
             * THREE.MathUtils.smoothstep(lowerDown, .76, .925)

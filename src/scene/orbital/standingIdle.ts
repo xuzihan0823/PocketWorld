@@ -182,7 +182,7 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
     const clasp = state.shortKind === 'clasp' ? shortWeight : 0;
     if (restWeight || weight || shortWeight) {
       root.getWorldQuaternion(modelRotation);
-      modelOffset(spine, breath * STANDING_IDLE.breathPitch, 0, sway * STANDING_IDLE.swayRoll, weight);
+      modelOffset(spine, breath * STANDING_IDLE.breathPitch, 0, sway * STANDING_IDLE.swayRoll * (fittedHoodie ? .42 : 1), weight);
       modelOffset(neck, -breath * .012, sway * STANDING_IDLE.headTurn, -sway * .022, weight);
       modelOffset(spine, .018 * listen + .043 * clasp, .058 * listen, -.018 * listen, 1);
       modelOffset(neck, .14 * listen + .20 * clasp, .23 * listen - .038 * clasp, -.12 * listen + .032 * clasp, 1);
@@ -190,11 +190,11 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
       for (const { direction, fingers, parts, thumb, thumbTip, index } of arms) {
         const [{ joint: shoulder }, { joint: upper }, { joint: forearm }, { joint: hand }] = parts;
         if (clasp) for (const part of parts) part.base.copy(part.joint.quaternion).multiply(part.clasp);
-        modelOffset(shoulder, 0, 0, direction * .025, restWeight);
+        modelOffset(shoulder, 0, 0, direction * (fittedHoodie ? .008 : .025), restWeight);
         // Let the elbow settle below the shoulder and bring the wrist alongside the hip.
-        modelOffset(upper, fittedHoodie ? -.175 : -.125, 0, direction * (fittedHoodie ? -.087 : -.15), restWeight);
-        modelOffset(forearm, -.155, 0, -direction * (fittedHoodie ? .285 : .038), restWeight);
-        modelOffset(hand, .085, -direction * .065, direction * (fittedHoodie ? .11 : -.025), restWeight);
+        modelOffset(upper, fittedHoodie ? -.012 : -.125, 0, direction * (fittedHoodie ? -.011 : -.15), restWeight);
+        modelOffset(forearm, fittedHoodie ? .015 : -.155, 0, -direction * (fittedHoodie ? .012 : .038), restWeight);
+        modelOffset(hand, .085, -direction * .065, -direction * (fittedHoodie ? .008 : .025), restWeight);
         if (fittedHoodie && restWeight) {
           // Rest the thumb alongside the index finger with the palm facing the hip.
           thumb.getWorldPosition(thumbBase);
@@ -233,6 +233,13 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
       const leftRelease = smooth((time - 2.96) / .12) * (1 - smooth((time - 3.22) / .14));
       root.getWorldQuaternion(modelRotation);
       for (const { direction, parts } of arms) {
+        // Let the bent left elbow pass in front of the hood during the lift.
+        if (direction > 0) {
+          const bend = smooth((time - 3.03) / .43) * (1 - smooth((time - 5.75) / .65));
+          const cover = smooth((time - 4.35) / .67) * (1 - smooth((time - 5.75) / .70));
+          modelOffset(parts[1].joint, -.017 * cover, .007 * cover, .034 * cover, gestureWeight);
+          modelOffset(parts[2].joint, .18 * bend - .027 * cover, 0, -.52 * bend, gestureWeight);
+        }
         modelOffset(parts[1].joint, direction < 0 ? -.66 * rightSweep : 0, 0,
           direction * (.78 * liftArc + .48 * lowerArc + (direction > 0 ? .12 * leftRelease : 0)), gestureWeight);
       }

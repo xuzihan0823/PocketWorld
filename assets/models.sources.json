@@ -148,18 +148,18 @@
       "source": "User-supplied pastel-blue cloud hoodie character GLB (Tripo) rigged onto the existing 115-bone Luna armature from luna-walk-room.glb and Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 10327892,
-      "sha256": "fabd967f8a935274d8598734f13e0fcc42971d76b3f1832e2ba9507b112418f6",
-      "processing": "Built with Blender 5.3 from the supplied scan and the existing Luna armature. Retains the refined face texture, matte fleece, flat knit socks, 115 bones, walking and chair clips. Both inner sleeves and torso sidewalls are sewn up to the armpit and mapped to the fleece atlas. The wrist opening follows the forearm and palm. Independent contact shapes fit the sleeves and hem through relaxed standing and breathing; 15 stretch samples preserve the shoulder, elbow, waist and sleeve normals. See assets/models/resident/README.md for the build entry point."
+      "bytes": 5510848,
+      "sha256": "05ef95a7e36f6277e33da8eca7d8f77d6d0bed0faf5a25043e9d59632b88c3a0",
+      "processing": "Tailored once on the welded Blender mesh. The low armholes, sleeve linings, cuffs, shoulder weights and three sparse cloth shapes are exported together. Hair tips are bound separately. The walking and seated poses use the existing 115 joints. The default scene of the editable source imports this GLB. See assets/models/resident/README.md."
     },
     {
       "file": "resident/luna-cloud-hoodie-seat.bin",
       "source": "Baked in Blender 5.3 against the desk chair collider in Luna-Sit-ContactFixed.blend.",
       "license": "User-supplied; no separate license declaration supplied.",
       "used": true,
-      "bytes": 645056,
-      "sha256": "d162884619942db784036c09385711df3f17aa54520fdf32c98bca20e5791ff6",
-      "processing": "PWSC v1 chair contact cache (98 frames, 1097 vertices), baked and rebased by the hoodie build pipeline."
+      "bytes": 388688,
+      "sha256": "cfb8c50adb043c29a6ad3e0f308642f6d195db87652ce52319eabe3b9f3876f9",
+      "processing": "PWSC v1. 98 frames and 661 contact vertices. Baked against the fixed desk chair after fitting the shorts, hem and sleeves."
     },
     {
       "file": "cat/cat.glb",
