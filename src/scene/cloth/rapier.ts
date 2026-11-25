@@ -7,9 +7,10 @@ export async function makeRapier(
   profile: ClothProfile,
   balls: Ball[],
   selfContacts: boolean,
+  gravity = 9.81,
 ): Promise<ClothSolver> {
   await ready;
-  const world = new R.World({ x: 0, y: -9.81, z: 0 });
+  const world = new R.World({ x: 0, y: -gravity, z: 0 });
   try {
     world.profilerEnabled = true;
     const material = R.SoftBodyMaterial.uniform(profile.material.edgeHz, 1);
@@ -42,6 +43,9 @@ export async function makeRapier(
       return body;
     });
     const target = { x: 0, y: 0, z: 0 };
+    const anchor = profile.elasticAnchor;
+    const sampleStiffness = anchor?.createStiffnessSampler();
+    const velocity = { x: 0, y: 0, z: 0 };
     const solver: ClothSolver = {
       positions: (profile.initial ?? profile.rest).slice(),
       collisionMs: null,
@@ -52,6 +56,17 @@ export async function makeRapier(
           target.y = targets[3 * i + 1];
           target.z = targets[3 * i + 2];
           cloth.setParticleKinematicTarget(i, target);
+        }
+        if (anchor && sampleStiffness) {
+          // Backward Euler impulse for a unit-mass spring, before native contact/edge resolution.
+          const stiffness = sampleStiffness(dt);
+          const gain = stiffness * dt / (1 + stiffness * dt * dt);
+          const k = 3 * anchor.particle;
+          cloth.particleVelocity(anchor.particle, velocity);
+          target.x = gain * (targets[k] - this.positions[k] - dt * velocity.x);
+          target.y = gain * (targets[k + 1] - this.positions[k + 1] - dt * velocity.y);
+          target.z = gain * (targets[k + 2] - this.positions[k + 2] - dt * velocity.z);
+          cloth.applyParticleImpulse(anchor.particle, target, true);
         }
         bodies.forEach((b, i) => b.setNextKinematicTranslation(spheres[i]));
         world.step();

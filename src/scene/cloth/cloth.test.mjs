@@ -19,9 +19,11 @@ const physics = await moduleUrl('./physics.ts'),
   { FixedClock, Xpbd, distance } = await import(physics);
 const maskUrl = await moduleUrl('./sleeveMask.ts');
 const contactImports = { three: import.meta.resolve('three'), './sleeveMask': maskUrl, 'three-mesh-bvh': import.meta.resolve('three-mesh-bvh') };
-const { patchRegion, garmentRegion } = await import(
-  await moduleUrl('./binding.ts', { ...contactImports, './physics': physics })
-);
+const cuffUrl = await moduleUrl('./cuffAnchors.ts', { three: import.meta.resolve('three') });
+const budgetUrl = await moduleUrl('./sleeveBudget.ts', { three: import.meta.resolve('three') });
+const { patchRegion, garmentRegion } = await import(await moduleUrl('./binding.ts', {
+  ...contactImports, './physics': physics, './cuffAnchors': cuffUrl, './sleeveBudget': budgetUrl,
+}));
 const { makeRapier } = await import(
   await moduleUrl('./rapier.ts', {
     '@dimforge/rapier3d-compat': import.meta.resolve('@dimforge/rapier3d-compat'),
@@ -178,7 +180,7 @@ test('single sleeve keeps bind lengths across creation poses and caps only the d
   const first = garmentRegion(mesh, 'Left', false, true);
   mesh.skeleton.getBoneByName('mixamorigLeftForeArm').rotateX(0.8);
   gltf.scene.updateMatrixWorld(true);
-  const region = garmentRegion(mesh, 'Left', false, true);
+  const region = garmentRegion(mesh, 'Left', false, true, true, 'budget');
   assert.deepEqual(first.profile.rest, region.profile.rest);
   assert.notDeepEqual(first.profile.initial, region.profile.initial);
   const solver = new Xpbd(region.profile);
@@ -199,7 +201,10 @@ test('single sleeve keeps bind lengths across creation poses and caps only the d
   for (let i = 0; i < displaced.length; i += 3) displaced[i] += 0.09;
   region.sample(1);
   region.bind(displaced);
-  const { raw, final } = region.sleeveLayers;
+  const { raw, blend, shell, final } = region.sleeveLayers;
+  assert.notDeepEqual(raw, blend);
+  assert.notDeepEqual(shell, final);
+  assert.equal(final, mesh.geometry.attributes.pwCloth.array);
   const linear = new T.Matrix3().setFromMatrix4(mesh.matrixWorld), v = new T.Vector3();
   let largestRaw = 0, largestFinal = 0;
   for (let k = 0; k < raw.length; k += 3) {
@@ -207,6 +212,12 @@ test('single sleeve keeps bind lengths across creation poses and caps only the d
     largestFinal = Math.max(largestFinal, v.fromArray(final, k).applyMatrix3(linear).length());
   }
   assert.ok(largestRaw > 0.08 && largestFinal > 0.01 && largestFinal <= 0.018001);
+  assert.ok(Math.abs(region.sleeveLayers.stats.maxMm - 1000 * largestFinal) < 0.001);
+  const { sleeveSurfaceMask } = await import(maskUrl);
+  const mask = sleeveSurfaceMask(mesh);
+  for (const zone of [mask.skin, mask.torso]) for (const id of zone) {
+    assert.equal(v.fromArray(final, 3 * id).lengthSq(), 0);
+  }
   assert.deepEqual(region.profile.rest, originalRest);
   solver.dispose();
 });

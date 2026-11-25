@@ -6,7 +6,7 @@
 |---|---|---|
 | 同一块悬挂布 | [XPBD](http://localhost:5194/src/scene/cloth/index.html?scene=sheet&solver=xpbd) · [Rapier](http://localhost:5194/src/scene/cloth/index.html?scene=sheet&solver=rapier) | 观察锚边收拢、折叠、横向换向及与球体的接触。切换自碰撞后重置。 |
 | 骨骼驱动 | [前臂挂布](http://localhost:5194/src/scene/cloth/index.html?scene=arm) | 同一排运动学锚点跟随左前臂，切换抬臂、阅读与行走。 |
-| 真实服装 | [左袖](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve) · [第 2,702 步旧版](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&legacy=1&atStep=2702) · [同一步新版](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&atStep=2702) | 「同帧四层对照」冻结并聚焦左袖，可拖动和缩放。「测量当前形变」显示各层对衣身、内衬的相交对数。`atStep` 在对应物理子步自动打开对照。 |
+| 真实服装 | [左袖](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve) · [第 2,702 步基线](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&atStep=2702) · [同一步衣身优先候选](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&pipeline=budget&atStep=2702) | 「同帧六阶段对照」冻结蒙皮、代理、映射、混合、球壳和最终袖面。可环绕、缩放或测量同一子步，退出时恢复进入前的播放状态。 |
 | 扩容 | [双袖](http://localhost:5194/src/scene/cloth/index.html?scene=both) · [日常装裙摆](http://localhost:5194/src/scene/cloth/index.html?scene=skirt) · [双角色三区域](http://localhost:5194/src/scene/cloth/index.html?scene=multi) | 蝴蝶结外套配短裤。三区域同时绘制外套与日常裙装两个角色，另有单角色无布料基线。 |
 | 生活舱 | [基线](http://localhost:5194/src/scene/cloth/room.html?solver=off) · [XPBD 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=xpbd) · [Rapier 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=rapier) | 真实生活舱和原有交互，用同一机位比较。可追加 `&hz=30`。 |
 
@@ -45,17 +45,28 @@ Rapier 0.21.0 使用原生 `SoftBodyDesc`，写入与 XPBD 共用的边表和三
 - 生活舱以 980×720 打开，等待角色、完整家具和 GPU 着色器就绪。依次测关闭、XPBD、Rapier，再逆序测一次。对 `window.pwcsRoom` 的累计时间取差并除以帧数。用独立的 `requestAnimationFrame` 记录帧间隔。Chrome DevTools Protocol 的 `Performance.getMetrics` 可取主线程 TaskDuration 与 Timestamp 的增量比和 JSHeapUsedSize，`Runtime.getHeapUsage` 提供 backingStorageSize。两项内存分别列示；均不等于整个浏览器的常驻内存。
 - 数值和绑定回归运行 `node --test src/scene/cloth/cloth.test.mjs`；仓库完整验证运行 `npm test`。
 
-单袖开发页的控制台可独立复现同一轮播。`legacy=true` 重建旧代理和旧映射，同时采集未限幅对照。第四个参数可追加需要逐步采样的模拟时刻（秒）。
+单袖实验默认使用 `f996538` 的前臂硬导点和形变顺序。`pipeline=surface` 仅延后限幅，`pipeline=budget` 还会在同一位移预算内优先沿实际衣身侧面脱离。`cuff=hard/released/soft/dynamic` 分别在同一袖口位置比较硬固定、释放、弹性及屈肘角控制。换策略后点击「应用并重置」。`legacy=1` 用于重建更早的代理。
+
+「测量当前形变」列出四组接触的交叉数和局部最大背侧深度。按子步冻结后可用 `pwcs.inspectStages(Infinity)` 取得所有面号、所属网格、解剖分区、UV 和交点世界坐标（米）。代理本身没有内外层。只关注峰值时可传 `1`。第 2,702 步用于对齐历史的 119、308 对。
+
+下例重放同一动作并逐阶段保留最深接触点。第五个参数也可指定 `cuff`。质量回放独立于正常渲染的帧耗时测量。
 
 ```js
 const { replaySleeve, isolateElbow } = await import('/src/scene/cloth/sleeveReplay.ts')
 const { createSleeveAudit } = await import('/src/scene/cloth/sleeveSurface.ts')
 const focus = [0.04, 6.33, 7.1, 21.4, 26.45]
-const before = await replaySleeve('xpbd', true, createSleeveAudit, focus)
-const xpbd = await replaySleeve('xpbd', false, createSleeveAudit, focus)
-const rapier = await replaySleeve('rapier', false, createSleeveAudit, focus)
-const slowBend = await isolateElbow(false, createSleeveAudit)
-const releaseGuide = await isolateElbow(true, undefined, true)
+const stages = mesh => {
+  const audit = createSleeveAudit(mesh)
+  return { measure(raw, final, region, positions) {
+    const proxy = { positions, triangles: region.profile.triangles }
+    return audit.measureStages({ ...region.sleeveLayers, proxy }, { recordLimit: 1 }).stages
+  } }
+}
+const settings = { pipeline: 'budget' }
+const before = await replaySleeve('xpbd', false, stages, focus)
+const xpbd = await replaySleeve('xpbd', false, stages, focus, settings)
+const rapier = await replaySleeve('rapier', false, stages, focus, settings)
+const slowBend = await isolateElbow(false, stages, false, settings)
 ```
 
 `peaks` 依次给出自由—自由、固定—自由、固定—固定各自峰值最大的四条边，长度单位为米。`observations` 按步号保留同姿势的接触结果。`isolateElbow(true)` 可复测旧版。它固定住其余骨骼，静置 1 秒，在 3 秒内缓慢屈肘，再保持 2 秒，全程关闭重力、自碰撞与外部碰撞。

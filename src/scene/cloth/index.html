@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PWCS · 布料实验台</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./lab.css"></head>
-<body><main><section id="viewport" aria-label="布料模拟三维视图"><div id="layer-labels" hidden><span>原始蒙皮袖面</span><span>原始物理代理<br><small>青 · 袖外　紫 · 朝内　黄 · 袖缘<br>蓝 · 衣身　绿 · 内衬　桃 · 裸手</small></span><span>映射后 · 未混合未限幅</span><span>最终袖面 · 混合与 18 mm 限幅</span></div></section>
+<body><main><section id="viewport" aria-label="布料模拟三维视图"><div id="layer-labels" hidden><span>原始骨骼蒙皮</span><span>物理代理 · 分区底图</span><span>代理映射</span><span>接缝混合</span><span>球壳校正</span><span>最终 · 18 mm 限幅</span></div></section>
 <aside><header><small>POCKETWORLD</small><h1>布料实验台</h1></header>
 <form id="config"><label>测试场景<select name="scene">
 <option value="sheet">独立布片</option><option value="arm">前臂挂布</option><option value="sleeve">蝴蝶结外套 · 左袖</option><option value="both">蝴蝶结外套 · 双袖</option><option value="skirt">日常装 · 裙摆</option><option value="multi">双角色 · 双袖与裙摆</option><option value="baseline">角色基线 · 无布料</option></select></label>
@@ -9,8 +9,10 @@
 <div class="pair"><label>模拟频率<select name="hz"><option>60</option><option>30</option></select></label>
 <label>每步子步数<select name="steps"><option>2</option><option>1</option><option>4</option></select></label></div>
 <label>自碰撞<select name="self"><option value="on">开启</option><option value="off">关闭</option></select></label>
+<label id="pipeline-choice" hidden>左袖形变管线<select name="pipeline"><option value="previous">上一轮基线</option><option value="surface">只延后限幅</option><option value="budget">优先沿衣身分离</option></select></label>
+<label id="cuff-choice" hidden>左袖远端导点<select name="cuff"><option value="forearm">前臂硬导点（基线）</option><option value="hard">袖口硬锚点</option><option value="released">完全释放</option><option value="soft">袖口软锚点</option><option value="dynamic">按屈肘角调节</option></select></label>
 <button type="submit">应用并重置</button></form>
 <section id="play"><label>角色动作<select id="motion"></select></label><div class="pair"><button id="pause">暂停</button><button id="wire" aria-pressed="false">显示代理</button></div></section>
-<button id="compare" hidden>同帧四层对照</button>
+<button id="compare" hidden>同帧六阶段对照</button>
 <section aria-label="测量"><h2>运行测量</h2><pre id="metrics">正在加载…</pre><output id="status" role="status"></output><button id="inspect">测量当前形变</button><pre id="quality"></pre></section>
 </aside></main><script type="module" src="./lab.ts"></script></body></html>

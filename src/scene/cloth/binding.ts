@@ -1,6 +1,8 @@
 import * as T from 'three';
 import { lattice, type Ball, type ClothProfile } from './physics';
 import { sleeveSurfaceMask } from './sleeveMask';
+import { configureSleeveCuff, type CuffStrategy } from './cuffAnchors';
+import { sleeveBudget } from './sleeveBudget';
 
 export interface Region {
   profile: ClothProfile;
@@ -9,7 +11,11 @@ export interface Region {
   sample(time: number): void;
   bind(positions: Float32Array): void;
   surfaceContact?(): { samples: number; skinnedDepth: number; correctedDepth: number };
-  sleeveLayers?: { mesh: T.SkinnedMesh; raw: Float32Array; final: Float32Array; driverVertices: number[] };
+  sleeveLayers?: {
+    mesh: T.SkinnedMesh; raw: Float32Array; blend: Float32Array; shell: Float32Array;
+    mappingError(): { medianMm: number; p95Mm: number; maxMm: number; maxVertex: number };
+    final: Float32Array; driverVertices: number[]; stats: { clipped: number; maxMm: number; shellMoved: number };
+  };
   mappedVertices: number;
 }
 type Side = 'Left' | 'Right';
@@ -146,6 +152,8 @@ function offsetAttribute(mesh: T.SkinnedMesh) {
 
 export function garmentRegion(
   mesh: T.SkinnedMesh, side: Side, skirt = false, singleSleeve = false, captureLayers = singleSleeve,
+  pipeline: 'previous' | 'surface' | 'budget' = 'previous',
+  cuff?: CuffStrategy,
 ): Region {
   const cols = skirt ? 20 : 12,
     rows = skirt ? 6 : 5;
@@ -235,6 +243,7 @@ export function garmentRegion(
   if (singleSleeve) {
     // All cuff targets enter the torso during isolated elbow flexion. Guide one ring higher.
     profile.pins = [5, 6, 7, 3 * cols + 5];
+    if (cuff) configureSleeveCuff(profile, cuff, mesh);
   } else if (!skirt) profile.pins.push((rows - 1) * cols);
   // One skin transform per sleeve ring avoids conflicting kinematic targets around its circumference.
   // Keep the individual skirt sectors on their authored dress bones.
@@ -280,8 +289,33 @@ export function garmentRegion(
   })) : [];
   const torsoBalls = collision.balls.slice(10);
   const balls = singleSleeve ? [...sleeveBalls, ...torsoBalls] : collision.balls;
-  const raw = captureLayers ? new Float32Array(attr.array.length) : undefined;
+  const layer = () => new Float32Array(attr.array.length);
+  // Transport the bind residual with the vertex's own bones and compare with its actual
+  // morphed, skinned pose. Four ring drivers can disagree even with normalized weights.
+  function mappingError() {
+    const tmp = v(), posed = v(), rest = v(), actual = v(), transformed = v();
+    let maxVertex = -1, maxMm = -1;
+    const errors = bindings.map(b => {
+      rest.set(0, 0, 0); posed.set(0, 0, 0);
+      for (let j = 0; j < 4; j++) {
+        rest.addScaledVector(tmp.fromArray(local, 3 * b.nodes[j]), b.weights[j]);
+        posed.addScaledVector(tmp.fromArray(targets, 3 * b.nodes[j]), b.weights[j]);
+      }
+      mesh.applyBoneTransform(b.id, rest).applyMatrix4(mesh.matrixWorld);
+      mesh.applyBoneTransform(b.id, transformed.fromBufferAttribute(g.position, b.id)).applyMatrix4(mesh.matrixWorld);
+      posed.add(transformed).sub(rest);
+      mesh.getVertexPosition(b.id, actual).applyMatrix4(mesh.matrixWorld);
+      const mm = actual.distanceTo(posed) * 1000;
+      if (mm > maxMm) { maxMm = mm; maxVertex = b.id; }
+      return mm;
+    }).sort((a, b) => a - b);
+    return { medianMm: errors[Math.floor(errors.length / 2)], p95Mm: errors[Math.ceil(errors.length * 0.95) - 1], maxMm, maxVertex };
+  }
+  const layers = captureLayers ? { mesh, raw: layer(), blend: layer(), shell: layer(), mappingError,
+    final: attr.array as Float32Array, driverVertices: nearest, stats: { clipped: 0, maxMm: 0, shellMoved: 0 } } : undefined;
   const rawDelta = captureLayers ? new Float32Array(local.length) : undefined;
+  const surfacePipeline = singleSleeve && pipeline !== 'previous';
+  const budget = singleSleeve && pipeline === 'budget' ? sleeveBudget(mesh, sleeveSurfaceMask(mesh).torso) : undefined;
   const inverse = new T.Matrix3(),
     normal = v(),
     corrected = v();
@@ -312,9 +346,15 @@ export function garmentRegion(
   function bind(positions: Float32Array) {
     inverse.setFromMatrix4(mesh.matrixWorld).invert();
     linear.setFromMatrix4(mesh.matrixWorld);
+    budget?.sample();
+    if (layers) Object.assign(layers.stats, { clipped: 0, maxMm: 0, shellMoved: 0 });
     for (let i = 0; i < nearest.length; i++) {
       p.fromArray(positions, 3 * i).sub(radial.fromArray(targets, 3 * i));
       if (rawDelta) corrected.copy(p).applyMatrix3(inverse).toArray(rawDelta, 3 * i);
+      if (surfacePipeline) {
+        p.applyMatrix3(inverse).toArray(delta, 3 * i);
+        continue;
+      }
       p.clampLength(0, displacementLimit);
       if (!pinned.has(i)) {
         corrected.copy(radial).add(p);
@@ -331,6 +371,7 @@ export function garmentRegion(
       p.set(0, 0, 0);
       for (let k = 0; k < 4; k++) p.addScaledVector(radial.fromArray(delta, 3 * b.nodes[k]), b.weights[k]);
       p.multiplyScalar(b.fade);
+      if (layers) p.toArray(layers.blend, 3 * b.id);
       if (singleSleeve && b.fade > 0) {
         // Interpolating displacements on a curved surface can put a vertex back inside the torso.
         // Project the actual post-skin point and keep the same world-space displacement budget at the seam.
@@ -341,13 +382,25 @@ export function garmentRegion(
           const depth = ball.radius + profile.thickness - normal.length();
           if (depth > 0) corrected.addScaledVector(normal.normalize(), depth);
         }
-        p.copy(corrected).sub(skinned).clampLength(0, displacementLimit * b.fade).applyMatrix3(inverse);
+        p.copy(corrected).sub(skinned);
+        if (layers) {
+          const length = p.length();
+          if (length > displacementLimit * b.fade + 1e-8) layers.stats.clipped++;
+          corrected.copy(p).applyMatrix3(inverse).toArray(layers.shell, 3 * b.id);
+          if (corrected.distanceToSquared(normal.fromArray(layers.blend, 3 * b.id)) > 1e-14) layers.stats.shellMoved++;
+        }
+        if (budget) budget.constrain(p, skinned, displacementLimit * b.fade);
+        else p.clampLength(0, displacementLimit * b.fade);
+        if (layers) layers.stats.maxMm = Math.max(layers.stats.maxMm, p.length() * 1000);
+        p.applyMatrix3(inverse);
+      } else if (layers) {
+        p.toArray(layers.shell, 3 * b.id);
       }
       attr.setXYZ(b.id, p.x, p.y, p.z);
-      if (raw && rawDelta) {
+      if (layers && rawDelta) {
         p.set(0, 0, 0);
         for (let k = 0; k < 4; k++) p.addScaledVector(radial.fromArray(rawDelta, 3 * b.nodes[k]), b.weights[k]);
-        p.toArray(raw, 3 * b.id);
+        p.toArray(layers.raw, 3 * b.id);
       }
     }
     attr.needsUpdate = true;
@@ -382,7 +435,7 @@ export function garmentRegion(
     profile,
     targets,
     balls,
-    sleeveLayers: raw ? { mesh, raw, final: attr.array as Float32Array, driverVertices: nearest } : undefined,
+    sleeveLayers: layers,
     sample,
     bind,
     mappedVertices: bindings.length,

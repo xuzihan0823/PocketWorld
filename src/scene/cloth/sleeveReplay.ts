@@ -3,6 +3,7 @@ import { createActor, motions, releaseMeshes } from './actor';
 import { garmentRegion, type Region } from './binding';
 import { distance, Xpbd, type ClothProfile } from './physics';
 import { makeRapier } from './rapier';
+import type { CuffStrategy } from './cuffAnchors';
 
 const dt = 1 / 120;
 const phaseEnds = [6, 8, 12, 14, 19.25, 29, 34.25];
@@ -42,13 +43,16 @@ function pinResidual(region: Region) {
   return { depth, pin, sphere };
 }
 
-type Audit = (mesh: T.SkinnedMesh) => { measure(raw: Float32Array, final: Float32Array): unknown };
+type Audit = (mesh: T.SkinnedMesh) => {
+  measure(raw: Float32Array, final: Float32Array, region: Region, positions: Float32Array): unknown;
+};
+type ReplaySettings = { pipeline?: 'previous' | 'surface' | 'budget'; cuff?: CuffStrategy };
 
 /** Deterministic quality replay. Expensive surface observations run outside the solver timer. */
-export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, audit?: Audit, extraFocus: number[] = []) {
+export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, audit?: Audit, extraFocus: number[] = [], settings: ReplaySettings = {}) {
   const stage = new T.Scene();
   const actor = await createActor(stage, false, 0);
-  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true);
+  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, settings.cuff);
   const solver = engine === 'xpbd' ? new Xpbd(region.profile) : await makeRapier(region.profile, region.balls, true);
   const edges = strainRecorder(region.profile), surface = audit?.(actor.skin);
   const observations = [];
@@ -82,7 +86,7 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
       const p = solver.positions;
       observations.push({ step, time, pose, shell: region.surfaceContact?.(),
         elbow13to25: distance(p, 13, 25), elbowRest: distance(region.profile.rest, 13, 25),
-        intersections: surface?.measure(raw, final) });
+        intersections: surface?.measure(raw, final, region, p) });
     }
     return { engine, legacy, steps, solveMsPerStep: solveMs / steps, mapped: region.mappedVertices,
       drivers, pins: region.profile.pins, pin: { ...pin, minClearance: -pin.depth, depth: Math.max(0, pin.depth) },
@@ -93,10 +97,10 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
 }
 
 /** Rotate only the elbow in its anatomical bending plane, with both types of contact and gravity off. */
-export async function isolateElbow(legacy = false, audit?: Audit, releaseDistalGuide = false) {
+export async function isolateElbow(legacy = false, audit?: Audit, releaseDistalGuide = false, settings: ReplaySettings = {}) {
   const stage = new T.Scene();
   const actor = await createActor(stage, false, 0);
-  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true);
+  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, settings.cuff);
   // Control run: leave the sleeve attached at the shoulder and release only the distal guide.
   if (releaseDistalGuide) region.profile.pins = region.profile.pins.filter(i => i < 12);
   const surface = audit?.(actor.skin), observations = [];
@@ -126,7 +130,7 @@ export async function isolateElbow(legacy = false, audit?: Audit, releaseDistalG
       if (surface && (i % 60 === 0 || (i >= 470 && i <= 490))) {
         region.bind(solver.positions);
         const { raw, final } = region.sleeveLayers!;
-        observations.push({ time, shell: region.surfaceContact?.(), intersections: surface.measure(raw, final) });
+        observations.push({ time, shell: region.surfaceContact?.(), intersections: surface.measure(raw, final, region, solver.positions) });
       }
     }
     const settled = strainRecorder(region.profile);

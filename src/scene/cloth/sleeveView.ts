@@ -3,7 +3,7 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js
 import type { Region } from './binding';
 import type { createSleeveAudit } from './sleeveSurface';
 
-/** Four draws of the same frozen pose. Restore the displayed attribute before returning. */
+/** Draw each stage with the same pose, camera and tile aspect. */
 export function sleeveView(region: Region, proxy: T.Mesh, renderer: T.WebGLRenderer, scene: T.Scene,
   camera: T.PerspectiveCamera, orbit: OrbitControls, getAudit: () => ReturnType<typeof createSleeveAudit>) {
   const layers = region.sleeveLayers!;
@@ -39,17 +39,25 @@ export function sleeveView(region: Region, proxy: T.Mesh, renderer: T.WebGLRende
     },
     draw() {
       renderer.getSize(size);
-      const halfX = Math.floor(size.x / 2), halfY = Math.floor(size.y / 2);
+      const columns = window.matchMedia('(max-width: 700px)').matches ? 2 : 3;
+      const rows = 6 / columns;
+      const aspect = camera.aspect;
+      const stages = [null, null, layers.raw, layers.blend, layers.shell, saved];
       renderer.setScissorTest(true);
       const facing = getAudit().facing;
       try {
-        for (let i = 0; i < 4; i++) {
-          const x = i % 2 ? halfX : 0, y = i < 2 ? halfY : 0;
-          const w = x ? size.x - halfX : halfX, h = y ? size.y - halfY : halfY;
+        for (let i = 0; i < stages.length; i++) {
+          const column = i % columns, row = rows - 1 - Math.floor(i / columns);
+          const x = Math.floor(size.x * column / columns), y = Math.floor(size.y * row / rows);
+          const w = Math.floor(size.x * (column + 1) / columns) - x;
+          const h = Math.floor(size.y * (row + 1) / rows) - y;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
           renderer.setViewport(x, y, w, h);
           renderer.setScissor(x, y, w, h);
-          if (i < 2) layers.final.fill(0);
-          else layers.final.set(i === 2 ? layers.raw : saved);
+          const stageOffsets = stages[i];
+          if (stageOffsets) layers.final.set(stageOffsets);
+          else layers.final.fill(0);
           attribute.needsUpdate = true;
           proxy.visible = i === 1;
           layers.mesh.visible = facing.visible = i !== 1;
@@ -62,6 +70,8 @@ export function sleeveView(region: Region, proxy: T.Mesh, renderer: T.WebGLRende
         proxy.visible = wireVisible;
         layers.mesh.visible = facing.visible = true;
         marked!.visible = false;
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
         renderer.setScissorTest(false);
         renderer.setViewport(0, 0, size.x, size.y);
       }

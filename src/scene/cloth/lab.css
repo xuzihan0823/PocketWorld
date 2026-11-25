@@ -7,6 +7,7 @@
   background: #182423;
   color-scheme: dark;
 }
+[hidden] { display: none !important; }
 * {
   box-sizing: border-box;
 }
@@ -35,7 +36,7 @@ canvas {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template: 1fr 1fr / 1fr 1fr;
+  grid-template: repeat(2, 1fr) / repeat(3, 1fr);
   align-items: start;
   justify-items: start;
   z-index: 1;
@@ -129,6 +130,9 @@ output {
   }
   #viewport {
     height: 55dvh;
+  }
+  #layer-labels:not([hidden]) {
+    grid-template: repeat(3, 1fr) / repeat(2, 1fr);
   }
   aside {
     max-height: none;

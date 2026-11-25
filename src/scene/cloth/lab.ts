@@ -4,7 +4,8 @@ import { FixedClock, Xpbd, distance, type ClothSolver } from './physics';
 import { garmentRegion, patchRegion, type Region } from './binding';
 import { createActor, motions, releaseMeshes, type Motion } from './actor';
 import { sleeveView } from './sleeveView';
-import { createSleeveAudit } from './sleeveSurface';
+import { createSleeveAudit, sleeveStages } from './sleeveSurface';
+import type { CuffStrategy } from './cuffAnchors';
 
 const el = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
 const form = el<HTMLFormElement>('config'),
@@ -19,6 +20,13 @@ form.onsubmit = (event) => {
 const config = new FormData(form),
   mode = String(config.get('scene')),
   engine = config.get('solver');
+const cuff = config.get('cuff');
+const sleeveCuff = cuff && cuff !== 'forearm' ? cuff as CuffStrategy : undefined;
+const cuffChoice = el('cuff-choice');
+const sceneChoice = form.elements.namedItem('scene') as HTMLSelectElement;
+const showCuffChoice = () => { cuffChoice.hidden = el('pipeline-choice').hidden = sceneChoice.value !== 'sleeve'; };
+sceneChoice.addEventListener('change', showCuffChoice);
+showCuffChoice();
 const hz = Number(config.get('hz')),
   substeps = Number(config.get('steps')),
   self = config.get('self') === 'on';
@@ -158,7 +166,8 @@ async function start() {
       actors.push(actor);
       if (mode === 'arm') regions.push(patchRegion(stage, actor.skin));
       if (['sleeve', 'both', 'multi', 'skirt'].includes(mode))
-        regions.push(garmentRegion(actor.skin, 'Left', mode === 'skirt', mode === 'sleeve' && params.get('legacy') !== '1', mode === 'sleeve'));
+        regions.push(garmentRegion(actor.skin, 'Left', mode === 'skirt', mode === 'sleeve' && params.get('legacy') !== '1',
+          mode === 'sleeve', config.get('pipeline') as 'previous' | 'surface' | 'budget', sleeveCuff));
       if (['both', 'multi'].includes(mode)) regions.push(garmentRegion(actor.skin, 'Right'));
       if (mode === 'multi') {
         const second = await createActor(stage, true, 0.48);
@@ -231,7 +240,7 @@ async function start() {
       if (!compareView.showing) resumeOnClose = !paused;
       compareView.toggle();
       paused = compareView.showing || !resumeOnClose;
-      compare.textContent = compareView.showing ? '返回当前袖面' : '同帧四层对照';
+      compare.textContent = compareView.showing ? '返回当前袖面' : '同帧六阶段对照';
       pause.disabled = wireButton.disabled = compareView.showing;
       pause.textContent = paused ? '继续' : '暂停';
       resetClock();
@@ -329,20 +338,32 @@ async function start() {
       }
       raf = requestAnimationFrame(frame);
     }
+    function inspectStages(recordLimit = 1) {
+      const r = regions[0], layers = r?.sleeveLayers;
+      if (!layers) return;
+      const proxy = { positions: solvers[0].positions, triangles: r.profile.triangles };
+      return { step: simulatedSteps, time, pose: active, ...getAudit().measureStages({ ...layers, proxy }, { recordLimit }),
+        mapping: layers.mappingError(), budget: { ...layers.stats } };
+    }
     el('inspect').onclick = () => {
       el('quality').textContent = regions
         .map((r, i) => {
           const q = quality(r, solvers[i]);
           let contact = '';
           if (r.sleeveLayers) {
-            const { raw, final } = r.sleeveLayers;
-            const hits = getAudit().measure(raw, final);
-            contact = `\n第 ${simulatedSteps} 步 · ${time.toFixed(3)} s · ${active}` +
-              `\n袖面 × 衣身（三角面对）\n蒙皮 ${hits.skinned} · 未限幅 ${hits.raw} · 最终 ${hits.final}` +
-              `\n最终新增 ${hits.added} · 消除 ${hits.removed}` +
-              `\n袖面 × 腋下内衬 ${hits.facing.join(' → ')}` +
-              `\n分区面数 · 袖外 ${hits.counts.outer} / 朝内 ${hits.counts.inward} / 袖缘 ${hits.counts.rim}` +
-              `\n衣身 ${hits.counts.torso} / 内衬 ${hits.counts.facing} / 裸手 ${hits.counts.skin}`;
+            const result = inspectStages()!;
+            const labels = ['蒙皮', '代理', '映射', '混合', '球壳', '限幅'];
+            const rows = sleeveStages.map((stage, n) => {
+              const hits = result.stages[stage];
+              const counts = [hits.torso, hits.facing, hits.skin, hits.innerOuter].map(s =>
+                s ? `${s.pairs}/${(1000 * s.maxDepth).toFixed(1)}` : '—');
+              const point = hits.torso.records[0];
+              const location = point ? `\n  衣身面 ${point.target.face} · 袖面 ${point.source.face}\n  XYZ ${point.position.map(x => x.toFixed(3)).join(', ')} m` : '';
+              return `${labels[n]}　${counts.join('　')}${location}`;
+            });
+            contact = `\n第 ${result.step} 步 · ${time.toFixed(3)} s · ${active}\n衣身 / 内衬 / 腕手 / 袖内外\n各项为交叉对数/局部深度 mm\n${rows.join('\n')}` +
+              `\n限幅 ${result.budget.clipped} 点 · 壳修正 ${result.budget.shellMoved} 点` +
+              `\n映射参考误差 P95 ${result.mapping.p95Mm.toFixed(1)} mm`;
           }
           return (
             '最大边伸长 ' +
@@ -359,6 +380,7 @@ async function start() {
     };
     Object.assign(window, {
       pwcs: {
+        inspectStages,
         reset() {
           samples.length = 0;
           Object.assign(totals, { physicsSteps: 0, solverMs: 0, frames: 0, longFrames: 0, maxFrameMs: 0 });
