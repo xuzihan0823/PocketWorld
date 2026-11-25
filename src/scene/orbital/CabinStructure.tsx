@@ -1,10 +1,8 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Group, MathUtils } from 'three';
-import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import React from 'react';
+import type { ThreeEvent } from '@react-three/fiber';
 import { BEDROOM_LEFT, CABIN_DIVIDER_X, UPPER_DECK_OFFSET } from './cabinLayout';
-import { CABIN_STAIRS, STAIR_RISE, STAIR_RUN, STAIR_TREAD_RUN, STAIR_UPPER_PLATFORM_BACK, STAIR_UPPER_ENTRY_FRONT, type CabinResidentView } from './cabinStairs';
-import { timber } from './Materials';
-import { SoftBox, surface } from './Primitives';
+import { CABIN_STAIRS, STAIR_RISE, STAIR_RUN, STAIR_TREAD_RUN, STAIR_UPPER_PLATFORM_BACK, STAIR_UPPER_ENTRY_FRONT } from './cabinStairs';
+import { SoftBox } from './Primitives';
 
 const TREAD_WOOD = '#73503c';
 const RISER_CREAM = '#ece6da';
@@ -40,25 +38,7 @@ export function BedroomGuard() {
   </group>;
 }
 
-export function CabinStaircase({ onCross, residentView }: { onCross: () => void; residentView: React.MutableRefObject<CabinResidentView> }) {
-  const nearRail = useRef<Group>(null);
-  // The follow camera is outside this rail. Fade only its own materials so foot contacts stay visible.
-  const railMaterials = useMemo(() => [timber(HANDRAIL).clone(), surface(IRON_FRAME, .42, .52).clone()], []);
-  useEffect(() => () => { railMaterials.forEach(material => material.dispose()); }, [railMaterials]);
-  useFrame(({ camera }, delta) => {
-    if (!nearRail.current) return;
-    const cutaway = residentView.current.stairAscent !== null && camera.position.x < CABIN_STAIRS.x;
-    const target = cutaway ? 0 : 1;
-    if (railMaterials[0].opacity === target) return;
-    const next = MathUtils.damp(railMaterials[0].opacity, target, 18, delta);
-    const opacity = Math.abs(next - target) < .008 ? target : next;
-    nearRail.current.visible = opacity > 0;
-    for (const material of railMaterials) {
-      material.transparent = opacity < 1;
-      material.depthWrite = opacity === 1;
-      material.opacity = opacity;
-    }
-  });
+export function CabinStaircase({ onCross }: { onCross: () => void }) {
   const { x, width, lowerZ, upperZ, steps } = CABIN_STAIRS;
   const flightAngle = Math.atan2(upperY, STAIR_RUN);
   const flightLength = Math.hypot(upperY, STAIR_RUN);
@@ -98,13 +78,13 @@ export function CabinStaircase({ onCross, residentView }: { onCross: () => void;
       // The inside rail stops short at both platforms, leaving the turn into each room open.
       const inset = side === insideX ? .14 : 0;
       const outside = side === guardX;
-      return <group key={side} ref={outside ? nearRail : undefined}>
+      return <group key={side} name={outside ? 'Stair_CameraRail' : undefined}>
         <SoftBox dims={[.065, .052, flightLength * (1 - 2 * inset) + .06]} position={[side, upperY / 2 + GUARD_HEIGHT, centerZ]}
-          rotation-x={flightAngle} radius={.018} color={HANDRAIL} material={outside ? railMaterials[0] : undefined} />
+          rotation-x={flightAngle} radius={.018} color={HANDRAIL} />
         {Array.from({ length: 7 }, (_, index) => {
           const t = inset + index * (1 - 2 * inset) / 6;
           return <SoftBox key={index} dims={[.035, GUARD_HEIGHT, .035]} radius={.008} metalness={.52} roughness={.42} color={IRON_FRAME}
-            position={[side, t * upperY + GUARD_HEIGHT / 2, lowerZ - STAIR_RUN * t]} material={outside ? railMaterials[1] : undefined} />;
+            position={[side, t * upperY + GUARD_HEIGHT / 2, lowerZ - STAIR_RUN * t]} />;
         })}
       </group>;
     })}

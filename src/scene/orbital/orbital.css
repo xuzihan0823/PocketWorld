@@ -90,3 +90,22 @@
   .world-page h2 { font-size: 25px; }
 }
 @media (prefers-reduced-motion: reduce) { .orbital-app * { scroll-behavior: auto; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+.orbital-camera-subjects { position: relative; }
+.orbital-camera-subjects summary { display: grid; place-items: center; min-height: 44px; list-style: none; cursor: pointer; }
+.orbital-camera-subjects summary::-webkit-details-marker { display: none; }
+.orbital-camera-subject-list { position: absolute; bottom: calc(100% + 6px); right: 0; display: grid; gap: 4px; min-width: max-content; }
+.orbital-camera-subject-list button { background: #332a34; }
+@media (max-width: 520px) {
+  .orbital-floor-views { flex-wrap: wrap; }
+}
+@media (max-height: 480px) and (min-width: 700px) {
+  .orbital-floor-views {
+    left: auto;
+    right: 26px;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    justify-content: end;
+  }
+  .orbital-floor-views > .is-primary { grid-column: 1 / -1; }
+}

@@ -15,7 +15,7 @@ import { cloneSuppliedModel } from './supplied-model';
 import { CHAIR_POSES } from './chairPose';
 
 function FurnitureBed() {
-  return <group position={BED_POSITION}>
+  return <group name="Furniture_Bed" position={BED_POSITION}>
     <SuppliedAsset name="bed" size={[1.72, 1.4, 2.6]} fit="contact" fallback={<>    {[-0.64, 0.64].flatMap(x => [-1.06, 1.06].map(z => <SoftBox key={`${x}/${z}`} dims={[0.1, 0.32, 0.1]} position={[x, 0.16, z]} color={C.edge} />))}
     <SoftBox dims={[1.7, 0.19, 2.6]} position={[0, 0.365, 0]} color={C.wood} radius={0.04} />
     <SoftBox dims={[1.6, 0.25, 2.5]} position={[0, 0.595, 0]} color="#e5decb" radius={0.105} />

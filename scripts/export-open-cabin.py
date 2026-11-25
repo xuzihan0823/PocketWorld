@@ -81,6 +81,15 @@ def join_as(name, objects):
     return bpy.context.object
 
 
+def join_shell(name, parts):
+    root = bpy.data.objects.new(name, None)
+    bpy.context.scene.collection.objects.link(root)
+    for side, meshes in parts.items():
+        joined = join_as(name + side, meshes)
+        joined.parent = root
+    return root
+
+
 def finish_wardrobe_mesh(obj):
     # The authored bevels collapse at a few corners. Weld before exporting the moving parts.
     bm = bmesh.new()
@@ -376,39 +385,42 @@ def create_lower_sea_salt_rug():
 
 
 deck_base = []
-lower_shell = []
-upper_shell = []
+lower_shell = {"Back": [], "Right": [], "FloorTrim": []}
+upper_shell = {"Back": [], "Right": []}
 for source in collections["01"]:
     name = source.name
     if name.startswith("Aft wall"):
         # The panorama straddles the division; fit its complete outline on the desk level.
         lower = cut_x(copy_mesh(source), WINDOW_CUT_X, False)
         remap_x(lower, WINDOW_CUT_X, CABIN_RIGHT, DIVIDER_X, CABIN_RIGHT)
-        lower_shell.append(lower)
+        lower_shell["Back"].append(lower)
     elif name.startswith("Panorama"):
         lower = copy_mesh(source)
         remap_x(lower, WINDOW_CUT_X, CABIN_RIGHT, DIVIDER_X, CABIN_RIGHT)
-        lower_shell.append(lower)
+        lower_shell["Back"].append(lower)
     elif name.startswith("Port cut edge"):
         lower = copy_mesh(source)
         lower.location.x = DIVIDER_X - CABIN_LEFT
-        lower_shell.append(lower)
+        lower_shell["Back"].append(lower)
         upper = copy_mesh(source)
         upper.location.x = -BEDROOM_EXTENSION
-        upper_shell.append(upper)
+        upper_shell["Back"].append(upper)
     elif name.startswith("Rounded porcelain"):
         deck_base.append(cut_x(copy_mesh(source), DIVIDER_X, False))
     elif name.startswith("Parquet substrate"):
         # Recess the substrate's cut face from the porcelain fascia.
         deck_base.append(cut_x(copy_mesh(source), DIVIDER_X + .006, False))
     else:
-        lower_shell.append(cut_x(copy_mesh(source), DIVIDER_X, False))
+        side = "Right" if name.startswith("Starboard") else "FloorTrim" if name.startswith("Underside") else "Back"
+        lower_shell[side].append(cut_x(copy_mesh(source), DIVIDER_X, False))
         if name.startswith("Aft skirting"):
             upper = cut_x(copy_mesh(source), DIVIDER_X, True)
             remap_x(upper, CABIN_LEFT, DIVIDER_X, BEDROOM_LEFT, DIVIDER_X)
-            upper_shell.append(upper)
+            upper_shell["Back"].append(upper)
 
-upper_shell.extend(bedroom_walls())
+for part in bedroom_walls():
+    side = "Right" if part.name.startswith(("Bedroom side", "Side", "Maple window", "Deep maple sill", "Window")) else "Back"
+    upper_shell[side].append(part)
 
 parquet = collections["02"][0]
 upper_parquet = cut_x(copy_mesh(parquet), DIVIDER_X, True, cap=False)
@@ -431,8 +443,8 @@ for obj in wardrobe:
     obj.matrix_world = turn_wardrobe @ obj.matrix_world
 
 join_as("Shell", collections["01"])
-join_as("Duplex_LowerShell", lower_shell)
-join_as("Duplex_UpperShell", upper_shell)
+join_shell("Duplex_LowerShell", lower_shell)
+join_shell("Duplex_UpperShell", upper_shell)
 join_as("Floor_Parquet_Upper", [upper_parquet])
 base = join_as("Duplex_DeckBase", deck_base)
 floor = join_as("Floor_Parquet", [lower_parquet])

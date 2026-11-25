@@ -182,7 +182,7 @@ function Drift({ clock, sun, flight }: { clock: CosmicClock; sun: SunState; flig
   );
 }
 
-function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthPosition: [number, number, number]; clock: CosmicClock; sun: SunState; onBeforeRender: THREE.Object3D['onBeforeRender'] }) {
+function CelestialSphere({ clock, sun, earthPosition, skyLens, onBeforeRender }: { skyLens: { value: THREE.Matrix4 }; earthPosition: [number, number, number]; clock: CosmicClock; sun: SunState; onBeforeRender: THREE.Object3D['onBeforeRender'] }) {
   const sphere = useRef<THREE.Group>(null);
   const dpr = useThree(state => state.viewport.dpr);
   const starGeometry = useMemo(createStarGeometry, []);
@@ -194,8 +194,9 @@ function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthP
     uWarmth: sun.warmthUniform,
     uGalacticPole: { value: GALACTIC_POLE },
     uEarthGlow: { value: earthGlow },
-  }), [clock, sun, earthGlow]);
-  const starUniforms = useMemo(() => ({ uTime: clock, uPixelRatio: { value: dpr }, uDaylight: sun.daylight }), [clock, sun]);
+    uCelestialProjection: skyLens,
+  }), [clock, sun, earthGlow, skyLens]);
+  const starUniforms = useMemo(() => ({ uTime: clock, uPixelRatio: { value: dpr }, uDaylight: sun.daylight, uCelestialProjection: skyLens }), [clock, sun, skyLens]);
   useEffect(() => { starUniforms.uPixelRatio.value = dpr; }, [dpr, starUniforms]);
   useFrame(() => { sphere.current?.quaternion.setFromAxisAngle(GALACTIC_POLE, clock.value * 0.0025); });
   return (
@@ -212,10 +213,10 @@ function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthP
   );
 }
 
-function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunState; position: [number, number, number]; flight?: SpacecraftFlightState }) {
+function Earth({ clock, sun, position, flight, skyLens }: { skyLens: { value: THREE.Matrix4 }; clock: CosmicClock; sun: SunState; position: [number, number, number]; flight?: SpacecraftFlightState }) {
   const spin = useRef<THREE.Group>(null);
   const radius = EARTH_RADIUS;
-  const uniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun.direction } }), [clock, sun]);
+  const uniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun.direction }, uCelestialProjection: skyLens }), [clock, sun, skyLens]);
   useFrame(() => {
     if (!spin.current) return;
     spin.current.rotation.y = flight ? flight.earthSpinAngle : clock.value * 0.008;
@@ -224,16 +225,16 @@ function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunS
   return (
     <group position={position} rotation={[0.05, 2.05, 0.13]}>
       <group ref={spin}>
-        <mesh renderOrder={-90} raycast={NO_RAYCAST}>
+        <mesh renderOrder={-90} raycast={NO_RAYCAST} frustumCulled={false}>
           <sphereGeometry args={[radius, 96, 64]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={earthFragment} />
         </mesh>
-        <mesh renderOrder={-89} raycast={NO_RAYCAST}>
+        <mesh renderOrder={-89} raycast={NO_RAYCAST} frustumCulled={false}>
           <sphereGeometry args={[radius * 1.0037, 96, 64]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={cloudFragment} transparent depthWrite={false} />
         </mesh>
       </group>
-      <mesh renderOrder={-88} raycast={NO_RAYCAST}>
+      <mesh renderOrder={-88} raycast={NO_RAYCAST} frustumCulled={false}>
         <sphereGeometry args={[radius * 1.0107, 96, 64]} />
         <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={atmosphereFragment}
           transparent blending={THREE.AdditiveBlending} depthWrite={false} />
@@ -251,6 +252,7 @@ function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunS
  */
 export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: SpacecraftFlightState }> = ({ reducedMotion, sun, flight }) => {
   const distant = useRef<THREE.Group>(null);
+  const skyLens = useMemo(() => ({ value: new THREE.Matrix4() }), []);
   const worldPosition = useMemo(() => new THREE.Vector3(), []);
   const clock = useMemo<CosmicClock>(() => ({ value: 0 }), []);
   const aspect = useThree(state => state.size.width / state.size.height);
@@ -260,6 +262,7 @@ export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: 
   const phase = useRef<number | null>(null);
   const follow = (camera: THREE.Camera) => {
     if (!distant.current) return;
+    skyLens.value.copy(camera.userData.celestialProjection ?? camera.projectionMatrix);
     camera.getWorldPosition(worldPosition);
     distant.current.position.copy(worldPosition);
     distant.current.parent?.worldToLocal(distant.current.position);
@@ -284,8 +287,8 @@ export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: 
   return (
     <>
       <group ref={distant} name="cosmos">
-        <CelestialSphere earthPosition={earthPosition} clock={clock} sun={sun} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
-        <Earth position={earthPosition} clock={clock} sun={sun} flight={flight} />
+        <CelestialSphere skyLens={skyLens} earthPosition={earthPosition} clock={clock} sun={sun} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
+        <Earth skyLens={skyLens} position={earthPosition} clock={clock} sun={sun} flight={flight} />
       </group>
       <Drift clock={clock} sun={sun} flight={flight} />
     </>
