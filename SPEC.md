@@ -171,7 +171,7 @@ PocketWorld 是浏览器里的 3D 轨道居住舱。访客在生活舱里环绕�
 
 ## 7. 页面入口参数
 
-Vite 开发服务另提供独立的 [PWCS 布料实验台与生活舱测量入口](src/scene/cloth/README.md)。
+正式角色的服装由骨骼蒙皮与姿势修形驱动。Vite 开发服务另提供独立的 [PWCS 布料实验台与生活舱测量入口](src/scene/cloth/README.md)。
 
 | 地址参数 | 页面 |
 |---|---|

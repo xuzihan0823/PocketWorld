@@ -4,7 +4,6 @@ import { useFrame } from '@react-three/fiber';
 import * as T from 'three';
 import '../../styles.css';
 import { App } from '../../App';
-import { RoomExperiment } from './roomSlot';
 import { garmentRegion, type Region } from './binding';
 import { FixedClock, Xpbd, type ClothSolver } from './physics';
 
@@ -149,10 +148,6 @@ function Experiment() {
       .then((value) => setMake(() => value))
       .catch(reportError);
   }, []);
-  return (
-    <RoomExperiment.Provider value={make && <Probe make={make} />}>
-      <App />
-    </RoomExperiment.Provider>
-  );
+  return <App sceneObserver={make && <Probe make={make} />} />;
 }
 createRoot(document.getElementById('root')!).render(<Experiment />);

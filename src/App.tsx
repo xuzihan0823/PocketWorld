@@ -13,7 +13,7 @@ import { DustPrompt } from './scene/orbital/OrbitalDustPrompt';
 import { readInitialViewMode, type SpacecraftViewMode } from './scene/orbital/spacecraftFlight';
 import './scene/orbital/orbital.css';
 
-export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters }) => {
+export const App: React.FC<{ adapters?: WorldFeatureAdapters; sceneObserver?: React.ReactNode }> = ({ adapters, sceneObserver }) => {
   const baseWorld = useWorldController(adapters);
   const audio = useSyncExternalStore(roomAudio.subscribe, roomAudio.getSnapshot);
   const [viewMode, setViewMode] = useState<SpacecraftViewMode>(() =>
@@ -160,7 +160,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
     onDragLeave={event => { event.preventDefault(); inputDepth.current = Math.max(0, inputDepth.current - 1); if (!inputDepth.current) setDraggingFile(false); }}
     onDrop={event => { event.preventDefault(); inputDepth.current = 0; setDraggingFile(false); importFiles(event.dataTransfer.files); }}>
-    <OrbitalScene {...world} viewMode={viewMode} boosting={boosting} onViewModeChange={setViewMode} onEnterCabin={enterCabin}
+    <OrbitalScene {...world} sceneObserver={sceneObserver} viewMode={viewMode} boosting={boosting} onViewModeChange={setViewMode} onEnterCabin={enterCabin}
       books={books} adapters={adapters} onImportMusic={onImportMusic} discs={discs} activeDisc={audio.disc} isMusicPlaying={audio.isPlaying} isMuted={audio.isMuted}
       onSelectDisc={onSelectDisc} onToggleMusic={onToggleMusic} onToggleMute={onToggleMute} activeGame={activeGame} onGameChange={setActiveGame} onFeatureError={onFeatureError} />
     {viewMode === 'cabin' && world.focusedObject === 'wardrobe' && <WardrobeSurface
