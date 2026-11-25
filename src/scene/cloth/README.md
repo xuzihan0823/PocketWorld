@@ -45,9 +45,11 @@ Rapier 0.21.0 使用原生 `SoftBodyDesc`，写入与 XPBD 共用的边表和三
 - 生活舱以 980×720 打开，等待角色、完整家具和 GPU 着色器就绪。依次测关闭、XPBD、Rapier，再逆序测一次。对 `window.pwcsRoom` 的累计时间取差并除以帧数。用独立的 `requestAnimationFrame` 记录帧间隔。Chrome DevTools Protocol 的 `Performance.getMetrics` 可取主线程 TaskDuration 与 Timestamp 的增量比和 JSHeapUsedSize，`Runtime.getHeapUsage` 提供 backingStorageSize。两项内存分别列示；均不等于整个浏览器的常驻内存。
 - 数值和绑定回归运行 `node --test src/scene/cloth/cloth.test.mjs`；仓库完整验证运行 `npm test`。
 
-单袖实验默认使用 `f996538` 的前臂硬导点和形变顺序。`pipeline=surface` 仅延后限幅，`pipeline=budget` 还会在同一位移预算内优先沿实际衣身侧面脱离。`cuff=hard/released/soft/dynamic` 分别在同一袖口位置比较硬固定、释放、弹性及屈肘角控制。换策略后点击「应用并重置」。`legacy=1` 用于重建更早的代理。
+`pipeline=previous` 使用默认绑定。`surface` 延后限幅，`budget` 优先沿衣身侧面分离，`contact` 在随蒙皮更新的简化衣身、内衬与腕手三角面上查询接触。后者沿袖片拓扑向连接边界渐隐，在所有左袖顶点执行 18 mm 世界空间限幅。第 2,574 步和 2,702 步可对比同一躺下动作的不同结果。[冻结接触候选](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&pipeline=contact&atStep=2702)
 
-「测量当前形变」列出四组接触的交叉数和局部最大背侧深度。按子步冻结后可用 `pwcs.inspectStages(Infinity)` 取得所有面号、所属网格、解剖分区、UV 和交点世界坐标（米）。代理本身没有内外层。只关注峰值时可传 `1`。第 2,702 步用于对齐历史的 119、308 对。
+冻结底图中青色、紫色为外向和内向袖面，黄色为过渡朝向，绿色为腋下内衬，蓝色为衣身，橙色为真实腕手。红线标出远端选区开边及拆点接缝，棕色球链表示按肩肘腕骨段估算的臂壳。深色线网为接触候选使用的简化三角面。`cuff=hard/released/soft/zoned/dynamic` 分别选择袖口硬锚、释放、单点软锚、两圈分区软锚和动态分区软锚。默认 `forearm` 保留前臂导点。
+
+`pwcs.inspectStages(1, true)` 返回每个阶段的四组交叉、所在区域、面号及世界深度，并逐点返回相对蒙皮的世界毫米位移向量。`limited` 是限幅缓冲的接触结果，`stages.final` 读取渲染属性。`displacement` 的输入、输出均为绝对偏移，各自峰值可能来自不同顶点；`witness` 两向量来自同一顶点。代理读数为求解结果相对本步动画目标的偏移，参考值为零。映射层报告四导点插值的未混合位移。`armEnvelope` 单独返回骨段球链内的顶点数与最大径向深度。省略第二个参数仅返回位移摘要，`recordLimit` 可取 `Infinity` 保留全部交叉记录。
 
 下例重放同一动作并逐阶段保留最深接触点。第五个参数也可指定 `cuff`。质量回放独立于正常渲染的帧耗时测量。
 
@@ -62,12 +64,14 @@ const stages = mesh => {
     return audit.measureStages({ ...region.sleeveLayers, proxy }, { recordLimit: 1 }).stages
   } }
 }
-const settings = { pipeline: 'budget' }
-const before = await replaySleeve('xpbd', false, stages, focus)
+const settings = { pipeline: 'contact', rapidSwitch: true }
+const before = await replaySleeve('xpbd', false, stages, focus, { ...settings, pipeline: 'budget' })
 const xpbd = await replaySleeve('xpbd', false, stages, focus, settings)
 const rapier = await replaySleeve('rapier', false, stages, focus, settings)
 const slowBend = await isolateElbow(false, stages, false, settings)
 ```
+
+`rapidSwitch` 在 4,110 步生活动作之后连续采样 120 步，每 12 步切换一次目标动作。原轨道和追加的切换窗口分别统计。
 
 `peaks` 依次给出自由—自由、固定—自由、固定—固定各自峰值最大的四条边，长度单位为米。`observations` 按步号保留同姿势的接触结果。`isolateElbow(true)` 可复测旧版。它固定住其余骨骼，静置 1 秒，在 3 秒内缓慢屈肘，再保持 2 秒，全程关闭重力、自碰撞与外部碰撞。
 

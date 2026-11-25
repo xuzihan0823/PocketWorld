@@ -1,3 +1,5 @@
+interface ElasticAnchor { particle: number; createStiffnessSampler(): (dt: number) => number }
+
 export interface Ball {
   x: number;
   y: number;
@@ -10,7 +12,8 @@ export interface ClothProfile {
   initial?: Float32Array;
   pins: number[];
   /** A finite-stiffness attachment to the animated target of one free particle (unit particle mass). */
-  elasticAnchor?: { particle: number; createStiffnessSampler(): (dt: number) => number };
+  elasticAnchor?: ElasticAnchor;
+  elasticAnchors?: ElasticAnchor[];
   structural: number[];
   shear: number[];
   bend: number[];
@@ -111,8 +114,7 @@ export class Xpbd implements ClothSolver {
   private previous: Float32Array;
   private mass: Float32Array;
   private links: { a: number; b: number; length: number; compliance: number; lambda: number }[];
-  private sampleStiffness?: (dt: number) => number;
-  private anchorLambda = new Float64Array(3);
+  private anchors: { particle: number; stiffness: (dt: number) => number; alpha: number; lambda: Float64Array }[];
   private neighbors: Set<number>[];
   private buckets = new Map<number, number[]>();
   constructor(
@@ -124,7 +126,9 @@ export class Xpbd implements ClothSolver {
     this.mass = new Float32Array(this.positions.length / 3).fill(1);
     this.neighbors = Array.from(this.mass, () => new Set<number>());
     for (const id of profile.pins) this.mass[id] = 0;
-    this.sampleStiffness = profile.elasticAnchor?.createStiffnessSampler();
+    const anchors = profile.elasticAnchors ?? (profile.elasticAnchor ? [profile.elasticAnchor] : []);
+    this.anchors = anchors.map(a => ({ particle: a.particle, stiffness: a.createStiffnessSampler(),
+      alpha: 0, lambda: new Float64Array(3) }));
     this.links = [];
     const m = profile.material;
     for (const [edges, compliance] of [
@@ -206,10 +210,11 @@ export class Xpbd implements ClothSolver {
       this.previous[k] = old;
     }
     for (const edge of this.links) edge.lambda = 0;
-    const stiffness = this.sampleStiffness?.(dt) ?? 0;
-    const anchor = this.profile.elasticAnchor;
-    const alphaAnchor = stiffness > 0 ? 1 / (stiffness * dt * dt) : Infinity;
-    if (anchor) this.anchorLambda.fill(0);
+    for (const anchor of this.anchors) {
+      const stiffness = anchor.stiffness(dt);
+      anchor.alpha = stiffness > 0 ? 1 / (stiffness * dt * dt) : Infinity;
+      anchor.lambda.fill(0);
+    }
     this.collisionMs = 0;
     for (let iter = 0; iter < this.profile.material.iterations; iter++) {
       for (const edge of this.links) {
@@ -228,13 +233,14 @@ export class Xpbd implements ClothSolver {
           p[3 * b + k] -= this.mass[b] * delta;
         }
       }
-      if (anchor && stiffness > 0) {
+      for (const anchor of this.anchors) {
+        if (!Number.isFinite(anchor.alpha)) continue;
         // Three independent Cartesian constraints share the target, each with its own XPBD multiplier.
         const start = anchor.particle * 3;
         for (let axis = 0; axis < 3; axis++) {
           const k = start + axis;
-          const dl = (targets[k] - p[k] - alphaAnchor * this.anchorLambda[axis]) / (1 + alphaAnchor);
-          this.anchorLambda[axis] += dl;
+          const dl = (targets[k] - p[k] - anchor.alpha * anchor.lambda[axis]) / (1 + anchor.alpha);
+          anchor.lambda[axis] += dl;
           p[k] += dl;
         }
       }

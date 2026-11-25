@@ -43,8 +43,8 @@ export async function makeRapier(
       return body;
     });
     const target = { x: 0, y: 0, z: 0 };
-    const anchor = profile.elasticAnchor;
-    const sampleStiffness = anchor?.createStiffnessSampler();
+    const configured = profile.elasticAnchors ?? (profile.elasticAnchor ? [profile.elasticAnchor] : []);
+    const anchors = configured.map(a => ({particle: a.particle, stiffness: a.createStiffnessSampler()}));
     const velocity = { x: 0, y: 0, z: 0 };
     const solver: ClothSolver = {
       positions: (profile.initial ?? profile.rest).slice(),
@@ -57,9 +57,9 @@ export async function makeRapier(
           target.z = targets[3 * i + 2];
           cloth.setParticleKinematicTarget(i, target);
         }
-        if (anchor && sampleStiffness) {
+        for (const anchor of anchors) {
           // Backward Euler impulse for a unit-mass spring, before native contact/edge resolution.
-          const stiffness = sampleStiffness(dt);
+          const stiffness = anchor.stiffness(dt);
           const gain = stiffness * dt / (1 + stiffness * dt * dt);
           const k = 3 * anchor.particle;
           cloth.particleVelocity(anchor.particle, velocity);

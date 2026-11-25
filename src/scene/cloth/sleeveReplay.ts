@@ -46,7 +46,7 @@ function pinResidual(region: Region) {
 type Audit = (mesh: T.SkinnedMesh) => {
   measure(raw: Float32Array, final: Float32Array, region: Region, positions: Float32Array): unknown;
 };
-type ReplaySettings = { pipeline?: 'previous' | 'surface' | 'budget'; cuff?: CuffStrategy };
+type ReplaySettings = { pipeline?: import('./binding').SleevePipeline; cuff?: CuffStrategy; rapidSwitch?: boolean };
 
 /** Deterministic quality replay. Expensive surface observations run outside the solver timer. */
 export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, audit?: Audit, extraFocus: number[] = [], settings: ReplaySettings = {}) {
@@ -67,11 +67,14 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
     })).filter(b => b.weight > 0);
   });
   let time = 0, solveMs = 0, pin = {depth: -Infinity, pin: -1, sphere: -1, time: 0};
-  const steps = Math.round(phaseEnds[6] / dt);
+  const lifeSteps = Math.round(phaseEnds[6] / dt);
+  const steps = lifeSteps + (settings.rapidSwitch ? 120 : 0);
   try {
     for (let step = 1; step <= steps; step++) {
       time += dt;
-      const pose = motions[phaseEnds.findIndex(end => time % phaseEnds[6] < end)];
+      const rapid = step > lifeSteps;
+      const pose = rapid ? motions[Math.floor((step-lifeSteps-1)/12) % motions.length] :
+        motions[phaseEnds.findIndex(end => time % phaseEnds[6] < end)];
       actor.select(pose);
       actor.update(dt);
       region.sample(time);
@@ -81,7 +84,7 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
       edges.sample(solver.positions, time, pose);
       const residual = pinResidual(region);
       if (residual.depth > pin.depth) pin = { ...residual, time };
-      if (step % 60 !== 0 && !watched.some(t => time >= t - 0.04 && time <= t + 0.26)) continue;
+      if (!rapid && step % 60 !== 0 && !watched.some(t => time >= t - 0.04 && time <= t + 0.26)) continue;
       region.bind(solver.positions);
       const p = solver.positions;
       observations.push({ step, time, pose, shell: region.surfaceContact?.(),

@@ -86,13 +86,27 @@ export function createSleeveAudit(mesh: T.SkinnedMesh) {
     }});
     return { pairs, liningPairs };
   }
-  function markedPose() {
+  // Distal boundary of the sleeve selection and split render edges at identical bind positions.
+  const cuffEdges = new Map<string, { a: number; b: number; count: number; split: boolean }>();
+  for (let i = 0; i < sleeveIndices.length; i += 3) for (let j = 0; j < 3; j++) {
+    const a = sleeveIndices[i+j], b = sleeveIndices[i+(j+1)%3];
+    if (Math.max(p.getY(a),p.getY(b)) > 0.58) continue;
+    const key = `${Math.min(weld[a],weld[b])},${Math.max(weld[a],weld[b])}`;
+    const edge = cuffEdges.get(key);
+    if (!edge) cuffEdges.set(key,{a,b,count:1,split:false});
+    else { edge.count++; edge.split ||= (a !== edge.a && a !== edge.b) || (b !== edge.a && b !== edge.b); }
+  }
+  const cuffBoundary = [...cuffEdges.values()].filter(e => e.count === 1 || e.split);
+  function markedPose(offset?: Float32Array) {
     const xyz: number[] = [], rgb: number[] = [];
     const colors = ['#000000','#56bdcb','#9a68ba','#dcaa42','#6885aa','#edb290','#bfd17a'].map(s => new T.Color(s));
     function triangle(source: T.SkinnedMesh, index: T.BufferAttribute, k: number, label: number) {
       const color = colors[label];
       for (let j = 0; j < 3; j++) {
-        source.getVertexPosition(index.getX(k + j), v).applyMatrix4(source.matrixWorld);
+        const id = index.getX(k+j);
+        source.getVertexPosition(id,v);
+        if (source === mesh && offset) v.add(a.fromArray(offset,3*id));
+        v.applyMatrix4(source.matrixWorld);
         xyz.push(v.x,v.y,v.z); rgb.push(color.r,color.g,color.b);
       }
     }
@@ -103,13 +117,24 @@ export function createSleeveAudit(mesh: T.SkinnedMesh) {
     const geometry = new T.BufferGeometry();
     geometry.setAttribute('position', new T.Float32BufferAttribute(xyz,3));
     geometry.setAttribute('color', new T.Float32BufferAttribute(rgb,3));
-    return new T.Mesh(geometry,new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }));
+    const marked = new T.Mesh(geometry,new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }));
+    const linePositions: number[] = [];
+    for (const edge of cuffBoundary) for (const id of [edge.a,edge.b]) {
+      mesh.getVertexPosition(id,v);
+      if (offset) v.add(a.fromArray(offset,3*id));
+      v.applyMatrix4(mesh.matrixWorld); linePositions.push(v.x,v.y,v.z);
+    }
+    const lines = new T.BufferGeometry();
+    lines.setAttribute('position',new T.Float32BufferAttribute(linePositions,3));
+    const seam = new T.LineSegments(lines,new T.LineBasicMaterial({color:0xef414c,depthTest:false}));
+    seam.renderOrder = 2; marked.add(seam);
+    return marked;
   }
   let detailed: ReturnType<typeof createClassifiedSleeveAudit> | undefined;
   function stages() {
     return detailed ??= createClassifiedSleeveAudit(mesh, facing!, faceClass, leftFacingFaces);
   }
-  return { counts, markedPose, facing,
+  return { counts, markedPose, facing, cuffBoundary,
     get mapping() { return stages().mapping; },
     measureStages(input: SleeveAuditInput, options?: SleeveAuditOptions) {
       return stages().measureStages(input, options);
@@ -142,6 +167,7 @@ export interface SleeveAuditInput {
   blend: Float32Array;
   shell: Float32Array;
   final: Float32Array;
+  limited?: Float32Array;
   /** Optional bind-pose main vertex for each proxy particle, as supplied by Region.sleeveLayers. */
   driverVertices?: ArrayLike<number>;
   /** Particle coordinates are world metres. Reuse topology across calls and treat it as immutable. */
@@ -507,8 +533,7 @@ export function createClassifiedSleeveAudit(mesh: T.Mesh, facing: T.Mesh, labels
       const source = v.id < mainCount ? mesh : facing;
       source.getVertexPosition(v.id < mainCount ? v.id : v.id-mainCount, v.base).applyMatrix4(source.matrixWorld).sub(origin);
     }
-    const stages = {} as Record<SleeveStage,SleeveStageResult>;
-    for (const stage of sleeveStages) {
+    function measureStage(stage: SleeveStage | 'limited'): SleeveStageResult {
       const proxy = stage === 'proxy';
       if (stage !== 'proxy') updateCloth(stage === 'skinned' ? undefined : input[stage]);
       const source = proxy ? updateProxy(input.proxy,input.driverVertices) : clothTree;
@@ -517,9 +542,13 @@ export function createClassifiedSleeveAudit(mesh: T.Mesh, facing: T.Mesh, labels
       cast(source,obstacleTree,result,false,proxy,recordLimit);
       if (!proxy) cast(outerTree,innerTree,result,true,false,recordLimit);
       if (recordLimit === Infinity) for (const stats of Object.values(result)) stats?.records.sort((a: SleeveContact,b: SleeveContact) => b.depth - a.depth);
-      stages[stage] = result;
+      return result;
     }
-    return { stages };
+    const stages = {} as Record<SleeveStage,SleeveStageResult>;
+    for (const stage of sleeveStages) stages[stage] = measureStage(stage);
+    if (input.limited && input.limited.length !== input.final.length) throw new Error('Invalid limited offsets');
+    const limited = input.limited && (input.limited.every((x,i) => x === input.final[i]) ? stages.final : measureStage('limited'));
+    return { stages, limited };
   }
   return { mapping, measureStages };
 }

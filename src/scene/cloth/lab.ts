@@ -1,3 +1,5 @@
+import { measureArmEnvelope } from './armEnvelope';
+import { sleeveDisplacement } from './sleeveDisplacement';
 import * as T from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FixedClock, Xpbd, distance, type ClothSolver } from './physics';
@@ -167,7 +169,7 @@ async function start() {
       if (mode === 'arm') regions.push(patchRegion(stage, actor.skin));
       if (['sleeve', 'both', 'multi', 'skirt'].includes(mode))
         regions.push(garmentRegion(actor.skin, 'Left', mode === 'skirt', mode === 'sleeve' && params.get('legacy') !== '1',
-          mode === 'sleeve', config.get('pipeline') as 'previous' | 'surface' | 'budget', sleeveCuff));
+          mode === 'sleeve', config.get('pipeline') as import('./binding').SleevePipeline, sleeveCuff));
       if (['both', 'multi'].includes(mode)) regions.push(garmentRegion(actor.skin, 'Right'));
       if (mode === 'multi') {
         const second = await createActor(stage, true, 0.48);
@@ -338,11 +340,12 @@ async function start() {
       }
       raf = requestAnimationFrame(frame);
     }
-    function inspectStages(recordLimit = 1) {
+    function inspectStages(recordLimit = 1, includeVertices = false) {
       const r = regions[0], layers = r?.sleeveLayers;
       if (!layers) return;
       const proxy = { positions: solvers[0].positions, triangles: r.profile.triangles };
       return { step: simulatedSteps, time, pose: active, ...getAudit().measureStages({ ...layers, proxy }, { recordLimit }),
+        displacement: sleeveDisplacement(r, proxy.positions, includeVertices), armEnvelope: measureArmEnvelope(r,proxy.positions),
         mapping: layers.mappingError(), budget: { ...layers.stats } };
     }
     el('inspect').onclick = () => {
@@ -352,17 +355,19 @@ async function start() {
           let contact = '';
           if (r.sleeveLayers) {
             const result = inspectStages()!;
-            const labels = ['蒙皮', '代理', '映射', '混合', '球壳', '限幅'];
+            const labels = ['蒙皮', '代理', '映射', '混合', '接触', '输出'];
             const rows = sleeveStages.map((stage, n) => {
               const hits = result.stages[stage];
               const counts = [hits.torso, hits.facing, hits.skin, hits.innerOuter].map(s =>
                 s ? `${s.pairs}/${(1000 * s.maxDepth).toFixed(1)}` : '—');
               const point = hits.torso.records[0];
               const location = point ? `\n  衣身面 ${point.target.face} · 袖面 ${point.source.face}\n  XYZ ${point.position.map(x => x.toFixed(3)).join(', ')} m` : '';
-              return `${labels[n]}　${counts.join('　')}${location}`;
+              const d = result.displacement[stage === 'final' ? 'limit' : stage];
+              return `${labels[n]}　${counts.join('　')}${location}\n  位移输入/输出峰值 ${d.requestedMaxMm.toFixed(1)}/${d.appliedMaxMm.toFixed(1)} mm`;
             });
             contact = `\n第 ${result.step} 步 · ${time.toFixed(3)} s · ${active}\n衣身 / 内衬 / 腕手 / 袖内外\n各项为交叉对数/局部深度 mm\n${rows.join('\n')}` +
               `\n限幅 ${result.budget.clipped} 点 · 壳修正 ${result.budget.shellMoved} 点` +
+              `\n估算臂壳内 ${result.armEnvelope.final.inside} 点，最深 ${result.armEnvelope.final.maxDepthMm.toFixed(1)} mm` +
               `\n映射参考误差 P95 ${result.mapping.p95Mm.toFixed(1)} mm`;
           }
           return (

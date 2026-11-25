@@ -21,7 +21,7 @@ function sleeve() {
   return profile;
 }
 
-test('single-sleeve strategies change only the one distal guide and preserve bind lengths', () => {
+test('hard, released and single soft cuff retain their guide selection and bind lengths', () => {
   const p = sleeve(), rest = p.rest.slice();
   configureSleeveCuff(p, 'hard', null, 41);
   assert.deepEqual(p.pins, [5, 6, 7, 41]);
@@ -36,7 +36,25 @@ test('single-sleeve strategies change only the one distal guide and preserve bin
   assert.deepEqual(p.rest, rest);
 });
 
-test('posture-dependent stiffness releases and recovers continuously at the same elapsed time', () => {
+test('zoned anchors span three sectors on two rings and are removed when changing strategies', () => {
+  const p = sleeve();
+  for (const guide of [41, 53]) {
+    configureSleeveCuff(p, 'zoned', null, guide);
+    assert.deepEqual(p.elasticAnchors.map(a => a.particle), [guide, guide + 4, guide - 4, guide - 12, guide - 8, guide - 16]);
+    assert.deepEqual(p.pins, [5, 6, 7]);
+    assert.equal(p.elasticAnchor, undefined);
+    const ks = p.elasticAnchors.map(a => a.createStiffnessSampler()(1 / 120));
+    assert.ok(Math.abs(ks.reduce((sum, k) => sum + k, 0) - 12000) < 1e-9);
+    assert.ok(ks[0] > ks[1] && ks[1] === ks[2] && ks[0] > ks[3] && ks[3] > ks[4]);
+  }
+  for (const strategy of ['hard', 'released', 'soft']) {
+    configureSleeveCuff(p, 'zoned', null);
+    configureSleeveCuff(p, strategy, null);
+    assert.equal(p.elasticAnchors, undefined);
+  }
+});
+
+test('dynamic zones release to a finite floor and respond to wrist speed independently of timestep', () => {
   const bones = ['Arm', 'ForeArm', 'Hand'].map(name => Object.assign(new Bone(), { name: 'mixamorigLeft' + name }));
   const [shoulder, elbow, wrist] = bones;
   shoulder.add(elbow); elbow.add(wrist);
@@ -44,22 +62,34 @@ test('posture-dependent stiffness releases and recovers continuously at the same
   shoulder.updateMatrixWorld(true);
   const p = sleeve();
   configureSleeveCuff(p, 'dynamic', { skeleton: new Skeleton(bones) });
-  const sample60 = p.elasticAnchor.createStiffnessSampler(), sample120 = p.elasticAnchor.createStiffnessSampler();
+  const makeSampler = () => {
+    const samples = p.elasticAnchors.map(a => a.createStiffnessSampler());
+    return dt => samples.reduce((sum, sample) => sum + sample(dt), 0);
+  };
+  const sample60 = makeSampler(), sample120 = makeSampler();
   const straight = sample60(1 / 60);
+  assert.ok(Math.abs(straight - 12000) < 1e-8);
+  // Bend without moving the wrist in world space, isolating the flexion envelope.
   elbow.rotation.z = 2.1;
+  shoulder.position.set(.1 * (1 - Math.cos(2.1)), -.1 * Math.sin(2.1), 0);
   shoulder.updateMatrixWorld(true);
   const first = sample120(1 / 120);
   assert.ok(first < straight && first > 0.85 * straight);
-  assert.ok(Math.abs(sample60(1 / 60) - sample120(1 / 120)) < 1e-9);
+  assert.ok(Math.abs(sample60(1 / 60) - sample120(1 / 120)) < 1e-8);
   let bent = first;
-  for (let i = 0; i < 120; i++) bent = sample120(1 / 120);
-  assert.ok(bent > 0 && bent < straight / 20);
-  elbow.rotation.z = 0;
+  for (let i = 0; i < 180; i++) bent = sample120(1 / 120);
+  assert.ok(Math.abs(bent - 5000) < 0.001);
+  const fast60 = makeSampler(), fast120 = makeSampler();
+  shoulder.position.x += .05;
   shoulder.updateMatrixWorld(true);
-  const recovering = sample120(1 / 120);
-  assert.ok(recovering > bent && recovering < straight / 5);
-  for (let i = 0; i < 120; i++) bent = sample120(1 / 120);
-  assert.ok(bent > straight * 0.999 && bent <= straight);
+  const fast = fast120(1 / 120);
+  assert.ok(fast > 12000 && fast < 45000);
+  assert.equal(fast120(0), fast);
+  shoulder.position.x += .05;
+  shoulder.updateMatrixWorld(true);
+  assert.ok(Math.abs(fast60(1 / 60) - fast120(1 / 120)) < 1e-8);
+  for (let i = 0; i < 240; i++) bent = fast120(1 / 120);
+  assert.ok(Math.abs(bent - 5000) < .001);
 });
 
 test('XPBD finite-stiffness attachment obeys the implicit one-particle solution at both substeps', () => {
@@ -98,4 +128,25 @@ test('Rapier hard, elastic and released guides have distinct responses to the sa
   assert.ok(Math.abs(travel.hard - 0.03) < 1e-5);
   assert.ok(Math.abs(travel.released) < 1e-5);
   assert.ok(travel.soft > travel.released + 1e-5 && travel.soft < travel.hard);
+});
+
+test('both backends apply each zoned spring to its own particle', async () => {
+  for (const engine of ['xpbd', 'rapier']) {
+    const p = sleeve();
+    p.structural = []; p.shear = []; p.bend = [];
+    configureSleeveCuff(p, 'zoned', null);
+    const dt = 1 / 120, targets = p.rest.slice();
+    const solver = engine === 'xpbd' ? new Xpbd(p, false) : await makeRapier(p, [], false, 0);
+    if (engine === 'xpbd') solver.gravity = 0;
+    try {
+      p.elasticAnchors.forEach(({ particle }, i) => { targets[particle * 3 + i % 3] += .025; });
+      solver.step(dt, targets, []);
+      p.elasticAnchors.forEach(({ particle, createStiffnessSampler }, i) => {
+        const j = particle * 3 + i % 3, k = createStiffnessSampler()(dt);
+        const expected = .025 * k * dt * dt / (1 + k * dt * dt);
+        const actual = solver.positions[j] - p.rest[j];
+        assert.ok(Math.abs(actual - expected) < .0001, `${engine} particle ${particle}: ${actual}, expected ${expected}`);
+      });
+    } finally { solver.dispose(); }
+  }
 });

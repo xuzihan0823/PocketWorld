@@ -21,14 +21,29 @@ const maskUrl = await moduleUrl('./sleeveMask.ts');
 const contactImports = { three: import.meta.resolve('three'), './sleeveMask': maskUrl, 'three-mesh-bvh': import.meta.resolve('three-mesh-bvh') };
 const cuffUrl = await moduleUrl('./cuffAnchors.ts', { three: import.meta.resolve('three') });
 const budgetUrl = await moduleUrl('./sleeveBudget.ts', { three: import.meta.resolve('three') });
+const surfaceUrl = await moduleUrl('./sleeveContact.ts', contactImports);
 const { patchRegion, garmentRegion } = await import(await moduleUrl('./binding.ts', {
   ...contactImports, './physics': physics, './cuffAnchors': cuffUrl, './sleeveBudget': budgetUrl,
+  './sleeveContact': surfaceUrl,
 }));
 const { makeRapier } = await import(
   await moduleUrl('./rapier.ts', {
     '@dimforge/rapier3d-compat': import.meta.resolve('@dimforge/rapier3d-compat'),
   })
 );
+
+test('posed contact plane chooses the garment side and limits its spatial reach', async () => {
+  const { clusteredSurface } = await import(surfaceUrl);
+  const g = new T.BufferGeometry();
+  g.setAttribute('position',new T.Float32BufferAttribute([0,0,0,0,1,0,1,0,0],3));
+  g.setIndex([0,1,2]);
+  const mesh = new T.Mesh(g), proxy = clusteredSurface(mesh,() => true,0.01);
+  mesh.position.set(2,3,4); mesh.scale.set(2,3,1); mesh.updateMatrixWorld(true); proxy.sample();
+  const n = new T.Vector3(0,0,1), point = new T.Vector3(2.1,3.1,3.99);
+  proxy.project(point,n,0.05,0.0025);
+  assert.ok(Math.abs(point.z - 4.0025) < 1e-6);
+  point.z = 3.8; proxy.project(point,n,0.05,0.0025); assert.equal(point.z,3.8);
+});
 
 test('fixed clock caps backlog and advances identical time at 30/60/120 render FPS', () => {
   for (const fps of [30, 60, 120]) {

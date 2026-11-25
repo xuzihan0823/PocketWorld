@@ -1,8 +1,11 @@
 import * as T from 'three';
 import { lattice, type Ball, type ClothProfile } from './physics';
-import { sleeveSurfaceMask } from './sleeveMask';
+import { sleeveSeamDistance, sleeveSurfaceMask } from './sleeveMask';
 import { configureSleeveCuff, type CuffStrategy } from './cuffAnchors';
 import { sleeveBudget } from './sleeveBudget';
+import { sleeveContact } from './sleeveContact';
+
+export type SleevePipeline = 'previous' | 'surface' | 'budget' | 'contact';
 
 export interface Region {
   profile: ClothProfile;
@@ -13,6 +16,9 @@ export interface Region {
   surfaceContact?(): { samples: number; skinnedDepth: number; correctedDepth: number };
   sleeveLayers?: {
     mesh: T.SkinnedMesh; raw: Float32Array; blend: Float32Array; shell: Float32Array;
+    vertexIds: number[];
+    armBalls: Ball[]; limited: Float32Array;
+    contact?: ReturnType<typeof sleeveContact>;
     mappingError(): { medianMm: number; p95Mm: number; maxMm: number; maxVertex: number };
     final: Float32Array; driverVertices: number[]; stats: { clipped: number; maxMm: number; shellMoved: number };
   };
@@ -152,7 +158,7 @@ function offsetAttribute(mesh: T.SkinnedMesh) {
 
 export function garmentRegion(
   mesh: T.SkinnedMesh, side: Side, skirt = false, singleSleeve = false, captureLayers = singleSleeve,
-  pipeline: 'previous' | 'surface' | 'budget' = 'previous',
+  pipeline: SleevePipeline = 'previous',
   cuff?: CuffStrategy,
 ): Region {
   const cols = skirt ? 20 : 12,
@@ -252,6 +258,20 @@ export function garmentRegion(
     targets = profile.rest.slice(),
     delta = new Float32Array(local.length);
   const attr = offsetAttribute(mesh);
+  const seamWidth = 0.025;
+  const seamDistance = mask && pipeline === 'contact' ? sleeveSeamDistance(mesh,mask,seamWidth) : undefined;
+  if (mask && seamDistance) {
+    const mapped = new Set(candidates.map(q => q.id));
+    for (const id of mask) {
+      if (mapped.has(id)) continue;
+      const t = p.fromBufferAttribute(g.position,id).sub(start).dot(axis) / height;
+      const row = T.MathUtils.clamp(t,0,1)*(rows-1), r = Math.min(rows-2,Math.floor(row));
+      radial.lerpVectors(centers[r],centers[r+1],row-r);
+      p.fromBufferAttribute(g.position,id).sub(radial);
+      const u = (1 + Math.atan2(p.dot(front),p.dot(horizontal)) / tau) % 1;
+      candidates.push({id,t,u,radius:p.length(),weight:1});
+    }
+  }
   const bindings = candidates.map((q) => {
     const col = q.u * cols,
       row = T.MathUtils.clamp(q.t, 0, 1) * (rows - 1);
@@ -259,7 +279,7 @@ export function garmentRegion(
       r = Math.min(rows - 2, Math.floor(row)),
       x = col - c,
       y = row - r;
-    const fade =
+    const fade = seamDistance ? T.MathUtils.smoothstep(seamDistance(q.id),0,seamWidth) :
       T.MathUtils.smoothstep(q.weight, 0.22, 0.85) *
       T.MathUtils.smoothstep(q.t, 0, 0.22) *
       (1 - T.MathUtils.smoothstep(q.t, 0.95, 1.1));
@@ -311,7 +331,9 @@ export function garmentRegion(
     }).sort((a, b) => a - b);
     return { medianMm: errors[Math.floor(errors.length / 2)], p95Mm: errors[Math.ceil(errors.length * 0.95) - 1], maxMm, maxVertex };
   }
+  const contact = singleSleeve && pipeline === 'contact' ? sleeveContact(mesh, cols, rows) : undefined;
   const layers = captureLayers ? { mesh, raw: layer(), blend: layer(), shell: layer(), mappingError,
+    vertexIds: bindings.map(b => b.id), contact, armBalls: collision.balls.slice(0,10), limited: layer(),
     final: attr.array as Float32Array, driverVertices: nearest, stats: { clipped: 0, maxMm: 0, shellMoved: 0 } } : undefined;
   const rawDelta = captureLayers ? new Float32Array(local.length) : undefined;
   const surfacePipeline = singleSleeve && pipeline !== 'previous';
@@ -347,6 +369,7 @@ export function garmentRegion(
     inverse.setFromMatrix4(mesh.matrixWorld).invert();
     linear.setFromMatrix4(mesh.matrixWorld);
     budget?.sample();
+    contact?.sample(targets, positions, displacementLimit, profile.thickness);
     if (layers) Object.assign(layers.stats, { clipped: 0, maxMm: 0, shellMoved: 0 });
     for (let i = 0; i < nearest.length; i++) {
       p.fromArray(positions, 3 * i).sub(radial.fromArray(targets, 3 * i));
@@ -373,16 +396,20 @@ export function garmentRegion(
       p.multiplyScalar(b.fade);
       if (layers) p.toArray(layers.blend, 3 * b.id);
       if (singleSleeve && b.fade > 0) {
-        // Interpolating displacements on a curved surface can put a vertex back inside the torso.
-        // Project the actual post-skin point and keep the same world-space displacement budget at the seam.
-        mesh.getVertexPosition(b.id, skinned).applyMatrix4(mesh.matrixWorld);
-        corrected.copy(p).applyMatrix3(linear).add(skinned);
-        for (const ball of torsoBalls) {
-          normal.set(corrected.x - ball.x, corrected.y - ball.y, corrected.z - ball.z);
-          const depth = ball.radius + profile.thickness - normal.length();
-          if (depth > 0) corrected.addScaledVector(normal.normalize(), depth);
+        if (contact) {
+          p.set(0,0,0);
+          for (let k = 0; k < 4; k++) p.addScaledVector(radial.fromArray(contact.field, 3*b.nodes[k]), b.weights[k]);
+          p.multiplyScalar(b.fade);
+        } else {
+          mesh.getVertexPosition(b.id, skinned).applyMatrix4(mesh.matrixWorld);
+          corrected.copy(p).applyMatrix3(linear).add(skinned);
+          for (const ball of torsoBalls) {
+            normal.set(corrected.x - ball.x, corrected.y - ball.y, corrected.z - ball.z);
+            const depth = ball.radius + profile.thickness - normal.length();
+            if (depth > 0) corrected.addScaledVector(normal.normalize(), depth);
+          }
+          p.copy(corrected).sub(skinned);
         }
-        p.copy(corrected).sub(skinned);
         if (layers) {
           const length = p.length();
           if (length > displacementLimit * b.fade + 1e-8) layers.stats.clipped++;
@@ -396,6 +423,7 @@ export function garmentRegion(
       } else if (layers) {
         p.toArray(layers.shell, 3 * b.id);
       }
+      if (layers) p.toArray(layers.limited,3*b.id);
       attr.setXYZ(b.id, p.x, p.y, p.z);
       if (layers && rawDelta) {
         p.set(0, 0, 0);

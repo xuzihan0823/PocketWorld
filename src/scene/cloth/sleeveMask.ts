@@ -41,3 +41,32 @@ export function sleeveSurfaceMask(mesh: SkinnedMesh) {
   cache.set(mesh, result);
   return result;
 }
+
+/** Geodesic distance from an attached edge. UV-split vertices share the same result. */
+export function sleeveSeamDistance(mesh: SkinnedMesh, sleeve: Set<number>, width: number) {
+  const p = mesh.geometry.attributes.position, tri = mesh.geometry.index!;
+  const groups = new Map<string,number>(), welded = new Int32Array(p.count);
+  const graph: Map<number,number>[] = [], distances: number[] = [];
+  for (let id = 0; id < p.count; id++) {
+    const key = [p.getX(id),p.getY(id),p.getZ(id)].map(x => Math.round(1e5*x)).join(',');
+    let group = groups.get(key);
+    if (group === undefined) { group = graph.length; groups.set(key,group); graph.push(new Map()); distances.push(width); }
+    welded[id] = group;
+    if (!sleeve.has(id)) distances[group] = 0;
+  }
+  for (let k = 0; k < tri.count; k += 3) for (let j = 0; j < 3; j++) {
+    const a = tri.getX(k+j), b = tri.getX(k+(j+1)%3), u = welded[a], v = welded[b];
+    if (sleeve.has(a) !== sleeve.has(b)) { distances[u] = distances[v] = 0; continue; }
+    if (!sleeve.has(a) || u === v) continue;
+    const length = Math.hypot(p.getX(a)-p.getX(b),p.getY(a)-p.getY(b),p.getZ(a)-p.getZ(b));
+    graph[u].set(v,length); graph[v].set(u,length);
+  }
+  const queue = [...new Set([...sleeve].map(id => welded[id]))].filter(u => !distances[u]);
+  for (let i = 0; i < queue.length; i++) {
+    const u = queue[i];
+    for (const [v,length] of graph[u]) if (distances[u]+length < distances[v]) {
+      distances[v] = distances[u]+length; queue.push(v);
+    }
+  }
+  return (id: number) => distances[welded[id]];
+}

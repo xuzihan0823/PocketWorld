@@ -61,6 +61,8 @@ test('six posed surfaces use absolute offsets, finite face witnesses, world unit
       near(hit.target.uv,[0.25,0.5]); assert.deepEqual(stats.byRegion,{ [hit.source.region]: 1 });
     }
   }
+  const written = audit.measureStages({...input,limited:input.blend});
+  near(written.limited.torso.maxDepth,2); near(written.stages.final.torso.maxDepth,0);
   proxyPositions.fill(40);
   assert.equal(audit.measureStages(input,{recordLimit:0}).stages.proxy.torso.pairs,0);
   assert.equal(stages.proxy.torso.pairs,1); // previous step rows are independent

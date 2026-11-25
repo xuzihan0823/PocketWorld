@@ -20,7 +20,17 @@ export function sleeveView(region: Region, proxy: T.Mesh, renderer: T.WebGLRende
       labels.hidden = !showing;
       if (showing) {
         saved.set(layers.final);
-        marked = getAudit().markedPose();
+        marked = getAudit().markedPose(saved);
+        for (const surface of Object.values(layers.contact?.surfaces ?? {})) {
+          const lines = new T.LineSegments(new T.WireframeGeometry(surface.geometry),
+            new T.LineBasicMaterial({ color: 0x273e40, transparent:true, opacity:0.55 }));
+          marked.add(lines);
+        }
+        for (const ball of layers.armBalls) {
+          const wire = new T.Mesh(new T.SphereGeometry(ball.radius,8,6),
+            new T.MeshBasicMaterial({color:0x9c5930,wireframe:true,depthTest:false,transparent:true,opacity:0.5}));
+          wire.position.set(ball.x,ball.y,ball.z); marked.add(wire);
+        }
         marked.visible = false;
         scene.add(marked);
         wireVisible = proxy.visible;
@@ -32,7 +42,13 @@ export function sleeveView(region: Region, proxy: T.Mesh, renderer: T.WebGLRende
         camera.position.copy(sphere.center).addScaledVector(direction, Math.max(0.6, sphere.radius * 4.5));
         orbit.update();
       } else {
-        if (marked) { scene.remove(marked); marked.geometry.dispose(); marked.material.dispose(); marked = undefined; }
+        if (marked) {
+          scene.remove(marked);
+          marked.traverse(o => {
+            if (o instanceof T.Mesh || o instanceof T.LineSegments) { o.geometry.dispose(); o.material.dispose(); }
+          });
+          marked = undefined;
+        }
         orbit.reset();
         proxy.visible = wireVisible;
       }
