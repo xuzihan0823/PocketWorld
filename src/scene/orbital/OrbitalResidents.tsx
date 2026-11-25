@@ -28,7 +28,7 @@ import { WALK_SPEED } from './residentRig';
 import { sampleStairGait, stairFootfall, stairTreadSurface, type StairGait } from './stairGait';
 import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
-import { createSeatedIdle, seatedIdleWeight, stepSeatedIdle } from './seatedIdle';
+import { createSeatedIdle, isSeatedOverlay, seatedIdleWeight, stepSeatedIdle } from './seatedIdle';
 import { SlipperPair } from './Slippers';
 import { PlushDolls } from './PlushDolls';
 import { createPlushBodies, isValidPlushBody, plushObstacleBoxes, resolveMoverAgainstPlush, stepPlushDolls, type PlushBody } from './plushMotion';
@@ -1100,9 +1100,9 @@ export function OrbitalResidents(props: ResidentsProps) {
         plushGrip.current.visible = deckFrame.current?.visible ?? true;
         plushPose.current.apply(root, plushGrip.current, performance?.kind === 'plush' ? performance.time : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
       }
-      if (seatIdle.overlay) {
+      if (isSeatedOverlay(seatIdle.gesture)) {
         const weight = seatedIdleWeight(seatIdle);
-        if (weight > 0) cabin.apply?.(seatIdle.overlay, seatIdle.time, weight);
+        if (weight > 0) cabin.apply?.(seatIdle.gesture, seatIdle.time, weight);
       } else {
         rig.current.applySeatedIdle?.(seatIdle);
       }

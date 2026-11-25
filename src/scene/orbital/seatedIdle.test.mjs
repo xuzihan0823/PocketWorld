@@ -31,8 +31,10 @@ test('the sofa blends into its first gesture immediately and releases smoothly o
     const dt = 1 / fps;
     stepSeatedIdle(idle, dt, 'sofa', false);
     assert.ok(idle.weight > 0 && idle.weight < .05, 'ease in on the first frame of every sit');
-    while (idle.time < .2) stepSeatedIdle(idle, dt, 'sofa', false);
-    assert.ok(idle.weight > .5 && idle.weight < 1);
+    while (idle.time < .35) stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > 0 && idle.weight < .15, 'the hand is only starting to rise as the cushion settles');
+    while (idle.time < .8) stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > .45 && idle.weight < .55);
     const time = idle.time, weight = idle.weight;
     assert.equal(stepSeatedIdle(idle, dt, 'sofa', true), true);
     assert.ok(seatedIdleWeight(idle) < weight);
@@ -62,30 +64,34 @@ test('the chair waits before its first swing and rests between gestures', () => 
   assert.equal(idle.weight, 1, 'a new chair gesture can begin after the rest');
 });
 
-test('seated overlays alternate with the original gestures and release before the seat is left', () => {
+test('seated gestures cycle in order and release before the seat is left', () => {
   const clips = { sofaDoze: { duration: 6 }, chairGlance: { duration: 6 }, floorGlance: { duration: 6 } };
   for (const [seat, overlay] of Object.entries({ sofa: 'sofaDoze', chair: 'chairGlance', floor: 'floorGlance' })) {
     const idle = createSeatedIdle(), gestures = [];
     for (let i = 0; i < 60 * 55; i++) {
       assert.equal(stepSeatedIdle(idle, 1 / 60, seat, false, clips), false);
-      if (idle.weight > 0 && (gestures.length === 0 || gestures.at(-1) !== idle.overlay)) gestures.push(idle.overlay);
+      if (idle.weight > 0 && gestures.at(-1) !== idle.gesture) gestures.push(idle.gesture);
     }
-    assert.deepEqual(gestures.slice(0, seat === 'floor' ? 1 : 3),
-      seat === 'floor' ? [overlay] : [null, overlay, null]);
-    for (let i = 0; i < 60 * 30 && (idle.overlay !== overlay || idle.weight !== 1); i++) {
+    const expected = seat === 'sofa' ? ['cheekRest', 'legStretch', overlay, 'cheekRest']
+      : seat === 'chair' ? ['chairSwing', overlay, 'chairSwing'] : [overlay];
+    assert.deepEqual(gestures.slice(0, expected.length), expected);
+    for (let i = 0; i < 60 * 45 && (idle.gesture !== overlay || idle.weight !== 1); i++) {
       stepSeatedIdle(idle, 1 / 60, seat, false, clips);
     }
-    assert.equal(idle.overlay, overlay);
+    assert.equal(idle.gesture, overlay);
     assert.equal(idle.weight, 1);
     const time = idle.time;
     let previous = 1;
-    for (let i = 1; i <= 20; i++) {
-      assert.equal(stepSeatedIdle(idle, 1 / 60, seat, true, clips), i < 20);
+    let heldFrames = 0;
+    while (stepSeatedIdle(idle, 1 / 60, seat, true, clips)) {
+      assert.ok(++heldFrames < 60);
       assert.equal(idle.time, time);
       const weight = seatedIdleWeight(idle);
       assert(weight <= previous);
       previous = weight;
     }
+    assert.ok(heldFrames / 60 >= (seat === 'sofa' ? .75 : .30));
+    assert.equal(seatedIdleWeight(idle), 0);
     stepSeatedIdle(idle, 1 / 60, null, false, clips);
     assert.deepEqual(idle, createSeatedIdle());
   }
@@ -117,7 +123,7 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
         rig.applyPose(0, 0);
         chair.apply(CHAIR_SIT_SECONDS, Number(seat === 'chair'));
         if (seat === 'sofa') applySofa(sofaClip.duration);
-        if (time !== undefined) applyIdle({ seat, time, weight: 1, release });
+        if (time !== undefined) applyIdle({ seat, gesture: seat === 'sofa' ? 'cheekRest' : 'chairSwing', time, weight: 1, release });
       };
       const supports = ['Hips', ...feet, 'LeftToeBase', 'RightToeBase'];
       sample('sofa');
@@ -162,6 +168,48 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
       chair.dispose();
       rig.dispose();
     }
+  });
+}
+
+for (const [outfit, model] of Object.entries({ everyday: 'luna-walk-room', ribbon: 'luna-ribbon', cardigan: 'luna-cardigan' })) {
+  test(`${outfit} extends both knees, swings the feet twice and returns to the sofa pose`, async () => {
+    const { gltf: { scene, animations } } = await load(new URL(model + '.glb', assets));
+    const rig = createResidentRig(scene, animations.find(c => c.name === 'Walk_Grounded_Loop'), outfit === 'cardigan');
+    try {
+      const clip = animations.find(c => c.name === 'Luna_CMU_75_20') ?? sofa;
+      const apply = sofaPlayer(rig.mesh, clip), play = createSeatedIdlePlayer(rig, outfit);
+      const idle = createSeatedIdle();
+      const point = name => scene.getObjectByName('mixamorig' + name).getWorldPosition(new THREE.Vector3());
+      const sides = ['Left', 'Right'];
+      const sample = () => { rig.applyPose(0, 0); apply(clip.duration); play(idle); };
+      sample();
+      const hip = point('Hips'), rest = sides.map(side => point(side + 'Foot'));
+      const heights = [[], []];
+      for (let frame = 0; frame < 24 * 30; frame++) {
+        stepSeatedIdle(idle, 1 / 30, 'sofa', false);
+        if (idle.gesture !== 'legStretch') {
+          if (heights[0].length) break;
+          continue;
+        }
+        sample();
+        assert.ok(point('Hips').distanceTo(hip) < 1e-5);
+        if (idle.time < 2 || idle.time > 5.8) continue;
+        sides.forEach((side, i) => {
+          const thigh = point(side + 'UpLeg'), knee = point(side + 'Leg'), foot = point(side + 'Foot');
+          const flex = knee.clone().sub(thigh).angleTo(foot.clone().sub(knee));
+          assert.ok(flex > .04 && flex < .24, 'extended knee retains a little flexion');
+          assert.ok(foot.z - rest[i].z > .14, 'foot reaches forward');
+          heights[i].push(foot.y);
+        });
+      }
+      for (const values of heights) {
+        const peaks = values.filter((y, i) => y > values[i - 1] && y > values[i + 1]);
+        assert.equal(peaks.length, 2, 'each foot rises twice');
+        assert.ok(Math.min(...peaks) - Math.min(...values) > .11, 'the swing is visible');
+      }
+      sample();
+      sides.forEach((side, i) => assert.ok(point(side + 'Foot').distanceTo(rest[i]) < 1e-5));
+    } finally { rig.dispose(); }
   });
 }
 

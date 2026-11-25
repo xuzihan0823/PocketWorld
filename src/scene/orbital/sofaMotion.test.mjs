@@ -15,6 +15,9 @@ function module(file, dependencies) {
   return context.exports;
 }
 const resident = module('./residentRig.ts', { three: THREE });
+const { createSeatedIdlePlayer } = module('./seatedIdle.ts', {
+  three: THREE, './seatedIdleFrames': module('./seatedIdleFrames.ts', {}),
+});
 const { SOFA_ENTRY, SOFA_STEPS, sofaPlayer, sofaPressure } = module('./sofaMotion.ts', {
   three: THREE, './cabinLayout': { FLOOR_SOFA }, './residentRig': resident,
   'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader },
@@ -76,7 +79,9 @@ test('the everyday skirt settles onto the loaded sofa and still covers both thig
     seat.z -= SOFA_STEPS * resident.WALK_SPEED;
     rig.mesh.position.copy(seat);
     rig.applyPose(0, 0);
-    sofaPlayer(rig.mesh, clip)(clip.duration);
+    const sit = sofaPlayer(rig.mesh, clip);
+    const playIdle = createSeatedIdlePlayer(rig, 'everyday');
+    sit(clip.duration);
     rig.mesh.updateMatrixWorld(true);
     const mesh = rig.mesh.getObjectByProperty('isSkinnedMesh', true);
     mesh.computeBoundingSphere();
@@ -105,14 +110,23 @@ test('the everyday skirt settles onto the loaded sofa and still covers both thig
     }
     const hips = rig.mesh.getObjectByName('mixamorigHips').getWorldPosition(point);
     assert.ok(hips.z > .28 && hips.z < .32, 'pelvis rests inside the raised front lip');
-    for (const side of [-1, 1]) {
-      ray.ray.origin.set(hips.x + side * .09, 1, hips.z + .24);
-      const hits = [];
-      THREE.SkinnedMesh.prototype.raycast.call(mesh, ray, hits);
-      hits.sort((a, b) => a.distance - b.distance);
-      const cloth = hits.find(hit => panel(hit.face.a).startsWith('Dress_Front'));
-      const thigh = hits.find(hit => panel(hit.face.a).endsWith('UpLeg'));
-      assert.ok(cloth && thigh && cloth.point.y > thigh.point.y + .005, 'front hem clears the thigh');
+    for (const time of [0, 2.2, 3.2]) {
+      rig.applyPose(0, 0);
+      sit(clip.duration);
+      playIdle({ seat: 'sofa', gesture: 'legStretch', time, weight: Number(time > 0), release: 0 });
+      rig.mesh.updateMatrixWorld(true);
+      mesh.computeBoundingSphere();
+      for (const side of ['Left', 'Right']) {
+        const joint = suffix => rig.mesh.getObjectByName('mixamorig' + side + suffix).getWorldPosition(new THREE.Vector3());
+        const probe = joint('UpLeg').lerp(joint('Leg'), .79);
+        ray.ray.origin.set(probe.x, 1, probe.z);
+        const hits = [];
+        THREE.SkinnedMesh.prototype.raycast.call(mesh, ray, hits);
+        hits.sort((a, b) => a.distance - b.distance);
+        const cloth = hits.find(hit => panel(hit.face.a).startsWith('Dress_Front'));
+        const thigh = hits.find(hit => panel(hit.face.a).endsWith('UpLeg'));
+        assert.ok(cloth && thigh && cloth.point.y > thigh.point.y + .005, 'front hem clears the thigh');
+      }
     }
   } finally { rig.dispose(); }
 });
