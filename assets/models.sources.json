@@ -145,12 +145,12 @@
     },
     {
       "file": "resident/luna-snowflower.glb",
-      "source": "User-supplied Tripo model ab1c7402-ed3c-428e-bf63-d4d73a8b9d7d.glb and 蓝发少女与雪花裙装.png. Animation sources are shared with the Luna wardrobe, book, bed and low-sofa assets.",
+      "source": "User-supplied Tripo model ab1c7402-ed3c-428e-bf63-d4d73a8b9d7d.glb and 蓝发少女与雪花裙装.png. Facial features sampled from the user-supplied everyday Luna in resident/luna-walk-room.glb. Animation sources are shared with the Luna wardrobe, book, bed and low-sofa assets.",
       "license": "User-supplied character and artwork; no separate license declaration supplied.",
       "used": true,
-      "bytes": 10028804,
-      "sha256": "d7b2bcc3393f30ae6cd984df804469f55874254a718b348f3603f06e2e9803cf",
-      "processing": "Fitted Luna skeleton, closed sock feet with matched ankle shading, sculpted and repainted face, and authored hair drape and sway weights. Embeds the fitted motions, book marker channels and outfit-specific chair contact IDs. See assets/models/resident/README.md."
+      "bytes": 10083844,
+      "sha256": "bfc1f69c418e4aa3720a9a6700ed662d7b10dd5e1946344c580ce35bda372780",
+      "processing": "Fitted Luna skeleton, closed sock feet with matched ankle shading, everyday facial color and roughness projected onto the existing face UVs with a fitted nose, lips and chin, and authored hair drape and sway weights. Embeds the fitted motions, book marker channels and outfit-specific chair contact IDs. See assets/models/resident/README.md."
     },
     {
       "file": "resident/luna-snowflower-seat.bin",
