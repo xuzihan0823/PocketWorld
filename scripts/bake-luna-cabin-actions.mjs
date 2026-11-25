@@ -5,8 +5,13 @@ import { load } from '../src/scene/orbital/load-for-validation.mjs';
 import { CABIN_IDLE_OFFSETS } from '../src/scene/orbital/cabinActions.ts';
 import { createResidentRig } from '../src/scene/orbital/residentRig.ts';
 
-const directory = process.argv[2];
-if (!directory) throw new Error('Pass the directory containing the MotionSmith GLBs.');
+const [directory, outfit = 'everyday'] = process.argv.slice(2);
+const models = new Map([
+  ['everyday', 'luna-walk-room.glb'],
+  ['cardigan', 'luna-cardigan.glb'],
+]);
+const model = models.get(outfit);
+if (!directory || !model) throw new Error('Usage: node scripts/bake-luna-cabin-actions.mjs <MotionSmith folder> [everyday|cardigan]');
 
 const takes = {
   floorSit: 'sit_floor_take2',
@@ -101,23 +106,22 @@ function moveEnd(shoulder, elbow, wrist, target) {
 
 // Fit each three-joint panel to the lap in room coordinates. The middle of the
 // front hem sags between the knees while each outside pleat clears its own knee.
-function drapeCrossedLap(panels, leftKnee, rightKnee, weight, snowflower) {
+function drapeCrossedLap(panels, leftKnee, rightKnee, weight) {
   for (const panel of panels) {
     const { joints, side, front, back } = panel;
     const root = point(joints[0].joint);
     const knee = side > 0 ? leftKnee : side < 0 ? rightKnee : leftKnee.clone().lerp(rightKnee, .5);
     let rim, overhang;
     if (front) {
-      // The shorter snowflower overskirt shares more hip and thigh weight.
-      const height = snowflower ? (side ? .150 : .065) : (side ? .030 : -.002);
-      rim = knee.clone().add(new Vector3(side * (snowflower ? -.012 : .012), height, snowflower ? .118 : .019));
+      const height = side ? .030 : -.002;
+      rim = knee.clone().add(new Vector3(side * .012, height, .019));
       overhang = new Vector3(side * .16, side ? -.76 : -.94, .50);
     } else if (back) {
       rim = root.clone().add(new Vector3(side * .145, 0, side ? -.152 : -.206));
-      rim.y = snowflower ? .060 : .082;
+      rim.y = .082;
       overhang = new Vector3(side * .68, -.16, side ? -.72 : -1);
     } else {
-      rim = knee.clone().add(new Vector3(side * .078, snowflower ? -.018 : -.072, -.085));
+      rim = knee.clone().add(new Vector3(side * .078, -.072, -.085));
       overhang = new Vector3(side * .42, -.91, .10);
     }
     const middle = root.clone().lerp(rim, .5);
@@ -132,15 +136,14 @@ function drapeCrossedLap(panels, leftKnee, rightKnee, weight, snowflower) {
   }
 }
 
-function skinContactVertices(rig, matches) {
+function skinContactVertices(rig, matches, stride = 4) {
   const contact = [];
   const v = new Vector3();
   rig.mesh.traverse(surface => {
     if (!surface.isSkinnedMesh) return;
     const indices = surface.geometry.getAttribute('skinIndex'), weights = surface.geometry.getAttribute('skinWeight');
     const vertices = [];
-    for (let i = 0; i < indices.count; i++) {
-      if (i % 4 !== 0) continue;
+    for (let i = 0; i < indices.count; i += stride) {
       const bone = surface.skeleton.bones[indices.getX(i)];
       if (weights.getX(i) <= .22 || !matches(bone.name, surface)) continue;
       vertices.push(i);
@@ -161,6 +164,29 @@ function skinContactVertices(rig, matches) {
   };
 }
 
+function fitHairAboveRug({ joints, lowest, axis }) {
+  // Leave room for the head turn while seated. Sweep the long strands
+  // behind and outward, using the rendered tips to set the amount of bend.
+  const clearance = .033;
+  if (lowest() >= clearance) return;
+  const base = joints.map(joint => joint.quaternion.clone());
+  const swing = new Quaternion();
+  const setBend = amount => {
+    joints.forEach((joint, i) => {
+      joint.quaternion.copy(base[i]);
+      worldQuaternion(joint, swing.setFromAxisAngle(axis, amount * (i === 0 ? .72 : .54)).multiply(rotation(joint)));
+    });
+  };
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 8; i++) {
+    const mid = (lo + hi) / 2;
+    setBend(mid);
+    if (lowest() >= clearance) hi = mid;
+    else lo = mid;
+  }
+  setBend(hi);
+}
+
 const loadSourceClips = () => Promise.all(Object.entries(takes).map(async ([name, take]) => {
   const data = await load(resolve(directory, 'MotionSmith_' + take + '.glb'));
   if (data.gltf.animations[0]?.name !== take) throw new Error('Unexpected MotionSmith take ' + take);
@@ -171,20 +197,30 @@ async function bake(outfit, file) {
   const { gltf } = await load(new URL('../assets/public/models/resident/' + file, import.meta.url));
   const target = new Map([...body.keys()].map(name => [name, gltf.scene.getObjectByName('mixamorig' + name)]));
   const bind = new Map([...target].map(([name, joint]) => [name, { rotation: rotation(joint), point: point(joint) }]));
-  const rig = createResidentRig(gltf.scene, gltf.animations.find(a => a.name === 'Walk_Grounded_Loop'), outfit !== 'everyday');
+  const cardigan = outfit === 'cardigan';
+  const rig = createResidentRig(gltf.scene, gltf.animations.find(a => a.name === 'Walk_Grounded_Loop'), cardigan);
   rig.applyPose(0, 0);
   rig.mesh.updateMatrixWorld(true);
   const hips = target.get('Hips'), neutralHips = point(hips);
   const floorAtPose = skinContactVertices(rig, name => /Foot|Toe|UpLeg|Hand/.test(name)
-    || outfit === 'cloudhoodie' && /Hips/.test(name));
+    || cardigan && name === 'mixamorigHips');
   const soles = ['Left', 'Right'].map(side => skinContactVertices(rig,
     name => name.startsWith('mixamorig' + side) && /Foot|Toe/.test(name)));
   const hipContact = skinContactVertices(rig, name => name === 'mixamorigHips');
   const neutralFloor = floorAtPose();
   const hipParent = hips.parent;
+  const seatedHair = cardigan ? [['L', 1], ['R', -1]].map(([side, sign]) => {
+    const prefix = 'Hair_Front_' + side + '_';
+    return {
+      joints: [1, 2].map(index => rig.mesh.getObjectByName(prefix + '0' + index)),
+      lowest: skinContactVertices(rig, name => name.startsWith(prefix), 1),
+      axis: new Vector3(1, 0, sign * .42).normalize(),
+    };
+  }) : [];
   const dress = [];
   rig.mesh.traverse(joint => {
-    if (!joint.isBone || !/^Dress_.+_0[123]$/.test(joint.name)) return;
+    // The cardigan hem is skinned directly to the hips and thighs.
+    if (cardigan || !joint.isBone || !/^Dress_.+_0[123]$/.test(joint.name)) return;
     const child = joint.children.find(value => value.isBone && value.name.startsWith('Dress_'));
     const forward = child ? direction(joint, child) : direction(joint.parent, joint);
     const axis = forward.clone().applyQuaternion(rotation(joint).invert());
@@ -243,7 +279,10 @@ async function bake(outfit, file) {
     const tracks = sampleBones.map(([, joint]) => ({ joint, path: 'rotation', values: [] }));
     if (!upperOnly) tracks.push({ joint: hips, path: 'translation', values: [] });
     if (seated || name === 'pickUp') for (const { joint } of dress) tracks.push({ joint, path: 'rotation', values: [] });
-    const lapDrape = seated && outfit !== 'cloudhoodie';
+    if (seated) for (const { joints } of seatedHair) {
+      for (const joint of joints) tracks.push({ joint, path: 'rotation', values: [] });
+    }
+    const lapDrape = seated && dress.length > 0;
     if (lapDrape) for (const { joint } of dress) {
       if (!joint.name.endsWith('_01')) tracks.push({ joint, path: 'translation', values: [] });
     }
@@ -268,7 +307,7 @@ async function bake(outfit, file) {
         const left = target.get('LeftHand');
         // Guide the palm onto the side of the waist. Keep the free arm relaxed
         // and carry over the source's shift through the torso and wrist.
-        const width = outfit === 'cloudhoodie' ? .119 : outfit === 'snowflower' ? .139 : .117;
+        const width = cardigan ? .128 : .117;
         const sourceOffset = point(source.get('LeftHand')).sub(point(source.get('Hips')));
         const goal = waist.add(new Vector3(width + .12 * (sourceOffset.x - .29), .013 + .24 * (sourceOffset.y + .05),
           -.012 + .14 * (sourceOffset.z + .075)));
@@ -331,9 +370,10 @@ async function bake(outfit, file) {
           }
           const lapWeight = name === 'floorSit' ? MathUtils.smoothstep(t, 2.5, 3.7)
             : name === 'floorStand' ? 1 - MathUtils.smoothstep(t, .15, 1.05) : 0;
-          if (lapDrape && lapWeight > 0) drapeCrossedLap(panels, leftKnee, rightKnee, lapWeight, outfit === 'snowflower');
+          if (lapDrape && lapWeight > 0) drapeCrossedLap(panels, leftKnee, rightKnee, lapWeight);
         }
       }
+      if (seated) seatedHair.forEach(fitHairAboveRug);
       if (name === 'rubEye' || name === 'think') {
         const side = name === 'rubEye' ? 'Left' : 'Right';
         const hand = target.get(side + 'Hand'), head = target.get('Head');
@@ -392,6 +432,6 @@ function pack(clips) {
   return Buffer.concat([header, padded, binHeader, ...buffers]);
 }
 
-const output = new URL('../assets/public/models/resident/luna-cabin-actions-everyday.glb', import.meta.url);
-const clips = await bake('everyday', 'luna-walk-room.glb');
+const output = new URL('../assets/public/models/resident/luna-cabin-actions-' + outfit + '.glb', import.meta.url);
+const clips = await bake(outfit, model);
 await writeFile(output, pack(clips));
