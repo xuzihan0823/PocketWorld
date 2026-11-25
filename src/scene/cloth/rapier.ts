@@ -1,0 +1,64 @@
+import R from '@dimforge/rapier3d-compat';
+import type { Ball, ClothProfile, ClothSolver } from './physics';
+
+const ready = R.init();
+
+export async function makeRapier(
+  profile: ClothProfile,
+  balls: Ball[],
+  selfContacts: boolean,
+): Promise<ClothSolver> {
+  await ready;
+  const world = new R.World({ x: 0, y: -9.81, z: 0 });
+  try {
+    world.profilerEnabled = true;
+    const material = R.SoftBodyMaterial.uniform(profile.material.edgeHz, 1);
+    material.bendSoftness = { naturalFrequency: profile.material.bendHz, dampingRatio: 1 };
+    const cloth = world.createSoftBody(
+      new R.SoftBodyDesc(profile.rest)
+        .setEdges([...profile.structural, ...profile.shear])
+        .setBendEdges(profile.bend)
+        .setSurface(profile.triangles)
+        .setPinnedParticles(profile.pins)
+        .setMaterial(material)
+        .setParticleMass(1)
+        .setLinearDamping(profile.material.drag)
+        .setParticleRadius(profile.thickness)
+        .setSelfContacts(selfContacts)
+        .setSurfaceCollider(R.ColliderDesc.ball(profile.thickness))
+        .setCanSleep(false),
+    );
+    const bodies = balls.map((ball) => {
+      const body = world.createRigidBody(
+        R.RigidBodyDesc.kinematicPositionBased().setTranslation(ball.x, ball.y, ball.z),
+      );
+      world.createCollider(R.ColliderDesc.ball(ball.radius), body);
+      return body;
+    });
+    const target = { x: 0, y: 0, z: 0 };
+    const solver: ClothSolver = {
+      positions: profile.rest.slice(),
+      collisionMs: null,
+      step(dt, targets, spheres) {
+        world.timestep = dt;
+        for (const i of profile.pins) {
+          target.x = targets[3 * i];
+          target.y = targets[3 * i + 1];
+          target.z = targets[3 * i + 2];
+          cloth.setParticleKinematicTarget(i, target);
+        }
+        bodies.forEach((b, i) => b.setNextKinematicTranslation(spheres[i]));
+        world.step();
+        this.positions.set(cloth.particlePositions());
+        this.collisionMs = world.profilerEnabled ? world.timingCollisionDetection() : null;
+      },
+      dispose() {
+        world.free();
+      },
+    };
+    return solver;
+  } catch (error) {
+    world.free();
+    throw error;
+  }
+}

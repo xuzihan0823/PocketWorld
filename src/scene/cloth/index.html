@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PWCS · 布料实验台</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./lab.css"></head>
+<body><main><section id="viewport" aria-label="布料模拟三维视图"></section>
+<aside><header><small>POCKETWORLD</small><h1>布料实验台</h1></header>
+<form id="config"><label>测试场景<select name="scene">
+<option value="sheet">独立布片</option><option value="arm">前臂挂布</option><option value="sleeve">蝴蝶结外套 · 左袖</option><option value="both">蝴蝶结外套 · 双袖</option><option value="skirt">日常装 · 裙摆</option><option value="multi">双角色 · 双袖与裙摆</option><option value="baseline">角色基线 · 无布料</option></select></label>
+<label>求解器<select name="solver"><option value="xpbd">XPBD</option><option value="rapier">Rapier Soft Body</option></select></label>
+<div class="pair"><label>模拟频率<select name="hz"><option>60</option><option>30</option></select></label>
+<label>每步子步数<select name="steps"><option>2</option><option>1</option><option>4</option></select></label></div>
+<label>自碰撞<select name="self"><option value="on">开启</option><option value="off">关闭</option></select></label>
+<button type="submit">应用并重置</button></form>
+<section id="play"><label>角色动作<select id="motion"></select></label><div class="pair"><button id="pause">暂停</button><button id="wire" aria-pressed="false">显示代理</button></div></section>
+<section aria-label="测量"><h2>运行测量</h2><pre id="metrics">正在加载…</pre><output id="status" role="status"></output><button id="inspect">测量当前形变</button><pre id="quality"></pre></section>
+</aside></main><script type="module" src="./lab.ts"></script></body></html>

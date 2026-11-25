@@ -1,3 +1,4 @@
+import { RoomExperiment } from '../cloth/roomSlot';
 import type { PaperPickup } from './cabinActions';
 import { previewOutfit, readOutfit, type ResidentOutfit } from './wardrobe/outfit';
 import { CLOCK_POSITION, LAMP_POSITION, UPPER_DECK_OFFSET, WARDROBE_STAND } from './cabinLayout';
@@ -669,6 +670,7 @@ export function OrbitalScene(props: OrbitalSceneProps) {
         if (action.kind === 'pet' && action.objectId === 'pet') setCatMenu(action);
         else props.onAction(action);
       }} />
+      {import.meta.env.DEV && <RoomExperiment.Consumer>{observer => observer}</RoomExperiment.Consumer>}
     </Canvas>
     {props.sceneId === 'habitat' && props.viewMode === 'cabin' && !props.focusedObject && !catMenu
       && ['idle', 'active', 'error'].includes(props.transition.phase) && (
