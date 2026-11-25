@@ -4,8 +4,9 @@ import { sleeveSeamDistance, sleeveSurfaceMask } from './sleeveMask';
 import { configureSleeveCuff, type CuffStrategy } from './cuffAnchors';
 import { sleeveBudget } from './sleeveBudget';
 import { sleeveContact } from './sleeveContact';
+import { createSleeveReference } from './sleeveReference';
 
-export type SleevePipeline = 'previous' | 'surface' | 'budget' | 'contact';
+export type SleevePipeline = 'previous' | 'surface' | 'budget' | 'contact' | 'guarded' | 'reference';
 
 export interface Region {
   profile: ClothProfile;
@@ -261,7 +262,10 @@ export function garmentRegion(
     delta = new Float32Array(local.length);
   const attr = offsetAttribute(mesh);
   const seamWidth = 0.025;
-  const seamDistance = mask && pipeline === 'contact' ? sleeveSeamDistance(mesh,mask,seamWidth) : undefined;
+  const useReference = pipeline === 'guarded' || pipeline === 'reference';
+  const useContact = singleSleeve && (pipeline === 'contact' || useReference);
+  const seamDistance = mask && useContact ? sleeveSeamDistance(mesh,mask,seamWidth) : undefined;
+  const reference = mask && useReference ? createSleeveReference(mesh, mask, pipeline === 'reference') : undefined;
   if (mask && seamDistance) {
     const mapped = new Set(candidates.map(q => q.id));
     for (const id of mask) {
@@ -340,7 +344,7 @@ export function garmentRegion(
     }).sort((a, b) => a - b);
     return { medianMm: errors[Math.floor(errors.length / 2)], p95Mm: errors[Math.ceil(errors.length * 0.95) - 1], maxMm, maxVertex };
   }
-  const contact = singleSleeve && pipeline === 'contact' ? sleeveContact(mesh, cols, rows) : undefined;
+  const contact = useContact ? sleeveContact(mesh, cols, rows) : undefined;
   const layers = captureLayers ? { mesh, raw: layer(), blend: layer(), shell: layer(), bindings, mappingError, mappingErrorAt,
     vertexIds: bindings.map(b => b.id), contact, armBalls: collision.balls.slice(0,10), limited: layer(),
     final: attr.array as Float32Array, driverVertices: nearest, stats: { clipped: 0, maxMm: 0, shellMoved: 0 } } : undefined;
@@ -379,6 +383,7 @@ export function garmentRegion(
     linear.setFromMatrix4(mesh.matrixWorld);
     budget?.sample();
     contact?.sample(targets, positions, displacementLimit, profile.thickness);
+    reference?.sample();
     if (layers) Object.assign(layers.stats, { clipped: 0, maxMm: 0, shellMoved: 0 });
     for (let i = 0; i < nearest.length; i++) {
       p.fromArray(positions, 3 * i).sub(radial.fromArray(targets, 3 * i));
@@ -427,6 +432,17 @@ export function garmentRegion(
         }
         if (budget) budget.constrain(p, skinned, displacementLimit * b.fade);
         else p.clampLength(0, displacementLimit * b.fade);
+        if (reference) {
+          const weight = reference.weight(b.id);
+          if (weight < 1) {
+            p.multiplyScalar(weight);
+            if (pipeline === 'reference') {
+              reference.correction(b.id, corrected).applyMatrix3(linear).multiplyScalar(b.fade)
+                .clampLength(0, displacementLimit * b.fade);
+              p.addScaledVector(corrected, 1 - weight);
+            }
+          }
+        }
         if (layers) layers.stats.maxMm = Math.max(layers.stats.maxMm, p.length() * 1000);
         p.applyMatrix3(inverse);
       } else if (layers) {

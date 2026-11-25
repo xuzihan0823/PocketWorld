@@ -10,6 +10,8 @@
 | 扩容 | [双袖](http://localhost:5194/src/scene/cloth/index.html?scene=both) · [日常装裙摆](http://localhost:5194/src/scene/cloth/index.html?scene=skirt) · [双角色三区域](http://localhost:5194/src/scene/cloth/index.html?scene=multi) | 蝴蝶结外套配短裤。三区域同时绘制外套与日常裙装两个角色，另有单角色无布料基线。 |
 | 生活舱 | [基线](http://localhost:5194/src/scene/cloth/room.html?solver=off) · [XPBD 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=xpbd) · [Rapier 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=rapier) | 真实生活舱和原有交互，用同一机位比较。可追加 `&hz=30`。 |
 
+左袖实验台的形变管线可选择「压缩区减弱布料」或「压缩区参考三角形修正」。配对回放使用 `pipeline: 'guarded'` 或 `'reference'`，其余设置固定为 `contact` 同轨基线使用的原分区、连续混合和约束同步。两种候选的全动作结果见[布料验收](./布料验收.md)。
+
 独立实验支持 30/60 Hz、每步 1/2/4 个子步、暂停、恢复及重新初始化。角色动作轮播一周 34.25 秒，含 220 ms 混合。抬臂来自 `reachHigh`，阅读姿势用现有持书 IK 求解后采成姿态，坐下与起身使用各装扮的地毯动作。躺下使用开衫的 9.25 秒上床片段，对共有骨骼转移绑定姿态相对旋转，并保留髋部轨迹。此项用于测试重力方向和大幅姿态变化，外套在正式场景中没有专用上床片段与床垫接触数据。
 
 ## 求解与数据流

@@ -24,7 +24,7 @@ const budgetUrl = await moduleUrl('./sleeveBudget.ts', { three: import.meta.reso
 const surfaceUrl = await moduleUrl('./sleeveContact.ts', contactImports);
 const { patchRegion, garmentRegion } = await import(await moduleUrl('./binding.ts', {
   ...contactImports, './physics': physics, './cuffAnchors': cuffUrl, './sleeveBudget': budgetUrl,
-  './sleeveContact': surfaceUrl,
+  './sleeveContact': surfaceUrl, './sleeveReference': await moduleUrl('./sleeveReference.ts', contactImports),
 }));
 const { makeRapier } = await import(
   await moduleUrl('./rapier.ts', {

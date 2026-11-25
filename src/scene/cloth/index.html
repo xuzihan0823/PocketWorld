@@ -9,7 +9,7 @@
 <div class="pair"><label>模拟频率<select name="hz"><option>60</option><option>30</option></select></label>
 <label>每步子步数<select name="steps"><option>2</option><option>1</option><option>4</option></select></label></div>
 <label>自碰撞<select name="self"><option value="on">开启</option><option value="off">关闭</option></select></label>
-<label id="pipeline-choice" hidden>左袖形变管线<select name="pipeline"><option value="previous">上一轮基线</option><option value="surface">只延后限幅</option><option value="budget">优先沿衣身分离</option><option value="contact">三角面接触候选</option></select></label>
+<label id="pipeline-choice" hidden>左袖形变管线<select name="pipeline"><option value="previous">上一轮基线</option><option value="surface">只延后限幅</option><option value="budget">优先沿衣身分离</option><option value="contact">三角面接触候选</option><option value="guarded">压缩区减弱布料</option><option value="reference">压缩区参考三角形修正</option></select></label>
 <label id="cuff-choice" hidden>左袖远端导点<select name="cuff"><option value="forearm">前臂硬导点（基线）</option><option value="hard">袖口硬锚点</option><option value="released">完全释放</option><option value="soft">袖口软锚点</option><option value="zoned">分区软锚点</option><option value="feathered">分区软锚点（环向过渡）</option><option value="dynamic">按屈肘角与腕速调节</option></select></label>
 <button type="submit">应用并重置</button></form>
 <section id="play"><label>角色动作<select id="motion"></select></label><div class="pair"><button id="pause">暂停</button><button id="wire" aria-pressed="false">显示代理</button></div></section>
