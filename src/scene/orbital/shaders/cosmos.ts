@@ -72,12 +72,13 @@ const noise = /* glsl */ `
 `;
 
 export const skyVertex = /* glsl */ `
+  uniform mat4 uCelestialProjection;
   varying vec3 vLocalDirection;
   varying vec3 vWorldDirection;
   void main() {
     vLocalDirection = position;
     vWorldDirection = mat3(modelMatrix) * position;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = uCelestialProjection * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
@@ -184,6 +185,7 @@ export const starVertex = /* glsl */ `
   uniform float uTime;
   uniform float uPixelRatio;
   uniform float uDaylight;
+  uniform mat4 uCelestialProjection;
   varying vec3 vColor;
   varying float vProminence;
   varying float vAngle;
@@ -198,7 +200,7 @@ export const starVertex = /* glsl */ `
     float exposure = mix(1.42, 0.96, uDaylight);
     vColor = aColor * twinkle * exposure;
     gl_PointSize = aSize * uPixelRatio * (0.85 + 0.32 * pulse);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position = uCelestialProjection * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
@@ -328,6 +330,7 @@ export const particleFragment = /* glsl */ `
 
 export const planetVertex = /* glsl */ `
   uniform vec3 uSun;
+  uniform mat4 uCelestialProjection;
   varying vec3 vObjectNormal;
   varying vec3 vWorldNormal;
   varying vec3 vWorldPosition;
@@ -339,7 +342,7 @@ export const planetVertex = /* glsl */ `
     mat3 rot = mat3(modelMatrix);
     vWorldNormal = normalize(rot * normal);
     vObjectSun = normalize(uSun * rot);
-    gl_Position = projectionMatrix * viewMatrix * world;
+    gl_Position = uCelestialProjection * viewMatrix * world;
   }
 `;
 

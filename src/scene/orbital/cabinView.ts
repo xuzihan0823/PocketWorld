@@ -34,7 +34,7 @@ const stairBounds: Bounds = {
   y: [0, upperY + .76],
   z: [CABIN_STAIRS.upperZ - CABIN_STAIRS.width, CABIN_STAIRS.lowerZ + CABIN_STAIRS.width / 2],
 };
-const viewpoints = {
+export const viewpoints = {
   overview: { target: HOME_TARGET, direction: HOME_DIRECTION, bounds: [...lowerBounds, ...upperBounds, stairBounds] },
   lower: {
     target: new THREE.Vector3(1.15, 1.42, -.20),
