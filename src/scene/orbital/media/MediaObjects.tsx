@@ -257,7 +257,7 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     <ObjectHandle id="computer-exit" action="close" hint="握住电脑侧把手，离开电脑" world={world} position={[2.25, 1.47, -2.32]}>
       <SoftBox dims={[0.045, 0.21, 0.08]} color="#c99852" />
     </ObjectHandle>
-    <ObjectHandle id="computer" action="inspect" panorama hint="坐稳电脑椅后使用电脑" world={world} position={CRT_SCREEN}>
+    <ObjectHandle id="computer" action="inspect" panorama hint="点击后走近坐下，再使用电脑" world={world} position={CRT_SCREEN}>
       <mesh scale={CRT_SCALE}><planeGeometry args={[0.92, 0.69]} /><meshBasicMaterial visible={false} /></mesh>
     </ObjectHandle>
     {/* The DOM display must not paint over a physical cartridge moving in front of the CRT. */}

@@ -1,4 +1,5 @@
-import { createPlushPose, dropSpot, gripPlush, plushBounds, plushLabels, type PlushGrip } from './plushCarry';
+import { createPlushPose, dropSpot, gripPlush, plushBounds, plushLabels, type PlushGrip, type PlushShape } from './plushCarry';
+import { createPaperPose } from './schedule/paperGrip';
 import { RUG_SEAT, RUG_TOP, RUG_YAW, PICKUP_GRIP_TIME, PAPER_PICKUP_REACH, PAPER_PICKUP_PREFIX, advanceCabinPerformance, applyCabinPerformance, createCabinActionPlayer, isPaperPickup, isRugSeat, leaveCabinPerformance, loadCabinActions, newRugPerformance, type CabinPerformance, type PaperPickup } from './cabinActions';
 import { SOFA_ENTRY, SOFA_STEPS, loadSofaClip, sofaPlayer } from './sofaMotion';
 import { DECK_WALK_BOUNDS, UPPER_DECK_OFFSET, deckFromAuthoredX, BED_POSITION, CAT_HOME, CAT_MAT_Y, COMPUTER_STAND, FLOOR_SOFA, PLUSH_DOLLS, TRASH_CAN, HABITAT_SPAWN, WARDROBE_FOOTPRINT, WARDROBE_STAND, NIGHTSTAND_X, NIGHTSTAND_Z, RESIDENT_RADIUS, WALK_BOUNDS } from './cabinLayout';
@@ -112,6 +113,17 @@ function chairEntry(room: Room, pose: ChairPose): Point {
   const yaw = pose.yaw;
   const distance = (room.chairRadius + RADIUS) / Math.max(Math.abs(Math.sin(yaw)), Math.abs(Math.cos(yaw))) + 0.08;
   return chairFront(pose, distance);
+}
+/** Floor stand point for a clicked prop, so Luna approaches from the usable side instead of walking into its table. */
+function interactionAnchor(sceneId: string, objectId: string, point: Point): Point {
+  if (objectId === 'schedule') return [SCHEDULE_BOOK_POSITION[0] + .02, -1.42];
+  if (objectId === 'journal') return [JOURNAL_POSITION[0], -1.42];
+  if (objectId.startsWith('music-')) return [-.30, -1.42];
+  if (objectId === 'book-01') { const [x, , z] = readingStand(sceneId); return [x, z]; }
+  if (objectId === 'cabinet' || objectId === 'cabinet-item') { const [x, , z] = shelfPoint(sceneId, .55, 0, .65); return [x, z]; }
+  if (objectId === 'lamp') return sceneId === 'habitat' ? [NIGHTSTAND_X - .11, NIGHTSTAND_Z + .77] : [-1.42, -2.55];
+  if (objectId === 'clock') return [NIGHTSTAND_X + .22, NIGHTSTAND_Z + .64];
+  return point;
 }
 /** Solve the ankle target; the independent foot bone keeps the sole level. */
 function legReach(leg: ResidentLeg, ahead: number, below: number): [number, number] {
@@ -249,7 +261,9 @@ export function OrbitalResidents(props: ResidentsProps) {
   const deckFrame = useRef<THREE.Group>(null);
   const rig = useRef<ResidentRig | null>(null);
   const plushBodies = useRef<PlushBody[]>(props.sceneId === 'habitat' ? createPlushBodies(PLUSH_DOLLS) : []);
+  const plushShapes = useMemo(() => new Map<string, PlushShape>(), []);
   const plushGrip = useRef<PlushGrip | null>(null);
+  const paperPose = useRef<{ mesh: THREE.Object3D; apply: ReturnType<typeof createPaperPose> }>();
   const plushPose = useRef<{ mesh: THREE.Object3D; apply: ReturnType<typeof createPlushPose> }>();
   const catalogThink = useRef({ time: 0, weight: 0 });
   const findDoll = (id: string) => plushBodies.current.find(body => body.id === id);
@@ -268,6 +282,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const keys = useRef(new Set<string>());
   const approach = useRef<Approach | null>(null);
+  const pendingComputer = useRef<{ action: WorldAction; perform: () => void; at: number } | null>(null);
   const catLocation = useRef<Point>([...CAT_HOME]);
   const walkWeight = useRef(0);
   const libraryNav = useRef('');
@@ -345,6 +360,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (p.loadCat !== false) targets.push({ id: 'pet', kind: 'pet', hint: '和团子互动', point: catLocation.current, reach: PET_REACH });
     if (p.sceneId === 'habitat') {
       for (const body of plushBodies.current) {
+        if (!plushShapes.has(body.id)) continue;
         targets.push({ id: body.id, kind: 'inspect', hint: '捡起' + plushLabels[body.id], point: [body.x, body.z], reach: .78 });
       }
       targets.push({ id: 'wardrobe', kind: 'open', hint: '打开衣柜', point: WARDROBE_STAND, reach: .75 });
@@ -371,6 +387,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   };
   const stand = () => {
     const s = state.current;
+    pendingComputer.current = null;
     if (current.current.objects.sofa?.active && !s.dismissedSofa) { s.dismissedSofa = true; act('sofa', 'stand'); }
     if (current.current.objects.chair?.active && !s.dismissedChair) { s.dismissedChair = true; act('chair', 'stand'); }
     s.wanted = 'standing';
@@ -389,6 +406,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   };
   const cancelApproach = () => {
     approach.current = null;
+    pendingComputer.current = null;
     state.current.path = [];
     state.current.external = false;
     current.current.onArrive();
@@ -446,7 +464,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const landing = crossing ? stairLanding(to) : start;
     const doll = findDoll(task.action.objectId);
     const local = approachRoute(landing, task.point, boxes, walkBounds(room, landing[0]), fixed,
-      task.action.objectId === 'pet' ? PET_REACH : isPaperPickup(task.action.objectId) ? PAPER_PICKUP_REACH : doll ? .59 : undefined,
+      task.action.objectId === 'pet' ? PET_REACH : isPaperPickup(task.action.objectId) ? PAPER_PICKUP_REACH : doll ? .52 : undefined,
       doll ? RADIUS + doll.radius + .012 : undefined);
     const first = crossing ? route(start, stairLanding(from), boxes, undefined, DECK_WALK_BOUNDS[from]) : [];
     if (local && (!crossing || first.length)) {
@@ -482,16 +500,30 @@ export function OrbitalResidents(props: ResidentsProps) {
         return true;
       }
       if (action.kind === 'stand') { cancelApproach(); perform(); return true; }
-      if (action.objectId === 'computer') {
-        if (!canUseComputer()) { p.onHover('computer', '请先在电脑椅上坐稳，再使用电脑'); return false; }
-        if (!p.approachEnabled) return false;
-        cancelApproach();
-        keys.current.clear();
-        perform();
-        return true;
-      }
       const pose = CHAIR_POSES[p.sceneId];
-      const target: Point = doll ? [doll.x, doll.z] : action.objectId === 'chair' ? [pose.x, pose.z] : action.objectId === 'pet' ? [...catLocation.current] : action.objectId === 'wardrobe' ? WARDROBE_STAND : [point[0], point[2]];
+      if (action.objectId === 'computer') {
+        if (!p.approachEnabled) { p.onHover('computer', '先返回房间，再使用电脑'); return false; }
+        if (canUseComputer()) { cancelApproach(); keys.current.clear(); perform(); return true; }
+        if (p.sceneId !== 'habitat' || p.objects.chair?.active || s.posture === 'chair') {
+          p.onHover('computer', '请先在电脑椅上坐稳，再使用电脑'); return false;
+        }
+        if (s.exiting || cabinPerformance.current) { p.onHover('computer', '请先结束当前动作，再使用电脑'); return false; }
+        // Stand up if needed, then board the desk chair; clicking again cancels the queued session.
+        pendingComputer.current = null;
+        cancelApproach();
+        stand();
+        keys.current.clear();
+        const chairAction: WorldAction = { ...action, objectId: 'chair', kind: 'sit' };
+        approach.current = { point: [pose.x, pose.z], height: point[1], action: chairAction, elapsed: 0,
+          perform: () => { pendingComputer.current = { action, perform, at: Date.now() }; current.current.onAction(chairAction); } };
+        s.external = true;
+        p.onHover('computer', '走到电脑椅前坐下…');
+        if (!s.exiting && !cabinPerformance.current) planApproach();
+        return false;
+      }
+      const target: Point = doll ? [doll.x, doll.z] : action.objectId === 'pet' ? [...catLocation.current]
+        : action.objectId === 'wardrobe' ? WARDROBE_STAND : action.objectId === 'chair' ? [pose.x, pose.z]
+        : interactionAnchor(p.sceneId, action.objectId, [point[0], point[2]]);
       if (s.posture === 'standing' && !s.exiting && !s.stairs && !cabinPerformance.current && !rug && !paper && !doll
         && (room.observatory || deckFromAuthoredX(root.position.x) === deckFromAuthoredX(target[0]))
         && action.objectId !== 'chair' && action.objectId !== 'sofa'
@@ -509,7 +541,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       return false;
     };
     props.interaction.current = request;
-    return () => { approach.current = null; if (props.interaction.current === request) props.interaction.current = null; };
+    return () => { approach.current = null; pendingComputer.current = null; if (props.interaction.current === request) props.interaction.current = null; };
   }, []);
 
   useEffect(() => {
@@ -530,6 +562,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       event.stopPropagation();
       void roomAudio.unlock();
       if (event.repeat) return;
+      pendingComputer.current = null;
       if (approach.current) cancelApproach();
       const interactIndex = INTERACT_KEYS.indexOf(event.code);
       if (interactIndex >= 0) {
@@ -561,6 +594,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const up = (event: KeyboardEvent) => { keys.current.delete(event.code); };
     const clear = () => {
       idleInput.current = true;
+      pendingComputer.current = null;
       keys.current.clear();
     };
     const hide = () => { if (document.hidden) clear(); };
@@ -657,6 +691,11 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       pending.elapsed += dt;
       if (pending.elapsed > 8 || p.focusedObject) cancelApproach();
+    }
+    const queued = pendingComputer.current;
+    if (queued) {
+      if (p.focusedObject || Date.now() - queued.at > 15000) pendingComputer.current = null;
+      else if (canUseComputer() && p.approachEnabled) { pendingComputer.current = null; queued.perform(); }
     }
     const seatEntry = chairEntry(room, pose);
     const destination = (posture: Posture): Point => posture === 'sofa' ? SOFA_ENTRY : seatEntry;
@@ -857,9 +896,9 @@ export function OrbitalResidents(props: ResidentsProps) {
         const fixed = id === 'chair' || id === 'sofa' || rug;
         const target = id === 'sofa' ? SOFA_ENTRY : id === 'chair' ? seatEntry : rug ? RUG_SEAT : request?.point;
         const distance = target ? Math.hypot(root.position.x - target[0], root.position.z - target[1]) : 0;
-        const radius = fixed ? .06 : id === 'pet' ? PET_REACH : paper ? PAPER_PICKUP_REACH : doll ? .60 : 1.15;
+        const radius = fixed ? .06 : id === 'pet' ? PET_REACH : paper ? PAPER_PICKUP_REACH : doll ? .53 : 1.15;
         if (request && (rug || paper || doll) && distance <= radius && !cabin.failed) {
-          const yaw = rug ? RUG_YAW : Math.atan2(request.point[0] - root.position.x, request.point[1] - root.position.z) + .08;
+          const yaw = rug ? RUG_YAW : Math.atan2(request.point[0] - root.position.x, request.point[1] - root.position.z) + (doll ? 0 : .08);
           root.rotation.y = angle(root.rotation.y, yaw, 1 - Math.exp(-dt * 14));
           if (cabin.apply && Math.abs(angle(root.rotation.y, yaw, 1) - root.rotation.y) < .045) {
             root.rotation.y = yaw;
@@ -867,10 +906,12 @@ export function OrbitalResidents(props: ResidentsProps) {
               root.position.set(RUG_SEAT[0], RUG_TOP, RUG_SEAT[1]);
               cabinPerformance.current = newRugPerformance();
             } else if (doll) {
-              plushGrip.current = gripPlush(doll);
+              const shape = plushShapes.get(doll.id);
+              if (!shape) { cancelApproach(); return; }
+              plushGrip.current = gripPlush(doll, shape);
               cabinPerformance.current = { kind: 'plush', placing: false, leaving: false, time: 0 };
             } else cabinPerformance.current = { kind: 'paper', time: 0, leaving: false, id: id.slice(PAPER_PICKUP_PREFIX.length),
-              point: new THREE.Vector3(request.point[0], request.height, request.point[1]), offset: null, complete: request.perform };
+              point: new THREE.Vector3(request.point[0], request.height, request.point[1]), complete: request.perform };
             cancelApproach();
           }
         } else {
@@ -1075,16 +1116,11 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (performance && cabin.apply && cabin.clips) {
         applyCabinPerformance(performance, cabin.clips, cabin.apply);
         if (performance.kind === 'paper') {
-          if (performance.time >= PICKUP_GRIP_TIME) {
-            const hand = rig.current.mesh.getObjectByName('mixamorigRightHand')!;
-            performance.offset ??= hand.worldToLocal(performance.point.clone());
-            const held = p.paperPickup.current ?? { id: performance.id, position: new THREE.Vector3() };
-            hand.localToWorld(held.position.copy(performance.offset));
-            p.paperPickup.current = held;
-          } else {
-            performance.offset = null;
-            p.paperPickup.current = null;
-          }
+          const mesh = rig.current.mesh;
+          if (paperPose.current?.mesh !== mesh) paperPose.current = { mesh, apply: createPaperPose(mesh) };
+          const held = p.paperPickup.current ?? { id: performance.id, position: new THREE.Vector3() };
+          paperPose.current.apply(performance.point, performance.time, held.position);
+          p.paperPickup.current = performance.time >= PICKUP_GRIP_TIME ? held : null;
         }
       }
       const thought = catalogThink.current;
@@ -1159,7 +1195,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       </group>
     </group>
     {props.sceneId === 'habitat' && <Suspense fallback={null}><SlipperPair resident={resident} room={slipperRoom.current} reducedMotion={props.reducedMotion} /></Suspense>}
-    {props.sceneId === 'habitat' && props.loadPlush !== false && <PlushDolls bodies={plushBodies} grip={plushGrip} world={props} />}
+    {props.sceneId === 'habitat' && props.loadPlush !== false && <PlushDolls shapes={plushShapes} bodies={plushBodies} grip={plushGrip} world={props} />}
     {props.loadCat !== false && <ObjectHandle id="pet" action="pet" hint="和团子互动" world={props} panorama position={[CAT_HOME[0], CAT_MAT_Y, CAT_HOME[1]]}
       onClick={event => event.stopPropagation()}>
       <Cat resident={resident} value={props.objects.pet?.value ?? 0} command={props.objects.pet?.itemId} reducedMotion={props.reducedMotion}

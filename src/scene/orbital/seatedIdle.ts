@@ -9,12 +9,12 @@ type SeatedClips = Partial<Record<SeatedOverlay, { duration: number }>>;
 const sampleDuration = (samples: readonly number[]) => (samples.length / 2 - 1) / SEATED_IDLE_FPS;
 const procedural = {
   cheekRest: { duration: sampleDuration(SOFA_CHEEK_REST), fadeIn: 1.65, fadeOut: 1.15 },
-  legStretch: { duration: 7.6, fadeIn: 1.65, fadeOut: 1.7 },
+  sofaSwing: { duration: 5.2, fadeIn: .8, fadeOut: .95 },
   chairSwing: { duration: sampleDuration(CHAIR_LEG_SWING), fadeIn: .35, fadeOut: .35 },
 };
 type SeatedGesture = keyof typeof procedural | SeatedOverlay;
 const motions = {
-  sofa: { gestures: ['cheekRest', 'legStretch', 'sofaDoze'], delay: 0, rest: 4.2 },
+  sofa: { gestures: ['cheekRest', 'sofaSwing', 'sofaDoze'], delay: 0, rest: 4.2 },
   chair: { gestures: ['chairSwing', 'chairGlance'], delay: .75, rest: 4.6 },
   floor: { gestures: ['floorGlance'], delay: 5.5, rest: 13 },
 } as const;
@@ -106,11 +106,7 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
   const leftHip = bone('LeftUpLeg'), leftKnee = bone('LeftLeg');
   const rightHip = bone('RightUpLeg'), rightKnee = bone('RightLeg');
   const freeHandOnLap = outfit === 'cardigan';
-  const legs = (['Left', 'Right'] as const).map((side, i) => ({
-    thigh: i === 0 ? leftHip : rightHip, shin: i === 0 ? leftKnee : rightKnee, foot: bone(side + 'Foot'),
-    frontHem: rig.mesh.getObjectByName(i === 0 ? 'Dress_Front_L_01' : 'Dress_Front_R_01') as Bone | undefined,
-  }));
-  const centerHem = rig.mesh.getObjectByName('Dress_Front_01') as Bone | undefined;
+  const legs = [{ shin: leftKnee, foot: bone('LeftFoot') }, { shin: rightKnee, foot: bone('RightFoot') }];
   const point = new Vector3();
   const basis = new Matrix4();
   const cheek = new Vector3(...cheekContact[outfit]);
@@ -217,46 +213,27 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     solveHand(right, weight);
   }
 
-  function stretchLegs(time: number, weight: number) {
-    // Straighten first, then rock the extended legs twice with a small phase difference.
-    const sway = MathUtils.smoothstep(time, 1.5, 2.1) * (1 - MathUtils.smoothstep(time, 5.9, 6.5));
-    const phase = (time - 1.7) * (2 * Math.PI / 2.2);
-    let highestLift = 0;
-    legs.forEach(({ thigh, shin, foot, frontHem }, i) => {
-      shin.getWorldPosition(point);
-      thigh.getWorldPosition(upperDirection).sub(point).negate();
-      foot.getWorldPosition(lowerDirection).sub(point);
-      const extension = Math.max(0, upperDirection.angleTo(lowerDirection) - .10) * weight;
-      const lift = (.26 + .125 * sway * Math.sin(phase - i * .6)) * weight;
-      rotate(thigh, roomX, -lift);
-      rotate(shin, roomX, -extension);
-      rotate(foot, roomX, .76 * (extension + lift));
-      if (frontHem) rotate(frontHem, roomX, -lift);
-      highestLift = Math.max(highestLift, lift);
-    });
-    if (centerHem) rotate(centerHem, roomX, -highestLift);
-  }
-
   return (idle: ReturnType<typeof createSeatedIdle>) => {
     const gesture = idle.gesture;
     if (!gesture || isSeatedOverlay(gesture) || !idle.weight) return;
     const weight = seatedIdleWeight(idle);
     rig.mesh.getWorldQuaternion(room);
     roomX.set(1, 0, 0).applyQuaternion(room);
-    if (gesture === 'legStretch') {
-      stretchLegs(idle.time, weight);
-      return;
-    }
-    const samples = gesture === 'chairSwing' ? CHAIR_LEG_SWING : SOFA_CHEEK_REST;
-    const frame = MathUtils.clamp(idle.time, 0, procedural[gesture].duration) * SEATED_IDLE_FPS;
+    const onSofa = gesture === 'sofaSwing';
+    const samples = gesture === 'cheekRest' ? SOFA_CHEEK_REST : CHAIR_LEG_SWING;
+    const time = MathUtils.clamp(idle.time, 0, procedural[gesture].duration);
+    const frame = time * (onSofa ? .5 : 1) * SEATED_IDLE_FPS;
     const start = Math.floor(frame), end = Math.min(start + 1, samples.length / 2 - 1);
     const first = MathUtils.lerp(samples[start * 2], samples[end * 2], frame - start);
     const second = MathUtils.lerp(samples[start * 2 + 1], samples[end * 2 + 1], frame - start);
-    if (gesture === 'chairSwing') {
+    if (gesture !== 'cheekRest') {
       legs.forEach(({ shin, foot }, index) => {
-        const swing = (index === 0 ? first : second) * weight;
+        const captured = index === 0 ? first : second;
+        // Use the most flexed part of the take as the floor limit on the low seat.
+        const floorLimit = index === 0 ? .2748 : .2412;
+        const swing = (onSofa ? Math.min(captured - floorLimit, 0) * .72 : captured) * weight;
         rotate(shin, roomX, swing);
-        rotate(foot, roomX, -.32 * swing);
+        rotate(foot, roomX, (onSofa ? -.82 : -.32) * swing);
       });
     } else {
       roomY.set(0, 1, 0).applyQuaternion(room);

@@ -56,7 +56,7 @@ export function ScheduleBoundBook({ world, position, rotation = [0, 0, 0], color
     return () => { textures.forEach(texture => texture.dispose()); book.textures.clear(); book.revision++; };
   }, [control, index, pages, world.sceneId]);
   return <group name={`Schedule_BoundBook_${world.sceneId}`} position={position} rotation={rotation} scale={[scale * 0.237, scale * 0.237, scale * 0.27]}>
-    <ObjectHandle id="schedule" action="plan" hint="翻开日程 · 安排今天" world={opened ? { ...world, onApproach: () => false } : world}>
+    <ObjectHandle id="schedule" action="plan" panorama hint="翻开日程 · 安排今天" world={opened ? { ...world, onApproach: () => false } : world}>
       <BoundJournal opened={opened} control={control} reducedMotion={world.reducedMotion} leafCount={leafCount} coverTitle="Daily Planner" coverSubtitle="D A I L Y  P L A N N E R" coverColor={color} coverStyle="daily" />
     </ObjectHandle>
     {opened && editing && pages.slice(Math.max(0, index - 1), index + 1).map(page => <SchedulePageEditor key={page.id} page={page} leaf={pages.indexOf(page)} left={page.id !== notebook.state.current.id} book={control} leafCount={leafCount} onChange={savePage} onGesture={world.onGesture} previousDisabled={index === 0} nextDisabled={index === pages.length - 1 && pages.length >= 32} />)}

@@ -110,10 +110,10 @@ test('the everyday skirt settles onto the loaded sofa and still covers both thig
     }
     const hips = rig.mesh.getObjectByName('mixamorigHips').getWorldPosition(point);
     assert.ok(hips.z > .28 && hips.z < .32, 'pelvis rests inside the raised front lip');
-    for (const time of [0, 2.2, 3.2]) {
+    for (const time of [0, 1.2, 3.8]) {
       rig.applyPose(0, 0);
       sit(clip.duration);
-      playIdle({ seat: 'sofa', gesture: 'legStretch', time, weight: Number(time > 0), release: 0 });
+      playIdle({ seat: 'sofa', gesture: 'sofaSwing', time, weight: Number(time > 0), release: 0 });
       rig.mesh.updateMatrixWorld(true);
       mesh.computeBoundingSphere();
       for (const side of ['Left', 'Right']) {

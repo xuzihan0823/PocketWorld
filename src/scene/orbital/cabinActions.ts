@@ -64,7 +64,7 @@ type FloorPerformance = {
 };
 type PickupPerformance = {
   kind: 'paper'; time: number; leaving: boolean; id: string; point: Vector3;
-  offset: Vector3 | null; complete: () => void;
+  complete: () => void;
 };
 type PlushPerformance = { kind: 'plush'; placing: boolean; time: number; leaving: boolean };
 export type CabinPerformance = FloorPerformance | PickupPerformance | PlushPerformance;

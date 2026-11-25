@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as paperGeometry from './paperGeometry.ts';
 import * as schedule from './schedule.ts';
 import { BOOK } from '../journal/bookModel.ts';
 
@@ -24,7 +25,7 @@ function print(side) {
   });
   const canvas = { getContext: () => ctx };
   const { pageTexture } = load('./SchedulePaper.tsx', {
-    react: {}, 'react/jsx-runtime': jsx, '@react-three/fiber': {}, './bookLayout': { SCHEDULE_BOOK_POSITION: [0, 0, 0] }, './schedule': schedule,
+    './paperGeometry': paperGeometry, react: {}, 'react/jsx-runtime': jsx, '@react-three/fiber': {}, './bookLayout': { SCHEDULE_BOOK_POSITION: [0, 0, 0] }, './schedule': schedule,
     three: { CanvasTexture: class { constructor(image) { this.image = image; } }, SRGBColorSpace: 'srgb' },
   }, { document: { createElement: () => canvas } });
   pageTexture(schedule.migrateSchedule().current, true, side);

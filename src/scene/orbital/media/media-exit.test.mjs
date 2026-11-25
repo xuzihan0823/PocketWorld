@@ -213,7 +213,7 @@ test('leaving during insertion cancels the transfer and ignores its stale comple
   } finally { view.dispose(); }
 });
 
-test('rejected seated-access checks leave both cartridges on the rack without delayed insertion', () => {
+test('a rejected approach request leaves both cartridges on the rack without delayed insertion', () => {
   const view = mount({ focusedObject: null });
   const requests = [], actions = [];
   try {

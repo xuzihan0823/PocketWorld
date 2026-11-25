@@ -72,7 +72,7 @@ test('seated gestures cycle in order and release before the seat is left', () =>
       assert.equal(stepSeatedIdle(idle, 1 / 60, seat, false, clips), false);
       if (idle.weight > 0 && gestures.at(-1) !== idle.gesture) gestures.push(idle.gesture);
     }
-    const expected = seat === 'sofa' ? ['cheekRest', 'legStretch', overlay, 'cheekRest']
+    const expected = seat === 'sofa' ? ['cheekRest', 'sofaSwing', overlay, 'cheekRest']
       : seat === 'chair' ? ['chairSwing', overlay, 'chairSwing'] : [overlay];
     assert.deepEqual(gestures.slice(0, expected.length), expected);
     for (let i = 0; i < 60 * 45 && (idle.gesture !== overlay || idle.weight !== 1); i++) {
@@ -172,7 +172,7 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
 }
 
 for (const [outfit, model] of Object.entries({ everyday: 'luna-walk-room', ribbon: 'luna-ribbon', cardigan: 'luna-cardigan' })) {
-  test(`${outfit} extends both knees, swings the feet twice and returns to the sofa pose`, async () => {
+  test(`${outfit} swings the shins from fixed knees and returns to the sofa pose`, async () => {
     const { gltf: { scene, animations } } = await load(new URL(model + '.glb', assets));
     const rig = createResidentRig(scene, animations.find(c => c.name === 'Walk_Grounded_Loop'), outfit === 'cardigan');
     try {
@@ -183,29 +183,32 @@ for (const [outfit, model] of Object.entries({ everyday: 'luna-walk-room', ribbo
       const sides = ['Left', 'Right'];
       const sample = () => { rig.applyPose(0, 0); apply(clip.duration); play(idle); };
       sample();
-      const hip = point('Hips'), rest = sides.map(side => point(side + 'Foot'));
+      const supports = ['Hips', ...sides.flatMap(side => [side + 'UpLeg', side + 'Leg'])];
+      const supportPositions = supports.map(point);
+      const rest = sides.map(side => point(side + 'Foot'));
+      const toeHeights = sides.map(side => point(side + 'ToeBase').y);
       const heights = [[], []];
       for (let frame = 0; frame < 24 * 30; frame++) {
         stepSeatedIdle(idle, 1 / 30, 'sofa', false);
-        if (idle.gesture !== 'legStretch') {
+        if (idle.gesture !== 'sofaSwing') {
           if (heights[0].length) break;
           continue;
         }
         sample();
-        assert.ok(point('Hips').distanceTo(hip) < 1e-5);
-        if (idle.time < 2 || idle.time > 5.8) continue;
+        supports.forEach((name, i) => assert.ok(point(name).distanceTo(supportPositions[i]) < 1e-5, name));
         sides.forEach((side, i) => {
           const thigh = point(side + 'UpLeg'), knee = point(side + 'Leg'), foot = point(side + 'Foot');
           const flex = knee.clone().sub(thigh).angleTo(foot.clone().sub(knee));
-          assert.ok(flex > .04 && flex < .24, 'extended knee retains a little flexion');
-          assert.ok(foot.z - rest[i].z > .14, 'foot reaches forward');
+          assert.ok(flex > .29, 'knees stay bent');
+          assert.ok(foot.z >= rest[i].z - .001, 'feet only swing forward from their starting positions');
+          assert.ok(point(side + 'ToeBase').y >= toeHeights[i] - .001, 'toes clear the floor');
           heights[i].push(foot.y);
         });
       }
       for (const values of heights) {
         const peaks = values.filter((y, i) => y > values[i - 1] && y > values[i + 1]);
         assert.equal(peaks.length, 2, 'each foot rises twice');
-        assert.ok(Math.min(...peaks) - Math.min(...values) > .11, 'the swing is visible');
+        assert.ok(Math.min(...peaks) - Math.min(...values) > .03, 'each swing is visible');
       }
       sample();
       sides.forEach((side, i) => assert.ok(point(side + 'Foot').distanceTo(rest[i]) < 1e-5));
