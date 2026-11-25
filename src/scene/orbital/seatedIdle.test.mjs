@@ -25,18 +25,28 @@ const { createChairAnimation, readSeatContactCache } = local('./chairAnimation')
 const { CHAIR_SIT_SECONDS } = local('./chairMotion');
 const { sofaPlayer } = local('./sofaMotion');
 
-test('seated idles wait, pause between gestures and clear on leaving or disabling the pose', () => {
+test('the sofa blends into its first gesture immediately and releases smoothly on exit', () => {
   const idle = createSeatedIdle();
-  for (let frame = 0; frame < 30; frame++) stepSeatedIdle(idle, 1 / 60, 'sofa', false);
-  assert.equal(idle.weight, 0);
-  for (let frame = 0; frame < 110; frame++) stepSeatedIdle(idle, 1 / 60, 'sofa', false);
-  assert.equal(idle.weight, 1);
-  const time = idle.time;
-  assert.equal(stepSeatedIdle(idle, .04, 'sofa', true), true);
-  assert.equal(idle.time, time);
-  assert.equal(stepSeatedIdle(idle, .04, null, true), false);
-  assert.deepEqual(idle, createSeatedIdle());
+  for (const fps of [30, 60, 120]) {
+    const dt = 1 / fps;
+    stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > 0 && idle.weight < .05, 'ease in on the first frame of every sit');
+    while (idle.time < .2) stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > .5 && idle.weight < 1);
+    const time = idle.time, weight = idle.weight;
+    assert.equal(stepSeatedIdle(idle, dt, 'sofa', true), true);
+    assert.ok(seatedIdleWeight(idle) < weight);
+    while (stepSeatedIdle(idle, dt, 'sofa', true)) assert.equal(idle.time, time);
+    assert.equal(seatedIdleWeight(idle), 0);
+    stepSeatedIdle(idle, dt, null, false);
+    assert.deepEqual(idle, createSeatedIdle());
+  }
+});
 
+test('the chair waits before its first swing and rests between gestures', () => {
+  const idle = createSeatedIdle();
+  for (let frame = 0; frame < 30; frame++) stepSeatedIdle(idle, 1 / 60, 'chair', false);
+  assert.equal(idle.weight, 0);
   const releaseTimes = [1 / 30, 1 / 60, 1 / 120].map(dt => {
     for (let frame = 0; frame < 2 / dt; frame++) stepSeatedIdle(idle, dt, 'chair', false);
     let releaseTime = dt;

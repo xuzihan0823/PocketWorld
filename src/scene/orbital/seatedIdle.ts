@@ -7,7 +7,7 @@ type SeatedIdleKind = 'sofa' | 'chair' | 'floor';
 type SeatedOverlay = 'sofaDoze' | 'chairGlance' | 'floorGlance';
 type SeatedClips = Partial<Record<SeatedOverlay, { duration: number }>>;
 const motions = {
-  sofa: { samples: SOFA_CHEEK_REST, delay: 1.1, rest: 7.2, overlay: 'sofaDoze' },
+  sofa: { samples: SOFA_CHEEK_REST, delay: 0, rest: 7.2, overlay: 'sofaDoze' },
   chair: { samples: CHAIR_LEG_SWING, delay: .75, rest: 4.6, overlay: 'chairGlance' },
   floor: { samples: null, delay: 5.5, rest: 13, overlay: 'floorGlance' },
 } as const;

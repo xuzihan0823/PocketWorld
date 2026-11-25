@@ -687,8 +687,9 @@ export function OrbitalResidents(props: ResidentsProps) {
     const settledFloor = floor?.kind === 'floor' && (floor.phase === 'seated'
       || (floor.phase === 'rise' && floor.time === 0 && seatIdle.seat === 'floor'));
     const settledChair = s.posture === 'chair' && chairMotion.current.phase === 'seated';
-    const settledSofa = s.posture === 'sofa' && sofaClip && sofa.time >= SOFA_STEPS + sofaClip.duration;
-    const seat = settledFloor && p.approachEnabled ? 'floor' : settledChair ? 'chair' : settledSofa ? 'sofa' : null;
+    // Blend the cheek rest into the final cushion rebound while the sit clip still owns the hips and feet.
+    const sofaIdleReady = s.posture === 'sofa' && sofaClip && sofa.time >= SOFA_STEPS + sofaClip.duration - .35;
+    const seat = settledFloor && p.approachEnabled ? 'floor' : settledChair ? 'chair' : sofaIdleReady ? 'sofa' : null;
     const canIdle = p.sceneId === 'habitat' && !!rig.current && !p.reducedMotion && !document.hidden;
     const pauseIdle = !p.enabled || !!p.focusedObject;
     const activeSeat = canIdle && (!pauseIdle || (seatIdle.seat === seat && seatIdle.weight > 0)) ? seat : null;
