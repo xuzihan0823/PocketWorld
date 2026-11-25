@@ -33,6 +33,8 @@ export interface ClothSolver {
   positions: Float32Array;
   collisionMs: number | null;
   step(dt: number, targets: Float32Array, balls: Ball[]): void;
+  /** Post-step diagnostic snapshot in world m/s. XPBD uses the duration of that step. */
+  readVelocities(stepSeconds: number): Float32Array;
   dispose(): void;
 }
 
@@ -248,6 +250,9 @@ export class Xpbd implements ClothSolver {
       this.collide(balls);
       this.collisionMs += performance.now() - start;
     }
+  }
+  readVelocities(stepSeconds: number) {
+    return this.positions.map((position, k) => (position - this.previous[k]) / stepSeconds);
   }
   dispose() {
     this.buckets.clear();

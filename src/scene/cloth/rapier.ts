@@ -73,6 +73,9 @@ export async function makeRapier(
         this.positions.set(cloth.particlePositions());
         this.collisionMs = world.profilerEnabled ? world.timingCollisionDetection() : null;
       },
+      readVelocities() {
+        return cloth.particleVelocities();
+      },
       dispose() {
         world.free();
       },

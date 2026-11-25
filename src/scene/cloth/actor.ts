@@ -8,6 +8,12 @@ import { createSleeveContact } from '../orbital/wardrobe/sleeveContact';
 
 export const motions = ['待机', '行走', '抬臂', '阅读', '坐下', '躺下', '起身'] as const;
 export type Motion = (typeof motions)[number];
+export type ReplayBlend = 'legacy' | 'preserveFadeWeight' | 'continuous';
+export interface AnimationState {
+  selected: Motion;
+  /** Effective mixer weights in motions order, after this substep. */
+  weights: readonly number[];
+}
 const base = import.meta.env.BASE_URL + 'models/resident/';
 const loader = new GLTFLoader();
 
@@ -74,7 +80,7 @@ export function releaseMeshes(scene: T.Object3D) {
   }
 }
 
-export async function createActor(stage: T.Scene, everyday: boolean, offset: number, preserveFadeWeight = false) {
+export async function createActor(stage: T.Scene, everyday: boolean, offset: number, blend: boolean | ReplayBlend = false) {
   const [model, cabin] = await Promise.all([
     loader.loadAsync(base + (everyday ? 'luna-walk-room' : 'luna-ribbon') + '.glb'),
     loadCabinActions(everyday ? 'everyday' : 'ribbon'),
@@ -151,18 +157,49 @@ export async function createActor(stage: T.Scene, everyday: boolean, offset: num
   });
   const contact = createSleeveContact(model.scene);
   let active: T.AnimationAction | undefined;
+  let selected: Motion = '待机';
+  const duration = 0.22;
+  // Convolve the requested action with a finite smoothstep window. On interruption
+  // every earlier change keeps its original clock, including a return to a live clip.
+  const changes: { from: number; to: number; start: number }[] = [];
+  const weights = new Array<number>(actions.length).fill(0);
+  let settled = 0;
   function select(motion: Motion) {
     const next = actions[motions.indexOf(motion)];
     if (active === next) return;
-    next.reset().setEffectiveWeight(1).play();
-    if (active) {
-      // Three starts a fade-out at a multiplier of one, including interrupted fade-ins.
-      if (preserveFadeWeight) active.setEffectiveWeight(active.getEffectiveWeight());
-      active.crossFadeTo(next, 0.22, false);
+    const index = motions.indexOf(motion);
+    if (blend === 'continuous') {
+      if (active) changes.push({ from: motions.indexOf(selected), to: index, start: mixer.time });
+      else settled = index;
+      if (!next.isScheduled()) next.reset().setEffectiveWeight(active ? 0 : 1).play();
+    } else {
+      next.reset().setEffectiveWeight(1).play();
+      if (active) {
+        // Three starts a fade-out at a multiplier of one, including interrupted fade-ins.
+        if (blend === true || blend === 'preserveFadeWeight') active.setEffectiveWeight(active.getEffectiveWeight());
+        active.crossFadeTo(next, duration, false);
+      }
     }
+    selected = motion;
     active = next;
   }
   function update(dt: number) {
+    if (blend === 'continuous') {
+      const time = mixer.time + dt;
+      while (changes.length && time - changes[0].start >= duration) settled = changes.shift()!.to;
+      weights.fill(0);
+      weights[settled] = 1;
+      for (const { from, to, start } of changes) {
+        const fraction = T.MathUtils.smoothstep(time - start, 0, duration);
+        weights[from] -= fraction;
+        weights[to] += fraction;
+      }
+      actions.forEach((action, i) => {
+        if (!action.isScheduled()) return;
+        if (weights[i] <= 0 && action !== active) action.stop();
+        else action.setEffectiveWeight(Math.max(0, weights[i]));
+      });
+    }
     mixer.update(dt);
     root.updateMatrixWorld(true);
     contact?.();
@@ -174,6 +211,9 @@ export async function createActor(stage: T.Scene, everyday: boolean, offset: num
     skin,
     select,
     update,
+    animationState(): AnimationState {
+      return { selected, weights: actions.map(a => a.isScheduled() && a.enabled ? a.getEffectiveWeight() : 0) };
+    },
     dispose() {
       mixer.stopAllAction();
       mixer.uncacheRoot(model.scene);

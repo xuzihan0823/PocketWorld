@@ -1,9 +1,10 @@
 import * as T from 'three';
-import { createActor, motions, releaseMeshes } from './actor';
+import { createActor, motions, releaseMeshes, type AnimationState, type Motion, type ReplayBlend } from './actor';
 import { garmentRegion, type Region } from './binding';
 import { distance, Xpbd, type ClothProfile } from './physics';
 import { makeRapier } from './rapier';
 import type { CuffStrategy } from './cuffAnchors';
+import { createSleeveDrive } from './clothStateTransition';
 
 const dt = 1 / 120;
 const phaseEnds = [6, 8, 12, 14, 19.25, 29, 34.25];
@@ -11,10 +12,10 @@ const focus = [6, 8, 12, 14, 19.25, 22.5, 29];
 
 function strainRecorder(profile: ClothProfile) {
   const pins = new Set(profile.pins);
-  const edges: { a: number; b: number; fixed: number; rest: number; strain: number; length: number; time: number; pose: string }[] = [];
+  const edges: { edge: number; a: number; b: number; fixed: number; rest: number; strain: number; length: number; time: number; pose: string }[] = [];
   for (let k = 0; k < profile.structural.length; k += 2) {
     const a = profile.structural[k], b = profile.structural[k + 1];
-    edges.push({ a, b, fixed: Number(pins.has(a)) + Number(pins.has(b)), rest: distance(profile.rest, a, b),
+    edges.push({ edge: k / 2, a, b, fixed: Number(pins.has(a)) + Number(pins.has(b)), rest: distance(profile.rest, a, b),
       strain: -Infinity, length: 0, time: 0, pose: '' });
   }
   return {
@@ -31,11 +32,11 @@ function strainRecorder(profile: ClothProfile) {
   };
 }
 
-function pinResidual(region: Region) {
+function pinResidual(region: Region, targets = region.targets) {
   let depth = -Infinity, pin = -1, sphere = -1;
   for (const id of region.profile.pins) {
     for (let k = 0; k < region.balls.length; k++) {
-      const b = region.balls[k], p = region.targets;
+      const b = region.balls[k], p = targets;
       const d = b.radius + region.profile.thickness - Math.hypot(p[3*id]-b.x, p[3*id+1]-b.y, p[3*id+2]-b.z);
       if (d > depth) { depth = d; pin = id; sphere = k; }
     }
@@ -46,13 +47,44 @@ function pinResidual(region: Region) {
 type Audit = (mesh: T.SkinnedMesh) => {
   measure(raw: Float32Array, final: Float32Array, region: Region, positions: Float32Array): unknown;
 };
-type ReplaySettings = { pipeline?: import('./binding').SleevePipeline; cuff?: CuffStrategy; rapidSwitch?: boolean; preserveFadeWeight?: boolean };
+export interface SleeveReplayFrame {
+  step: number;
+  time: number;
+  dt: number;
+  pose: Motion;
+  animation: AnimationState;
+  region: Region;
+  positions: Float32Array;
+  readParticleVelocities(): Float32Array;
+  targets: Float32Array;
+  velocities: Float64Array;
+  anchors: ReturnType<typeof createSleeveDrive>['anchors'];
+  /** Shoulder, support, cuff multipliers in this order. */
+  gains: readonly number[];
+  /** Bind once, on demand, for final surface and mapping diagnostics at this step. */
+  bindSurface(): NonNullable<Region['sleeveLayers']>;
+}
+export interface ReplaySettings {
+  pipeline?: import('./binding').SleevePipeline;
+  cuff?: CuffStrategy;
+  rapidSwitch?: boolean;
+  preserveFadeWeight?: boolean;
+  animationBlend?: ReplayBlend;
+  stateTransition?: boolean;
+  /** Synchronous, post-solve. Copy buffer values before retaining a frame. */
+  onStep?(frame: SleeveReplayFrame): void;
+}
 
 /** Deterministic quality replay. Expensive surface observations run outside the solver timer. */
 export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, audit?: Audit, extraFocus: number[] = [], settings: ReplaySettings = {}) {
+  if (legacy && settings.stateTransition) throw new Error('Cloth State Transition 需要单袖绑定格点');
   const stage = new T.Scene();
-  const actor = await createActor(stage, false, 0, settings.preserveFadeWeight);
-  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, settings.cuff);
+  const animationBlend = settings.animationBlend ?? (settings.preserveFadeWeight ? 'preserveFadeWeight' : 'legacy');
+  const actor = await createActor(stage, false, 0, animationBlend);
+  const cuff = settings.cuff ?? (settings.stateTransition ? 'zoned' : undefined);
+  const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, cuff);
+  const drive = settings.stateTransition || settings.onStep
+    ? createSleeveDrive(region.profile, region.targets, !!settings.stateTransition) : undefined;
   const solver = engine === 'xpbd' ? new Xpbd(region.profile) : await makeRapier(region.profile, region.balls, true);
   const edges = strainRecorder(region.profile), surface = audit?.(actor.skin);
   const observations = [];
@@ -78,20 +110,35 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
       actor.select(pose);
       actor.update(dt);
       region.sample(time);
+      const animation = drive && actor.animationState();
+      if (drive && animation) drive.update(dt, animation);
+      const targets = drive?.targets ?? region.targets;
       const start = performance.now();
-      solver.step(dt, region.targets, region.balls);
+      solver.step(dt, targets, region.balls);
       solveMs += performance.now() - start;
       edges.sample(solver.positions, time, pose);
-      const residual = pinResidual(region);
+      const residual = pinResidual(region, targets);
       if (residual.depth > pin.depth) pin = { ...residual, time };
+      let bound = false;
+      const bindSurface = () => {
+        if (!bound) region.bind(solver.positions);
+        bound = true;
+        return region.sleeveLayers!;
+      };
+      if (settings.onStep && drive && animation) {
+        settings.onStep({ step, time, dt, pose, animation, region, positions: solver.positions,
+          readParticleVelocities: () => solver.readVelocities(dt),
+          targets, velocities: drive.velocities, anchors: drive.anchors, gains: drive.gains, bindSurface });
+      }
       if (!rapid && step % 60 !== 0 && !watched.some(t => time >= t - 0.04 && time <= t + 0.26)) continue;
-      region.bind(solver.positions);
+      bindSurface();
       const p = solver.positions;
       observations.push({ step, time, pose, shell: region.surfaceContact?.(),
         elbow13to25: distance(p, 13, 25), elbowRest: distance(region.profile.rest, 13, 25),
         intersections: surface?.measure(raw, final, region, p) });
     }
-    return { engine, legacy, steps, solveMsPerStep: solveMs / steps, mapped: region.mappedVertices,
+    return { engine, legacy, cuff, animationBlend, stateTransition: !!settings.stateTransition, steps,
+      solveMsPerStep: solveMs / steps, mapped: region.mappedVertices,
       drivers, pins: region.profile.pins, pin: { ...pin, minClearance: -pin.depth, depth: Math.max(0, pin.depth) },
       peaks: edges.peaks(), observations };
   } finally {
@@ -100,7 +147,8 @@ export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, au
 }
 
 /** Rotate only the elbow in its anatomical bending plane, with both types of contact and gravity off. */
-export async function isolateElbow(legacy = false, audit?: Audit, releaseDistalGuide = false, settings: ReplaySettings = {}) {
+export async function isolateElbow(legacy = false, audit?: Audit, releaseDistalGuide = false,
+  settings: Pick<ReplaySettings, 'pipeline' | 'cuff' | 'rapidSwitch' | 'preserveFadeWeight'> = {}) {
   const stage = new T.Scene();
   const actor = await createActor(stage, false, 0);
   const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, settings.cuff);

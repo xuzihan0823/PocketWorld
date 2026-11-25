@@ -76,3 +76,17 @@ const slowBend = await isolateElbow(false, stages, false, settings)
 `peaks` 依次给出自由—自由、固定—自由、固定—固定各自峰值最大的四条边，长度单位为米。`observations` 按步号保留同姿势的接触结果。`isolateElbow(true)` 可复测旧版。它固定住其余骨骼，静置 1 秒，在 3 秒内缓慢屈肘，再保持 2 秒，全程关闭重力、自碰撞与外部碰撞。
 
 [桌面性能与接触验收](./布料验收.md)
+
+### 左袖动画与布料状态同步回放
+
+在上例中固定 `pipeline: 'contact'`、`rapidSwitch: true`、后端及 `cuff`。依次运行以下三组设置。每组从绑定姿势完整推进 4,230 个 120 Hz 子步。`cuff` 可选 `zoned` 和 `feathered`。
+
+| 回放 | `animationBlend` | `stateTransition` | 比较内容 |
+|---|---|---|---|
+| 历史基线 | `'legacy'` | `false` | 复现中断淡化与恒定分区刚度 |
+| 仅连续混合 | `'continuous'` | `false` | 测动画混合本身的影响 |
+| 完整同步候选 | `'continuous'` | `true` | 在同一连续动画轨迹上测分区驱动的增量影响 |
+
+`onStep(frame)` 在求解后同步调用。`frame.animation.weights` 按 `motions` 顺序列出实际动作权重。`region.targets` 是本步动画参考，`targets` 和 `velocities` 是约束目标的位置与速度，`positions` 为物理输出。`anchors` 记录该次求解实际采样的弹簧刚度（N/m），`gains` 顺序为肩部、支撑圈、袖口圈。保存样本时复制需要的数组。调用 `frame.bindSurface()` 可读取本步实际显示属性 `final`、四点代理绑定 `bindings` 和按顶点查询的毫米误差 `mappingErrorAt(id)`。
+
+优先对照生活轨道第 3481 步和快切第 4183 步的躺下转起身、第 4195 步的起身转待机。历史环向方案的最坏快切显示边出现在第 4123 步的待机转行走。回归命令为 `node --test src/scene/cloth/clothStateTransition.test.mjs`。

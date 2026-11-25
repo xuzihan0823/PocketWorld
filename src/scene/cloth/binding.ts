@@ -19,6 +19,8 @@ export interface Region {
     vertexIds: number[];
     armBalls: Ball[]; limited: Float32Array;
     contact?: ReturnType<typeof sleeveContact>;
+    bindings: ReadonlyArray<{ id: number; nodes: readonly number[]; weights: readonly number[]; fade: number }>;
+    mappingErrorAt(vertex: number): number | undefined;
     mappingError(): { medianMm: number; p95Mm: number; maxMm: number; maxVertex: number };
     final: Float32Array; driverVertices: number[]; stats: { clipped: number; maxMm: number; shellMoved: number };
   };
@@ -312,27 +314,34 @@ export function garmentRegion(
   const layer = () => new Float32Array(attr.array.length);
   // Transport the bind residual with the vertex's own bones and compare with its actual
   // morphed, skinned pose. Four ring drivers can disagree even with normalized weights.
+  const tmp = v(), posed = v(), rest = v(), actual = v(), transformed = v();
+  function bindingErrorMm(b: typeof bindings[number]) {
+    rest.set(0, 0, 0); posed.set(0, 0, 0);
+    for (let j = 0; j < 4; j++) {
+      rest.addScaledVector(tmp.fromArray(local, 3 * b.nodes[j]), b.weights[j]);
+      posed.addScaledVector(tmp.fromArray(targets, 3 * b.nodes[j]), b.weights[j]);
+    }
+    mesh.applyBoneTransform(b.id, rest).applyMatrix4(mesh.matrixWorld);
+    mesh.applyBoneTransform(b.id, transformed.fromBufferAttribute(g.position, b.id)).applyMatrix4(mesh.matrixWorld);
+    posed.add(transformed).sub(rest);
+    mesh.getVertexPosition(b.id, actual).applyMatrix4(mesh.matrixWorld);
+    return actual.distanceTo(posed) * 1000;
+  }
+  function mappingErrorAt(vertex: number) {
+    const binding = bindings.find(b => b.id === vertex);
+    return binding && bindingErrorMm(binding);
+  }
   function mappingError() {
-    const tmp = v(), posed = v(), rest = v(), actual = v(), transformed = v();
     let maxVertex = -1, maxMm = -1;
     const errors = bindings.map(b => {
-      rest.set(0, 0, 0); posed.set(0, 0, 0);
-      for (let j = 0; j < 4; j++) {
-        rest.addScaledVector(tmp.fromArray(local, 3 * b.nodes[j]), b.weights[j]);
-        posed.addScaledVector(tmp.fromArray(targets, 3 * b.nodes[j]), b.weights[j]);
-      }
-      mesh.applyBoneTransform(b.id, rest).applyMatrix4(mesh.matrixWorld);
-      mesh.applyBoneTransform(b.id, transformed.fromBufferAttribute(g.position, b.id)).applyMatrix4(mesh.matrixWorld);
-      posed.add(transformed).sub(rest);
-      mesh.getVertexPosition(b.id, actual).applyMatrix4(mesh.matrixWorld);
-      const mm = actual.distanceTo(posed) * 1000;
+      const mm = bindingErrorMm(b);
       if (mm > maxMm) { maxMm = mm; maxVertex = b.id; }
       return mm;
     }).sort((a, b) => a - b);
     return { medianMm: errors[Math.floor(errors.length / 2)], p95Mm: errors[Math.ceil(errors.length * 0.95) - 1], maxMm, maxVertex };
   }
   const contact = singleSleeve && pipeline === 'contact' ? sleeveContact(mesh, cols, rows) : undefined;
-  const layers = captureLayers ? { mesh, raw: layer(), blend: layer(), shell: layer(), mappingError,
+  const layers = captureLayers ? { mesh, raw: layer(), blend: layer(), shell: layer(), bindings, mappingError, mappingErrorAt,
     vertexIds: bindings.map(b => b.id), contact, armBalls: collision.balls.slice(0,10), limited: layer(),
     final: attr.array as Float32Array, driverVertices: nearest, stats: { clipped: 0, maxMm: 0, shellMoved: 0 } } : undefined;
   const rawDelta = captureLayers ? new Float32Array(local.length) : undefined;
