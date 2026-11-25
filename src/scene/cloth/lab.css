@@ -31,6 +31,22 @@ canvas {
   height: 100%;
   touch-action: none;
 }
+#layer-labels:not([hidden]) {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: 1fr 1fr / 1fr 1fr;
+  align-items: start;
+  justify-items: start;
+  z-index: 1;
+  pointer-events: none;
+}
+#layer-labels span {
+  margin: 6px;
+  padding: 2px 6px;
+  background: #182423e8;
+  font-size: 12px;
+}
 #inspect {
   margin-top: 10px;
 }

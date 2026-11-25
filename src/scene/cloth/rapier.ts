@@ -28,6 +28,12 @@ export async function makeRapier(
         .setSurfaceCollider(R.ColliderDesc.ball(profile.thickness))
         .setCanSleep(false),
     );
+    if (profile.initial) {
+      for (let k = 0; k < profile.initial.length; k += 3) {
+        const p = profile.initial;
+        cloth.setParticlePosition(k / 3, { x: p[k], y: p[k + 1], z: p[k + 2] });
+      }
+    }
     const bodies = balls.map((ball) => {
       const body = world.createRigidBody(
         R.RigidBodyDesc.kinematicPositionBased().setTranslation(ball.x, ball.y, ball.z),
@@ -37,7 +43,7 @@ export async function makeRapier(
     });
     const target = { x: 0, y: 0, z: 0 };
     const solver: ClothSolver = {
-      positions: profile.rest.slice(),
+      positions: (profile.initial ?? profile.rest).slice(),
       collisionMs: null,
       step(dt, targets, spheres) {
         world.timestep = dt;

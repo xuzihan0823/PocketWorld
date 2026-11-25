@@ -17,8 +17,10 @@ async function moduleUrl(file, imports = {}) {
 }
 const physics = await moduleUrl('./physics.ts'),
   { FixedClock, Xpbd, distance } = await import(physics);
+const maskUrl = await moduleUrl('./sleeveMask.ts');
+const contactImports = { three: import.meta.resolve('three'), './sleeveMask': maskUrl, 'three-mesh-bvh': import.meta.resolve('three-mesh-bvh') };
 const { patchRegion, garmentRegion } = await import(
-  await moduleUrl('./binding.ts', { './physics': physics, three: import.meta.resolve('three') })
+  await moduleUrl('./binding.ts', { ...contactImports, './physics': physics })
 );
 const { makeRapier } = await import(
   await moduleUrl('./rapier.ts', {
@@ -163,4 +165,84 @@ test('ribbon sleeve maps only its own side after the final bone pose and leaves 
   assert.ok(moved > 1000 && moved <= region.mappedVertices);
   assert.deepEqual(pos.array, rest);
   assert.ok(bones.every((b, i) => b.equals(surface.skeleton.bones[i].matrixWorld)));
+});
+
+test('single sleeve keeps bind lengths across creation poses and caps only the displayed offsets', async () => {
+  const { gltf } = await load(new URL('../../../assets/public/models/resident/luna-ribbon.glb', import.meta.url));
+  let mesh;
+  gltf.scene.traverse(o => {
+    if (o.isSkinnedMesh && (!mesh || mesh.geometry.attributes.position.count < o.geometry.attributes.position.count)) mesh = o;
+  });
+  gltf.scene.scale.setScalar(1.43);
+  gltf.scene.updateMatrixWorld(true);
+  const first = garmentRegion(mesh, 'Left', false, true);
+  mesh.skeleton.getBoneByName('mixamorigLeftForeArm').rotateX(0.8);
+  gltf.scene.updateMatrixWorld(true);
+  const region = garmentRegion(mesh, 'Left', false, true);
+  assert.deepEqual(first.profile.rest, region.profile.rest);
+  assert.notDeepEqual(first.profile.initial, region.profile.initial);
+  const solver = new Xpbd(region.profile);
+  assert.deepEqual(solver.positions, region.targets);
+  const originalRest = region.profile.rest.slice();
+  const expectedEdges = new Set();
+  for (let i = 0; i < 60; i++) {
+    expectedEdges.add(`${i},${i % 12 === 11 ? i - 11 : i + 1}`);
+    if (i < 48) expectedEdges.add(`${i},${i + 12}`);
+  }
+  for (let j = 0; j < region.profile.structural.length; j += 2) {
+    const [a, b] = region.profile.structural.slice(j, j + 2);
+    assert.ok(expectedEdges.delete(`${a},${b}`));
+    assert.ok(distance(originalRest, a, b) > 0.001);
+  }
+  assert.equal(expectedEdges.size, 0);
+  const displaced = region.targets.slice();
+  for (let i = 0; i < displaced.length; i += 3) displaced[i] += 0.09;
+  region.sample(1);
+  region.bind(displaced);
+  const { raw, final } = region.sleeveLayers;
+  const linear = new T.Matrix3().setFromMatrix4(mesh.matrixWorld), v = new T.Vector3();
+  let largestRaw = 0, largestFinal = 0;
+  for (let k = 0; k < raw.length; k += 3) {
+    largestRaw = Math.max(largestRaw, v.fromArray(raw, k).applyMatrix3(linear).length());
+    largestFinal = Math.max(largestFinal, v.fromArray(final, k).applyMatrix3(linear).length());
+  }
+  assert.ok(largestRaw > 0.08 && largestFinal > 0.01 && largestFinal <= 0.018001);
+  assert.deepEqual(region.profile.rest, originalRest);
+  solver.dispose();
+});
+
+test('sleeve audit detects a crossing on the real jacket and identifies pairs removed after mapping', async () => {
+  const maskUrl = await moduleUrl('./sleeveMask.ts');
+  const { sleeveSurfaceMask } = await import(maskUrl);
+  const { createSleeveAudit } = await import(await moduleUrl('./sleeveSurface.ts', {
+    three: import.meta.resolve('three'), './sleeveMask': maskUrl, 'three-mesh-bvh': import.meta.resolve('three-mesh-bvh'),
+  }));
+  const { gltf } = await load(new URL('../../../assets/public/models/resident/luna-ribbon.glb', import.meta.url));
+  let mesh;
+  gltf.scene.traverse(o => { if (o.isSkinnedMesh && o.geometry.attributes.position.count === 38114) mesh = o; });
+  gltf.scene.updateMatrixWorld(true);
+  const mask = sleeveSurfaceMask(mesh), audit = createSleeveAudit(mesh);
+  const face = members => {
+    const ids = mesh.geometry.index.array;
+    for (let i = 0; i < ids.length; i += 3) {
+      const tri = [ids[i], ids[i+1], ids[i+2]];
+      if (tri.every(id => members.has(id))) return tri;
+    }
+    assert.fail('missing labeled face');
+  };
+  const points = face(mask.torso).map(id => mesh.getVertexPosition(id, new T.Vector3()));
+  const target = new T.Triangle(...points), mid = target.getMidpoint(new T.Vector3());
+  const normal = target.getNormal(new T.Vector3()).multiplyScalar(0.002);
+  const raw = new Float32Array(3 * mesh.geometry.attributes.position.count), final = raw.slice();
+  for (const id of mask.sleeve) final[3*id] = 2;
+  raw.set(final);
+  const crossing = [mid.clone().add(normal), mid.clone().sub(normal), mid.clone().lerp(points[0], 0.3)];
+  face(mask.sleeve).forEach((id,k) => crossing[k].sub(mesh.getVertexPosition(id,new T.Vector3())).toArray(raw,3*id));
+  const hit = audit.measure(raw,final);
+  assert.ok(hit.raw > 0);
+  assert.equal(hit.final, 0);
+  assert.equal(hit.added, 0);
+  assert.equal(hit.removed, hit.raw);
+  assert.ok(Object.values(hit.counts).every(n => n > 0));
+  assert.ok(mask.skin.has(2607) && !mask.sleeve.has(2607));
 });

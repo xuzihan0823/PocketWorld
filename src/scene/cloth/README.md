@@ -6,7 +6,7 @@
 |---|---|---|
 | 同一块悬挂布 | [XPBD](http://localhost:5194/src/scene/cloth/index.html?scene=sheet&solver=xpbd) · [Rapier](http://localhost:5194/src/scene/cloth/index.html?scene=sheet&solver=rapier) | 观察锚边收拢、折叠、横向换向及与球体的接触。切换自碰撞后重置。 |
 | 骨骼驱动 | [前臂挂布](http://localhost:5194/src/scene/cloth/index.html?scene=arm) | 同一排运动学锚点跟随左前臂，切换抬臂、阅读与行走。 |
-| 真实服装 | [蝴蝶结外套左袖](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve) | 切换求解器，拖动环绕，滚轮放大。暂停后显示代理并测量当前形变。 |
+| 真实服装 | [左袖](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve) · [第 2,702 步旧版](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&legacy=1&atStep=2702) · [同一步新版](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&atStep=2702) | 「同帧四层对照」冻结并聚焦左袖，可拖动和缩放。「测量当前形变」显示各层对衣身、内衬的相交对数。`atStep` 在对应物理子步自动打开对照。 |
 | 扩容 | [双袖](http://localhost:5194/src/scene/cloth/index.html?scene=both) · [日常装裙摆](http://localhost:5194/src/scene/cloth/index.html?scene=skirt) · [双角色三区域](http://localhost:5194/src/scene/cloth/index.html?scene=multi) | 蝴蝶结外套配短裤。三区域同时绘制外套与日常裙装两个角色，另有单角色无布料基线。 |
 | 生活舱 | [基线](http://localhost:5194/src/scene/cloth/room.html?solver=off) · [XPBD 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=xpbd) · [Rapier 单袖](http://localhost:5194/src/scene/cloth/room.html?solver=rapier) | 真实生活舱和原有交互，用同一机位比较。可追加 `&hz=30`。 |
 
@@ -18,9 +18,9 @@
 |---|---|---|
 | Character Animation，`actor.ts` | 已绑定的 GLB、动作与持书 IK | 先完成动作混合、修形和世界矩阵更新。生活舱直接使用现有住民控制器的最终姿态。 |
 | Cloth Controller，`Region.sample()` | 最终骨骼矩阵、绑定姿势 | 世界坐标锚点和随骨骼移动的球链。肩肘腕近似手臂，脊柱球链近似衣身体积。 |
-| Cloth Profile，`physics.ts`、`garmentRegion()` | 服装、侧别、模拟区域 | 定义粒子、钉点、拓扑、粒子厚度、阻尼与两种求解器的材料参数。 |
+| Cloth Profile，`physics.ts`、`garmentRegion()` | 服装、侧别、模拟区域 | 单袖实验从世界尺度下的绑定格点建立约束，独立用当前蒙皮坐标和零初速启动。其他实验沿用前轮基线。 |
 | Cloth Solver，`step(dt, targets, balls)` | 米、秒、Y 向上；固定子步 | 拥有世界坐标粒子位置与内部速度状态，只读动画输入。`dispose()` 释放后端资源。 |
-| Pose Correction，`Region.bind()` | 模拟与蒙皮代理之间的位移、当前碰撞球 | 限制局部位移，重新投影接触点，保留锚点。袖区限幅 18 mm，裙区 40 mm。现有服装形态键仍由角色层驱动。 |
+| Pose Correction，`Region.bind()` | 模拟与蒙皮代理之间的位移、当前碰撞体 | 单袖调试保留未混合、未限幅位移。最终袖面保留接缝渐隐与世界空间 18 mm 位移预算。 |
 | Geometry Binding，`binding.ts` | 校正后的代理位移 | 四点周期双线性插值，经权重遮罩渐隐，转到网格局部坐标，在 GPU 蒙皮之后叠加动态顶点属性。正式模型、蒙皮权重、UV、骨骼和动作文件由角色层持有。 |
 
 XPBD 在每个子步清零约束乘子，迭代内累积乘子，柔度除以子步时长的平方。横纵边控制拉伸，双对角边控制剪切，跨两点的距离约束近似抗弯。空间哈希只检查邻近桶，跳过直接约束邻点。该自碰撞只检测粒子，顶点穿面和边穿边仍可能漏检。[XPBD 原论文](https://doi.org/10.1145/2994258.2994272)
@@ -41,8 +41,23 @@ Rapier 0.21.0 使用原生 `SoftBodyDesc`，写入与 XPBD 共用的边表和三
 ## 复测口径
 
 - 在 Chrome 以 1280×720、DPR 1 打开实验台，得到 980×720 的画布。基准运行关闭代理显示。选同一动作和频率，等待模型、WASM 以及首帧完成，预热后执行 `pwcs.reset()`，读取 `pwcs.report()`。该接口保留最近最多 600 个有效渲染间隔，返回实测 FPS、P95、求解（包含碰撞）、碰撞和 CPU 映射耗时。页面隐藏或用户暂停期间跳过采样。
-- 用完整动作轮播检查服装。每秒读取形变快照，记录有限坐标、最大结构边正伸长、固定粒子到目标的误差、相对球壳的最大代理侵入和非邻接粒子重叠数。`bendChordChange` 是跨点弦长相对变化的平均绝对值。表面采样每区最多选 128 个真实渲染顶点，用同一姿态测试校正前后的代理壳侵入。球壳采样不能证明连续三角面无穿透。
+- 单袖形变在 120 Hz 固定回放中逐步检查。弯肘、躺姿和动作切换附近的衣身相交在同一步号比较。`shell` 给出抽样袖顶点相对碰撞球的深度，`intersections` 给出实际三角面对数。后端质量配对采集后，在正常渲染页单独计步和计时。`pwcs.report().cumulative` 包含累计物理子步、耗时、丢弃毫秒、超过 50 ms 的渲染帧数及最长帧。顶层 `p95` 对应最近最多 600 帧。
 - 生活舱以 980×720 打开，等待角色、完整家具和 GPU 着色器就绪。依次测关闭、XPBD、Rapier，再逆序测一次。对 `window.pwcsRoom` 的累计时间取差并除以帧数。用独立的 `requestAnimationFrame` 记录帧间隔。Chrome DevTools Protocol 的 `Performance.getMetrics` 可取主线程 TaskDuration 与 Timestamp 的增量比和 JSHeapUsedSize，`Runtime.getHeapUsage` 提供 backingStorageSize。两项内存分别列示；均不等于整个浏览器的常驻内存。
 - 数值和绑定回归运行 `node --test src/scene/cloth/cloth.test.mjs`；仓库完整验证运行 `npm test`。
+
+单袖开发页的控制台可独立复现同一轮播。`legacy=true` 重建旧代理和旧映射，同时采集未限幅对照。第四个参数可追加需要逐步采样的模拟时刻（秒）。
+
+```js
+const { replaySleeve, isolateElbow } = await import('/src/scene/cloth/sleeveReplay.ts')
+const { createSleeveAudit } = await import('/src/scene/cloth/sleeveSurface.ts')
+const focus = [0.04, 6.33, 7.1, 21.4, 26.45]
+const before = await replaySleeve('xpbd', true, createSleeveAudit, focus)
+const xpbd = await replaySleeve('xpbd', false, createSleeveAudit, focus)
+const rapier = await replaySleeve('rapier', false, createSleeveAudit, focus)
+const slowBend = await isolateElbow(false, createSleeveAudit)
+const releaseGuide = await isolateElbow(true, undefined, true)
+```
+
+`peaks` 依次给出自由—自由、固定—自由、固定—固定各自峰值最大的四条边，长度单位为米。`observations` 按步号保留同姿势的接触结果。`isolateElbow(true)` 可复测旧版。它固定住其余骨骼，静置 1 秒，在 3 秒内缓慢屈肘，再保持 2 秒，全程关闭重力、自碰撞与外部碰撞。
 
 [桌面性能与接触验收](./布料验收.md)

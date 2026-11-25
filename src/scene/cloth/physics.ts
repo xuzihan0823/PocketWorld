@@ -6,6 +6,8 @@ export interface Ball {
 }
 export interface ClothProfile {
   rest: Float32Array;
+  /** World-space particle positions at solver creation, independent of constraint rest lengths. */
+  initial?: Float32Array;
   pins: number[];
   structural: number[];
   shear: number[];
@@ -102,6 +104,8 @@ export function distance(p: Float32Array, a: number, b: number) {
 export class Xpbd implements ClothSolver {
   positions: Float32Array;
   collisionMs = 0;
+  /** Exposed so the isolation tests can switch gravity off. */
+  gravity = 9.81;
   private previous: Float32Array;
   private mass: Float32Array;
   private links: { a: number; b: number; length: number; compliance: number; lambda: number }[];
@@ -111,7 +115,7 @@ export class Xpbd implements ClothSolver {
     readonly profile: ClothProfile,
     readonly selfContacts = true,
   ) {
-    this.positions = profile.rest.slice();
+    this.positions = (profile.initial ?? profile.rest).slice();
     this.previous = this.positions.slice();
     this.mass = new Float32Array(this.positions.length / 3).fill(1);
     this.neighbors = Array.from(this.mass, () => new Set<number>());
@@ -128,7 +132,7 @@ export class Xpbd implements ClothSolver {
           b = edges[i + 1];
         this.neighbors[a].add(b);
         this.neighbors[b].add(a);
-        this.links.push({ a, b, length: distance(this.positions, a, b), compliance, lambda: 0 });
+        this.links.push({ a, b, length: distance(profile.rest, a, b), compliance, lambda: 0 });
       }
     }
   }
@@ -192,7 +196,7 @@ export class Xpbd implements ClothSolver {
     for (let k = 0; k < p.length; k++) {
       const old = p[k];
       p[k] = this.mass[Math.floor(k / 3)]
-        ? old + (old - this.previous[k]) * drag - (k % 3 === 1 ? 9.81 * dt * dt : 0)
+        ? old + (old - this.previous[k]) * drag - (k % 3 === 1 ? this.gravity * dt * dt : 0)
         : targets[k];
       this.previous[k] = old;
     }

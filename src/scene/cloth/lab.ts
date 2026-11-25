@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FixedClock, Xpbd, distance, type ClothSolver } from './physics';
 import { garmentRegion, patchRegion, type Region } from './binding';
 import { createActor, motions, releaseMeshes, type Motion } from './actor';
+import { sleeveView } from './sleeveView';
+import { createSleeveAudit } from './sleeveSurface';
 
 const el = <E extends HTMLElement>(id: string) => document.getElementById(id) as E;
 const form = el<HTMLFormElement>('config'),
@@ -156,7 +158,7 @@ async function start() {
       actors.push(actor);
       if (mode === 'arm') regions.push(patchRegion(stage, actor.skin));
       if (['sleeve', 'both', 'multi', 'skirt'].includes(mode))
-        regions.push(garmentRegion(actor.skin, 'Left', mode === 'skirt'));
+        regions.push(garmentRegion(actor.skin, 'Left', mode === 'skirt', mode === 'sleeve' && params.get('legacy') !== '1', mode === 'sleeve'));
       if (['both', 'multi'].includes(mode)) regions.push(garmentRegion(actor.skin, 'Right'));
       if (mode === 'multi') {
         const second = await createActor(stage, true, 0.48);
@@ -207,6 +209,13 @@ async function start() {
       paused = false,
       active: Motion = '待机',
       lastReport = 0;
+    const compare = el<HTMLButtonElement>('compare');
+    let audit: ReturnType<typeof createSleeveAudit> | undefined;
+    const getAudit = () => audit ??= createSleeveAudit(regions[0].sleeveLayers!.mesh);
+    const compareView = regions[0]?.sleeveLayers && sleeveView(regions[0], wires[0], renderer, stage, camera, orbit, getAudit);
+    compare.hidden = !compareView;
+    const totals = { physicsSteps: 0, solverMs: 0, frames: 0, longFrames: 0, maxFrameMs: 0 };
+    let resumeOnClose = false;
     const pause = el<HTMLButtonElement>('pause');
     function resetClock() {
       previous = 0;
@@ -217,6 +226,20 @@ async function start() {
       pause.textContent = paused ? '继续' : '暂停';
       resetClock();
     };
+    function toggleComparison() {
+      if (!compareView) return;
+      if (!compareView.showing) resumeOnClose = !paused;
+      compareView.toggle();
+      paused = compareView.showing || !resumeOnClose;
+      compare.textContent = compareView.showing ? '返回当前袖面' : '同帧四层对照';
+      pause.disabled = wireButton.disabled = compareView.showing;
+      pause.textContent = paused ? '继续' : '暂停';
+      resetClock();
+    }
+    compare.onclick = toggleComparison;
+    // Optional repeatable inspection link. Stop after the requested physics substep.
+    const inspectStep = compareView ? Number(params.get('atStep')) : 0;
+    let simulatedSteps = 0, openSnapshot = false;
     document.addEventListener('visibilitychange', resetClock);
     const phaseEnds = [6, 8, 12, 14, 19.25, 29, 34.25];
     function frame(now: number) {
@@ -233,6 +256,7 @@ async function start() {
       };
       if (!paused && !document.hidden)
         clock.advance(elapsed, hz, (dt) => {
+          if (openSnapshot) return;
           for (let s = 0; s < substeps; s++) {
             time += dt / substeps;
             active =
@@ -255,6 +279,8 @@ async function start() {
               else if (row.collision !== null) row.collision += c;
             });
             row.ticks++;
+            simulatedSteps++;
+            if (simulatedSteps === inspectStep) { openSnapshot = true; break; }
           }
         });
       if (row.ticks) {
@@ -265,8 +291,15 @@ async function start() {
         });
         row.geometry = performance.now() - before;
       }
-      renderer.render(stage, camera);
-      if (!paused && elapsed > 0 && !document.hidden) {
+      if (openSnapshot) { toggleComparison(); openSnapshot = false; }
+      if (compareView?.showing) compareView.draw();
+      else renderer.render(stage, camera);
+      if ((!paused || row.ticks > 0) && elapsed > 0 && !document.hidden) {
+        totals.physicsSteps += row.ticks;
+        totals.solverMs += row.solve;
+        totals.frames++;
+        if (row.frame > 50) totals.longFrames++;
+        totals.maxFrameMs = Math.max(totals.maxFrameMs, row.frame);
         samples.push(row);
         if (samples.length > 600) samples.shift();
       }
@@ -300,6 +333,17 @@ async function start() {
       el('quality').textContent = regions
         .map((r, i) => {
           const q = quality(r, solvers[i]);
+          let contact = '';
+          if (r.sleeveLayers) {
+            const { raw, final } = r.sleeveLayers;
+            const hits = getAudit().measure(raw, final);
+            contact = `\n第 ${simulatedSteps} 步 · ${time.toFixed(3)} s · ${active}` +
+              `\n袖面 × 衣身（三角面对）\n蒙皮 ${hits.skinned} · 未限幅 ${hits.raw} · 最终 ${hits.final}` +
+              `\n最终新增 ${hits.added} · 消除 ${hits.removed}` +
+              `\n袖面 × 腋下内衬 ${hits.facing.join(' → ')}` +
+              `\n分区面数 · 袖外 ${hits.counts.outer} / 朝内 ${hits.counts.inward} / 袖缘 ${hits.counts.rim}` +
+              `\n衣身 ${hits.counts.torso} / 内衬 ${hits.counts.facing} / 裸手 ${hits.counts.skin}`;
+          }
           return (
             '最大边伸长 ' +
             (100 * q.stretch).toFixed(1) +
@@ -308,7 +352,7 @@ async function start() {
             '\n碰撞代理侵入 ' +
             (1000 * q.penetration).toFixed(1) +
             ' mm' +
-            (q.surface ? '\n表面采样侵入 ' + (1000 * q.surface.correctedDepth).toFixed(1) + ' mm' : '')
+            (q.surface ? '\n渲染顶点对球壳 ' + (1000 * q.surface.correctedDepth).toFixed(1) + ' mm' : '') + contact
           );
         })
         .join('\n');
@@ -317,11 +361,16 @@ async function start() {
       pwcs: {
         reset() {
           samples.length = 0;
+          Object.assign(totals, { physicsSteps: 0, solverMs: 0, frames: 0, longFrames: 0, maxFrameMs: 0 });
           clock.dropped = 0;
           resetClock();
         },
         report: () => ({
           ...stats(samples),
+          cumulative: { ...totals, msPerPhysicsStep: totals.physicsSteps ? totals.solverMs / totals.physicsSteps : 0,
+            droppedSimulationMs: 1000 * clock.dropped / hz },
+          snapshot: compareView?.showing ?? false,
+          simulatedSteps,
           time,
           active,
           dropped: clock.dropped,
