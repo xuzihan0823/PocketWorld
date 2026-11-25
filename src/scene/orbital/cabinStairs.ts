@@ -1,4 +1,4 @@
-import { CABIN_DIVIDER_X, DECK_WALK_BOUNDS, RESIDENT_RADIUS, UPPER_DECK_OFFSET, type CabinDeck } from './cabinLayout.ts';
+import { DECK_WALK_BOUNDS, RESIDENT_RADIUS, UPPER_DECK_OFFSET, deckFromAuthoredX, type CabinDeck } from './cabinLayout.ts';
 
 type Point = [number, number];
 type Position = [number, number, number];
@@ -28,18 +28,15 @@ export function stairLanding(deck: CabinDeck): Point {
   return deck === 'lower' ? [lowerX, CABIN_STAIRS.lowerZ + landingRun] : [upperLocalX, CABIN_STAIRS.upperZ - landingRun];
 }
 
+/** A click is a walk request; crossing decks becomes a walk to this deck's landing. */
+export function stairApproachPoint(deck: CabinDeck, point: Point): Position {
+  if (deckFromAuthoredX(point[0]) === deck) return [point[0], 0, point[1]];
+  const [x, z] = stairLanding(deck);
+  return [x, 0, z];
+}
+
 export function otherDeck(deck: CabinDeck): CabinDeck {
   return deck === 'lower' ? 'upper' : 'lower';
-}
-
-export function stairDestination(deck: CabinDeck): Position {
-  const [x, z] = stairLanding(otherDeck(deck));
-  return deck === 'lower' ? [x + .02, 0, z - .04] : [x + .30, 0, z];
-}
-
-export function atStairEntrance(deck: CabinDeck, point: Point, nextX: number) {
-  return nextX < DECK_WALK_BOUNDS[deck].left
-    && Math.abs(point[1] - stairLanding(deck)[1]) <= .31;
 }
 
 /** Distance increases on the way up. Both turns connect at floor level. */

@@ -1,3 +1,4 @@
+import { paperGeometry } from './paperGeometry';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -8,23 +9,6 @@ import { SCHEDULE_BOOK_POSITION } from './bookLayout';
 export const GLASS_POSITION: [number, number, number] = [0.69, 2.53, -3.13];
 export const BOOK_POSITION: [number, number, number] = [SCHEDULE_BOOK_POSITION[0] + 0.126, SCHEDULE_BOOK_POSITION[1] + 0.033, SCHEDULE_BOOK_POSITION[2] - 0.01];
 const ease = (t: number) => 1 - (1 - t) ** 3;
-export function paperGeometry(crumpled = false) {
-  const geometry = new THREE.PlaneGeometry(0.56, 0.872, 20, 26).toNonIndexed();
-  const attribute = geometry.attributes.position;
-  const flat = attribute.array.slice() as Float32Array;
-  const folded = new Float32Array(flat.length);
-  for (let i = 0; i < attribute.count; i++) {
-    const x = flat[i * 3], y = flat[i * 3 + 1];
-    const u = (x + 0.28) / 0.56, v = (y + 0.436) / 0.872;
-    const longitude = u * Math.PI * 2, latitude = v * Math.PI;
-    const radius = 0.083 + Math.sin(u * 23 + v * 17) * Math.cos(v * 29) * 0.009;
-    folded.set([Math.cos(longitude) * Math.sin(latitude) * radius, Math.cos(latitude) * radius, Math.sin(longitude) * Math.sin(latitude) * radius], i * 3);
-    flat[i * 3 + 2] = 0.012 * (u ** 6) + Math.sin(v * Math.PI) * 0.003;
-  }
-  attribute.array.set(crumpled ? folded : flat);
-  geometry.computeVertexNormals();
-  return { geometry, flat, folded };
-}
 export function pageTexture(page: SchedulePage, bound = false, side: 'left' | 'right' = 'right') {
   const canvas = document.createElement('canvas');
   canvas.width = 560; canvas.height = 872;

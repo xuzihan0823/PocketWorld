@@ -40,7 +40,7 @@ export function BedroomGuard() {
   </group>;
 }
 
-export function CabinStaircase({ onCross, residentView }: { onCross: () => void; residentView: React.MutableRefObject<CabinResidentView> }) {
+export function CabinStaircase({ onWalkToStairs, residentView }: { onWalkToStairs: () => void; residentView: React.MutableRefObject<CabinResidentView> }) {
   const nearRail = useRef<Group>(null);
   // The follow camera is outside this rail. Fade only its own materials so foot contacts stay visible.
   const railMaterials = useMemo(() => [timber(HANDRAIL).clone(), surface(IRON_FRAME, .42, .52).clone()], []);
@@ -72,7 +72,7 @@ export function CabinStaircase({ onCross, residentView }: { onCross: () => void;
   const threshold = .006;
   const click = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    if (event.delta <= 5) onCross();
+    if (event.delta <= 5) onWalkToStairs();
   };
   return <group name="Cabin_Staircase" onClick={click} onPointerDown={event => event.stopPropagation()}>
     <SoftBox name="Stair_Lower_Landing" dims={[platformWidth, .21, width]} color={TREAD_WOOD} radius={.026}

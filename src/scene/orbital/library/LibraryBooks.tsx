@@ -59,7 +59,7 @@ function BookEntity({ world, book }: { world: WorldModelProps; book: LibraryBook
     }
   // Sample the same flow as the resident, which advances the clock at priority -1.
   }, -2);
-  return <ObjectHandle id="book-01" action="read" hint={`取阅《${book.title}》`} world={world} payload={{ itemId: book.id }}>
+  return <ObjectHandle id="book-01" action="read" panorama hint={`取阅《${book.title}》`} world={world} payload={{ itemId: book.id }}>
     <group ref={group} name={`LibraryBook_${book.id}`} userData={{ bookId: book.id, slotId: book.slotId }}>
       <group ref={rightWing}>
         <SoftBox dims={[.24, .012, .22]} position={[.12, 0, 0]} color={book.color} radius={.003} />

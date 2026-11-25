@@ -149,7 +149,8 @@ export function RecordPlayer(props: WorldSceneProps) {
   const world = { ...props, onAction: action };
   const moving = transport.phase === 'return' || transport.phase === 'extract';
   const pose = transport.pose(props.reducedMotion);
-  return <group name="RecordPlayer" userData={{ phase: transport.phase, discId: transport.disc.id }}>
+  return <ObjectHandle id="music-player" action="inspect" panoramaOnly hint="走近唱机 · 放下唱针或更换唱片" world={props}>
+  <group name="RecordPlayer" userData={{ phase: transport.phase, discId: transport.disc.id }}>
     <group position={PLAYER}>
       <SuppliedAsset name="turntable.parts" part="body" partBounds size={[.88, .158, .50]} fit="contact" position={[0, -.079, 0]} fallback={<>
         <SoftBox dims={[.88, .14, .5]} color="#8e4448" />
@@ -199,5 +200,6 @@ export function RecordPlayer(props: WorldSceneProps) {
     {enabled && props.focusedObject === 'music-player' && <Html center position={[-.35, 1.95, -2.25]} distanceFactor={4} style={{ pointerEvents: 'none', width: 260, textAlign: 'center', color: '#f3e6c9', font: '12px monospace', textShadow: '0 1px 3px #242723' }}>
       {transport.disc.title} · {phaseText[transport.phase]}<br />拿取唱片换曲 · 空白唱片导入音乐{pages > 1 ? ` · 唱片架 ${visiblePage + 1}/${pages}` : ''}
     </Html>}
-  </group>;
+  </group>
+  </ObjectHandle>;
 }

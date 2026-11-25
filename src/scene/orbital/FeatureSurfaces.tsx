@@ -79,7 +79,7 @@ export function FeatureSurfaces(world: WorldSceneProps) {
   const editor = opened && entry && (world.transition.phase === 'active' || world.transition.phase === 'error');
 
   return <group position={JOURNAL_POSITION} rotation-y={JOURNAL_YAW} scale={JOURNAL_SCALE}>
-    <ObjectHandle id="journal" action="write" hint="翻开日记 · 写下今天"
+    <ObjectHandle id="journal" action="write" panorama hint="翻开日记 · 写下今天"
       world={opened ? { ...world, onApproach: () => false } : world}>
       <BoundJournal opened={opened} reducedMotion={world.reducedMotion} control={book} leafCount={leafCount} />
     </ObjectHandle>

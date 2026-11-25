@@ -47,7 +47,7 @@ function FurnitureChair({ world }: { world: WorldModelProps }) {
       <SoftBox dims={[.11, .04, .44]} position={[side, .766, .065]} color="#cbbba1" />
     </group>)}
   </>;
-  return <ObjectHandle id="chair" action={state.active ? 'stand' : 'sit'} hint={state.active ? '起身' : '坐下歇一会'}
+  return <ObjectHandle id="chair" action={state.active ? 'stand' : 'sit'} panorama hint={state.active ? '起身' : '坐下歇一会'}
     world={world} position={[x, 0, z]} rotation={[0, yaw, 0]}>
     {world.sceneId === 'habitat' ? <AssetBoundary fallback={fallback}><Suspense fallback={fallback}><FixedChairModel /></Suspense></AssetBoundary> : <>
       <SuppliedAsset name="lounge-chair.parts" part="base" size={[1.04, 1.40, 1]} fit="contact" rotation={[0, .2, 0]}
@@ -70,7 +70,9 @@ function FurnitureChair({ world }: { world: WorldModelProps }) {
 function FurnitureLamp({ world }: { world: WorldModelProps }) {
   const state = world.objects.lamp ?? CLOSED_OBJECT;
   const bedside = world.sceneId === 'habitat';
-  return <group position={bedside ? LAMP_POSITION : [-1.1, 0, -2.85]} scale={bedside ? .48 : 1}>
+  return <ObjectHandle id="lamp" action="toggle" panoramaOnly hint={state.active ? '轻触台灯 · 关灯' : '轻触台灯 · 开灯'} world={world}
+    position={bedside ? LAMP_POSITION : [-1.1, 0, -2.85]} scale={bedside ? .48 : 1}>
+    <mesh position={[.22, 1.02, 0]}><boxGeometry args={[.82, 2.12, .52]} /><meshBasicMaterial visible={false} /></mesh>
     <SuppliedAsset name="lamp.parts" part="body" size={[.72, 2.02, .48]} fit="contact" position={[.22, 0, 0]} rotation={[0, Math.PI, 0]} fallback={<>    <Cylinder radius={0.23} height={0.065} position={[0, 0.0325, 0]} color={C.ink} />
     <Tube points={[[0, 0.06, 0], [0, 1.5, 0], [0.03, 1.88, 0], [0.22, 2.01, 0], [0.37, 1.97, 0]]} radius={0.022} color={C.brass} />
     <mesh position={[0.37, 1.8, 0]} castShadow><cylinderGeometry args={[0.13, 0.26, 0.32, 32, 1, true]} /><meshStandardMaterial color="#ecd8a3" roughness={0.8} side={2} /></mesh>
@@ -83,7 +85,7 @@ function FurnitureLamp({ world }: { world: WorldModelProps }) {
         <Orb position={[0.55, 1.39, 0]} scale={[0.029, 0.05, 0.029]} color={C.edge} />
       </FurnitureMotion>
     </ObjectHandle>
-  </group>;
+  </ObjectHandle>;
 }
 
 function FurniturePlant({ observatory }: { observatory: boolean }) {
