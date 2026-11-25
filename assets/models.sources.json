@@ -353,6 +353,17 @@
       "bytes": 1013604,
       "sha256": "2966d4f116d6e160ac5e2bfab39e55a9931fa3fae06cdd4eac6a5ea652983971",
       "processing": "scripts/bake-luna-cabin-actions.mjs maps Manny joints to the outfit, fits floor contact and dress panels, fits hand gestures to the face or waist, and exports masked idle rotations and action tracks without meshes or textures."
+    },
+    {
+      "file": "assets/public/models/resident/luna-cabin-actions-cardigan.glb",
+      "source": "Cosindra MotionSmith gallery, eleven UE5 Manny clips fitted to the cardigan outfit.",
+      "sourceManifest": "assets/public/models/resident/luna-cabin-actions-everyday.glb",
+      "license": "The MotionSmith gallery permits commercial game use without attribution.",
+      "licensePage": "https://cosindra.ai/license",
+      "used": true,
+      "bytes": 791940,
+      "sha256": "d4b514a03bfc10ad237a012fc3cad55c57151d1e02db69a0b08fc73e99c7aa4a",
+      "processing": "scripts/bake-luna-cabin-actions.mjs retargets motion to the cardigan skeleton. Calibrates sock support and waist and face hand placement, and fits the rendered front hair above the rug in sit and rise."
     }
   ]
 }

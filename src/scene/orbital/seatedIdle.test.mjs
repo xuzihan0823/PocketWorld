@@ -155,47 +155,49 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
   });
 }
 
-test(`everyday composes the authored overlays without altering seated contacts`, async () => {
-  const { gltf: { scene, animations } } = await load(new URL('luna-walk-room.glb', assets));
-  const clip = name => animations.find(clip => clip.name === name);
-  const rig = createResidentRig(scene, clip('Walk_Grounded_Loop'), false);
-  const data = readFileSync(new URL('luna-seat-contact.bin', assets));
-  const cache = readSeatContactCache(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
-  const chair = createChairAnimation(scene, clip('ChairSit_Contact'), cache);
-  const sofaClip = clip('Luna_CMU_75_20') ?? sofa;
-  const applySofa = sofaPlayer(rig.mesh, sofaClip);
-  const raw = readFileSync(new URL('luna-cabin-actions-everyday.glb', assets));
-  const fitted = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
-  const clips = Object.fromEntries(fitted.animations.map(clip => [clip.name, clip]));
-  const apply = createCabinActionPlayer(rig.mesh, clips);
-  const bone = name => scene.getObjectByName('mixamorig' + name);
-  const supports = ['Hips', 'LeftUpLeg', 'RightUpLeg', 'LeftLeg', 'RightLeg', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'];
-  const matrix = name => bone(name).matrixWorld.clone();
-  try {
-    for (const [gesture, base] of [
-      ['chairGlance', () => chair.apply(CHAIR_SIT_SECONDS, 1)],
-      ['sofaDoze', () => applySofa(sofaClip.duration)],
-      ['floorGlance', () => apply('floorSit', clips.floorSit.duration)],
-    ]) {
-      const reset = () => { rig.applyPose(0, 0); chair.apply(0, 0); base(); scene.updateMatrixWorld(true); };
-      reset();
-      const initial = supports.map(matrix), head = bone('Head').getWorldQuaternion(new THREE.Quaternion());
-      const arms = ['LeftHand', 'RightHand'].map(matrix);
-      let maxHeadTurn = 0;
-      for (let i = 0; i <= 20; i++) {
+for (const [outfit, [model, contact]] of Object.entries({ ...outfits, ribbon: ['luna-ribbon', 'luna-ribbon-seat'] })) {
+  test(`${outfit} composes the authored overlays without altering seated contacts`, async () => {
+    const { gltf: { scene, animations } } = await load(new URL(model + '.glb', assets));
+    const clip = name => animations.find(clip => clip.name === name);
+    const rig = createResidentRig(scene, clip('Walk_Grounded_Loop'), outfit === 'cardigan');
+    const data = readFileSync(new URL(contact + '.bin', assets));
+    const cache = readSeatContactCache(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+    const chair = createChairAnimation(scene, clip('ChairSit_Contact'), cache);
+    const sofaClip = clip('Luna_CMU_75_20') ?? sofa;
+    const applySofa = sofaPlayer(rig.mesh, sofaClip);
+    const raw = readFileSync(new URL('luna-cabin-actions-' + outfit + '.glb', assets));
+    const fitted = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
+    const clips = Object.fromEntries(fitted.animations.map(clip => [clip.name, clip]));
+    const apply = createCabinActionPlayer(rig.mesh, clips);
+    const bone = name => scene.getObjectByName('mixamorig' + name);
+    const supports = ['Hips', 'LeftUpLeg', 'RightUpLeg', 'LeftLeg', 'RightLeg', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'];
+    const matrix = name => bone(name).matrixWorld.clone();
+    try {
+      for (const [gesture, base] of [
+        ['chairGlance', () => chair.apply(CHAIR_SIT_SECONDS, 1)],
+        ['sofaDoze', () => applySofa(sofaClip.duration)],
+        ['floorGlance', () => apply('floorSit', clips.floorSit.duration)],
+      ]) {
+        const reset = () => { rig.applyPose(0, 0); chair.apply(0, 0); base(); scene.updateMatrixWorld(true); };
         reset();
-        apply(gesture, clips[gesture].duration * i / 20);
-        scene.updateMatrixWorld(true);
-        supports.forEach((name, index) => assert(matrix(name).equals(initial[index]), name));
-        if (gesture === 'chairGlance') {
-          ['LeftHand', 'RightHand'].forEach((name, index) => assert(matrix(name).equals(arms[index]), name));
+        const initial = supports.map(matrix), head = bone('Head').getWorldQuaternion(new THREE.Quaternion());
+        const arms = ['LeftHand', 'RightHand'].map(matrix);
+        let maxHeadTurn = 0;
+        for (let i = 0; i <= 20; i++) {
+          reset();
+          apply(gesture, clips[gesture].duration * i / 20);
+          scene.updateMatrixWorld(true);
+          supports.forEach((name, index) => assert(matrix(name).equals(initial[index]), name));
+          if (gesture === 'chairGlance') {
+            ['LeftHand', 'RightHand'].forEach((name, index) => assert(matrix(name).equals(arms[index]), name));
+          }
+          maxHeadTurn = Math.max(maxHeadTurn, head.angleTo(bone('Head').getWorldQuaternion(new THREE.Quaternion())));
         }
-        maxHeadTurn = Math.max(maxHeadTurn, head.angleTo(bone('Head').getWorldQuaternion(new THREE.Quaternion())));
+        assert.ok(maxHeadTurn >= .10 && maxHeadTurn < .58, gesture + ' moves the head within its fitted range');
       }
-      assert.ok(maxHeadTurn >= .10 && maxHeadTurn < .58, gesture + ' moves the head within its fitted range');
-    }
-  } finally { chair.dispose(); rig.dispose(); }
-});
+    } finally { chair.dispose(); rig.dispose(); }
+  });
+}
 
 test('the ribbon outfit grounds its sock soles and binds its fitted chair, sofa, book and cabin actions', async () => {
   const { gltf: { scene, animations } } = await load(new URL('luna-ribbon.glb', assets));

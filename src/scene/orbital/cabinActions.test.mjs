@@ -10,6 +10,7 @@ import {
 import { createIdleState, stepIdle } from './standingIdle.ts';
 import { createResidentRig } from './residentRig.ts';
 import { load } from './load-for-validation.mjs';
+import { outfitSlots } from './wardrobe/outfit.ts';
 
 const model = name => new URL('../../../assets/public/models/resident/luna-' + name + '.glb', import.meta.url);
 
@@ -134,42 +135,85 @@ function checkLapCoverage(root) {
   }
 }
 
-test(`MotionSmith takes bind and keep everyday close to the rug during floor holds`, async () => {
-  const data = await readFile(model('cabin-actions-everyday'));
-  const { animations } = await new GLTFLoader().parseAsync(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), '');
-  assert.deepEqual(animations.map(clip => clip.name), CABIN_ACTIONS);
-  const { gltf } = await load(model('walk-room'));
-  const rig = createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
-  try {
-    const clips = Object.fromEntries(animations.map(clip => [clip.name, clip]));
-    const apply = createCabinActionPlayer(rig.mesh, clips);
-    const point = new Vector3();
-    const boneY = name => rig.mesh.getObjectByName('mixamorig' + name).getWorldPosition(point).y;
-    for (const clip of animations) {
-      assert.ok(clip.duration > 2.9 && clip.duration < 6.1);
-      assert.ok(clip.tracks.every(track => track.values.every(Number.isFinite)));
-      rig.applyPose(0, 0);
-      apply(clip.name, clip.duration * .5);
-      assert.ok(Number.isFinite(boneY('Hips')));
+function checkCardiganHairClearance(rig, clips, apply) {
+  const surfaces = [];
+  rig.mesh.traverse(mesh => {
+    if (!mesh.isSkinnedMesh) return;
+    const { skinIndex } = mesh.geometry.attributes;
+    const vertices = [];
+    for (let i = 0; i < skinIndex.count; i++) {
+      if (mesh.skeleton.bones[skinIndex.getX(i)].name.startsWith('Hair_Front_')) vertices.push(i);
     }
-    rig.applyPose(0, 0);
-    apply('floorSit', clips.floorSit.duration);
-    assert.ok(boneY('Hips') < .23, 'seated pelvis stays close to the rug');
-    assert.ok(Math.min(boneY('LeftFoot'), boneY('RightFoot')) < .16);
-    checkLapCoverage(rig.mesh);
-    apply('floorGlance', 2.5);
-    checkLapCoverage(rig.mesh);
-    for (const name of ['shiftWeight', 'stretchNeck']) {
-      rig.applyPose(0, 0);
-      const fixed = ['Hips', 'LeftFoot', 'RightFoot'].map(name => boneY(name));
-      apply(name, 2.5);
-      assert.deepEqual(['Hips', 'LeftFoot', 'RightFoot'].map(name => boneY(name)), fixed);
+    if (vertices.length) surfaces.push({ mesh, vertices });
+  });
+  assert.ok(surfaces.length > 0);
+  const position = new Vector3();
+  const lowestHair = () => {
+    rig.mesh.updateMatrixWorld(true);
+    let lowest = Infinity;
+    for (const { mesh, vertices } of surfaces) {
+      mesh.skeleton.update();
+      for (const index of vertices) {
+        mesh.getVertexPosition(index, position).applyMatrix4(mesh.matrixWorld);
+        lowest = Math.min(lowest, position.y);
+      }
     }
-    rig.applyPose(0, 0);
-    apply('floorStand', clips.floorStand.duration);
-    assert.ok(boneY('Hips') > .65);
-    rig.applyPose(0, 0);
-    apply('pickUp', 1.90);
-    assert.ok(boneY('RightHand') < .25);
-  } finally { rig.dispose(); }
-});
+    return lowest;
+  };
+  for (const [phase, name] of [['sit', 'floorSit'], ['rise', 'floorStand'], ['seated', 'floorGlance']]) {
+    const frames = Math.ceil(clips[name].duration * 30);
+    for (let frame = 0; frame <= frames; frame++) {
+      const time = clips[name].duration * frame / frames;
+      rig.applyPose(0, 0);
+      applyCabinPerformance({ kind: 'floor', phase, time }, clips, apply);
+      if (phase === 'seated') apply(name, time);
+      const lowest = lowestHair();
+      assert.ok(lowest >= .005, `${name} at ${time.toFixed(3)}s: front hair clears the rug (${lowest.toFixed(4)}m)`);
+    }
+  }
+}
+
+for (const outfit of outfitSlots) {
+  test(`MotionSmith takes bind and keep ${outfit} close to the rug during floor holds`, async () => {
+    const data = await readFile(model('cabin-actions-' + outfit));
+    const { animations } = await new GLTFLoader().parseAsync(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength), '');
+    assert.deepEqual(animations.map(clip => clip.name), CABIN_ACTIONS);
+    const { gltf } = await load(model(outfit === 'everyday' ? 'walk-room' : outfit));
+    const rig = createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), outfit === 'cardigan');
+    try {
+      const clips = Object.fromEntries(animations.map(clip => [clip.name, clip]));
+      const apply = createCabinActionPlayer(rig.mesh, clips);
+      const point = new Vector3();
+      const boneY = name => rig.mesh.getObjectByName('mixamorig' + name).getWorldPosition(point).y;
+      for (const clip of animations) {
+        assert.ok(clip.duration > 2.9 && clip.duration < 6.1);
+        assert.ok(clip.tracks.every(track => track.values.every(Number.isFinite)));
+        rig.applyPose(0, 0);
+        apply(clip.name, clip.duration * .5);
+        assert.ok(Number.isFinite(boneY('Hips')));
+      }
+      rig.applyPose(0, 0);
+      apply('floorSit', clips.floorSit.duration);
+      assert.ok(boneY('Hips') < .23, 'seated pelvis stays close to the rug');
+      assert.ok(Math.min(boneY('LeftFoot'), boneY('RightFoot')) < .16);
+      if (outfit === 'everyday') {
+        checkLapCoverage(rig.mesh);
+        apply('floorGlance', 2.5);
+        checkLapCoverage(rig.mesh);
+      }
+      for (const name of ['shiftWeight', 'stretchNeck']) {
+        rig.applyPose(0, 0);
+        const fixed = ['Hips', 'LeftFoot', 'RightFoot'].map(name => boneY(name));
+        apply(name, 2.5);
+        assert.deepEqual(['Hips', 'LeftFoot', 'RightFoot'].map(name => boneY(name)), fixed);
+      }
+      rig.applyPose(0, 0);
+      apply('floorStand', clips.floorStand.duration);
+      assert.ok(boneY('Hips') > .65);
+      rig.applyPose(0, 0);
+      apply('pickUp', 1.90);
+      assert.ok(boneY('RightHand') < .25);
+      if (outfit === 'cardigan') checkCardiganHairClearance(rig, clips, apply);
+    } finally { rig.dispose(); }
+  });
+}

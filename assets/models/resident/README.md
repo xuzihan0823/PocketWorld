@@ -12,14 +12,15 @@ python scripts/fit-luna-ribbon.py /path/to/Luna-Ribbon.glb --motions assets/publ
 
 ## 生活舱日常动作
 
-地毯的盘腿坐地使用 MotionSmith Take 2 原地版，盘腿起身、捡东西、揉眼睛、托腮思考和向高处取物均使用 Take 1。摘取姿态来自 UE5 Manny 的 30 fps 骨骼动画。脚底和骨盆按 Luna 日常装的实际蒙皮校准。盘腿时，裙装的前幅分别越过左右膝，中间略低，末端向下折落。侧幅绕向膝外侧，后摆在地毯上摊开。入座和起身时沿动作过渡。脸部手势保留原片时序，腕位按 Luna 的脸型缩放。书架目录使用托下巴动作的抬手段并保持姿势。拾物在 1.9 秒把纸团交给右手。拾娃娃复用同一动作，起身后双手托住，放下时反向播放。高处取物在书本接触前交回书柜原动作。
+地毯的盘腿坐地使用 MotionSmith Take 2 原地版，盘腿起身、捡东西、揉眼睛、托腮思考和向高处取物均使用 Take 1。摘取姿态来自 UE5 Manny 的 30 fps 骨骼动画。日常装和丁香针织开衫按各自实际蒙皮校准脚底和骨盆，蝴蝶结外套由日常装重定向并重新校准脚底。盘腿时，日常裙的前幅分别越过左右膝，中间略低，末端向下折落。侧幅绕向膝外侧，后摆在地毯上摊开。入座和起身时沿动作过渡。脸部手势保留原片时序，腕位按 Luna 的脸型缩放。书架目录使用托下巴动作的抬手段并保持姿势。拾物在 1.9 秒把纸团交给右手。拾娃娃复用同一动作，起身后双手托住，放下时反向播放。高处取物在书本接触前交回书柜原动作。
 
-五条待机同样按日常装导出。从 [Feminine Idle](https://cosindra.ai/motionsmith/motions/idle-feminine) Take 1 提取躯干与左臂，并按日常装调整掌面朝向和腰侧落点。[Neck Stretch](https://cosindra.ai/motionsmith/motions/idle-neck-stretch) Take 2 使用胸部以上旋转。[Seated Dozing Idle](https://cosindra.ai/motionsmith/motions/seated-dozing-idle) Take 1 保留点头回抬的节奏，用躯干辅助前倾。[Seated Idle](https://cosindra.ai/motionsmith/motions/sit-chair-idle) Take 5 和 [Floor Sitting Idle](https://cosindra.ai/motionsmith/motions/sit-floor-idle) Take 1 保留原片的视线方向，用淡入淡出形成转头。三段坐姿只叠加脊柱、颈或头的相对旋转。叠加时保留原坐姿接触和地毯蒙皮。
+五条待机随服装各自的动作包加载。从 [Feminine Idle](https://cosindra.ai/motionsmith/motions/idle-feminine) Take 1 提取躯干与左臂，并按服装调整掌面朝向和腰侧落点。[Neck Stretch](https://cosindra.ai/motionsmith/motions/idle-neck-stretch) Take 2 使用胸部以上旋转。[Seated Dozing Idle](https://cosindra.ai/motionsmith/motions/seated-dozing-idle) Take 1 保留点头回抬的节奏，用躯干辅助前倾。[Seated Idle](https://cosindra.ai/motionsmith/motions/sit-chair-idle) Take 5 和 [Floor Sitting Idle](https://cosindra.ai/motionsmith/motions/sit-floor-idle) Take 1 保留原片的视线方向，用淡入淡出形成转头。三段坐姿只叠加脊柱、颈或头的相对旋转。叠加时保留原坐姿接触和地毯蒙皮。
 
-原片放在仓库外同一个目录，每个文件保留 MotionSmith 的默认名。使用 Node.js 24 重建日常装的动画 GLB。
+原片放在仓库外同一个目录，每个文件保留 MotionSmith 的默认名。使用 Node.js 24 重建日常装与丁香针织开衫的动画 GLB。开衫直接使用骨盆和大腿的短衣摆蒙皮，并在盘腿落座及起身时，根据前发束距地高度烘焙弯曲。蝴蝶结外套沿用本页对应的重定向命令。
 
 ```bash
-node scripts/bake-luna-cabin-actions.mjs /path/to/downloads
+node scripts/bake-luna-cabin-actions.mjs /path/to/downloads everyday
+node scripts/bake-luna-cabin-actions.mjs /path/to/downloads cardigan
 ```
 
 来源、Take 和源文件校验值见[素材登记](../../models.sources.json)。
