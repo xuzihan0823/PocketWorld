@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { readSeatContactCache, type SeatContactCache } from '../chairAnimation';
 import { readLibraryMotion, type LibraryMotion } from '../library/libraryMotion';
 import type { ResidentOutfit } from './outfit';
+import { fitWardrobeGarment } from './garmentFit';
 
 export interface ResidentAssets {
   outfit: ResidentOutfit;
@@ -39,6 +40,7 @@ export function loadResidentAssets(outfit: ResidentOutfit): Promise<ResidentAsse
   const cached = pending.get(outfit);
   if (cached) return cached;
   const request = new GLTFLoader().loadAsync(base + files[outfit][0]).then(gltf => {
+    fitWardrobeGarment(gltf.scene, outfit);
     const clip = (name: string) => {
       const match = gltf.animations.find(animation => animation.name === name);
       if (!match) throw new Error('人物动作缺失：' + name);

@@ -1124,7 +1124,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       rig.current.followMotion(rawDelta,
         !interactionPose && !libraryActive && !p.focusedObject && !p.reducedMotion && !document.hidden,
         root.rotation.y, frameDx, frameDz, stairGait?.phase ?? s.walkTime);
-      rig.current.applyArmCorrectives(!interactionPose && !libraryActive && !plushGrip.current);
+      rig.current.applyArmCorrectives(!interactionPose && !libraryActive && !plushGrip.current, p.reducedMotion ? undefined : dt);
     }
     if (library && rig.current) library.tick(dt);
     rig.current?.updateSleeveContact?.();

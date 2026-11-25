@@ -34,7 +34,7 @@ export interface ResidentRig {
   followMotion: (dt: number, enabled: boolean, yaw: number, dx: number, dz: number, phase: number) => void;
   fitted?: ResidentAssets['fitted'];
   updateSleeveContact?: () => void;
-  applyArmCorrectives: (enabled: boolean) => void;
+  applyArmCorrectives: (enabled: boolean, deltaSeconds?: number) => void;
   applySeatedIdle?: ReturnType<typeof createSeatedIdlePlayer>;
   applyChairPose?: (time: number, weight: number) => void;
   dispose: () => void;
