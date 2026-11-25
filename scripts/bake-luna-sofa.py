@@ -57,6 +57,9 @@ start = Vector(frames[first]['root'][:3])
 tracks = {}
 nodes = []
 previous = {}
+# The bare cushion sits below the folded blanket on the other side.
+# Let the last pleat on this side unfold as the cushion takes the load.
+hem_drop = {'Dress_Back_R_03': .036, 'Dress_Right_03': .023}
 indices = {bone.name: i for i, bone in enumerate(bones)}
 for bone in bones:
     world = neutral[key(bone.name)]
@@ -78,6 +81,10 @@ for frame_index in range(first, last + 1, 2):
     sample = capture(frame)
     delta = Vector(frame['root'][:3]) - start
     weight = min(1., max(0., -delta.y / 13.6))
+    settle = min(1., max(0., (frame_index - 156) / 48))
+    settle = settle * settle * (3 - 2 * settle)
+    unfold = min(1., max(0., (frame_index - 184) / 60))
+    unfold = unfold * unfold * (3 - 2 * unfold)
     worlds = {}
     for bone in bones:
         name = key(bone.name)
@@ -109,16 +116,18 @@ for frame_index in range(first, last + 1, 2):
                 flare = (.31, .23, .14)[level]
                 sweep = -.17
             elif panel == 'Back':
-                # Keep the rear hem lifted as it crosses the lip, then let it
-                # settle into the hollow once the cushion takes Luna's weight.
-                settle = min(1., max(0., (frame_index - 174) / 36))
-                settle = settle * settle * (3 - 2 * settle)
-                pitch = (1.18, .76, .12)[level] - (.20, .34, .30)[level] * settle
+                # Drop from the waist first, then turn the lower tier out
+                # along the cushion. The corners spread around the hips.
+                entry = (1.18, .76, .12)[level]
+                seated = ((.08, .21, -.70) if side else (.67, -.33, .37))[level]
+                pitch = entry + (seated - entry) * settle
                 flare = (.52, .40, .26)[level]
                 sweep = .04
             else:
-                pitch = (-.82, -.90, -.76)[level]
-                flare = (1.08, .92, .70)[level]
+                pitch = (-.82, -.90, -.76)[level] + (.18, .22, .19)[level] * settle
+                # The blanket raises the support under the left-hand folds.
+                gather = (.30, .25, .17) if left else (.48, .44, .34)
+                flare = (1.08, .92, .70)[level] - gather[level] * settle
                 sweep = -.34
             # The hem follows a few capture frames behind the hip. Blend back
             # to the held sample so reversal uses exactly the same cloth pose.
@@ -129,6 +138,7 @@ for frame_index in range(first, last + 1, 2):
             turn = Quaternion((0, 1, 0), side * sweep * bend)
             fold = turn @ Quaternion((1, 0, 0), pitch * bend) @ roll
             world = Matrix.LocRotScale(world.translation, fold @ rest.to_quaternion(), rest.to_scale())
+            world.translation.y -= hem_drop.get(name, 0.) * unfold
         worlds[name] = world
 
     # Two-link IK keeps each ankle and sole at its own calibrated standing
@@ -164,6 +174,8 @@ for frame_index in range(first, last + 1, 2):
         tracks.setdefault((indices[bone.name], 'rotation'), []).extend([q.x,q.y,q.z,q.w])
         if name == 'mixamorigHips':
             tracks.setdefault((indices[bone.name], 'translation'), []).extend(local.translation / 1.43)
+        elif name in hem_drop:
+            tracks.setdefault((indices[bone.name], 'translation'), []).extend(local.translation)
 
 # Write only joint transforms. The room supplies Luna's mesh, skin and textures.
 binary = bytearray()

@@ -4,8 +4,9 @@ import { useFrame } from '@react-three/fiber';
 import { Box3, Mesh, Vector3 } from 'three';
 import { FLOOR_SOFA } from './cabinLayout';
 import { sofaPressure } from './sofaMotion';
+import type { ResidentOutfit } from './wardrobe/outfit';
 
-export function FloorSofa({ sample }: { sample: React.RefObject<number | null> }) {
+export function FloorSofa({ sample, outfit }: { sample: React.RefObject<number | null>; outfit: ResidentOutfit }) {
   const { scene } = useGLTF(`${import.meta.env.BASE_URL}models/furniture/floor-sofa.glb`);
   const { model, cushions } = useMemo(() => {
     const model = scene.clone(true);
@@ -26,7 +27,7 @@ export function FloorSofa({ sample }: { sample: React.RefObject<number | null> }
     return { model, cushions };
   }, [scene]);
   useFrame(() => {
-    const weight = sofaPressure(sample.current);
+    const weight = sofaPressure(sample.current, outfit);
     for (const cushion of cushions) cushion.weights[cushion.index] = weight;
   });
   return <group name="Furniture_FloorSofa" position={FLOOR_SOFA.position} rotation-y={FLOOR_SOFA.yaw} dispose={null}>

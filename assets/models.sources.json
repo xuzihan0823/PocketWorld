@@ -73,8 +73,8 @@
         }
       ],
       "processing": "scripts/bake-luna-sofa.py retargets the captured descent and seated recoil to the room skeleton in Blender, with foot IK and fitted skirt bones. Bone animation only, sampled at 30 Hz.",
-      "bytes": 101984,
-      "sha256": "6de95fb63aec6482bb84d627f69535a4207935923daa40dda178b2d060742718"
+      "bytes": 104440,
+      "sha256": "29a4313db3aa5cc9679fa1dbdccf19995cf0d5765e97b757949630e8dc239d28"
     },
     {
       "file": "furniture/trash-can.glb",
