@@ -54,6 +54,25 @@ test('zoned anchors span three sectors on two rings and are removed when changin
   }
 });
 
+test('feathering preserves each sector load and uses existing neighbors on the same ring', () => {
+  for (const guide of [41, 53]) {
+    const profile = sleeve();
+    configureSleeveCuff(profile, 'zoned', null, guide);
+    const baseline = profile.elasticAnchors;
+    configureSleeveCuff(profile, 'feathered', null, guide);
+    const anchors = profile.elasticAnchors;
+    assert.equal(new Set(anchors.map(a => a.particle)).size, 18);
+    baseline.forEach((original, sector) => {
+      const stiffness = original.createStiffnessSampler()(1 / 120);
+      anchors.slice(3 * sector, 3 * sector + 3).forEach((anchor, i) => {
+        assert.equal(anchor.particle, original.particle + i - 1);
+        assert.equal(Math.floor(anchor.particle / 12), Math.floor(original.particle / 12));
+        assert.ok(Math.abs(anchor.createStiffnessSampler()(1 / 120) - stiffness * [0.125, 0.75, 0.125][i]) < 1e-9);
+      });
+    });
+  }
+});
+
 test('dynamic zones release to a finite floor and respond to wrist speed independently of timestep', () => {
   const bones = ['Arm', 'ForeArm', 'Hand'].map(name => Object.assign(new Bone(), { name: 'mixamorigLeft' + name }));
   const [shoulder, elbow, wrist] = bones;

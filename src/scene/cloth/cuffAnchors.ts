@@ -1,7 +1,7 @@
 import { MathUtils, Vector3, type SkinnedMesh } from 'three';
 import type { ClothProfile } from './physics';
 
-export type CuffStrategy = 'hard' | 'released' | 'soft' | 'zoned' | 'dynamic';
+export type CuffStrategy = 'hard' | 'released' | 'soft' | 'zoned' | 'feathered' | 'dynamic';
 export type CuffGuide = 41 | 53;
 
 type ElasticAnchor = NonNullable<ClothProfile['elasticAnchor']>;
@@ -59,7 +59,11 @@ export function configureSleeveCuff(
     profile.elasticAnchor = { particle: guide, createStiffnessSampler: () => () => softStiffness };
     return;
   }
-  profile.elasticAnchors = zones.map(({ row, column, share }) => ({
+  // Spread a quarter of each sector's load onto its two circumferential neighbors.
+  const distribution = strategy === 'feathered' ? zones.flatMap(({ row, column, share }) =>
+    [-1, 0, 1].map(offset => ({ row, column: column + offset, share: share * (offset === 0 ? 0.75 : 0.125) })),
+  ) : zones;
+  profile.elasticAnchors = distribution.map(({ row, column, share }) => ({
     particle: guide + row * 12 + column,
     createStiffnessSampler: strategy === 'dynamic' ? movingSpring(mesh, share) : () => () => share * zonedStiffness,
   }));

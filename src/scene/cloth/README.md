@@ -47,7 +47,7 @@ Rapier 0.21.0 使用原生 `SoftBodyDesc`，写入与 XPBD 共用的边表和三
 
 `pipeline=previous` 使用默认绑定。`surface` 延后限幅，`budget` 优先沿衣身侧面分离，`contact` 在随蒙皮更新的简化衣身、内衬与腕手三角面上查询接触。后者沿袖片拓扑向连接边界渐隐，在所有左袖顶点执行 18 mm 世界空间限幅。第 2,574 步和 2,702 步可对比同一躺下动作的不同结果。[冻结接触候选](http://localhost:5194/src/scene/cloth/index.html?scene=sleeve&pipeline=contact&atStep=2702)
 
-冻结底图中青色、紫色为外向和内向袖面，黄色为过渡朝向，绿色为腋下内衬，蓝色为衣身，橙色为真实腕手。红线标出远端选区开边及拆点接缝，棕色球链表示按肩肘腕骨段估算的臂壳。深色线网为接触候选使用的简化三角面。`cuff=hard/released/soft/zoned/dynamic` 分别选择袖口硬锚、释放、单点软锚、两圈分区软锚和动态分区软锚。默认 `forearm` 保留前臂导点。
+冻结底图中青色、紫色为外向和内向袖面，黄色为过渡朝向，绿色为腋下内衬，蓝色为衣身，橙色为真实腕手。红线标出远端选区开边及拆点接缝，棕色球链表示按肩肘腕骨段估算的臂壳。深色线网为接触候选使用的简化三角面。`cuff=hard/released/soft/zoned/dynamic` 分别选择袖口硬锚、释放、单点软锚、两圈分区软锚和动态分区软锚。默认 `forearm` 保留前臂导点。`cuff=feathered` 将每个分区的 25% 刚度等分至同一圈的左右邻点。复测时固定 `pipeline=contact`，分别将 `cuff=zoned` 与 `cuff=feathered` 冻结在 `atStep=2574` 和 `atStep=2702`。快切沿用下方 `rapidSwitch` 回放。固定时间戳的真实模型回归可运行 `node --test src/scene/cloth/cuffReplay.test.mjs`。
 
 `pwcs.inspectStages(1, true)` 返回每个阶段的四组交叉、所在区域、面号及世界深度，并逐点返回相对蒙皮的世界毫米位移向量。`limited` 是限幅缓冲的接触结果，`stages.final` 读取渲染属性。`displacement` 的输入、输出均为绝对偏移，各自峰值可能来自不同顶点；`witness` 两向量来自同一顶点。代理读数为求解结果相对本步动画目标的偏移，参考值为零。映射层报告四导点插值的未混合位移。`armEnvelope` 单独返回骨段球链内的顶点数与最大径向深度。省略第二个参数仅返回位移摘要，`recordLimit` 可取 `Infinity` 保留全部交叉记录。
 
@@ -71,7 +71,7 @@ const rapier = await replaySleeve('rapier', false, stages, focus, settings)
 const slowBend = await isolateElbow(false, stages, false, settings)
 ```
 
-`rapidSwitch` 在 4,110 步生活动作之后连续采样 120 步，每 12 步切换一次目标动作。原轨道和追加的切换窗口分别统计。
+`rapidSwitch` 在 4,110 步生活动作之后连续采样 120 步，每 12 步切换一次目标动作。原轨道和追加的切换窗口分别统计。用 `{ ...settings, cuff: 'zoned', preserveFadeWeight: true }` 复测中断过渡时保留淡出权重的消融。比较锚点时，两侧使用相同的 `preserveFadeWeight` 设置。
 
 `peaks` 依次给出自由—自由、固定—自由、固定—固定各自峰值最大的四条边，长度单位为米。`observations` 按步号保留同姿势的接触结果。`isolateElbow(true)` 可复测旧版。它固定住其余骨骼，静置 1 秒，在 3 秒内缓慢屈肘，再保持 2 秒，全程关闭重力、自碰撞与外部碰撞。
 

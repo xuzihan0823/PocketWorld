@@ -46,12 +46,12 @@ function pinResidual(region: Region) {
 type Audit = (mesh: T.SkinnedMesh) => {
   measure(raw: Float32Array, final: Float32Array, region: Region, positions: Float32Array): unknown;
 };
-type ReplaySettings = { pipeline?: import('./binding').SleevePipeline; cuff?: CuffStrategy; rapidSwitch?: boolean };
+type ReplaySettings = { pipeline?: import('./binding').SleevePipeline; cuff?: CuffStrategy; rapidSwitch?: boolean; preserveFadeWeight?: boolean };
 
 /** Deterministic quality replay. Expensive surface observations run outside the solver timer. */
 export async function replaySleeve(engine: 'xpbd' | 'rapier', legacy = false, audit?: Audit, extraFocus: number[] = [], settings: ReplaySettings = {}) {
   const stage = new T.Scene();
-  const actor = await createActor(stage, false, 0);
+  const actor = await createActor(stage, false, 0, settings.preserveFadeWeight);
   const region = garmentRegion(actor.skin, 'Left', false, !legacy, true, settings.pipeline, settings.cuff);
   const solver = engine === 'xpbd' ? new Xpbd(region.profile) : await makeRapier(region.profile, region.balls, true);
   const edges = strainRecorder(region.profile), surface = audit?.(actor.skin);

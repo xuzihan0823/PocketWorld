@@ -74,7 +74,7 @@ export function releaseMeshes(scene: T.Object3D) {
   }
 }
 
-export async function createActor(stage: T.Scene, everyday: boolean, offset: number) {
+export async function createActor(stage: T.Scene, everyday: boolean, offset: number, preserveFadeWeight = false) {
   const [model, cabin] = await Promise.all([
     loader.loadAsync(base + (everyday ? 'luna-walk-room' : 'luna-ribbon') + '.glb'),
     loadCabinActions(everyday ? 'everyday' : 'ribbon'),
@@ -155,7 +155,11 @@ export async function createActor(stage: T.Scene, everyday: boolean, offset: num
     const next = actions[motions.indexOf(motion)];
     if (active === next) return;
     next.reset().setEffectiveWeight(1).play();
-    if (active) active.crossFadeTo(next, 0.22, false);
+    if (active) {
+      // Three starts a fade-out at a multiplier of one, including interrupted fade-ins.
+      if (preserveFadeWeight) active.setEffectiveWeight(active.getEffectiveWeight());
+      active.crossFadeTo(next, 0.22, false);
+    }
     active = next;
   }
   function update(dt: number) {
