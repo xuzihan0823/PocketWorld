@@ -10,6 +10,7 @@ import { FurnitureBookcase } from './FurnitureBooks';
 import { SuppliedAsset } from './SuppliedAsset';
 import { Bedding } from './Bedding';
 import { FloorSofa } from './FloorSofa';
+import { readOutfit } from './wardrobe/outfit';
 import { AssetBoundary, ReusableAsset } from './ReusableAsset';
 import { cloneSuppliedModel } from './supplied-model';
 import { CHAIR_POSES } from './chairPose';
@@ -116,7 +117,7 @@ export function HabitatBedroom({ world, sofaTime }: { world: WorldModelProps; so
     <FurnitureBed />
     <ObjectHandle id="sofa" panorama onClick={event => event.stopPropagation()} action={world.objects.sofa?.active ? 'stand' : 'sit'}
       hint={world.objects.sofa?.active ? '起身' : '坐进懒人沙发'} world={world}>
-      <AssetBoundary><Suspense fallback={null}><FloorSofa sample={sofaTime} /></Suspense></AssetBoundary>
+      <AssetBoundary><Suspense fallback={null}><FloorSofa sample={sofaTime} outfit={readOutfit(world.objects.wardrobe?.itemId)} /></Suspense></AssetBoundary>
     </ObjectHandle>
     <FurnitureLamp world={world} />
     <FurniturePlant observatory={false} />

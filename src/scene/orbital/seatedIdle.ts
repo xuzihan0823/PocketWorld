@@ -6,15 +6,25 @@ import { CHAIR_LEG_SWING, SEATED_IDLE_FPS, SOFA_CHEEK_REST } from './seatedIdleF
 type SeatedIdleKind = 'sofa' | 'chair' | 'floor';
 type SeatedOverlay = 'sofaDoze' | 'chairGlance' | 'floorGlance';
 type SeatedClips = Partial<Record<SeatedOverlay, { duration: number }>>;
+const sampleDuration = (samples: readonly number[]) => (samples.length / 2 - 1) / SEATED_IDLE_FPS;
+const procedural = {
+  cheekRest: { duration: sampleDuration(SOFA_CHEEK_REST), fadeIn: 1.65, fadeOut: 1.15 },
+  sofaSwing: { duration: 5.2, fadeIn: .8, fadeOut: .95 },
+  chairSwing: { duration: sampleDuration(CHAIR_LEG_SWING), fadeIn: .35, fadeOut: .35 },
+};
+type SeatedGesture = keyof typeof procedural | SeatedOverlay;
 const motions = {
-  sofa: { samples: SOFA_CHEEK_REST, delay: 1.1, rest: 7.2, overlay: 'sofaDoze' },
-  chair: { samples: CHAIR_LEG_SWING, delay: .75, rest: 4.6, overlay: 'chairGlance' },
-  floor: { samples: null, delay: 5.5, rest: 13, overlay: 'floorGlance' },
+  sofa: { gestures: ['cheekRest', 'sofaSwing', 'sofaDoze'], delay: 0, rest: 4.2 },
+  chair: { gestures: ['chairSwing', 'chairGlance'], delay: .75, rest: 4.6 },
+  floor: { gestures: ['floorGlance'], delay: 5.5, rest: 13 },
 } as const;
-const duration = (samples: readonly number[]) => (samples.length / 2 - 1) / SEATED_IDLE_FPS;
+
+export function isSeatedOverlay(gesture: SeatedGesture | null): gesture is SeatedOverlay {
+  return gesture === 'sofaDoze' || gesture === 'chairGlance' || gesture === 'floorGlance';
+}
 
 export function createSeatedIdle() {
-  return { seat: null as SeatedIdleKind | null, overlay: null as SeatedOverlay | null,
+  return { seat: null as SeatedIdleKind | null, gesture: null as SeatedGesture | null,
     time: 0, weight: 0, release: 0 };
 }
 
@@ -35,30 +45,35 @@ export function stepSeatedIdle(
     idle.seat = seat;
     if (seat) {
       idle.time = -motions[seat].delay;
-      if (seat === 'floor') idle.overlay = motions.floor.overlay;
+      idle.gesture = motions[seat].gestures[0];
     }
   }
-  if (!seat) return false;
+  const gesture = idle.gesture;
+  if (!seat || !gesture) return false;
   if (exiting) {
     if (idle.weight === 0) return false;
-    idle.release = Math.min(1, idle.release + dt / .32);
+    const releaseTime = seat === 'sofa' ? .32 + .48 * idle.weight : .32;
+    idle.release = Math.min(1, idle.release + dt / releaseTime);
     if (idle.release < 1) return true;
     idle.weight = 0;
     return false;
   }
-  const { samples, rest, overlay } = motions[seat];
-  const length = idle.overlay ? clips?.[idle.overlay]?.duration ?? 0 : samples ? duration(samples) : 0;
+  const { gestures, rest } = motions[seat];
+  const overlay = isSeatedOverlay(gesture);
+  const timing = overlay ? undefined : procedural[gesture];
+  const length = overlay ? clips?.[gesture]?.duration ?? 0 : procedural[gesture].duration;
   idle.release = 0;
   idle.time += dt;
   if (idle.time >= length) {
     idle.time -= length + rest;
-    idle.overlay = seat === 'floor' || (!idle.overlay && clips?.[overlay]) ? overlay : null;
+    const cycle: readonly SeatedGesture[] = gestures;
+    const next = cycle[(cycle.indexOf(gesture) + 1) % cycle.length];
+    idle.gesture = isSeatedOverlay(next) && !clips?.[next] ? cycle[0] : next;
     idle.weight = 0;
     return false;
   }
-  const blend = idle.overlay ? .85 : .35;
-  idle.weight = MathUtils.smoothstep(idle.time, 0, blend)
-    * (1 - MathUtils.smoothstep(idle.time, length - blend - .05, length));
+  idle.weight = MathUtils.smoothstep(idle.time, 0, timing?.fadeIn ?? .85)
+    * (1 - MathUtils.smoothstep(idle.time, length - (timing?.fadeOut ?? .85) - .05, length));
   return false;
 }
 
@@ -91,7 +106,7 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
   const leftHip = bone('LeftUpLeg'), leftKnee = bone('LeftLeg');
   const rightHip = bone('RightUpLeg'), rightKnee = bone('RightLeg');
   const freeHandOnLap = outfit === 'cardigan';
-  const legs = (['Left', 'Right'] as const).map(side => ({ shin: bone(side + 'Leg'), foot: bone(side + 'Foot') }));
+  const legs = [{ shin: leftKnee, foot: bone('LeftFoot') }, { shin: rightKnee, foot: bone('RightFoot') }];
   const point = new Vector3();
   const basis = new Matrix4();
   const cheek = new Vector3(...cheekContact[outfit]);
@@ -199,20 +214,26 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
   }
 
   return (idle: ReturnType<typeof createSeatedIdle>) => {
-    if (!idle.seat || idle.seat === 'floor' || idle.overlay || !idle.weight) return;
-    const { samples } = motions[idle.seat];
-    const frame = MathUtils.clamp(idle.time, 0, duration(samples)) * SEATED_IDLE_FPS;
-    const start = Math.floor(frame), end = Math.min(start + 1, samples.length / 2 - 1);
-    const first = MathUtils.lerp(samples[start * 2], samples[end * 2], frame - start);
-    const second = MathUtils.lerp(samples[start * 2 + 1], samples[end * 2 + 1], frame - start);
+    const gesture = idle.gesture;
+    if (!gesture || isSeatedOverlay(gesture) || !idle.weight) return;
     const weight = seatedIdleWeight(idle);
     rig.mesh.getWorldQuaternion(room);
     roomX.set(1, 0, 0).applyQuaternion(room);
-    if (idle.seat === 'chair') {
+    const onSofa = gesture === 'sofaSwing';
+    const samples = gesture === 'cheekRest' ? SOFA_CHEEK_REST : CHAIR_LEG_SWING;
+    const time = MathUtils.clamp(idle.time, 0, procedural[gesture].duration);
+    const frame = time * (onSofa ? .5 : 1) * SEATED_IDLE_FPS;
+    const start = Math.floor(frame), end = Math.min(start + 1, samples.length / 2 - 1);
+    const first = MathUtils.lerp(samples[start * 2], samples[end * 2], frame - start);
+    const second = MathUtils.lerp(samples[start * 2 + 1], samples[end * 2 + 1], frame - start);
+    if (gesture !== 'cheekRest') {
       legs.forEach(({ shin, foot }, index) => {
-        const swing = (index === 0 ? first : second) * weight;
+        const captured = index === 0 ? first : second;
+        // Use the most flexed part of the take as the floor limit on the low seat.
+        const floorLimit = index === 0 ? .2748 : .2412;
+        const swing = (onSofa ? Math.min(captured - floorLimit, 0) * .72 : captured) * weight;
         rotate(shin, roomX, swing);
-        rotate(foot, roomX, -.32 * swing);
+        rotate(foot, roomX, (onSofa ? -.82 : -.32) * swing);
       });
     } else {
       roomY.set(0, 1, 0).applyQuaternion(room);

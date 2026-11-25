@@ -25,18 +25,30 @@ const { createChairAnimation, readSeatContactCache } = local('./chairAnimation')
 const { CHAIR_SIT_SECONDS } = local('./chairMotion');
 const { sofaPlayer } = local('./sofaMotion');
 
-test('seated idles wait, pause between gestures and clear on leaving or disabling the pose', () => {
+test('the sofa blends into its first gesture immediately and releases smoothly on exit', () => {
   const idle = createSeatedIdle();
-  for (let frame = 0; frame < 30; frame++) stepSeatedIdle(idle, 1 / 60, 'sofa', false);
-  assert.equal(idle.weight, 0);
-  for (let frame = 0; frame < 110; frame++) stepSeatedIdle(idle, 1 / 60, 'sofa', false);
-  assert.equal(idle.weight, 1);
-  const time = idle.time;
-  assert.equal(stepSeatedIdle(idle, .04, 'sofa', true), true);
-  assert.equal(idle.time, time);
-  assert.equal(stepSeatedIdle(idle, .04, null, true), false);
-  assert.deepEqual(idle, createSeatedIdle());
+  for (const fps of [30, 60, 120]) {
+    const dt = 1 / fps;
+    stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > 0 && idle.weight < .05, 'ease in on the first frame of every sit');
+    while (idle.time < .35) stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > 0 && idle.weight < .15, 'the hand is only starting to rise as the cushion settles');
+    while (idle.time < .8) stepSeatedIdle(idle, dt, 'sofa', false);
+    assert.ok(idle.weight > .45 && idle.weight < .55);
+    const time = idle.time, weight = idle.weight;
+    assert.equal(stepSeatedIdle(idle, dt, 'sofa', true), true);
+    assert.ok(seatedIdleWeight(idle) < weight);
+    while (stepSeatedIdle(idle, dt, 'sofa', true)) assert.equal(idle.time, time);
+    assert.equal(seatedIdleWeight(idle), 0);
+    stepSeatedIdle(idle, dt, null, false);
+    assert.deepEqual(idle, createSeatedIdle());
+  }
+});
 
+test('the chair waits before its first swing and rests between gestures', () => {
+  const idle = createSeatedIdle();
+  for (let frame = 0; frame < 30; frame++) stepSeatedIdle(idle, 1 / 60, 'chair', false);
+  assert.equal(idle.weight, 0);
   const releaseTimes = [1 / 30, 1 / 60, 1 / 120].map(dt => {
     for (let frame = 0; frame < 2 / dt; frame++) stepSeatedIdle(idle, dt, 'chair', false);
     let releaseTime = dt;
@@ -52,30 +64,34 @@ test('seated idles wait, pause between gestures and clear on leaving or disablin
   assert.equal(idle.weight, 1, 'a new chair gesture can begin after the rest');
 });
 
-test('seated overlays alternate with the original gestures and release before the seat is left', () => {
+test('seated gestures cycle in order and release before the seat is left', () => {
   const clips = { sofaDoze: { duration: 6 }, chairGlance: { duration: 6 }, floorGlance: { duration: 6 } };
   for (const [seat, overlay] of Object.entries({ sofa: 'sofaDoze', chair: 'chairGlance', floor: 'floorGlance' })) {
     const idle = createSeatedIdle(), gestures = [];
     for (let i = 0; i < 60 * 55; i++) {
       assert.equal(stepSeatedIdle(idle, 1 / 60, seat, false, clips), false);
-      if (idle.weight > 0 && (gestures.length === 0 || gestures.at(-1) !== idle.overlay)) gestures.push(idle.overlay);
+      if (idle.weight > 0 && gestures.at(-1) !== idle.gesture) gestures.push(idle.gesture);
     }
-    assert.deepEqual(gestures.slice(0, seat === 'floor' ? 1 : 3),
-      seat === 'floor' ? [overlay] : [null, overlay, null]);
-    for (let i = 0; i < 60 * 30 && (idle.overlay !== overlay || idle.weight !== 1); i++) {
+    const expected = seat === 'sofa' ? ['cheekRest', 'sofaSwing', overlay, 'cheekRest']
+      : seat === 'chair' ? ['chairSwing', overlay, 'chairSwing'] : [overlay];
+    assert.deepEqual(gestures.slice(0, expected.length), expected);
+    for (let i = 0; i < 60 * 45 && (idle.gesture !== overlay || idle.weight !== 1); i++) {
       stepSeatedIdle(idle, 1 / 60, seat, false, clips);
     }
-    assert.equal(idle.overlay, overlay);
+    assert.equal(idle.gesture, overlay);
     assert.equal(idle.weight, 1);
     const time = idle.time;
     let previous = 1;
-    for (let i = 1; i <= 20; i++) {
-      assert.equal(stepSeatedIdle(idle, 1 / 60, seat, true, clips), i < 20);
+    let heldFrames = 0;
+    while (stepSeatedIdle(idle, 1 / 60, seat, true, clips)) {
+      assert.ok(++heldFrames < 60);
       assert.equal(idle.time, time);
       const weight = seatedIdleWeight(idle);
       assert(weight <= previous);
       previous = weight;
     }
+    assert.ok(heldFrames / 60 >= (seat === 'sofa' ? .75 : .30));
+    assert.equal(seatedIdleWeight(idle), 0);
     stepSeatedIdle(idle, 1 / 60, null, false, clips);
     assert.deepEqual(idle, createSeatedIdle());
   }
@@ -107,7 +123,7 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
         rig.applyPose(0, 0);
         chair.apply(CHAIR_SIT_SECONDS, Number(seat === 'chair'));
         if (seat === 'sofa') applySofa(sofaClip.duration);
-        if (time !== undefined) applyIdle({ seat, time, weight: 1, release });
+        if (time !== undefined) applyIdle({ seat, gesture: seat === 'sofa' ? 'cheekRest' : 'chairSwing', time, weight: 1, release });
       };
       const supports = ['Hips', ...feet, 'LeftToeBase', 'RightToeBase'];
       sample('sofa');
@@ -152,6 +168,51 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
       chair.dispose();
       rig.dispose();
     }
+  });
+}
+
+for (const [outfit, model] of Object.entries({ everyday: 'luna-walk-room', ribbon: 'luna-ribbon', cardigan: 'luna-cardigan' })) {
+  test(`${outfit} swings the shins from fixed knees and returns to the sofa pose`, async () => {
+    const { gltf: { scene, animations } } = await load(new URL(model + '.glb', assets));
+    const rig = createResidentRig(scene, animations.find(c => c.name === 'Walk_Grounded_Loop'), outfit === 'cardigan');
+    try {
+      const clip = animations.find(c => c.name === 'Luna_CMU_75_20') ?? sofa;
+      const apply = sofaPlayer(rig.mesh, clip), play = createSeatedIdlePlayer(rig, outfit);
+      const idle = createSeatedIdle();
+      const point = name => scene.getObjectByName('mixamorig' + name).getWorldPosition(new THREE.Vector3());
+      const sides = ['Left', 'Right'];
+      const sample = () => { rig.applyPose(0, 0); apply(clip.duration); play(idle); };
+      sample();
+      const supports = ['Hips', ...sides.flatMap(side => [side + 'UpLeg', side + 'Leg'])];
+      const supportPositions = supports.map(point);
+      const rest = sides.map(side => point(side + 'Foot'));
+      const toeHeights = sides.map(side => point(side + 'ToeBase').y);
+      const heights = [[], []];
+      for (let frame = 0; frame < 24 * 30; frame++) {
+        stepSeatedIdle(idle, 1 / 30, 'sofa', false);
+        if (idle.gesture !== 'sofaSwing') {
+          if (heights[0].length) break;
+          continue;
+        }
+        sample();
+        supports.forEach((name, i) => assert.ok(point(name).distanceTo(supportPositions[i]) < 1e-5, name));
+        sides.forEach((side, i) => {
+          const thigh = point(side + 'UpLeg'), knee = point(side + 'Leg'), foot = point(side + 'Foot');
+          const flex = knee.clone().sub(thigh).angleTo(foot.clone().sub(knee));
+          assert.ok(flex > .29, 'knees stay bent');
+          assert.ok(foot.z >= rest[i].z - .001, 'feet only swing forward from their starting positions');
+          assert.ok(point(side + 'ToeBase').y >= toeHeights[i] - .001, 'toes clear the floor');
+          heights[i].push(foot.y);
+        });
+      }
+      for (const values of heights) {
+        const peaks = values.filter((y, i) => y > values[i - 1] && y > values[i + 1]);
+        assert.equal(peaks.length, 2, 'each foot rises twice');
+        assert.ok(Math.min(...peaks) - Math.min(...values) > .03, 'each swing is visible');
+      }
+      sample();
+      sides.forEach((side, i) => assert.ok(point(side + 'Foot').distanceTo(rest[i]) < 1e-5));
+    } finally { rig.dispose(); }
   });
 }
 

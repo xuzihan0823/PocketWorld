@@ -29,7 +29,7 @@ import { WALK_SPEED } from './residentRig';
 import { sampleStairGait, stairFootfall, stairTreadSurface, type StairGait } from './stairGait';
 import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
-import { createSeatedIdle, seatedIdleWeight, stepSeatedIdle } from './seatedIdle';
+import { createSeatedIdle, isSeatedOverlay, seatedIdleWeight, stepSeatedIdle } from './seatedIdle';
 import { SlipperPair } from './Slippers';
 import { PlushDolls } from './PlushDolls';
 import { createPlushBodies, isValidPlushBody, plushObstacleBoxes, resolveMoverAgainstPlush, stepPlushDolls, type PlushBody } from './plushMotion';
@@ -726,8 +726,9 @@ export function OrbitalResidents(props: ResidentsProps) {
     const settledFloor = floor?.kind === 'floor' && (floor.phase === 'seated'
       || (floor.phase === 'rise' && floor.time === 0 && seatIdle.seat === 'floor'));
     const settledChair = s.posture === 'chair' && chairMotion.current.phase === 'seated';
-    const settledSofa = s.posture === 'sofa' && sofaClip && sofa.time >= SOFA_STEPS + sofaClip.duration;
-    const seat = settledFloor && p.approachEnabled ? 'floor' : settledChair ? 'chair' : settledSofa ? 'sofa' : null;
+    // Blend the cheek rest into the final cushion rebound while the sit clip still owns the hips and feet.
+    const sofaIdleReady = s.posture === 'sofa' && sofaClip && sofa.time >= SOFA_STEPS + sofaClip.duration - .35;
+    const seat = settledFloor && p.approachEnabled ? 'floor' : settledChair ? 'chair' : sofaIdleReady ? 'sofa' : null;
     const canIdle = p.sceneId === 'habitat' && !!rig.current && !p.reducedMotion && !document.hidden;
     const pauseIdle = !p.enabled || !!p.focusedObject;
     const activeSeat = canIdle && (!pauseIdle || (seatIdle.seat === seat && seatIdle.weight > 0)) ? seat : null;
@@ -1135,9 +1136,9 @@ export function OrbitalResidents(props: ResidentsProps) {
         plushGrip.current.visible = deckFrame.current?.visible ?? true;
         plushPose.current.apply(root, plushGrip.current, performance?.kind === 'plush' ? performance.time : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
       }
-      if (seatIdle.overlay) {
+      if (isSeatedOverlay(seatIdle.gesture)) {
         const weight = seatedIdleWeight(seatIdle);
-        if (weight > 0) cabin.apply?.(seatIdle.overlay, seatIdle.time, weight);
+        if (weight > 0) cabin.apply?.(seatIdle.gesture, seatIdle.time, weight);
       } else {
         rig.current.applySeatedIdle?.(seatIdle);
       }
