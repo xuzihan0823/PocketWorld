@@ -153,17 +153,20 @@ test('ranger sixth-round and silver penetration change pistol attacks',()=>{
   const r=ready('pistol');r.specials.sixth=1;r.shotCounts.pistol=5;advance(r,.01);assert.equal(r.bullets[0].damage,54);
   const p=ready('pistol');p.specials.silver=1;p.enemies.push(enemy(p,{id:2,x:1120,hp:10000,max:10000}));advance(p,.01);p.shot=100;
   for(let i=0;i<30;i++)advance(p,.01);assert.ok(p.enemies[1].hp<10000);assert.ok(p.enemies[0].hp<p.enemies[1].hp);
-  const e=ready('pistol');e.specials.deadeye=3;e.random=()=>0;advance(e,.01);e.shot=100;for(let i=0;i<15;i++)advance(e,.01);assert.ok(e.texts.some(t=>t.label==='CRITICAL!'));
+  const e=ready('pistol');e.specials.deadeye=3;e.random=()=>0;advance(e,.01);e.shot=100;for(let i=0;i<15;i++)advance(e,.01);assert.ok(e.texts.some(t=>t.label==='暴击！'));
 });
 test('engineer supports spin-up, anchored damage, bonus salvo and periodic discharge',()=>{
   const r=ready('machine');r.heat=1;r.specials.spinup=3;r.specials.stabilizer=2;r.specials.salvo=2;r.shotCounts.machine=5;advance(r,.01);
   assert.ok(r.shot<.12);assert.equal(r.bullets.length,3);assert.ok(r.bullets[0].damage>7);
   const c=ready('machine');c.specials.capacitor=2;c.shotCounts.machine=11;advance(c,.01);assert.equal(c.enemies[0].hp,9964);assert.ok(c.blasts.length>0);
 });
-test('alchemist cluster rockets are nonrecursive and leave damaging embers',()=>{
+test('alchemist launcher cone leaves linked damaging embers and a fuse burst',()=>{
   const r=ready('rocket');r.specials.cluster=2;r.specials.embers=1;r.specials.fuse=1;r.enemies[0].hp=1;r.enemies.push(enemy(r,{id:2,x:1085,hp:10000,max:10000}));
-  advance(r,.05);advance(r,.05);assert.equal(r.bullets.filter(b=>b.secondary).length,3);assert.equal(r.fields.length,1);assert.ok(r.blasts.length>=2);
-  const hp=r.enemies.find(e=>e.id===2).hp;r.shot=100;for(let i=0;i<15;i++)advance(r,.05);assert.ok(r.enemies.find(e=>e.id===2).hp<hp);assert.ok(r.bullets.every(b=>b.secondary));
+  advance(r,.05);advance(r,.05);assert.equal(r.bullets.length,0);assert.equal(r.fields.length,1);assert.ok(r.fields[0].life>3.9);assert.equal(r.blasts.length,3);assert.ok(r.blasts.some(b=>b.coneAngle!==undefined));
+  const survivor=r.enemies.find(e=>e.id===2), hp=survivor.hp;
+  survivor.x=r.fields[0].x;survivor.y=r.fields[0].y;r.shot=100;
+  for(let i=0;i<15;i++)advance(r,.05);
+  assert.ok(Math.abs(hp-survivor.hp-3.6)<1e-9);assert.equal(r.bullets.length,0);
 });
 test('arcanist twins, familiar and sigils change spell count and penetration damage',()=>{
   const r=ready('wand');r.specials.twin=2;r.specials.familiar=1;r.shotCounts.wand=2;advance(r,.01);assert.equal(r.bullets.length,4);assert.ok(r.bullets.some(b=>b.secondary));
@@ -240,4 +243,46 @@ test('thrown broom inherits reap and third-attack radial specialization',()=>{
   const r=variantReady('broom','flying');r.hp=50;r.specials.reap=2;r.enemies=[enemy(r,{x:1080,hp:1e5,max:1e5}),enemy(r,{id:2,x:1130,hp:1e5,max:1e5})];advance(r,.01);r.shot=100;
   for(let i=0;i<70;i++)advance(r,.01);assert.equal(r.hp,52);
   const w=variantReady('broom','flying');w.specials.whirl=1;w.shotCounts.broom=2;advance(w,.01);assert.equal(w.bullets.filter(b=>b.secondary).length,5);
+});
+
+test('hit feedback decays and contact invincibility prevents repeated damage', () => {
+  const r=createRun(()=>.5);r.shot=100;r.spawn=100;
+  r.enemies=[enemy(r,{x:r.player.x,hp:500,max:500})];
+  advance(r,.01);const hp=r.hp;
+  assert.ok(hp<r.maxHp);assert.ok(r.damageFlash>0);assert.ok(r.invincible>0);
+  for(let i=0;i<6;i++)advance(r,.05);
+  assert.equal(r.hp,hp);assert.equal(r.damageFlash,0);
+  r.enemies=[enemy(r,{hp:500,max:500})];r.shot=0;
+  for(let i=0;i<30&&!r.enemies[0].flash;i++)advance(r,.01);
+  assert.ok(r.enemies[0].flash>0);r.bullets=[];r.shot=100;
+  for(let i=0;i<4;i++)advance(r,.05);
+  assert.equal(r.enemies[0].flash,0);
+});
+
+test('the engineer is offered the missing link card and can discharge early once both cards are learned', () => {
+  for (const heat of [.4, .8]) {
+    const r = ready('machine');
+    r.heat = heat; r.specials.spinup = 1; r.shotCounts.machine = 7;
+    r.phase = 'upgrade'; r.choices = rollChoices(r);
+    assert.ok(r.choices.some(card => card.id === 'capacitor'));
+    assert.ok(chooseUpgrade(r, 'capacitor'));
+    advance(r, .01);
+    assert.equal(r.enemies[0].hp, heat > .75 ? 9982 : 10000);
+    assert.equal(r.texts.some(effect => effect.label === '翡翠过载'), heat > .75);
+  }
+});
+
+test('wind link adds two blades only on a storm attack, for melee and flying broom', () => {
+  for (const variant of ['sweep', 'flying']) {
+    const build = (linked, shotCount) => {
+      const r = variantReady('broom', variant);
+      r.enemies[0].x = 1070;
+      r.specials.gale = 1; r.specials.whirl = Number(linked);
+      r.shotCounts.broom = shotCount;
+      advance(r, .01);
+      return r.bullets.length;
+    };
+    assert.equal(build(true, 1), build(false, 1));
+    assert.equal(build(true, 2) - build(false, 2), variant === 'sweep' ? 2 : 7);
+  }
 });
