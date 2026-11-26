@@ -114,3 +114,105 @@ test('a blocked cat audio playback can be retried on the next interaction', asyn
   assert.equal(state.audios.length, 2);
   assert.equal(state.audios[1].paused, false);
 });
+
+function setupFullWebAudio() {
+  const nodes = [];
+  let now = 1;
+  const param = () => ({
+    value: 1,
+    setValueAtTime(v) { this.value = v; },
+    linearRampToValueAtTime(v) { this.value = v; },
+    exponentialRampToValueAtTime(v) { this.value = v; },
+    setTargetAtTime(v) { this.value = v; },
+  });
+  const makeNode = kind => {
+    const n = {
+      kind,
+      gain: param(),
+      frequency: param(),
+      Q: param(),
+      playbackRate: param(),
+      connect(to) { this.to = to; },
+      disconnect() { this.disconnected = true; },
+      start() { this.started = true; },
+      stop() { this.stopped = true; this.onended?.(); },
+    };
+    nodes.push(n);
+    return n;
+  };
+  class Context {
+    state = 'running';
+    sampleRate = 48000;
+    destination = {};
+    get currentTime() { return now; }
+    createGain() { return makeNode('gain'); }
+    createOscillator() { return makeNode('osc'); }
+    createBiquadFilter() { return makeNode('filter'); }
+    createBuffer(_ch, len, rate) {
+      const data = new Float32Array(len);
+      return { duration: len / rate, getChannelData: () => data };
+    }
+    createBufferSource() {
+      const src = makeNode('buffer');
+      src.start = () => { src.started = true; src.onended?.(); };
+      return src;
+    }
+    async resume() {}
+  }
+  const context = {
+    exports: {},
+    window: { AudioContext: Context, setInterval() {}, clearInterval() {} },
+    require(name) { return { default: name }; },
+  };
+  vm.runInNewContext(compiled, context);
+  return {
+    engine: context.exports.roomAudio,
+    nodes,
+    advance(dt) { now += dt; },
+  };
+}
+
+test('lamp, book, and paper physical SFX route through master mute gain, clean up nodes, and throttle bursts', () => {
+  const env = setupFullWebAudio();
+  const types = [
+    'lamp-on', 'lamp-off',
+    'book-open', 'book-close', 'book-extract', 'book-insert', 'book-shelf-add',
+    'paper', 'paper-tear', 'paper-crumple', 'paper-land', 'paper-pickup', 'paper-check',
+  ];
+
+  env.engine.setMuted(true);
+  for (const type of types) env.engine.playSfx(type);
+  assert.equal(env.nodes.length, 0, 'muted engine must not allocate SFX nodes');
+
+  env.engine.setMuted(false);
+  let master = null;
+  for (const type of types) {
+    const before = env.nodes.length;
+    env.engine.playSfx(type);
+    if (!master) master = env.nodes[0];
+    const created = env.nodes.slice(before);
+    const activeNodes = created.filter(n => n !== master && n !== env.nodes[1]);
+    assert.ok(activeNodes.length > 0, `${type} should create audio nodes`);
+    assert.ok(activeNodes.some(n => n.to === master), `${type} should route into master mute gain`);
+    for (const n of activeNodes) {
+      assert.equal(n.disconnected, true, `${type} node (${n.kind}) must disconnect on end`);
+    }
+    env.advance(0.1);
+  }
+
+  // Verify rapid duplicate throttle prevents immediate double-trigger
+  const beforeBurst = env.nodes.length;
+  env.engine.playSfx('lamp-on');
+  const afterFirst = env.nodes.length;
+  assert.ok(afterFirst > beforeBurst);
+  env.engine.playSfx('lamp-on');
+  assert.equal(env.nodes.length, afterFirst, 'immediate duplicate SFX should be throttled');
+});
+
+test('physical SFX degrade gracefully when AudioContext lacks buffer/filter APIs', () => {
+  const { engine, nodes } = setup();
+  for (const type of ['lamp-on', 'paper', 'paper-tear', 'paper-crumple', 'paper-pickup', 'book-open', 'book-close', 'book-insert']) {
+    assert.doesNotThrow(() => engine.playSfx(type));
+  }
+  assert.ok(nodes.length > 2);
+});

@@ -42,6 +42,22 @@ export interface SunSample {
   warmth: number;
 }
 
+export interface OrbitSunRig {
+  /** Unit vector toward the orbital Earth's centre. */
+  earth: [number, number, number];
+  /** In-sky upward unit vector perpendicular to `earth`. */
+  up: [number, number, number];
+  /** In-sky leftward unit vector perpendicular to `earth` and `up`. */
+  left: [number, number, number];
+  /** Orbital Earth's apparent angular radius in degrees. */
+  angularRadius: number;
+  /** Peak horizontal swing angle (radians) toward port/starboard sky. */
+  lateralSwing: number;
+  /** Smooth exponential-linear basis weights matching limb contact at 0.4/0.6 and upper-left start. */
+  shoulderWeight: number;
+  linearWeight: number;
+}
+
 function length(v: Vec3) { return Math.hypot(v[0], v[1], v[2]); }
 function normalize(v: Vec3): [number, number, number] {
   const l = length(v) || 1;
@@ -89,6 +105,92 @@ export function sampleSun(orbit: SunOrbit, phase: number): SunSample {
   const { earth: e, axis: a } = orbit;
   const direction = normalize([e[0] * c + a[0] * s, e[1] * c + a[1] * s, e[2] * c + a[2] * s]);
   const separation = Math.abs(angle) - orbit.angularRadius;
+  return {
+    direction,
+    separation,
+    daylight: smoothstep(TWILIGHT_IN, TWILIGHT_OUT, separation),
+    warmth: 1 - smoothstep(0, WARM_BAND, separation),
+  };
+}
+
+function cross(a: Vec3, b: Vec3): [number, number, number] {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+/**
+ * Build a C-smooth inclined orbital Sun trajectory for exterior orbital cruise so the blazing Sun
+ * sits in the upper-left sky at initial entry (`initialPhase`), sweeps into sunset behind Earth's
+ * limb at `phase = 0.4`, hides behind Earth across `[0.4, 0.6]` (`ECLIPSE_FRACTION`), and rises on
+ * the opposite limb at `phase = 0.6`.
+ */
+export function createOrbitSunRig(
+  earthPosition: Vec3,
+  earthRadius: number,
+  upHint: Vec3,
+  sunStartTarget: Vec3,
+  initialPhase: number,
+): OrbitSunRig {
+  const earth = normalize(earthPosition);
+  const upAlong = dot(upHint, earth);
+  const up = normalize([upHint[0] - upAlong * earth[0], upHint[1] - upAlong * earth[1], upHint[2] - upAlong * earth[2]]);
+  const left = normalize(cross(up, earth));
+  const angularRadiusRad = Math.asin(Math.min(0.98, earthRadius / (length(earthPosition) || 1)));
+  const angularRadius = angularRadiusRad / DEG;
+
+  const target = normalize(sunStartTarget);
+  const sinAlphaStart = Math.max(0.05, Math.min(0.96, dot(target, up)));
+  const alphaStart = Math.asin(sinAlphaStart);
+  const cosAlphaStart = Math.max(0.05, Math.cos(alphaStart));
+  const sinBetaStart = Math.max(-0.95, Math.min(0.95, dot(target, left) / cosAlphaStart));
+  const betaStart = Math.max(0.08, Math.abs(Math.asin(sinBetaStart)));
+
+  const p0 = initialPhase - Math.floor(initialPhase);
+  const theta0 = 2 * Math.PI * (p0 - 0.5);
+  const sinTheta0 = Math.max(0.25, Math.abs(Math.sin(theta0)));
+  const limbTheta = ECLIPSE_FRACTION * Math.PI; // 0.2 * pi (phase 0.4 & 0.6)
+  const sinLimb = Math.sin(limbTheta);
+
+  // Clamp horizontal swing so limb contact always stays geometrically realizable inside `angularRadius`
+  const maxBetaLimb = angularRadiusRad * 0.88;
+  const lateralSwing = Math.min(betaStart / sinTheta0, maxBetaLimb / sinLimb);
+  const betaLimb = lateralSwing * sinLimb;
+  const cosAlphaLimb = Math.min(0.9999, Math.max(0.05, Math.cos(angularRadiusRad) / Math.cos(betaLimb)));
+  const alphaLimb = Math.acos(cosAlphaLimb);
+
+  const uLimb = (1 - Math.cos(limbTheta)) / 2;
+  const uStart = Math.max(uLimb + 0.05, (1 - Math.cos(theta0)) / 2);
+  const clampedStart = Math.max(alphaLimb + 10.5 * DEG, alphaStart);
+  const fLimb = 1 - Math.exp(-uLimb * 14);
+  const fStart = 1 - Math.exp(-uStart * 14);
+  const det = fLimb * uStart - uLimb * fStart || 1e-6;
+  const shoulderWeight = (alphaLimb * uStart - clampedStart * uLimb) / det;
+  const linearWeight = (fLimb * clampedStart - fStart * alphaLimb) / det;
+
+  return { earth, up, left, angularRadius, lateralSwing, shoulderWeight, linearWeight };
+}
+
+export function sampleOrbitSun(rig: OrbitSunRig, phase: number): SunSample {
+  const p = phase - Math.floor(phase);
+  const theta = 2 * Math.PI * (p - 0.5);
+  const u = Math.max(0, (1 - Math.cos(theta)) / 2);
+  const alpha = rig.shoulderWeight * (1 - Math.exp(-u * 14)) + rig.linearWeight * u;
+  const beta = -rig.lateralSwing * Math.sin(theta);
+  const cosA = Math.cos(alpha);
+  const sinA = Math.sin(alpha);
+  const cosB = Math.cos(beta);
+  const sinB = Math.sin(beta);
+  const { earth: e, up, left } = rig;
+  const direction = normalize([
+    e[0] * cosA * cosB + up[0] * sinA + left[0] * cosA * sinB,
+    e[1] * cosA * cosB + up[1] * sinA + left[1] * cosA * sinB,
+    e[2] * cosA * cosB + up[2] * sinA + left[2] * cosA * sinB,
+  ]);
+  const angle = Math.acos(Math.max(-1, Math.min(1, dot(direction, e)))) / DEG;
+  const separation = angle - rig.angularRadius;
   return {
     direction,
     separation,

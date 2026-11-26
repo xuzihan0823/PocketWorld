@@ -3,10 +3,19 @@ import type { WorldAction, WorldSceneId } from '../../../types/world';
 import { BOOK_SLOTS, CAPACITY, freshLibrary, LIBRARY_KEY, makeUserBook, mutateLibrary, readLibrary, type LibraryBook, type TextPage } from './catalog';
 import { libraryMotionDuration, type LibraryMotion } from './libraryMotion';
 import { PAGE_TURN_SECONDS } from './bookMotion';
+import { roomAudio, type RoomSfxType } from '../../audioEngine';
 export type LibraryPhase = 'idle' | 'prepare' | 'approach' | 'catalog' | 'align' | 'reach' | 'extract' | 'carry' | 'open' | 'reading' | 'turn' | 'close' | 'return-carry' | 'insert' | 'release' | 'recenter' | 'form' | 'shelving';
 export interface LibraryFlow { phase: LibraryPhase; book: LibraryBook | null; page: number; direction: number; targetPage: number; progress: number; pages: TextPage[]; nextId: string | null; closeRequested: boolean; exit: boolean; pending: WorldAction | null }
 const initialFlow = (): LibraryFlow => ({ phase: 'idle', book: null, page: 0, targetPage: 0, direction: 1, progress: 0, pages: [], nextId: null, closeRequested: false, exit: false, pending: null });
 const times: Partial<Record<LibraryPhase, number>> = { prepare: .9, reach: .74, extract: .62, carry: .96, open: 1.35, turn: PAGE_TURN_SECONDS, close: 1.35, 'return-carry': .96, insert: .62, release: .58, shelving: .6 };
+const phaseSfx: Partial<Record<LibraryPhase, RoomSfxType>> = {
+  extract: 'book-extract',
+  open: 'book-open',
+  turn: 'paper',
+  close: 'book-close',
+  insert: 'book-insert',
+  shelving: 'book-shelf-add',
+};
 export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: boolean; onAction: (action: WorldAction) => void; onReturn: () => void; error: (message: string) => void }) {
   const [cameraView, setCameraView] = useState<'shelf' | 'close' | 'side'>('shelf');
   const [data, setData] = useState(() => { try { return readLibrary(localStorage); } catch { return freshLibrary(); } });
@@ -14,7 +23,15 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
   const motion = useRef<LibraryMotion | null>();
   const flow = useRef(view), live = useRef(options), dataRef = useRef(data), saving = useRef(false), mounted = useRef(true), pendingData = useRef<typeof data | null>(null), deferred = useRef<number>();
   live.current = options; dataRef.current = data;
-  const update = useCallback((patch: Partial<LibraryFlow>) => { flow.current = { ...flow.current, ...patch, progress: 0 }; setView({ ...flow.current }); }, []);
+  const update = useCallback((patch: Partial<LibraryFlow>) => {
+    const previousPhase = flow.current.phase;
+    flow.current = { ...flow.current, ...patch, progress: 0 };
+    if (patch.phase && patch.phase !== previousPhase) {
+      const sfx = phaseSfx[patch.phase];
+      if (sfx) roomAudio.playSfx(sfx);
+    }
+    setView({ ...flow.current });
+  }, []);
   const sync = useCallback(() => { try { const next = readLibrary(localStorage); dataRef.current = next; setData(next); } catch (e) { live.current.error((e as Error).message); } }, []);
   useEffect(() => {
     mounted.current = true; sync();

@@ -26,6 +26,7 @@ function print(side) {
   const canvas = { getContext: () => ctx };
   const { pageTexture } = load('./SchedulePaper.tsx', {
     './paperGeometry': paperGeometry, react: {}, 'react/jsx-runtime': jsx, '@react-three/fiber': {}, './bookLayout': { SCHEDULE_BOOK_POSITION: [0, 0, 0] }, './schedule': schedule,
+    '../../audioEngine': { roomAudio: { playSfx() {} } },
     three: { CanvasTexture: class { constructor(image) { this.image = image; } }, SRGBColorSpace: 'srgb' },
   }, { document: { createElement: () => canvas } });
   pageTexture(schedule.migrateSchedule().current, true, side);

@@ -9,6 +9,7 @@ import { journalPageTexture, paintJournalPage } from './pageTexture';
 import { journalTextStop, type JournalTextLayout, type JournalTextStop } from './textLayout';
 import { JOURNAL_WEATHER } from './weather';
 import { journalPages, todayDate } from './journalStorage';
+import { roomAudio } from '../../audioEngine';
 
 /** Map a printed position onto the same bent surface used by the skinned leaf. */
 function journalSurfacePoint(index: number, x: number, y: number, spread: number, leafCount: number) {
@@ -77,10 +78,14 @@ export function JournalEditor({ entry, book, leafCount, saveState, onChange, onG
     callbacks.current.onChange({ ...callbacks.current.entry, text: next[0].text, pages: next, updatedAt: new Date().toISOString() });
     blink.current = true; paint(index, true);
   };
-  const toggleWeather = (index: number, weather: JournalWeather) => save(index, { weather: pagesRef.current[index]?.weather === weather ? undefined : weather });
+  const toggleWeather = (index: number, weather: JournalWeather) => {
+    roomAudio.playSfx('paper-check');
+    save(index, { weather: pagesRef.current[index]?.weather === weather ? undefined : weather });
+  };
   const turn = (direction: number) => {
     const destination = book.current.spread * 2 + direction * 2;
     if (!book.current.ready || destination < 0 || destination > leafCount * 2) return;
+    roomAudio.playSfx('paper');
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur(); focus.current = null; drag.current = null;
     const next = pagesRef.current.slice();
     while (next.length <= Math.min(destination, leafCount * 2 - 1)) next.push({ text: '', date: todayDate() });

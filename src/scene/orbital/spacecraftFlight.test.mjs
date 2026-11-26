@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { load } from './load-for-validation.mjs';
 import { UPPER_DECK_OFFSET } from './cabinLayout.ts';
 import { CABIN_STAIRS, STAIR_UPPER_PLATFORM_BACK } from './cabinStairs.ts';
-import { CAMERA_FOV, earthPositionForAspect } from './cabinView.ts';
+import { CAMERA_FOV, EARTH_RADIUS, earthPositionForAspect } from './cabinView.ts';
+import { createOrbitSunRig, createSunOrbit, sampleOrbitSun, startPhase } from './sunCycle.ts';
 import {
   APPROACH_DURATION,
   BOOST_TIME_SCALE_EXTRA,
@@ -12,6 +13,7 @@ import {
   approachStartPosition,
   createFlightState,
   hullOpacityForTransition,
+  orbitCelestialLayout,
   orbitDistanceForAspect,
   orbitHomePosition,
   readInitialViewMode,
@@ -56,6 +58,30 @@ test('orbital framing keeps the duplex spacecraft and Earth together in view acr
     const lookDir = SHIP_TARGET.clone().sub(eye).normalize();
     const earthDir = new THREE.Vector3(...earthPositionForAspect(aspect)).normalize();
     assert.ok(lookDir.dot(earthDir) > 0.85, `${width}x${height} Earth alignment too weak: ${lookDir.dot(earthDir)}`);
+
+    // Three-body orbital composition frames upper-left Sun, upper-right Moon, and lower LEO Earth horizon arc together
+    const celestial = orbitCelestialLayout(aspect);
+    const p0 = startPhase(createSunOrbit(earthPositionForAspect(aspect), EARTH_RADIUS));
+    const sunRig = createOrbitSunRig(
+      celestial.earthPosition,
+      celestial.earthRadius,
+      celestial.upDirection,
+      celestial.sunStartTarget,
+      p0,
+    );
+    const sunSample = sampleOrbitSun(sunRig, p0);
+    const sunNdc = new THREE.Vector3(...sunSample.direction).multiplyScalar(1000).add(eye).project(camera);
+    const moonNdc = new THREE.Vector3(...celestial.moonPosition).add(eye).project(camera);
+    assert.ok(sunNdc.x < -0.25 && sunNdc.x > -0.88 && sunNdc.y > 0.20 && sunNdc.y < 0.85, `${width}x${height} Sun out of upper-left frame: ${sunNdc.x},${sunNdc.y}`);
+    assert.ok(moonNdc.x > 0.20 && moonNdc.x < 0.85 && moonNdc.y > 0.20 && moonNdc.y < 0.85, `${width}x${height} Moon out of upper-right frame: ${moonNdc.x},${moonNdc.y}`);
+
+    // Sweeping LEO Earth crest sits below the spacecraft center while staying inside the lower viewport
+    const camUp = new THREE.Vector3(...celestial.upDirection).normalize();
+    const orbitEarthCenter = new THREE.Vector3(...celestial.earthPosition);
+    const radialToTop = camUp.clone().addScaledVector(orbitEarthCenter.clone().normalize(), -camUp.dot(orbitEarthCenter.clone().normalize())).normalize();
+    const crestWorld = orbitEarthCenter.clone().addScaledVector(radialToTop, celestial.earthRadius).add(eye);
+    const crestNdc = crestWorld.project(camera);
+    assert.ok(crestNdc.y < -0.10 && crestNdc.y > -0.65, `${width}x${height} LEO Earth crest misaligned: ${crestNdc.y}`);
   }
 });
 

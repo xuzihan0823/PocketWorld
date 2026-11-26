@@ -61,6 +61,7 @@ function mount(kind, overrides = {}, idleLibrary) {
   };
   const audio = {
     playFootstep: (options = {}) => sounds.push({ ...options }),
+    playSfx() {},
     unlock() { actions.push('unlock'); return Promise.resolve(true); },
     getSnapshot: () => ({ disc: {}, isPlaying: false }),
     subscribe() {}, stopMusic() {},

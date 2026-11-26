@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { paperBallPosition, type PaperBall, type SchedulePage } from './schedule';
 import type { PaperPickup } from '../cabinActions';
 import { SCHEDULE_BOOK_POSITION } from './bookLayout';
+import { roomAudio } from '../../audioEngine';
 
 export const GLASS_POSITION: [number, number, number] = [0.69, 2.53, -3.13];
 export const BOOK_POSITION: [number, number, number] = [SCHEDULE_BOOK_POSITION[0] + 0.126, SCHEDULE_BOOK_POSITION[1] + 0.033, SCHEDULE_BOOK_POSITION[2] - 0.01];
@@ -106,6 +107,7 @@ export interface PaperFlight { kind: 'tear' | 'discard'; page: SchedulePage; fro
 export function FlyingPaper({ flight, reducedMotion, onComplete }: { flight: PaperFlight; reducedMotion: boolean; onComplete: () => void }) {
   const mesh = useRef<THREE.Mesh>(null);
   const elapsed = useRef(0);
+  const cues = useRef({ crumpled: flight.kind === 'discard', landed: false });
   const data = useMemo(() => paperGeometry(), []);
   const texture = useMemo(() => pageTexture(flight.page), [flight.page]);
   const start = useMemo(() => new THREE.Vector3(...(flight.kind === 'tear' ? flight.from ?? BOOK_POSITION : GLASS_POSITION)), [flight]);
@@ -118,10 +120,18 @@ export function FlyingPaper({ flight, reducedMotion, onComplete }: { flight: Pap
     elapsed.current += Math.min(delta, 0.05);
     const progress = Math.min(1, elapsed.current / duration);
     const fold = reducedMotion ? 1 : ease(Math.min(1, progress / 0.32));
+    if (!cues.current.crumpled && (reducedMotion || progress >= 0.12)) {
+      cues.current.crumpled = true;
+      roomAudio.playSfx('paper-crumple');
+    }
     const positions = data.geometry.attributes.position;
     for (let i = 0; i < data.flat.length; i++) positions.array[i] = THREE.MathUtils.lerp(data.flat[i], data.folded[i], fold);
     positions.needsUpdate = true; data.geometry.computeVertexNormals();
     const fall = reducedMotion ? progress : Math.max(0, (progress - 0.32) / 0.68);
+    if (!cues.current.landed && fall >= 0.85) {
+      cues.current.landed = true;
+      roomAudio.playSfx('paper-land');
+    }
     mesh.current.position.lerpVectors(start, end, fall);
     mesh.current.position.y = THREE.MathUtils.lerp(start.y, end.y, fall * fall);
     if (fall > 0.85) mesh.current.position.y += Math.sin((fall - 0.85) / 0.15 * Math.PI) * 0.08;

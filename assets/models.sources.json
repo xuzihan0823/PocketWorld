@@ -8,8 +8,8 @@
       "source": "User-supplied bf6b5b5d-a86b-4f38-b940-dc6e2a2a05dd.glb. Face references Luna's everyday outfit.",
       "used": true,
       "bytes": 8994796,
-      "sha256": "055e3da63f68a59890673b59cc6568dfc87d83859d1adcc61d97b6426cece3bd",
-      "processing": "91-joint fitted skeleton, retouched face, original 4K albedo and the everyday outfit’s full-atlas fill, skin tint and normal strength, grounded walk, desk chair, sofa and three book pickups. Editable source: assets/models/resident/Luna-Ribbon.blend.",
+      "sha256": "8ffa2b53cfd48496c568b495a935183e96635e12ad64cc74310ccdea4e0112b0",
+      "processing": "91-joint fitted skeleton, retouched face and rounded chin, original 4K albedo and the everyday outfit’s full-atlas fill, skin tint and normal strength, grounded walk, desk chair, sofa and three book pickups. Editable source: assets/models/resident/Luna-Ribbon.blend.",
       "license": "User supplied the model for this project. No separate model license was provided."
     },
     {
@@ -34,8 +34,8 @@
       "license": "User-supplied character; no separate character license declaration supplied. Motion provenance is listed with the corresponding Luna assets.",
       "used": true,
       "bytes": 7789564,
-      "sha256": "c476937bdfbaf692b2573e43d9c11c77446f9e42d7d82bfb4649445294b81eb8",
-      "processing": "Transferred everyday facial landmarks onto the cardigan UV atlas. Fitted 115-joint Luna skin with independent sleeves, hand and hair weights, graded collar and shoulder-cap weights, a closer arm stance and a walk retargeted from the everyday shoulder, elbow and palm trajectories, independent contact shapes, continuous rear hem weights, sock sole contacts and nine existing animation clips."
+      "sha256": "0673ebdace44086b073731bfd0f69e2da0d91105e67d313fe381893b5bc85729",
+      "processing": "Transferred everyday facial landmarks onto the cardigan UV atlas and rounded the lower chin mesh. Fitted 115-joint Luna skin with independent sleeves, hand and hair weights, graded collar and shoulder-cap weights, a closer arm stance and a walk retargeted from the everyday shoulder, elbow and palm trajectories, independent contact shapes, continuous rear hem weights, sock sole contacts and nine existing animation clips."
     },
     {
       "file": "resident/luna-cardigan-seat.bin",

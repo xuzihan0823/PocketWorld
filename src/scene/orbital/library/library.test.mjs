@@ -127,9 +127,9 @@ test('移除用户书释放原书位，其他内容、进度及刷新恢复保�
   assert.equal(next.books.at(-1).slotId, b.slotId); assert.equal(next.books[0].anchor, 50); assert.equal(next.books.filter(x => x.id === b.id).length, 0);
 });
 function controller(reducedMotion = false) {
-  const m = fixture(), effects = [], errors = [], actions = [], frames = [];
+  const m = fixture(), effects = [], errors = [], actions = [], frames = [], sfx = [];
   const react = { useRef: current => ({ current }), useState: v => [typeof v === 'function' ? v() : v, () => {}], useCallback: fn => fn, useEffect: fn => effects.push(fn) };
-  const dependencies = { react, three: THREE, './catalog': m };
+  const dependencies = { react, three: THREE, './catalog': m, '../../audioEngine': { roomAudio: { playSfx: type => sfx.push(type) } } };
   const loadModule = filename => {
     const exports = {};
     const require = name => {
@@ -152,7 +152,7 @@ function controller(reducedMotion = false) {
     c.arrived();
   };
   const open = id => { c.choose(id); c.arrived(); c.setPages([{ start: 0, end: 10, text: '首页' }, { start: 10, end: 20, text: '末页' }]); advance(); };
-  return { c, m, errors, actions, advance, enter, open };
+  return { c, m, errors, actions, sfx, advance, enter, open };
 }
 test('直接触发添加不能绕过状态校验；表单保存成功才生成实体书', async () => {
   const { c, enter } = controller(); await assert.rejects(c.add('绕过', '', '正文'), /表单/); enter(); assert.equal(c.flow.current.phase, 'catalog'); c.openForm(); await c.add('新书', '', '正文'); assert.equal(c.flow.current.phase, 'shelving');
@@ -182,4 +182,20 @@ for (const reducedMotion of [false, true]) test(`翻页边界、连点、动画�
   c.turn(1); for (let i = 0; i < 20; i++) c.turn(i % 2 ? 1 : -1); assert.equal(c.flow.current.phase, 'turn'); advance(); assert.equal(c.flow.current.page, 1); c.turn(1); assert.equal(c.flow.current.phase, 'reading');
   c.turn(-1); c.back(); advance(); assert.equal(c.flow.current.phase, 'recenter'); c.arrived(); assert.equal(c.flow.current.phase, 'catalog'); assert.equal(actions.includes('return'), false);
   open('book-01'); c.choose('book-02'); assert.equal(c.flow.current.book.id, 'book-01'); advance(); c.arrived(); assert.equal(c.flow.current.book.id, 'book-02'); assert.equal(c.flow.current.phase, 'align');
+});
+
+test('书柜取书、展开、翻页、合书、插回及新书上架按阶段触发对应音效', async () => {
+  const { c, sfx, enter, open, advance } = controller();
+  enter();
+  open('book-01');
+  c.turn(1);
+  advance();
+  c.back();
+  advance();
+  c.arrived();
+  assert.deepEqual(sfx, ['book-extract', 'book-open', 'paper', 'book-close', 'book-insert']);
+  sfx.length = 0;
+  c.openForm();
+  await c.add('有声藏书', '测试', '正文内容');
+  assert.deepEqual(sfx, ['book-shelf-add']);
 });

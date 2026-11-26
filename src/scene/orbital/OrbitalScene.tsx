@@ -392,9 +392,13 @@ const GROUND_DAY_COLOR = new THREE.Color('#d4c7b8');
 const GROUND_DUSK_COLOR = new THREE.Color('#685a64');
 const GROUND_SHADOW_COLOR = new THREE.Color('#393d4e');
 const EARTHSHINE_DAY_COLOR = new THREE.Color('#9ec4ee');
+const EARTHSHINE_ORBIT_COLOR = new THREE.Color('#78b8ff');
 const EARTHSHINE_DUSK_COLOR = new THREE.Color('#f0b48c');
 const EARTHSHINE_NIGHT_COLOR = new THREE.Color('#7ca8e2');
 const SUN_INTENSITY = 1.65;
+const ORBIT_SUN_INTENSITY = 2.25;
+const CABIN_EARTHSHINE_POS = new THREE.Vector3(-11, 4.5, -10);
+const ORBIT_EARTHSHINE_POS = new THREE.Vector3(7.5, -4.8, 13.5);
 
 function OrbitalLighting({ objects, sceneId, sun }: Pick<WorldSceneProps, 'objects' | 'sceneId'> & { sun: SunState }) {
   const lamp = useRef<THREE.PointLight>(null);
@@ -409,23 +413,33 @@ function OrbitalLighting({ objects, sceneId, sun }: Pick<WorldSceneProps, 'objec
   useFrame((_, delta) => {
     const daylight = sun.daylight.value;
     const warmth = sun.warmth;
+    const orbit = sun.orbitUniform.value;
     if (lamp.current) lamp.current.intensity = THREE.MathUtils.damp(lamp.current.intensity, objects.lamp?.active === false ? 0 : 4.8, 5, delta);
-    if (roomWarm.current) roomWarm.current.intensity = THREE.MathUtils.damp(roomWarm.current.intensity, 2.4 + 0.6 * (1 - daylight), 3, delta);
+    if (roomWarm.current) roomWarm.current.intensity = THREE.MathUtils.damp(roomWarm.current.intensity, (2.4 + 0.6 * (1 - daylight)) * (1 - orbit * 0.45), 3, delta);
     if (ambient.current) {
-      ambient.current.intensity = THREE.MathUtils.damp(ambient.current.intensity, 0.48 + 0.44 * daylight + 0.08 * warmth, 3, delta);
+      const targetAmbient = THREE.MathUtils.lerp(0.48 + 0.44 * daylight + 0.08 * warmth, 0.24 + 0.28 * daylight + 0.08 * warmth, orbit);
+      ambient.current.intensity = THREE.MathUtils.damp(ambient.current.intensity, targetAmbient, 3, delta);
       ambient.current.color.lerpColors(SKY_SHADOW_COLOR, SKY_DAY_COLOR, daylight).lerp(SKY_DUSK_COLOR, warmth * 0.45);
       ambient.current.groundColor.lerpColors(GROUND_SHADOW_COLOR, GROUND_DAY_COLOR, daylight).lerp(GROUND_DUSK_COLOR, warmth * 0.38);
     }
     if (key.current) {
       key.current.position.copy(sun.light).multiplyScalar(18);
-      key.current.intensity = SUN_INTENSITY * daylight;
+      key.current.intensity = THREE.MathUtils.lerp(SUN_INTENSITY, ORBIT_SUN_INTENSITY, orbit) * daylight;
       key.current.color.lerpColors(SUN_DAY_COLOR, SUN_LIMB_COLOR, warmth * 0.85);
     }
     if (earthshine.current) {
-      earthshine.current.intensity = 0.38 + 0.24 * (1 - daylight) + 0.14 * warmth;
-      earthshine.current.color.lerpColors(EARTHSHINE_NIGHT_COLOR, EARTHSHINE_DAY_COLOR, daylight).lerp(EARTHSHINE_DUSK_COLOR, warmth * 0.55);
+      earthshine.current.position.lerpVectors(CABIN_EARTHSHINE_POS, ORBIT_EARTHSHINE_POS, orbit);
+      const cabinFill = 0.38 + 0.24 * (1 - daylight) + 0.14 * warmth;
+      const orbitFill = 0.34 + 0.56 * daylight + 0.20 * warmth;
+      earthshine.current.intensity = THREE.MathUtils.lerp(cabinFill, orbitFill, orbit);
+      earthshine.current.color
+        .lerpColors(EARTHSHINE_NIGHT_COLOR, EARTHSHINE_DAY_COLOR, daylight)
+        .lerp(EARTHSHINE_ORBIT_COLOR, orbit * 0.55)
+        .lerp(EARTHSHINE_DUSK_COLOR, warmth * 0.55);
     }
-    scene.environmentIntensity = 0.44 + 0.46 * daylight;
+    const cabinEnv = 0.44 + 0.46 * daylight;
+    const orbitEnv = 0.22 + 0.38 * daylight;
+    scene.environmentIntensity = THREE.MathUtils.lerp(cabinEnv, orbitEnv, orbit);
   });
   return <>
     <primitive object={sunTarget} />

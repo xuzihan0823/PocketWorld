@@ -5,6 +5,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { BOOK as B, clamp, coverPose, leafPose, paperHalfThickness, smooth } from './bookModel';
 import { clothTexture } from './coverTexture';
 import type { BoundBookControl } from './bookControl';
+import { roomAudio } from '../../audioEngine';
 
 function leafGeometry(leafCount: number) {
   const geometry = new THREE.BoxGeometry(B.width, B.height, B.thickness * 0.72, B.segments, 1, 1);
@@ -68,7 +69,13 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount, coverT
   }, []);
   const state = useRef({ opening: 0, cursor: 0 });
   const drawn = useRef({ opening: -1, cursor: -1, leafCount: 0 });
+  const prevOpened = useRef(opened);
   const textureRevision = useRef(-1);
+  useEffect(() => {
+    if (prevOpened.current === opened) return;
+    prevOpened.current = opened;
+    roomAudio.playSfx(opened ? 'book-open' : 'book-close');
+  }, [opened]);
   const cloth = useMemo(() => clothTexture(false, coverColor), [coverColor]);
   const title = useMemo(() => clothTexture(true, coverColor, coverTitle, coverSubtitle, coverStyle), [coverColor, coverTitle, coverSubtitle, coverStyle]);
   useEffect(() => () => { cloth.dispose(); title.dispose(); }, [cloth, title]);

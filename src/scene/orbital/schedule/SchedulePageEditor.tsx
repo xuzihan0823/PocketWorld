@@ -3,6 +3,7 @@ import { Html } from '@react-three/drei';
 import type { BoundBookControl } from '../journal/bookControl';
 import { BOOK, leafPose, paperHalfThickness } from '../journal/bookModel';
 import type { SchedulePage } from './schedule';
+import { roomAudio } from '../../audioEngine';
 
 export function scheduleSurfacePoint(leaf: number, left: boolean, x: number, y: number, spread: number, leafCount: number) {
   const u = left ? 1 - x / 560 : x / 560;
@@ -55,7 +56,7 @@ export function SchedulePageEditor({ page, leaf, left = false, book, leafCount, 
       <button aria-label={label(`第${i + 1}项详情`)} onClick={() => setDetail(i)}>详情</button>
     </div>, value.id))}
     {page.todos.map((value, i) => field(295, 211 + i * 45, 212, 38, <div className="planner-native-todo">
-      <input type="checkbox" aria-label={label(`完成待办${i + 1}`)} checked={value.completed} {...focus} onChange={event => { const completed = event.currentTarget.checked; change(current => ({ ...current, todos: current.todos.map((todo, index) => index === i ? { ...todo, completed } : todo) })); }} />
+      <input type="checkbox" aria-label={label(`完成待办${i + 1}`)} checked={value.completed} {...focus} onChange={event => { const completed = event.currentTarget.checked; roomAudio.playSfx('paper-check'); change(current => ({ ...current, todos: current.todos.map((todo, index) => index === i ? { ...todo, completed } : todo) })); }} />
       <input aria-label={label(`待办${i + 1}`)} defaultValue={value.text} maxLength={80} {...text(text => change(current => ({ ...current, todos: current.todos.map((todo, index) => index === i ? { ...todo, text } : todo) })))} />
     </div>, `todo-${i}`))}
     {page.tomorrow.map((value, i) => field(320, 419 + i * 53, 186, 40, <input aria-label={label(`明日计划${i + 1}`)} defaultValue={value} maxLength={80} {...text(value => change(current => ({ ...current, tomorrow: current.tomorrow.map((text, index) => index === i ? value : text) })))} />, `tomorrow-${i}`))}

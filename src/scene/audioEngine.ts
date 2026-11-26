@@ -73,6 +73,25 @@ export interface FootstepAudioOptions {
   intensity?: number;
 }
 
+export type RoomSfxType =
+  | 'switch'
+  | 'paper'
+  | 'soft'
+  | 'disc'
+  | 'footstep'
+  | 'lamp-on'
+  | 'lamp-off'
+  | 'book-open'
+  | 'book-close'
+  | 'book-extract'
+  | 'book-insert'
+  | 'book-shelf-add'
+  | 'paper-tear'
+  | 'paper-crumple'
+  | 'paper-land'
+  | 'paper-pickup'
+  | 'paper-check';
+
 class RoomAudioEngine {
   private ctx: AudioContext | null = null;
   private isMuted = false;
@@ -82,8 +101,11 @@ class RoomAudioEngine {
   private stepIndex = 0;
   private footstepCount = 0;
   private lastFootstepTime = { walk: -Infinity, push: -Infinity };
+  private lastSfxTime = new Map<RoomSfxType, number>();
   private noiseBuffer: AudioBuffer | null = null;
   private noiseBufferCtx: AudioContext | null = null;
+  private crispNoiseBuffer: AudioBuffer | null = null;
+  private crispNoiseBufferCtx: AudioContext | null = null;
   private htmlAudio: HTMLAudioElement | null = null;
   private catAudio: HTMLAudioElement | null = null;
   private preparedMusic: { disc: MusicDisc; audio: HTMLAudioElement } | null = null;
@@ -198,9 +220,7 @@ class RoomAudioEngine {
     } catch { /* An unavailable effect does not interrupt cat interaction. */ }
   }
 
-  public playSfx(
-    type: 'switch' | 'paper' | 'soft' | 'disc' | 'footstep'
-  ) {
+  public playSfx(type: RoomSfxType) {
     if (type === 'footstep') {
       this.playFootstep();
       return;
@@ -211,10 +231,21 @@ class RoomAudioEngine {
     if (ctx.state !== 'running') void ctx.resume().catch(() => {});
 
     const now = ctx.currentTime;
+    const minGap = type === 'paper-check' ? 0.035 : 0.055;
+    const prevTime = this.lastSfxTime.get(type) ?? -Infinity;
+    if (now - prevTime < minGap) return;
+    this.lastSfxTime.set(type, now);
+
+    const out = this.musicGain ?? ctx.destination;
+    if (type !== 'switch' && type !== 'soft' && type !== 'disc') {
+      this.playPhysicalSfx(ctx, out, type, now);
+      return;
+    }
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(this.musicGain ?? ctx.destination);
+    gain.connect(out);
     osc.onended = () => { osc.disconnect(); gain.disconnect(); };
 
     if (type === 'switch') {
@@ -225,14 +256,6 @@ class RoomAudioEngine {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
       osc.start(now);
       osc.stop(now + 0.06);
-    } else if (type === 'paper') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(240, now);
-      osc.frequency.exponentialRampToValueAtTime(120, now + 0.09);
-      gain.gain.setValueAtTime(0.07, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-      osc.start(now);
-      osc.stop(now + 0.11);
     } else if (type === 'disc') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(310, now);
@@ -249,6 +272,533 @@ class RoomAudioEngine {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
       osc.start(now);
       osc.stop(now + 0.09);
+    }
+  }
+
+  private ensureCrispNoiseBuffer(ctx: AudioContext): AudioBuffer | null {
+    if (this.crispNoiseBuffer && this.crispNoiseBufferCtx === ctx) return this.crispNoiseBuffer;
+    if (typeof ctx.createBuffer !== 'function') return null;
+    try {
+      const length = Math.max(1, Math.floor(ctx.sampleRate * 0.5));
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      this.crispNoiseBuffer = buffer;
+      this.crispNoiseBufferCtx = ctx;
+      return buffer;
+    } catch {
+      return null;
+    }
+  }
+
+  private scheduleTone(
+    ctx: AudioContext,
+    out: AudioNode,
+    spec: {
+      start: number;
+      duration: number;
+      type: OscillatorType;
+      freqStart: number;
+      freqEnd: number;
+      peak: number;
+      attack?: number;
+    }
+  ) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const attack = Math.min(spec.attack ?? 0.004, spec.duration * 0.45);
+    osc.type = spec.type;
+    osc.frequency.setValueAtTime(Math.max(20, spec.freqStart), spec.start);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(20, spec.freqEnd), spec.start + spec.duration);
+    gain.gain.setValueAtTime(0.0001, spec.start);
+    gain.gain.linearRampToValueAtTime(spec.peak, spec.start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0006, spec.start + spec.duration);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+    osc.start(spec.start);
+    osc.stop(spec.start + spec.duration + 0.006);
+  }
+
+  private scheduleNoiseBurst(
+    ctx: AudioContext,
+    out: AudioNode,
+    buffer: AudioBuffer | null,
+    spec: {
+      start: number;
+      duration: number;
+      filterType: BiquadFilterType;
+      freqStart: number;
+      freqEnd?: number;
+      q?: number;
+      peak: number;
+      attack?: number;
+      playbackRate?: number;
+    }
+  ): boolean {
+    if (!buffer || typeof ctx.createBufferSource !== 'function' || typeof ctx.createBiquadFilter !== 'function') {
+      return false;
+    }
+    const source = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    const attack = Math.min(spec.attack ?? 0.006, spec.duration * 0.45);
+    source.buffer = buffer;
+    if (spec.playbackRate) source.playbackRate.setValueAtTime(spec.playbackRate, spec.start);
+    filter.type = spec.filterType;
+    filter.frequency.setValueAtTime(Math.max(40, spec.freqStart), spec.start);
+    if (spec.freqEnd && spec.freqEnd !== spec.freqStart) {
+      filter.frequency.exponentialRampToValueAtTime(Math.max(40, spec.freqEnd), spec.start + spec.duration);
+    }
+    if (spec.q !== undefined) filter.Q.setValueAtTime(spec.q, spec.start);
+    gain.gain.setValueAtTime(0.0001, spec.start);
+    gain.gain.linearRampToValueAtTime(spec.peak, spec.start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0005, spec.start + spec.duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(out);
+    source.onended = () => {
+      source.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+    const maxOffset = Math.max(0, buffer.duration - spec.duration - 0.01);
+    const offset = Math.random() * maxOffset;
+    source.start(spec.start, offset, spec.duration + 0.01);
+    return true;
+  }
+
+  private playPhysicalSfx(
+    ctx: AudioContext,
+    out: AudioNode,
+    type: Exclude<RoomSfxType, 'switch' | 'soft' | 'disc' | 'footstep'>,
+    now: number
+  ) {
+    const jitter = 0.96 + Math.random() * 0.08;
+    const crisp = this.ensureCrispNoiseBuffer(ctx);
+
+    if (type === 'lamp-on' || type === 'lamp-off') {
+      const turningOn = type === 'lamp-on';
+      // 1. Brass bead pull-chain click
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.015,
+        filterType: 'highpass',
+        freqStart: (turningOn ? 2750 : 2350) * jitter,
+        q: 1.1,
+        peak: 0.036,
+        attack: 0.002,
+      });
+      this.scheduleTone(ctx, out, {
+        start: now,
+        duration: 0.017,
+        type: 'triangle',
+        freqStart: (turningOn ? 1920 : 1540) * jitter,
+        freqEnd: (turningOn ? 1160 : 840) * jitter,
+        peak: 0.034,
+        attack: 0.002,
+      });
+      // 2. Internal spring toggle detent snap
+      const snap = now + 0.022;
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: snap,
+        duration: 0.02,
+        filterType: 'bandpass',
+        freqStart: (turningOn ? 2100 : 1620) * jitter,
+        freqEnd: (turningOn ? 1450 : 980) * jitter,
+        q: 1.6,
+        peak: turningOn ? 0.05 : 0.042,
+        attack: 0.002,
+      });
+      this.scheduleTone(ctx, out, {
+        start: snap,
+        duration: 0.034,
+        type: 'triangle',
+        freqStart: (turningOn ? 740 : 620) * jitter,
+        freqEnd: (turningOn ? 1120 : 390) * jitter,
+        peak: turningOn ? 0.068 : 0.056,
+        attack: 0.002,
+      });
+      return;
+    }
+
+    if (type === 'paper') {
+      const hasNoise = this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.042,
+        filterType: 'bandpass',
+        freqStart: 2300 * jitter,
+        freqEnd: 1850 * jitter,
+        q: 1.8,
+        peak: 0.028,
+        attack: 0.005,
+      });
+      if (!hasNoise) {
+        this.scheduleTone(ctx, out, {
+          start: now,
+          duration: 0.1,
+          type: 'triangle',
+          freqStart: 240 * jitter,
+          freqEnd: 120 * jitter,
+          peak: 0.065,
+          attack: 0.008,
+        });
+        return;
+      }
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.016,
+        duration: 0.175,
+        filterType: 'bandpass',
+        freqStart: 1120 * jitter,
+        freqEnd: 2380 * jitter,
+        q: 1.15,
+        peak: 0.058,
+        attack: 0.046,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.135,
+        duration: 0.055,
+        filterType: 'lowpass',
+        freqStart: 640 * jitter,
+        freqEnd: 380 * jitter,
+        q: 0.9,
+        peak: 0.032,
+        attack: 0.006,
+      });
+      return;
+    }
+
+    if (type === 'book-open') {
+      this.scheduleTone(ctx, out, {
+        start: now,
+        duration: 0.072,
+        type: 'sine',
+        freqStart: 152 * jitter,
+        freqEnd: 84 * jitter,
+        peak: 0.056,
+        attack: 0.008,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.018,
+        duration: 0.195,
+        filterType: 'bandpass',
+        freqStart: 1080 * jitter,
+        freqEnd: 1860 * jitter,
+        q: 1.2,
+        peak: 0.048,
+        attack: 0.048,
+      });
+      return;
+    }
+
+    if (type === 'book-close') {
+      this.scheduleTone(ctx, out, {
+        start: now,
+        duration: 0.095,
+        type: 'sine',
+        freqStart: 176 * jitter,
+        freqEnd: 58 * jitter,
+        peak: 0.084,
+        attack: 0.004,
+      });
+      this.scheduleTone(ctx, out, {
+        start: now,
+        duration: 0.054,
+        type: 'triangle',
+        freqStart: 255 * jitter,
+        freqEnd: 104 * jitter,
+        peak: 0.032,
+        attack: 0.003,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.004,
+        duration: 0.076,
+        filterType: 'bandpass',
+        freqStart: 780 * jitter,
+        freqEnd: 390 * jitter,
+        q: 1.1,
+        peak: 0.044,
+        attack: 0.005,
+      });
+      return;
+    }
+
+    if (type === 'paper-tear') {
+      const steps = [0, 0.028, 0.056, 0.088, 0.122, 0.156];
+      let hasNoise = false;
+      steps.forEach((offset, idx) => {
+        const rise = 1 + idx * 0.12;
+        const ok = this.scheduleNoiseBurst(ctx, out, crisp, {
+          start: now + offset,
+          duration: 0.044,
+          filterType: 'bandpass',
+          freqStart: 2250 * rise * jitter,
+          freqEnd: 3500 * rise * jitter,
+          q: 2.0,
+          peak: 0.052 + (idx % 2) * 0.02,
+          attack: 0.003,
+        });
+        hasNoise = hasNoise || ok;
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.01,
+        duration: 0.15,
+        filterType: 'bandpass',
+        freqStart: 980 * jitter,
+        freqEnd: 1620 * jitter,
+        q: 1.3,
+        peak: 0.034,
+        attack: 0.012,
+      });
+      if (!hasNoise) {
+        this.scheduleTone(ctx, out, {
+          start: now,
+          duration: 0.14,
+          type: 'sawtooth',
+          freqStart: 620 * jitter,
+          freqEnd: 1480 * jitter,
+          peak: 0.04,
+          attack: 0.006,
+        });
+      }
+      return;
+    }
+
+    if (type === 'paper-crumple') {
+      const bursts = [
+        { offset: 0, dur: 0.052, freq: 1850, peak: 0.054 },
+        { offset: 0.048, dur: 0.048, freq: 2750, peak: 0.068 },
+        { offset: 0.102, dur: 0.058, freq: 2150, peak: 0.062 },
+        { offset: 0.168, dur: 0.046, freq: 3200, peak: 0.058 },
+        { offset: 0.224, dur: 0.054, freq: 2400, peak: 0.046 },
+      ];
+      let hasNoise = false;
+      for (const b of bursts) {
+        const ok = this.scheduleNoiseBurst(ctx, out, crisp, {
+          start: now + b.offset,
+          duration: b.dur,
+          filterType: 'bandpass',
+          freqStart: b.freq * jitter,
+          freqEnd: b.freq * 0.72 * jitter,
+          q: 2.2,
+          peak: b.peak,
+          attack: 0.003,
+        });
+        hasNoise = hasNoise || ok;
+      }
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.02,
+        duration: 0.14,
+        filterType: 'bandpass',
+        freqStart: 540 * jitter,
+        freqEnd: 340 * jitter,
+        q: 1.4,
+        peak: 0.028,
+        attack: 0.01,
+      });
+      if (!hasNoise) {
+        this.scheduleTone(ctx, out, {
+          start: now,
+          duration: 0.16,
+          type: 'triangle',
+          freqStart: 320 * jitter,
+          freqEnd: 180 * jitter,
+          peak: 0.045,
+          attack: 0.005,
+        });
+      }
+      return;
+    }
+
+    if (type === 'paper-land') {
+      this.scheduleTone(ctx, out, {
+        start: now,
+        duration: 0.036,
+        type: 'sine',
+        freqStart: 255 * jitter,
+        freqEnd: 122 * jitter,
+        peak: 0.036,
+        attack: 0.003,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.03,
+        filterType: 'bandpass',
+        freqStart: 1780 * jitter,
+        freqEnd: 1180 * jitter,
+        q: 1.7,
+        peak: 0.04,
+        attack: 0.002,
+      });
+      const bounce = now + 0.115;
+      this.scheduleTone(ctx, out, {
+        start: bounce,
+        duration: 0.024,
+        type: 'sine',
+        freqStart: 290 * jitter,
+        freqEnd: 156 * jitter,
+        peak: 0.018,
+        attack: 0.002,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: bounce,
+        duration: 0.022,
+        filterType: 'bandpass',
+        freqStart: 1940 * jitter,
+        freqEnd: 1380 * jitter,
+        q: 1.8,
+        peak: 0.022,
+        attack: 0.002,
+      });
+      return;
+    }
+
+    if (type === 'paper-pickup') {
+      const ok = this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.044,
+        filterType: 'bandpass',
+        freqStart: 2150 * jitter,
+        freqEnd: 2900 * jitter,
+        q: 2.0,
+        peak: 0.042,
+        attack: 0.004,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now + 0.044,
+        duration: 0.056,
+        filterType: 'bandpass',
+        freqStart: 2650 * jitter,
+        freqEnd: 1950 * jitter,
+        q: 1.8,
+        peak: 0.036,
+        attack: 0.005,
+      });
+      if (!ok) {
+        this.scheduleTone(ctx, out, {
+          start: now,
+          duration: 0.06,
+          type: 'sine',
+          freqStart: 380 * jitter,
+          freqEnd: 520 * jitter,
+          peak: 0.035,
+          attack: 0.004,
+        });
+      }
+      return;
+    }
+
+    if (type === 'paper-check') {
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.036,
+        filterType: 'bandpass',
+        freqStart: 2350 * jitter,
+        freqEnd: 3150 * jitter,
+        q: 2.1,
+        peak: 0.03,
+        attack: 0.004,
+      });
+      this.scheduleTone(ctx, out, {
+        start: now + 0.006,
+        duration: 0.032,
+        type: 'sine',
+        freqStart: 480 * jitter,
+        freqEnd: 650 * jitter,
+        peak: 0.036,
+        attack: 0.003,
+      });
+      return;
+    }
+
+    if (type === 'book-extract') {
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.24,
+        filterType: 'bandpass',
+        freqStart: 460 * jitter,
+        freqEnd: 740 * jitter,
+        q: 1.5,
+        peak: 0.052,
+        attack: 0.042,
+      });
+      this.scheduleTone(ctx, out, {
+        start: now + 0.015,
+        duration: 0.145,
+        type: 'triangle',
+        freqStart: 168 * jitter,
+        freqEnd: 224 * jitter,
+        peak: 0.026,
+        attack: 0.028,
+      });
+      return;
+    }
+
+    if (type === 'book-insert' || type === 'book-shelf-add') {
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: now,
+        duration: 0.145,
+        filterType: 'bandpass',
+        freqStart: 680 * jitter,
+        freqEnd: 410 * jitter,
+        q: 1.5,
+        peak: 0.044,
+        attack: 0.018,
+      });
+      const tock = now + 0.132;
+      this.scheduleTone(ctx, out, {
+        start: tock,
+        duration: 0.068,
+        type: 'sine',
+        freqStart: 205 * jitter,
+        freqEnd: 88 * jitter,
+        peak: 0.072,
+        attack: 0.003,
+      });
+      this.scheduleTone(ctx, out, {
+        start: tock,
+        duration: 0.028,
+        type: 'triangle',
+        freqStart: 420 * jitter,
+        freqEnd: 210 * jitter,
+        peak: 0.028,
+        attack: 0.002,
+      });
+      this.scheduleNoiseBurst(ctx, out, crisp, {
+        start: tock,
+        duration: 0.024,
+        filterType: 'bandpass',
+        freqStart: 920 * jitter,
+        freqEnd: 580 * jitter,
+        q: 1.4,
+        peak: 0.028,
+        attack: 0.002,
+      });
+      if (type === 'book-shelf-add') {
+        this.scheduleTone(ctx, out, {
+          start: now + 0.175,
+          duration: 0.15,
+          type: 'sine',
+          freqStart: 523.25,
+          freqEnd: 523.25,
+          peak: 0.032,
+          attack: 0.008,
+        });
+        this.scheduleTone(ctx, out, {
+          start: now + 0.265,
+          duration: 0.22,
+          type: 'sine',
+          freqStart: 659.25,
+          freqEnd: 659.25,
+          peak: 0.038,
+          attack: 0.008,
+        });
+      }
     }
   }
 

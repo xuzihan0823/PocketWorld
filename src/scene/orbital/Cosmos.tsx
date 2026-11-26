@@ -3,35 +3,54 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CABIN_LEFT, CABIN_RIGHT } from './cabinLayout';
 import { EARTH_RADIUS, earthPositionForAspect } from './cabinView';
-import type { SpacecraftFlightState } from './spacecraftFlight';
+import { orbitCelestialLayout, type SpacecraftFlightState } from './spacecraftFlight';
 import {
   skyVertex, skyFragment, starVertex, starFragment, particleVertex, particleFragment,
-  planetVertex, earthFragment, cloudFragment, atmosphereFragment,
+  planetVertex, earthFragment, cloudFragment, atmosphereFragment, moonFragment,
 } from './shaders/cosmos';
 import {
-  BASE_SUN_DIRECTION, SUN_CYCLE_SECONDS, createSunOrbit, readSunOverrides, roomLightDirection, sampleSun, startPhase,
+  BASE_SUN_DIRECTION, SUN_CYCLE_SECONDS, createOrbitSunRig, createSunOrbit,
+  readSunOverrides, roomLightDirection, sampleOrbitSun, sampleSun, startPhase,
 } from './sunCycle';
 
 /**
- * Shared, mutable Sun state. `Cosmos` writes it once per frame; the sky, Earth and the
- * room key light read it, so all three always agree on where the Sun is.
+ * Shared, mutable Sun state. `Cosmos` writes it once per frame; the sky, Earth, Moon, and the
+ * room key light read it, so all celestial bodies and cabin lighting stay synchronized.
  */
 export interface SunState {
-  /** Unit vector from the habitat toward the Sun (world space). */
+  /** Unit vector from the habitat toward the rendered sky Sun (world space). */
   direction: THREE.Vector3;
-  /** Key-light direction for the room: same azimuth, never from below the floor. */
+  /** Key-light direction for the room & spacecraft: never shines from below the cabin floor. */
   light: THREE.Vector3;
+  /** Surface illumination Sun vector for Earth (tilted to expose sunlit horizon cap in orbit). */
+  earthLitSun: THREE.Vector3;
+  /** Surface illumination Sun vector for the Moon (sculpted crescent-quarter phase toward uSun). */
+  moonLitSun: THREE.Vector3;
+  /** Active Earth world direction (for sky airglow & spacecraft Earthshine rim). */
+  earthDirection: THREE.Vector3;
   /** 0 inside Earth's shadow, 1 in full sunlight. */
   daylight: { value: number };
   /** 1 while the Sun grazes Earth's limb, 0 far from it. */
   warmth: number;
   /** Uniform wrapper synced with `warmth` for shader materials. */
   warmthUniform: { value: number };
+  /** 0 inside cabin, 1 in exterior orbital cruise (`hullOpacity`). */
+  orbitUniform: { value: number };
 }
 
 export function createSunState(): SunState {
   const direction = new THREE.Vector3(...BASE_SUN_DIRECTION).normalize();
-  return { direction, light: direction.clone(), daylight: { value: 1 }, warmth: 0, warmthUniform: { value: 0 } };
+  return {
+    direction,
+    light: direction.clone(),
+    earthLitSun: direction.clone(),
+    moonLitSun: direction.clone(),
+    earthDirection: new THREE.Vector3(0.25, -0.40, -0.88).normalize(),
+    daylight: { value: 1 },
+    warmth: 0,
+    warmthUniform: { value: 0 },
+    orbitUniform: { value: 0 },
+  };
 }
 
 const GALACTIC_POLE = new THREE.Vector3(0.32, 0.88, -0.35).normalize();
@@ -182,20 +201,25 @@ function Drift({ clock, sun, flight }: { clock: CosmicClock; sun: SunState; flig
   );
 }
 
-function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthPosition: [number, number, number]; clock: CosmicClock; sun: SunState; onBeforeRender: THREE.Object3D['onBeforeRender'] }) {
+function CelestialSphere({ clock, sun, onBeforeRender }: { clock: CosmicClock; sun: SunState; onBeforeRender: THREE.Object3D['onBeforeRender'] }) {
   const sphere = useRef<THREE.Group>(null);
   const dpr = useThree(state => state.viewport.dpr);
   const starGeometry = useMemo(createStarGeometry, []);
-  const earthGlow = useMemo(() => new THREE.Vector3(...earthPosition).normalize(), [earthPosition]);
   const skyUniforms = useMemo(() => ({
     uTime: clock,
     uSun: { value: sun.direction },
     uDaylight: sun.daylight,
     uWarmth: sun.warmthUniform,
+    uOrbit: sun.orbitUniform,
     uGalacticPole: { value: GALACTIC_POLE },
-    uEarthGlow: { value: earthGlow },
-  }), [clock, sun, earthGlow]);
-  const starUniforms = useMemo(() => ({ uTime: clock, uPixelRatio: { value: dpr }, uDaylight: sun.daylight }), [clock, sun]);
+    uEarthGlow: { value: sun.earthDirection },
+  }), [clock, sun]);
+  const starUniforms = useMemo(() => ({
+    uTime: clock,
+    uPixelRatio: { value: dpr },
+    uDaylight: sun.daylight,
+    uOrbit: sun.orbitUniform,
+  }), [clock, sun]);
   useEffect(() => { starUniforms.uPixelRatio.value = dpr; }, [dpr, starUniforms]);
   useFrame(() => { sphere.current?.quaternion.setFromAxisAngle(GALACTIC_POLE, clock.value * 0.0025); });
   return (
@@ -212,29 +236,106 @@ function CelestialSphere({ clock, sun, earthPosition, onBeforeRender }: { earthP
   );
 }
 
-function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunState; position: [number, number, number]; flight?: SpacecraftFlightState }) {
-  const spin = useRef<THREE.Group>(null);
-  const radius = EARTH_RADIUS;
-  const uniforms = useMemo(() => ({ uTime: clock, uSun: { value: sun.direction } }), [clock, sun]);
+function Moon({
+  clock,
+  sun,
+  cabinPosition,
+  cabinRadius,
+  orbitPosition,
+  orbitRadius,
+}: {
+  clock: CosmicClock;
+  sun: SunState;
+  cabinPosition: [number, number, number];
+  cabinRadius: number;
+  orbitPosition: [number, number, number];
+  orbitRadius: number;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const spin = useRef<THREE.Mesh>(null);
+  const uniforms = useMemo(() => ({
+    uSun: { value: sun.direction },
+    uLitSun: { value: sun.moonLitSun },
+    uDaylight: sun.daylight,
+    uOrbit: sun.orbitUniform,
+  }), [sun]);
   useFrame(() => {
+    if (!group.current) return;
+    const t = sun.orbitUniform.value;
+    group.current.position.set(
+      THREE.MathUtils.lerp(cabinPosition[0], orbitPosition[0], t),
+      THREE.MathUtils.lerp(cabinPosition[1], orbitPosition[1], t),
+      THREE.MathUtils.lerp(cabinPosition[2], orbitPosition[2], t),
+    );
+    const radius = THREE.MathUtils.lerp(cabinRadius, orbitRadius, t);
+    group.current.scale.setScalar(radius);
+    if (spin.current) {
+      // Subtle lunar libration / slow orbital rotation
+      spin.current.rotation.y = 0.65 + clock.value * 0.0018;
+    }
+  });
+  return (
+    <group ref={group} position={orbitPosition} scale={orbitRadius} rotation={[0.18, -0.42, -0.14]}>
+      <mesh ref={spin} name="cosmos-moon" renderOrder={-94} raycast={NO_RAYCAST}>
+        <sphereGeometry args={[1, 72, 48]} />
+        <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={moonFragment} />
+      </mesh>
+    </group>
+  );
+}
+
+function Earth({
+  clock,
+  sun,
+  cabinPosition,
+  orbitPosition,
+  orbitRadius,
+  flight,
+}: {
+  clock: CosmicClock;
+  sun: SunState;
+  cabinPosition: [number, number, number];
+  orbitPosition: [number, number, number];
+  orbitRadius: number;
+  flight?: SpacecraftFlightState;
+}) {
+  const root = useRef<THREE.Group>(null);
+  const spin = useRef<THREE.Group>(null);
+  const baseRadius = EARTH_RADIUS;
+  const uniforms = useMemo(() => ({
+    uTime: clock,
+    uSun: { value: sun.direction },
+    uLitSun: { value: sun.earthLitSun },
+    uOrbit: sun.orbitUniform,
+  }), [clock, sun]);
+  useFrame(() => {
+    const t = sun.orbitUniform.value;
+    if (root.current) {
+      root.current.position.set(
+        THREE.MathUtils.lerp(cabinPosition[0], orbitPosition[0], t),
+        THREE.MathUtils.lerp(cabinPosition[1], orbitPosition[1], t),
+        THREE.MathUtils.lerp(cabinPosition[2], orbitPosition[2], t),
+      );
+      root.current.scale.setScalar(orbitRadius / baseRadius);
+    }
     if (!spin.current) return;
-    spin.current.rotation.y = flight ? flight.earthSpinAngle : clock.value * 0.008;
+    spin.current.rotation.y = (flight ? flight.earthSpinAngle : clock.value * 0.008) + 2.32;
     spin.current.rotation.z = flight ? flight.earthOrbitSweep * 0.35 : 0;
   });
   return (
-    <group position={position} rotation={[0.05, 2.05, 0.13]}>
+    <group ref={root} position={orbitPosition} rotation={[1.22, 0.35, -0.26]}>
       <group ref={spin}>
         <mesh renderOrder={-90} raycast={NO_RAYCAST}>
-          <sphereGeometry args={[radius, 96, 64]} />
+          <sphereGeometry args={[baseRadius, 128, 96]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={earthFragment} />
         </mesh>
         <mesh renderOrder={-89} raycast={NO_RAYCAST}>
-          <sphereGeometry args={[radius * 1.0037, 96, 64]} />
+          <sphereGeometry args={[baseRadius * 1.0032, 128, 96]} />
           <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={cloudFragment} transparent depthWrite={false} />
         </mesh>
       </group>
       <mesh renderOrder={-88} raycast={NO_RAYCAST}>
-        <sphereGeometry args={[radius * 1.0107, 96, 64]} />
+        <sphereGeometry args={[baseRadius * 1.0092, 128, 96]} />
         <shaderMaterial uniforms={uniforms} vertexShader={planetVertex} fragmentShader={atmosphereFragment}
           transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
@@ -252,10 +353,27 @@ function Earth({ clock, sun, position, flight }: { clock: CosmicClock; sun: SunS
 export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: SpacecraftFlightState }> = ({ reducedMotion, sun, flight }) => {
   const distant = useRef<THREE.Group>(null);
   const worldPosition = useMemo(() => new THREE.Vector3(), []);
+  const cabinLightVec = useMemo(() => new THREE.Vector3(), []);
+  const orbitLightVec = useMemo(() => new THREE.Vector3(), []);
+  const upVec = useMemo(() => new THREE.Vector3(), []);
+  const lookVec = useMemo(() => new THREE.Vector3(), []);
+  const moonViewDir = useMemo(() => new THREE.Vector3(), []);
   const clock = useMemo<CosmicClock>(() => ({ value: 0 }), []);
-  const aspect = useThree(state => state.size.width / state.size.height);
-  const earthPosition = useMemo(() => earthPositionForAspect(aspect), [aspect]);
-  const orbit = useMemo(() => createSunOrbit(earthPosition, EARTH_RADIUS), [earthPosition]);
+  const aspect = useThree(state => state.size.width / Math.max(1, state.size.height));
+  const cabinEarthPosition = useMemo(() => earthPositionForAspect(aspect), [aspect]);
+  const orbitLayout = useMemo(() => orbitCelestialLayout(aspect), [aspect]);
+  const cabinOrbit = useMemo(() => createSunOrbit(cabinEarthPosition, EARTH_RADIUS), [cabinEarthPosition]);
+  const initialSunPhase = useMemo(() => startPhase(cabinOrbit), [cabinOrbit]);
+  const orbitSunRig = useMemo(
+    () => createOrbitSunRig(
+      orbitLayout.earthPosition,
+      orbitLayout.earthRadius,
+      orbitLayout.upDirection,
+      orbitLayout.sunStartTarget,
+      initialSunPhase,
+    ),
+    [orbitLayout, initialSunPhase],
+  );
   const overrides = useMemo(() => readSunOverrides(window.location.search), []);
   const phase = useRef<number | null>(null);
   const follow = (camera: THREE.Camera) => {
@@ -268,24 +386,82 @@ export const Cosmos: React.FC<{ reducedMotion: boolean; sun: SunState; flight?: 
     const step = Math.min(delta, 0.1);
     const boost = flight?.boost ?? 0;
     const timeScale = flight?.timeScale ?? 1;
+    const orbitPresence = flight ? THREE.MathUtils.clamp(flight.hullOpacity, 0, 1) : 0;
+    sun.orbitUniform.value = orbitPresence;
+
     if (!reducedMotion) clock.value += step * (1 + boost * 4.5);
-    if (phase.current === null) phase.current = overrides.phase ?? startPhase(orbit);
+    if (phase.current === null) phase.current = overrides.phase ?? initialSunPhase;
     else if (overrides.phase === null && (!reducedMotion || boost > 0.01)) {
       phase.current = (phase.current + step * overrides.speed * timeScale / SUN_CYCLE_SECONDS) % 1;
     }
-    const sample = sampleSun(orbit, phase.current);
-    sun.direction.set(...sample.direction);
-    sun.light.set(...roomLightDirection(sample.direction));
-    sun.daylight.value = sample.daylight;
-    sun.warmth = sample.warmth;
-    sun.warmthUniform.value = sample.warmth;
+
+    const cabinSample = sampleSun(cabinOrbit, phase.current);
+    const orbitSample = sampleOrbitSun(orbitSunRig, phase.current);
+    const daylight = orbitSample.daylight;
+    const warmth = orbitSample.warmth;
+
+    // Unified celestial Sun across both exterior orbit and interior cabin (no jump or revert on entering cabin!)
+    sun.direction.set(...orbitSample.direction);
+
+    // Keep indoor room key-light shadow direction open-front inside cabin so walls never cast dark shadows on furniture
+    cabinLightVec.set(...roomLightDirection(cabinSample.direction));
+    orbitLightVec.set(...roomLightDirection(orbitSample.direction, 0.36));
+    sun.light.copy(cabinLightVec).lerp(orbitLightVec, orbitPresence).normalize();
+
+    // Active Earth world direction for sky halo & spacecraft rim bounce
+    sun.earthDirection.set(
+      THREE.MathUtils.lerp(orbitLayout.cabinEarthPosition[0], orbitLayout.earthPosition[0], orbitPresence),
+      THREE.MathUtils.lerp(orbitLayout.cabinEarthPosition[1], orbitLayout.earthPosition[1], orbitPresence),
+      THREE.MathUtils.lerp(orbitLayout.cabinEarthPosition[2], orbitLayout.earthPosition[2], orbitPresence),
+    ).normalize();
+
+    // Illuminate ~72% of Earth's LEO cap in vivid Blue-Marble sunlight, sweeping into a lower-right golden terminator
+    upVec.set(...orbitLayout.upDirection);
+    lookVec.set(...orbitLayout.cameraLook);
+    sun.earthLitSun.copy(sun.direction)
+      .addScaledVector(upVec, 0.28 * daylight)
+      .addScaledVector(lookVec, -0.25 * daylight);
+    sun.earthLitSun.x += orbitSunRig.left[0] * 0.28 * daylight;
+    sun.earthLitSun.y += orbitSunRig.left[1] * 0.28 * daylight;
+    sun.earthLitSun.z += orbitSunRig.left[2] * 0.28 * daylight;
+    sun.earthLitSun.normalize();
+
+    // Sculpted ~42% crescent-quarter Moon facing the upper-left Sun in both orbit & cabin
+    moonViewDir.set(
+      THREE.MathUtils.lerp(orbitLayout.cabinMoonPosition[0], orbitLayout.moonPosition[0], orbitPresence),
+      THREE.MathUtils.lerp(orbitLayout.cabinMoonPosition[1], orbitLayout.moonPosition[1], orbitPresence),
+      THREE.MathUtils.lerp(orbitLayout.cabinMoonPosition[2], orbitLayout.moonPosition[2], orbitPresence),
+    ).normalize().negate();
+    sun.moonLitSun.copy(sun.direction)
+      .addScaledVector(moonViewDir, 0.56 * daylight)
+      .addScaledVector(upVec, 0.10 * daylight)
+      .normalize();
+
+    sun.daylight.value = daylight;
+    sun.warmth = warmth;
+    sun.warmthUniform.value = warmth;
     follow(camera);
   });
   return (
     <>
       <group ref={distant} name="cosmos">
-        <CelestialSphere earthPosition={earthPosition} clock={clock} sun={sun} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
-        <Earth position={earthPosition} clock={clock} sun={sun} flight={flight} />
+        <CelestialSphere clock={clock} sun={sun} onBeforeRender={(_renderer, _scene, camera) => { follow(camera); distant.current?.updateMatrixWorld(true); }} />
+        <Moon
+          clock={clock}
+          sun={sun}
+          cabinPosition={orbitLayout.cabinMoonPosition}
+          cabinRadius={orbitLayout.cabinMoonRadius}
+          orbitPosition={orbitLayout.moonPosition}
+          orbitRadius={orbitLayout.moonRadius}
+        />
+        <Earth
+          cabinPosition={orbitLayout.cabinEarthPosition}
+          orbitPosition={orbitLayout.earthPosition}
+          orbitRadius={orbitLayout.earthRadius}
+          clock={clock}
+          sun={sun}
+          flight={flight}
+        />
       </group>
       <Drift clock={clock} sun={sun} flight={flight} />
     </>

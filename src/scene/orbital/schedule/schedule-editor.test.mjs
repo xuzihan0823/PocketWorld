@@ -7,13 +7,14 @@ import * as model from '../journal/bookModel.ts';
 import { migrateSchedule } from './schedule.ts';
 
 function mount({ left = false, leaf = 0 } = {}) {
-  const hooks = [], changes = [];
+  const hooks = [], changes = [], sfx = [];
   let cursor = 0, current = migrateSchedule().current;
   const element = (type, props) => ({ type, props });
   const dependencies = {
     react: { useState: value => [value, () => {}], useRef: value => hooks[cursor++] ?? (hooks[cursor - 1] = { current: value }) },
     'react/jsx-runtime': { jsx: element, jsxs: element },
     '@react-three/drei': { Html: 'Html' }, '../journal/bookModel': model,
+    '../../audioEngine': { roomAudio: { playSfx: type => sfx.push(type) } },
   };
   const source = fs.readFileSync(new URL('./SchedulePageEditor.tsx', import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -32,7 +33,7 @@ function mount({ left = false, leaf = 0 } = {}) {
     visit(tree);
     return fields;
   };
-  return { render, changes, surfacePoint: context.exports.scheduleSurfacePoint, get current() { return current; } };
+  return { render, changes, sfx, surfacePoint: context.exports.scheduleSurfacePoint, get current() { return current; } };
 }
 const valueEvent = value => ({ currentTarget: { value }, target: { value } });
 
@@ -98,4 +99,11 @@ test('Chinese composition stays native until confirmed in every text section', (
     assert.ok(JSON.stringify(editor.current).includes('中文'));
     assert.ok(!JSON.stringify(editor.current).includes('zhongwen'));
   }
+});
+
+test('toggling a schedule todo checkbox plays paper-check SFX', () => {
+  const editor = mount(), fields = editor.render();
+  fields.get('完成待办1').onChange({ currentTarget: { checked: true } });
+  assert.equal(editor.current.todos[0].completed, true);
+  assert.deepEqual(editor.sfx, ['paper-check']);
 });

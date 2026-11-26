@@ -7,7 +7,7 @@ import ts from 'typescript';
 const module = { exports: {} };
 vm.runInNewContext(ts.transpileModule(readFileSync(new URL('./sunCycle.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { module, exports: module.exports, URLSearchParams });
 const {
-  createSunOrbit, sampleSun, startPhase, sunAngle, roomLightDirection, readSunOverrides,
+  createSunOrbit, createOrbitSunRig, sampleSun, sampleOrbitSun, startPhase, sunAngle, roomLightDirection, readSunOverrides,
   BASE_SUN_DIRECTION, ECLIPSE_FRACTION, SUN_CYCLE_SECONDS, ROOM_LIGHT_MIN_ELEVATION,
 } = module.exports;
 
@@ -97,7 +97,7 @@ test('debug query parameters pin the phase or change the speed', () => {
   assert.equal(readSunOverrides('?sunSpeed=9999').speed, 240);
 });
 
-test('cosmos shaders include multi-layer Milky Way rifts, parallax cloud shadows, aurora, and particle Mie scattering', () => {
+test('cosmos shaders include multi-layer Milky Way rifts, starburst Sun, procedural Moon craters, parallax cloud shadows, aurora, and particle Mie scattering', () => {
   const cosmosShaderModule = { exports: {} };
   vm.runInNewContext(
     ts.transpileModule(readFileSync(new URL('./shaders/cosmos.ts', import.meta.url), 'utf8'), {
@@ -107,10 +107,44 @@ test('cosmos shaders include multi-layer Milky Way rifts, parallax cloud shadows
   );
   const shaders = cosmosShaderModule.exports;
   assert.ok(shaders.skyFragment.includes('ridgedFbm') && shaders.skyFragment.includes('uWarmth'));
+  assert.ok(shaders.skyFragment.includes('starburstBlade') && shaders.skyFragment.includes('uOrbit'));
   assert.ok(shaders.starFragment.includes('vProminence') && shaders.starFragment.includes('secondarySpikes'));
   assert.ok(shaders.particleVertex.includes('forwardScatter') && shaders.particleFragment.includes('crystalMote'));
-  assert.ok(shaders.planetVertex.includes('vObjectSun'));
+  assert.ok(shaders.planetVertex.includes('vObjectSun') && shaders.planetVertex.includes('uLitSun'));
   assert.ok(shaders.earthFragment.includes('shadowSamplePos') && shaders.earthFragment.includes('auroralOval'));
   assert.ok(shaders.cloudFragment.includes('selfShadow') && shaders.cloudFragment.includes('ridgeHighlight'));
   assert.ok(shaders.atmosphereFragment.includes('nightSide') && shaders.atmosphereFragment.includes('duskBand'));
+  assert.ok(shaders.moonFragment.includes('craterLayer') && shaders.moonFragment.includes('lunarElevation'));
+});
+
+test('orbital Sun trajectory shares the 20% eclipse window, stays C1-continuous, and starts in sunlit upper-left sky', () => {
+  const orbitEarth = [88, -648, -386];
+  const orbitRadius = 468;
+  const upHint = [0.08, 0.94, -0.33];
+  const sunTarget = [-0.04, -0.18, -0.98];
+  const p0 = startPhase(LAYOUTS.wide);
+  const rig = createOrbitSunRig(orbitEarth, orbitRadius, upHint, sunTarget, p0);
+
+  const startSample = sampleOrbitSun(rig, p0);
+  assert.equal(startSample.daylight, 1);
+  assert.ok(startSample.warmth < 0.05, `expected clear daytime warmth near 0, got ${startSample.warmth}`);
+  assert.ok(startSample.separation > 10, `expected generous limb clearance at visit start, got ${startSample.separation}`);
+
+  // Exact eclipse midpoint behind Earth at phase 0.5 and limb transitions at 0.4 / 0.6
+  assert.equal(sampleOrbitSun(rig, 0.5).daylight, 0);
+  assert.ok(Math.abs(sampleOrbitSun(rig, 0.4).separation) < 0.05);
+  assert.ok(Math.abs(sampleOrbitSun(rig, 0.6).separation) < 0.05);
+
+  const steps = 10000;
+  let dark = 0;
+  let prev = sampleOrbitSun(rig, 0).direction;
+  let maxStep = 0;
+  for (let i = 1; i <= steps; i++) {
+    const sample = sampleOrbitSun(rig, i / steps);
+    if (sample.daylight < 0.5) dark++;
+    maxStep = Math.max(maxStep, angleBetween(prev, sample.direction));
+    prev = sample.direction;
+  }
+  assert.ok(Math.abs(dark / steps - ECLIPSE_FRACTION) < 0.02, `orbit eclipse share ${dark / steps}`);
+  assert.ok(maxStep < 0.35, `orbit Sun step jump ${maxStep}`);
 });

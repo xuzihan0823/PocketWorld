@@ -1105,9 +1105,12 @@ export function OrbitalResidents(props: ResidentsProps) {
         if (performance.kind === 'paper') {
           const mesh = rig.current.mesh;
           if (paperPose.current?.mesh !== mesh) paperPose.current = { mesh, apply: createPaperPose(mesh) };
+          const hadGrip = p.paperPickup.current?.id === performance.id;
           const held = p.paperPickup.current ?? { id: performance.id, position: new THREE.Vector3() };
           paperPose.current.apply(performance.point, performance.time, held.position);
-          p.paperPickup.current = performance.time >= PICKUP_GRIP_TIME ? held : null;
+          const hasGrip = performance.time >= PICKUP_GRIP_TIME;
+          p.paperPickup.current = hasGrip ? held : null;
+          if (hasGrip && !hadGrip) roomAudio.playSfx('paper-pickup');
         }
       }
       const thought = catalogThink.current;
