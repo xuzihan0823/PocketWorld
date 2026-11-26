@@ -1,0 +1,20 @@
+{
+  "luna-rigged.glb": {
+    "bytes": 10807680,
+    "meshes": 7,
+    "vertices_with_uv_seams": 139359,
+    "joints": 87,
+    "weight_sum_max_error": 1.7881393432617188e-07,
+    "clips": [
+      "Rig_Check"
+    ]
+  },
+  "luna-bunny.glb": {
+    "bytes": 2104312,
+    "meshes": 8,
+    "vertices_with_uv_seams": 11899,
+    "joints": 0,
+    "weight_sum_max_error": 0,
+    "clips": []
+  }
+}
