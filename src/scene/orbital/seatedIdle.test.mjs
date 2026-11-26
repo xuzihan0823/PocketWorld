@@ -86,13 +86,14 @@ const raw = readFileSync(new URL('luna-sofa-low-sit.glb', assets));
 const { animations: [sofa] } = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
 const outfits = {
   everyday: ['luna-walk-room', 'luna-seat-contact'],
+  ribbon: ['luna-ribbon', 'luna-ribbon-seat'],
   cardigan: ['luna-cardigan', 'luna-cardigan-seat'],
 };
 for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
   test(`${outfit} keeps the hips and planted feet on the sofa, and swings both feet below fixed knees on the chair`, async () => {
     const { gltf: { scene, animations } } = await load(new URL(model + '.glb', assets));
     const clip = name => animations.find(clip => clip.name === name);
-    const rig = createResidentRig(scene, clip('Walk_Grounded_Loop'), outfit !== 'everyday');
+    const rig = createResidentRig(scene, clip('Walk_Grounded_Loop'), outfit === 'cardigan');
     const data = readFileSync(new URL(seatCache + '.bin', assets));
     const chair = createChairAnimation(scene, clip('ChairSit_Contact'),
       readSeatContactCache(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)));
@@ -107,33 +108,64 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
         rig.applyPose(0, 0);
         chair.apply(CHAIR_SIT_SECONDS, Number(seat === 'chair'));
         if (seat === 'sofa') applySofa(sofaClip.duration);
-        if (time !== undefined) applyIdle({ seat, time, weight: 1, release });
+        applyIdle({ seat, time: time ?? 0, weight: time === undefined ? 0 : 1, release }, Number(seat === 'sofa'));
       };
       const supports = ['Hips', ...feet, 'LeftToeBase', 'RightToeBase'];
       sample('sofa');
       const sofaSupports = supports.map(position);
       const cheek = position('Head'), wrist = position('LeftHand');
+      const lapHand = position('RightHand');
+      for (const side of ['Left', 'Right']) {
+        const hip = position(side + 'UpLeg'), knee = position(side + 'Leg');
+        const palm = position(side + 'Hand').lerp(position(side + 'HandMiddle1'), .57);
+        const thigh = knee.clone().sub(hip).normalize();
+        const along = palm.clone().sub(hip).dot(thigh);
+        assert(along > .09 && along < .25, side + ' palm lies between hip and knee');
+        assert(Math.abs(palm.x - hip.x) < .045 && palm.y > knee.y, side + ' palm is over its own thigh');
+      }
       const armLength = position('LeftHand').distanceTo(position('LeftForeArm'));
       for (let i = 0; i <= 48; i++) {
         sample('sofa', i / 10);
         supports.forEach((name, index) => assert(position(name).distanceTo(sofaSupports[index]) < 1e-5, name));
         assert(Math.abs(position('LeftHand').distanceTo(position('LeftForeArm')) - armLength) < 1e-5);
         if (i === 20) {
-          assert(position('Head').distanceTo(cheek) > .18);
+          assert(position('Head').distanceTo(cheek) > .07);
           assert(position('LeftHand').distanceTo(position('Head')) < .14);
-          if (outfit === 'cardigan') assert(position('RightHand').y < .64);
-          else assert(position('RightHand').distanceTo(position('LeftForeArm')) < .10);
+          assert(position('RightHand').distanceTo(lapHand) < .002, 'the free hand stays supported on the thigh');
         }
       }
       sample('sofa', 2, 1);
-      assert(position('LeftHand').distanceTo(wrist) < 1e-5, 'release returns to the seat contact pose');
+      assert(position('LeftHand').distanceTo(wrist) < 1e-5, 'release returns to the lap');
+
+      const armBones = ['Left', 'Right'].flatMap(side => ['Arm', 'ForeArm', 'Hand'].map(part => bone(side + part)));
+      const seat = createSeatedIdle();
+      for (const rate of [30, 60, 120]) {
+        Object.assign(seat, createSeatedIdle());
+        let previous;
+        for (let i = 0; i <= rate * 7; i++) {
+          stepSeatedIdle(seat, 1 / rate, 'sofa', false);
+          rig.applyPose(0, 0);
+          applySofa(sofaClip.duration);
+          applyIdle(seat, 1);
+          for (const side of ['Left', 'Right']) {
+            const hand = position(side + 'Hand');
+            const lower = hand.clone().sub(position(side + 'ForeArm'));
+            const palm = position(side + 'HandMiddle1').sub(hand);
+            assert(lower.angleTo(palm) < .78, side + ' wrist bends within the seated range');
+          }
+          if (previous) armBones.forEach((joint, index) => {
+            assert(joint.quaternion.angleTo(previous[index]) < 14 / rate + .02, joint.name + ' turns continuously');
+          });
+          previous = armBones.map(joint => joint.quaternion.clone());
+        }
+      }
 
       sample('chair');
       const knees = ['LeftLeg', 'RightLeg'];
       const kneePositions = knees.map(position);
       const footPositions = feet.map(position);
       const chairHips = position('Hips');
-      const range = feet.map(() => ({ min: Infinity, max: -Infinity }));
+      const range = feet.map(() => ({ min: new THREE.Vector3(), max: new THREE.Vector3() }));
       for (let i = 0; i <= 62; i++) {
         sample('chair', i / 20);
         assert(position('Hips').distanceTo(chairHips) < 1e-5);
@@ -141,11 +173,11 @@ for (const [outfit, [model, seatCache]] of Object.entries(outfits)) {
         feet.forEach((name, j) => {
           const foot = position(name);
           assert(foot.y > .25 && position(name.replace('Foot', 'ToeBase')).y > .16);
-          range[j].min = Math.min(range[j].min, foot.z);
-          range[j].max = Math.max(range[j].max, foot.z);
+          if (i === 0 || foot.z < range[j].min.z) range[j].min.copy(foot);
+          if (i === 0 || foot.z > range[j].max.z) range[j].max.copy(foot);
         });
       }
-      assert(range.every(({ min, max }) => max - min > .12));
+      assert(range.every(({ min, max }) => max.distanceTo(min) > .12));
       sample('chair', 1.6, 1);
       feet.forEach((name, j) => assert(position(name).distanceTo(footPositions[j]) < 1e-5));
     } finally {

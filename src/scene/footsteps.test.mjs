@@ -107,6 +107,8 @@ function mount(kind, overrides = {}, idleLibrary) {
     './scene/orbital/library/LibrarySurface': { LibrarySurface: 'LibrarySurface' },
     './library/residentPose': { applyLibraryPose() {}, carryResident() {}, libraryCrouch: () => 0 },
     './library/armPose': { resetArms() {} },
+    './library/cardiganBookPose': { createCardiganBookPose: () => () => {} },
+    './library/cardiganBookSleeve': load('./orbital/library/cardiganBookSleeve.ts', { three: THREE, './catalog': catalog }),
     './library/libraryMotion': { libraryCoverFlow: flow => flow },
     './library/bookMotion': { residentLibraryTarget: () => [0, 0, 0] },
     './library/catalog': catalog,
@@ -115,7 +117,9 @@ function mount(kind, overrides = {}, idleLibrary) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/OrbitalDustPrompt': { DustPrompt: 'DustPrompt' },
     './scene/orbital/spacecraftFlight': { readInitialViewMode: () => 'cabin' },
-    './standingIdle': load('./orbital/standingIdle.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class {
+    './standingIdle': load('./orbital/standingIdle.ts', { three: THREE,
+      './yawnPose.ts': load('./orbital/yawnPose.ts', { three: THREE }),
+      'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
     './scene/orbital/orbital.css': {},
@@ -1115,12 +1119,9 @@ test('standing idle starts early, ignores Space and resets on movement, focus an
   } finally { view.dispose(); }
 });
 
-test('loaded looking gesture ignores Space and is interrupted by movement, focus, disabling and reduced motion', async () => {
-  const idleLibrary = {};
-  for (const name of ['luna-yawn', 'luna-looking-around']) {
-    const { gltf } = await loadModel(new URL(`../../assets/public/models/resident/${name}.glb`, import.meta.url));
-    idleLibrary[`./models/resident/${name}.glb`] = gltf;
-  }
+test('loaded yawn ignores Space and is interrupted by movement, focus, disabling and reduced motion', async () => {
+  const { gltf } = await loadModel(new URL('../../assets/public/models/resident/luna-yawn.glb', import.meta.url));
+  const idleLibrary = { './models/resident/luna-yawn.glb': gltf };
   for (const trigger of [view => view.key('KeyD'),
     view => { view.props.focusedObject = 'journal'; }, view => { view.props.enabled = false; },
     view => { view.props.reducedMotion = true; }]) {
@@ -1129,19 +1130,21 @@ test('loaded looking gesture ignores Space and is interrupted by movement, focus
     try {
       advance(8);
       await new Promise(setImmediate);
-      for (let i = 0; i < 35 * 60 && view.root.userData.standingIdle.lookTime < 1; i++) view.frame(1 / 60);
-      assert(view.root.userData.standingIdle.lookTime >= 1, 'real clip must be playing before interruption');
-      const lookBeforeSpace = view.root.userData.standingIdle.lookTime;
+      for (let i = 0; i < 85 * 60 && view.root.userData.standingIdle.yawnTime < 4.8; i++) {
+        view.frame(1 / 60);
+        assert(!('lookTime' in view.root.userData.standingIdle));
+      }
+      assert(view.root.userData.standingIdle.yawnTime >= 4.8, 'real yawn must reach the stretch before interruption');
+      const beforeSpace = view.root.userData.standingIdle.yawnTime;
       view.key('Space'); view.frame(1 / 60);
-      assert.ok(view.root.userData.standingIdle.lookTime > lookBeforeSpace);
+      assert.ok(view.root.userData.standingIdle.yawnTime > beforeSpace);
       trigger(view); view.frame(1 / 60);
       assert.equal(view.root.userData.standingIdle.elapsed, 0);
       advance(.5);
-      assert.equal(view.root.userData.standingIdle.lookTime, -1);
+      assert.equal(view.root.userData.standingIdle.yawnTime, -1);
       assert.equal(view.root.userData.standingIdle.weight, 0);
       if (view.props.reducedMotion) {
         advance(120);
-        assert.equal(view.root.userData.standingIdle.lookTime, -1);
         assert.equal(view.root.userData.standingIdle.yawnTime, -1);
         assert.equal(view.root.userData.standingIdle.elapsed, 0);
       }

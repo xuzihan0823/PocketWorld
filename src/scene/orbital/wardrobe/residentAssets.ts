@@ -13,7 +13,7 @@ export interface ResidentAssets {
   fitted?: {
     sofa: AnimationClip;
     library: LibraryMotion;
-    idle?: { yawn: AnimationClip; look: AnimationClip };
+    idle?: { yawn: AnimationClip };
   };
 }
 
@@ -50,7 +50,7 @@ export function loadResidentAssets(outfit: ResidentOutfit): Promise<ResidentAsse
       outfit, scene: gltf.scene, walk: clip('Walk_Grounded_Loop'), sit: clip('ChairSit_Contact'),
       fitted: outfit !== 'everyday' ? {
         sofa: clip('Luna_CMU_75_20'), library: readLibraryMotion(gltf.animations),
-        idle: outfit === 'cardigan' ? { yawn: clip('Luna_Yawn'), look: clip('Luna_Looking_Around') } : undefined,
+        idle: outfit === 'cardigan' ? { yawn: clip('Luna_Yawn') } : undefined,
       } : undefined,
     };
   }).catch(error => { pending.delete(outfit); throw error; });

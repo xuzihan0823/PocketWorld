@@ -21,13 +21,15 @@ import { Cat } from './Cat';
 import { CHAIR_POSES, chairFront, type ChairPose } from './chairPose';
 import { applyLibraryPose, carryResident, libraryCrouch } from './library/residentPose';
 import { resetArms } from './library/armPose';
+import { createCardiganBookPose } from './library/cardiganBookPose';
+import { topShelfSleeveProgress } from './library/cardiganBookSleeve';
 import { authoredBookStand, libraryHeldBalance, residentLibraryTarget } from './library/bookMotion';
-import { createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibraryMotion, type LibraryMotion } from './library/libraryMotion';
-import { readingStand, shelfOrigin, shelfPoint, shelfYaw, slotFor } from './library/catalog';
+import { applyTopShelfReach, createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibraryMotion, type LibraryMotion } from './library/libraryMotion';
+import { readingStand, shelfOrigin, shelfPoint, shelfYaw } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
 import { sampleStairGait, stairFootfall, stairTreadSurface, type StairGait } from './stairGait';
-import { createIdlePlayer, createIdleState, loadYawn, loadLookingAround, stepIdle, STANDING_IDLE } from './standingIdle';
+import { createIdlePlayer, createIdleState, loadYawn, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
 import { createSeatedIdle, seatedIdleWeight, stepSeatedIdle } from './seatedIdle';
 import { SlipperPair } from './Slippers';
@@ -270,8 +272,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   }, [props.sceneId, room]);
   const idle = useRef(createIdleState());
   const idleMotion = useRef({ rig: null as ResidentRig | null, player: null as ReturnType<typeof createIdlePlayer> | null,
-    clip: null as THREE.AnimationClip | null, loading: false, retryAt: 0,
-    lookClip: null as THREE.AnimationClip | null, lookLoading: false, lookRetryAt: 0 });
+    clip: null as THREE.AnimationClip | null, loading: false, retryAt: 0 });
   const idleInput = useRef(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -284,7 +285,10 @@ export function OrbitalResidents(props: ResidentsProps) {
   const libraryNav = useRef('');
   const libraryAsset = props.library?.motion;
   const libraryOpen = props.library ? props.library.view.phase !== 'idle' : false;
-  const libraryPlayer = useRef<{ motion: LibraryMotion; rig: ResidentRig; apply: ReturnType<typeof createLibraryPlayer> }>();
+  const libraryPlayer = useRef<{
+    motion: LibraryMotion; rig: ResidentRig; apply: ReturnType<typeof createLibraryPlayer>;
+    fitCardigan?: ReturnType<typeof createCardiganBookPose>;
+  }>();
   useEffect(() => {
     if (!libraryOpen || !libraryAsset) return;
     if (rig.current?.fitted) {
@@ -650,7 +654,11 @@ export function OrbitalResidents(props: ResidentsProps) {
     const motion = libraryActive ? (rig.current?.fitted?.library ?? library?.motion.current) : undefined;
     if (motion && rig.current && (libraryPlayer.current?.motion !== motion || libraryPlayer.current.rig !== rig.current)) {
       try {
-        libraryPlayer.current = { motion, rig: rig.current, apply: createLibraryPlayer(rig.current.mesh, motion) };
+        const { mesh } = rig.current;
+        libraryPlayer.current = {
+          motion, rig: rig.current, apply: createLibraryPlayer(mesh, motion),
+          fitCardigan: mesh.userData.outfit === 'cardigan' ? createCardiganBookPose(mesh) : undefined,
+        };
       } catch (error) {
         library!.motion.current = null;
         libraryPlayer.current = undefined;
@@ -1053,16 +1061,9 @@ export function OrbitalResidents(props: ResidentsProps) {
     const im = idleMotion.current;
     const fittedIdle = rig.current?.fitted?.idle;
     const yawnClip = fittedIdle?.yawn ?? im.clip;
-    const lookClip = fittedIdle?.look ?? im.lookClip;
     stepIdle(idle.current, rawDelta, standingAtRest && !p.reducedMotion, yawnClip?.duration ?? 0,
-      Math.random, lookClip?.duration ?? 0, standingAtRest, cabin.clips);
+      Math.random, standingAtRest, cabin.clips);
     idleInput.current = false;
-    if (idle.current.elapsed >= STANDING_IDLE.delay && !lookClip && !im.lookLoading && idle.current.elapsed >= im.lookRetryAt) {
-      im.lookLoading = true;
-      void loadLookingAround().then(clip => { if (mounted.current) { im.lookClip = clip; im.rig = null; } })
-        .catch(() => { im.lookRetryAt = idle.current.elapsed + 30; })
-        .finally(() => { im.lookLoading = false; });
-    }
     if (idle.current.elapsed >= STANDING_IDLE.delay && !yawnClip && !im.loading && idle.current.elapsed >= im.retryAt) {
       im.loading = true;
       void loadYawn().then(clip => { if (mounted.current) { im.clip = clip; im.rig = null; } })
@@ -1071,7 +1072,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     if (rig.current && im.rig !== rig.current) {
       im.rig = rig.current;
-      im.player = createIdlePlayer(rig.current.mesh, yawnClip ?? undefined, lookClip ?? undefined, cabin.apply);
+      im.player = createIdlePlayer(rig.current.mesh, yawnClip ?? undefined, cabin.apply);
     }
     if (rig.current) {
       const playingChair = p.sceneId === 'habitat' && s.posture === 'chair';
@@ -1082,23 +1083,24 @@ export function OrbitalResidents(props: ResidentsProps) {
       }
       rig.current.applyPose(stairGait?.phase ?? s.walkTime, ease(walkWeight.current) * (1 - (stairGait?.weight ?? 0)),
         cardigan ? ease(armRelaxation.current) : 0);
+      if (plushGrip.current && plushPose.current?.mesh !== rig.current.mesh) {
+        plushPose.current = { mesh: rig.current.mesh, apply: createPlushPose(rig.current.mesh) };
+      }
       if (stairGait) rig.current.applyStairPose(stairGait, CABIN_STAIRS.x, stairTreadSurface);
-      if (!playingChair && flow?.book && librarySample) libraryPlayer.current!.apply(flow.book, librarySample);
-      if (!p.reducedMotion && flow?.phase === 'reach' && flow.book && librarySample
-        && slotFor(flow.book).row === 2 && cabin.apply && cabin.clips) {
-        // Use the source's rising arm during the approach. The keyed grip
-        // takes back full control before any finger or book contact.
-        const progress = flow.progress;
-        const weight = .68 * THREE.MathUtils.smoothstep(progress, 0, .26)
-          * (1 - THREE.MathUtils.smoothstep(progress, .4, .70));
-        if (weight > 0) cabin.apply('reachHigh', .17 + progress * .82, weight);
+      if (!playingChair && flow?.book && librarySample) {
+        const player = libraryPlayer.current!;
+        player.apply(flow.book, librarySample);
+        const raisedReach = applyTopShelfReach(flow, p.reducedMotion, cabin.clips ? cabin.apply : undefined);
+        player.fitCardigan?.(p.sceneId, flow, player.motion, librarySample, raisedReach);
       }
       if (!interactionPose && !libraryActive) im.player?.(idle.current, !p.reducedMotion);
       rig.current.applyChairPose?.(
         playingChair ? chairMotion.current.time : 0,
         playingChair ? ease(chairMotion.current.align) : 0,
       );
-      if (s.posture === 'sofa' && !sofaSteps) sofa.apply?.(sofa.time - SOFA_STEPS);
+      const sofaTime = sofa.time - SOFA_STEPS;
+      const seatedOnSofa = s.posture === 'sofa' && !sofaSteps && sofaClip && sofa.apply;
+      if (seatedOnSofa) sofa.apply?.(sofaTime);
       const performance = cabinPerformance.current;
       if (performance && cabin.apply && cabin.clips) {
         applyCabinPerformance(performance, cabin.clips, cabin.apply);
@@ -1120,18 +1122,15 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (!thought.weight) thought.time = 0;
       else if (choosing || !librarySample) cabin.apply?.('think', thought.time, ease(thought.weight));
       if (plushGrip.current && cabin.clips) {
-        if (plushPose.current?.mesh !== rig.current.mesh) {
-          plushPose.current = { mesh: rig.current.mesh, apply: createPlushPose(rig.current.mesh) };
-        }
         plushGrip.current.visible = deckFrame.current?.visible ?? true;
-        plushPose.current.apply(root, plushGrip.current, performance?.kind === 'plush' ? performance.time : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
+        plushPose.current?.apply(root, plushGrip.current, performance?.kind === 'plush' ? performance.time : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
       }
       if (seatIdle.overlay) {
         const weight = seatedIdleWeight(seatIdle);
         if (weight > 0) cabin.apply?.(seatIdle.overlay, seatIdle.time, weight);
-      } else {
-        rig.current.applySeatedIdle?.(seatIdle);
       }
+      const lapWeight = seatedOnSofa ? THREE.MathUtils.smoothstep(sofaTime, sofaClip.duration - .48, sofaClip.duration) : 0;
+      rig.current.applySeatedIdle?.(seatIdle, lapWeight);
       // Add the offsets after authored animation, only when there is no contact pose to preserve.
       rig.current.followMotion(rawDelta,
         !interactionPose && !libraryActive && !p.focusedObject && !p.reducedMotion && !document.hidden,
@@ -1140,11 +1139,12 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     if (library && rig.current) library.tick(dt);
     rig.current?.updateSleeveContact?.();
+    rig.current?.applyBookSleeveFit?.(topShelfSleeveProgress(flow, librarySample));
     root.userData.onStairs = !!stairSample;
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;
     root.userData.cabinAction = cabinPerformance.current?.kind === 'floor' ? cabinPerformance.current.phase : cabinPerformance.current?.kind;
     root.userData.standingIdle = { elapsed: idle.current.elapsed, weight: idle.current.weight, yawnTime: idle.current.yawnTime,
-      nextYawn: idle.current.nextYawn, lookTime: idle.current.lookTime, nextLook: idle.current.nextLook,
+      nextYawn: idle.current.nextYawn,
       shortTime: idle.current.shortTime, shortKind: idle.current.shortKind };
     root.userData.chairPhase = s.posture === 'chair' ? chairMotion.current.phase : 'idle';
     p.sofaTime.current = s.posture === 'sofa' ? sofa.time - SOFA_STEPS : null;

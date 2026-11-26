@@ -12,14 +12,15 @@ python scripts/fit-luna-ribbon.py /path/to/Luna-Ribbon.glb --motions assets/publ
 
 ## 生活舱日常动作
 
-地毯的盘腿坐地使用 MotionSmith Take 2 原地版，盘腿起身、捡东西、揉眼睛、托腮思考和向高处取物均使用 Take 1。摘取姿态来自 UE5 Manny 的 30 fps 骨骼动画。脚底和骨盆按 Luna 日常装的实际蒙皮校准。盘腿时，裙装的前幅分别越过左右膝，中间略低，末端向下折落。侧幅绕向膝外侧，后摆在地毯上摊开。入座和起身时沿动作过渡。脸部手势保留原片时序，腕位按 Luna 的脸型缩放。书架目录使用托下巴动作的抬手段并保持姿势。拾物在 1.9 秒把纸团交给右手。拾娃娃复用同一动作，起身后双手托住，放下时反向播放。高处取物在书本接触前交回书柜原动作。
+地毯的盘腿坐地使用 MotionSmith Take 2 原地版，盘腿起身、捡东西、揉眼睛、托腮思考和向高处取物均使用 Take 1。摘取姿态来自 UE5 Manny 的 30 fps 骨骼动画。日常装和丁香针织开衫按各自实际蒙皮校准脚底和骨盆，蝴蝶结外套由日常装重定向并重新校准脚底。盘腿时，日常裙的前幅分别越过左右膝，中间略低，末端向下折落。侧幅绕向膝外侧，后摆在地毯上摊开。入座和起身时沿动作过渡。脸部手势保留原片时序，腕位按 Luna 的脸型缩放。书架目录使用托下巴动作的抬手段并保持姿势。拾物在 1.9 秒把纸团交给右手。拾娃娃复用同一动作，起身后双手托住，放下时反向播放。小熊根据掌面和指尖的蒙皮取样贴合实际玩偶表面。高处取物在书本接触前交回书柜原动作。
 
-五条待机同样按日常装导出。从 [Feminine Idle](https://cosindra.ai/motionsmith/motions/idle-feminine) Take 1 提取躯干与左臂，并按日常装调整掌面朝向和腰侧落点。[Neck Stretch](https://cosindra.ai/motionsmith/motions/idle-neck-stretch) Take 2 使用胸部以上旋转。[Seated Dozing Idle](https://cosindra.ai/motionsmith/motions/seated-dozing-idle) Take 1 保留点头回抬的节奏，用躯干辅助前倾。[Seated Idle](https://cosindra.ai/motionsmith/motions/sit-chair-idle) Take 5 和 [Floor Sitting Idle](https://cosindra.ai/motionsmith/motions/sit-floor-idle) Take 1 保留原片的视线方向，用淡入淡出形成转头。三段坐姿只叠加脊柱、颈或头的相对旋转。叠加时保留原坐姿接触和地毯蒙皮。
+五条待机随服装各自的动作包加载。从 [Feminine Idle](https://cosindra.ai/motionsmith/motions/idle-feminine) Take 1 提取躯干与左臂，并按服装调整掌面朝向和腰侧落点。[Neck Stretch](https://cosindra.ai/motionsmith/motions/idle-neck-stretch) Take 2 使用胸部以上旋转。[Seated Dozing Idle](https://cosindra.ai/motionsmith/motions/seated-dozing-idle) Take 1 保留点头回抬的节奏，用躯干辅助前倾。[Seated Idle](https://cosindra.ai/motionsmith/motions/sit-chair-idle) Take 5 和 [Floor Sitting Idle](https://cosindra.ai/motionsmith/motions/sit-floor-idle) Take 1 保留原片的视线方向，用淡入淡出形成转头。三段坐姿只叠加脊柱、颈或头的相对旋转。叠加时保留原坐姿接触和地毯蒙皮。
 
-原片放在仓库外同一个目录，每个文件保留 MotionSmith 的默认名。使用 Node.js 24 重建日常装的动画 GLB。
+原片放在仓库外同一个目录，每个文件保留 MotionSmith 的默认名。使用 Node.js 24 重建日常装与丁香针织开衫的动画 GLB。开衫直接使用骨盆和大腿的短衣摆蒙皮，并在盘腿落座及起身时，根据前发束距地高度烘焙弯曲。蝴蝶结外套沿用本页对应的重定向命令。
 
 ```bash
-node scripts/bake-luna-cabin-actions.mjs /path/to/downloads
+node scripts/bake-luna-cabin-actions.mjs /path/to/downloads everyday
+node scripts/bake-luna-cabin-actions.mjs /path/to/downloads cardigan
 ```
 
 来源、Take 和源文件校验值见[素材登记](../../models.sources.json)。
@@ -102,7 +103,7 @@ python scripts/pack-luna-chair.py --output <外部目录>
 
 ## 坐姿待机
 
-懒人沙发托腮采用 CMU `13_04` 的左肘弯曲和头部转向（120 Hz，第 1573–2149 帧）。桌前固定椅晃腿采用 CMU `01_06` 坐在高处时的左右膝屈伸（120 Hz，第 985–1357 帧）。两段均从原始记录取坐稳后的片段，并导出为 10 Hz 曲线，托腮的放手段略放慢。网页在既有落座姿势上求解手掌接触和小腿摆角。懒人沙发保留原有骨盆、贴地双脚和坐垫承重。固定椅保留臀部与膝位。日常装的左手贴住下颌，右手托住左前臂。
+懒人沙发托腮采用 CMU `13_04` 的左肘弯曲和头部转向（120 Hz，第 1573–2149 帧）。桌前固定椅晃腿采用 CMU `01_06` 坐在高处时的左右膝屈伸（120 Hz，第 985–1357 帧）。两段均从原始记录取坐稳后的片段，并导出为 10 Hz 曲线，托腮的放手段略放慢。网页在既有落座姿势上求解手掌接触和小腿摆角。懒人沙发保留原有骨盆、贴地双脚和坐垫承重。固定椅保留臀部与膝位。三套衣装按各自的腿面高度调整双手落点。托腮时左掌从腿上抬至下颌侧，前臂分担转掌时的旋转，右手继续搭在大腿上。
 
 下载 [13_04.amc](https://mocap.cs.cmu.edu/subjects/13/13_04.amc) 和 [01_06.amc](https://mocap.cs.cmu.edu/subjects/01/01_06.amc) 到仓库外的同一目录，从仓库根目录运行以下命令生成 `src/scene/orbital/seatedIdleFrames.ts`。
 
@@ -129,18 +130,9 @@ blender --background --factory-startup --python-exit-code 1 \
 
 ## 站立伸懒腰
 
-用户提供的 Mixamo `Yawn.fbx` 为 30 FPS、1–251 帧骨骼动作。`scripts/export-luna-yawn.py` 将上身世界旋转相对绑定姿态的变化转换到 Luna 的绑定坐标，导出 `luna-yawn.glb`，232,092 bytes、54 条旋转轨道、8.33 秒。骨盆、腿和脚沿用运行时中立站姿。首次普通待机时加载，运行时淡入淡出整段动作。
+用户提供的 Mixamo `Yawn.fbx` 为 30 FPS、1–251 帧骨骼动作。`scripts/export-luna-yawn.py` 将上身世界旋转相对绑定姿态的变化转换到 Luna 的绑定坐标，导出 `luna-yawn.glb`，232,092 bytes、54 条旋转轨道、8.33 秒。骨盆、腿和脚沿用运行时中立站姿。网页用原片驱动头颈及躯干，并按实际骨段长度求解遮嘴、伸展与收手。前臂和手掌沿同一方向转动，手指轻屈。
 
-复建命令为 `blender --background --python scripts/export-luna-yawn.py -- <Yawn.fbx路径>`。输入由用户下载提供，许可见来源清单中的 Adobe Mixamo FAQ。普通待机与额外动作的节奏及打断条件见 SPEC.md。
-
-
-## 站立环顾
-
-Mixamo 页面按描述 `Idle Stand Looking Around` 确认的 `Looking Around`，使用 X Bot 空手站姿，完整 1–191 帧。下载设为 FBX Binary / Without Skin / 30 FPS / Keyframe Reduction none；Body Type 0、Surprise Level 50、Overdrive 50、Arm-Space 50、Trim 0–100%、Mirror 关闭。不是同名持火把动作，也不是 `Look Around — Looking Around The Body`。
-
-复用 `scripts/export-luna-yawn.py` 的绑定姿态与肩臂方向修正：`blender --background --python scripts/export-luna-yawn.py -- "<Looking Around.fbx路径>" looking-around`。生成 `luna-looking-around.glb`：180,012 bytes，54 条上身旋转轨道，6.33 秒；无网格、纹理和根位移。骨盆、腿及脚由原中立姿态负责，环顾期间保持原地。源 FBX 留在仓库外，SHA-256 与许可入口见来源清单。
-
-环顾和伸懒腰各自按需加载；偏头、拢手和松弛站姿由运行时直接计算。时序与打断由 `standingIdle.ts` 统一管理，数值参数及产品行为见 SPEC.md。
+复建命令为 `blender --background --python scripts/export-luna-yawn.py -- <Yawn.fbx路径>`。输入由用户下载提供，许可见来源清单中的 Adobe Mixamo FAQ。运行时的手臂轨迹见 `src/scene/orbital/yawnPose.ts`。普通待机与额外动作的节奏及打断条件见 SPEC.md。
 
 ## 书柜取书与归还
 

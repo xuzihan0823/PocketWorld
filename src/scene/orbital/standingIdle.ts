@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { createCabinActionPlayer } from './cabinActions';
+import { createYawnPose } from './yawnPose.ts';
 
 export const STANDING_IDLE = {
   delay: 6, firstYawn: [50, 70], repeatYawn: [65, 95],
-  firstLook: [20, 30], repeatLook: [24, 36], gestureGap: 8,
+  gestureGap: 8,
   firstShort: [12, 18], repeatShort: [22, 32], shortDuration: { listen: 3.2, clasp: 4.6 },
   fadeIn: 1.2, fadeOut: .28, yawnBlend: .85, restFade: .38,
   breathPeriod: 4.8, breathPitch: .025, swayPeriod: 9, swayRoll: .052,
@@ -25,28 +26,27 @@ const shortDuration = (kind: ShortGesture, extra: ExtraGestures) =>
 export function createIdleState(random = Math.random) {
   return { elapsed: 0, phase: 0, weight: 0, restWeight: 0, yawnTime: -1, yawnWeight: 0,
     nextYawn: interval(STANDING_IDLE.firstYawn, random), interrupted: false,
-    lookTime: -1, lookWeight: 0, nextLook: interval(STANDING_IDLE.firstLook, random), nextGesture: 0,
+    nextGesture: 0,
     shortTime: -1, shortWeight: 0, shortKind: 'listen' as ShortGesture,
     nextShort: interval(STANDING_IDLE.firstShort, random) };
 }
 export type IdleState = ReturnType<typeof createIdleState>;
 
 function fadeGesture(state: IdleState, dt: number) {
-  for (const [time, weight] of [['yawnTime', 'yawnWeight'], ['lookTime', 'lookWeight'], ['shortTime', 'shortWeight']] as const) {
+  for (const [time, weight] of [['yawnTime', 'yawnWeight'], ['shortTime', 'shortWeight']] as const) {
     state[weight] = Math.max(0, state[weight] - dt / STANDING_IDLE.fadeOut);
     if (state[weight] === 0) state[time] = -1;
   }
 }
 
 export function stepIdle(state: IdleState, delta: number, eligible: boolean, duration: number, random = Math.random,
-  lookDuration = 0, restEligible = eligible, extra: ExtraGestures = {}) {
+  restEligible = eligible, extra: ExtraGestures = {}) {
   const dt = THREE.MathUtils.clamp(delta, 0, .05);
   state.restWeight = THREE.MathUtils.clamp(state.restWeight + (restEligible ? dt / STANDING_IDLE.restFade : -dt / STANDING_IDLE.fadeOut), 0, 1);
   if (state.weight > 0 || eligible) state.phase += dt;
   if (!eligible) {
     if (state.elapsed > 0) {
       state.nextYawn = interval(STANDING_IDLE.firstYawn, random);
-      state.nextLook = interval(STANDING_IDLE.firstLook, random);
       state.nextShort = interval(STANDING_IDLE.firstShort, random);
       state.nextGesture = 0;
     }
@@ -59,7 +59,7 @@ export function stepIdle(state: IdleState, delta: number, eligible: boolean, dur
   state.elapsed += dt;
   state.weight = THREE.MathUtils.clamp(state.weight + (state.elapsed >= STANDING_IDLE.delay
     ? dt / STANDING_IDLE.fadeIn : -dt / STANDING_IDLE.fadeOut), 0, 1);
-  const active = state.yawnTime >= 0 || state.lookTime >= 0 || state.shortTime >= 0;
+  const active = state.yawnTime >= 0 || state.shortTime >= 0;
   if (state.interrupted && active) {
     fadeGesture(state, dt);
     return;
@@ -68,19 +68,7 @@ export function stepIdle(state: IdleState, delta: number, eligible: boolean, dur
   // Finish each gesture before starting another. Authored clips take priority when both are due.
   if (!active && state.elapsed >= state.nextGesture) {
     if (duration > 0 && state.elapsed >= state.nextYawn) state.yawnTime = 0;
-    else if (lookDuration > 0 && state.elapsed >= state.nextLook) state.lookTime = 0;
     else if (state.elapsed >= state.nextShort) state.shortTime = 0;
-  }
-  if (state.lookTime >= 0) {
-    state.lookTime += dt;
-    state.lookWeight = smooth(state.lookTime / STANDING_IDLE.yawnBlend)
-      * smooth((lookDuration - state.lookTime) / STANDING_IDLE.yawnBlend);
-    if (state.lookTime >= lookDuration) {
-      state.lookTime = -1;
-      state.lookWeight = 0;
-      state.nextLook = state.elapsed + interval(STANDING_IDLE.repeatLook, random);
-      state.nextGesture = state.elapsed + STANDING_IDLE.gestureGap;
-    }
   }
   if (state.shortTime >= 0) {
     const length = shortDuration(state.shortKind, extra);
@@ -107,15 +95,6 @@ export function stepIdle(state: IdleState, delta: number, eligible: boolean, dur
   }
 }
 
-let pendingLook: Promise<THREE.AnimationClip> | undefined;
-export function loadLookingAround() {
-  return pendingLook ??= new GLTFLoader().loadAsync('./models/resident/luna-looking-around.glb').then(({ animations }) => {
-    const clip = animations.find(value => value.name === 'Luna_Looking_Around');
-    if (!clip) throw new Error('Luna looking around animation missing');
-    return clip;
-  }).catch(error => { pendingLook = undefined; throw error; });
-}
-
 let pending: Promise<THREE.AnimationClip> | undefined;
 export function loadYawn() {
   return pending ??= new GLTFLoader().loadAsync('./models/resident/luna-yawn.glb').then(({ animations }) => {
@@ -138,18 +117,18 @@ const CLASP = {
 } as const;
 
 /** Called after the resident's base pose. Only upper-body rotations are owned here. */
-export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationClip, lookClip?: THREE.AnimationClip,
+export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationClip,
   applyCabinAction?: ReturnType<typeof createCabinActionPlayer>) {
   const bone = (name: string) => root.getObjectByName('mixamorig' + name)!;
-  const bind = (motion?: THREE.AnimationClip) => motion?.tracks.map(track => {
+  const yawnTorso = clip?.tracks.flatMap(track => {
     const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name);
     const joint = root.getObjectByName(nodeName);
     if (!joint || propertyName !== 'quaternion' || !/Spine|Neck|Head|Shoulder|Arm|Hand/.test(nodeName)) {
       throw new Error('Incompatible idle track ' + track.name);
     }
-    return { joint, curve: track.createInterpolant() };
+    return /Spine|Neck|Head/.test(nodeName) ? [{ joint, curve: track.createInterpolant() }] : [];
   }) ?? [];
-  const yawnChannels = bind(clip), lookChannels = bind(lookClip);
+  const yawnArms = clip && createYawnPose(root);
   const fittedSleeves = root.userData.outfit === 'cardigan';
   const spine = bone('Spine2'), neck = bone('Neck'), head = bone('Head');
   const arms = (['Right', 'Left'] as const).map(side => {
@@ -228,14 +207,13 @@ export function createIdlePlayer(root: THREE.Object3D, clip?: THREE.AnimationCli
       if (shortWeight > 0) applyCabinAction?.(state.shortKind, state.shortTime, shortWeight);
       return;
     }
-    const looking = state.lookTime >= 0;
-    const time = looking ? state.lookTime : state.yawnTime;
-    const gestureWeight = looking ? state.lookWeight : state.yawnWeight;
-    if (time < 0 || !gestureWeight) return;
-    const channels = looking ? lookChannels : yawnChannels;
-    for (const { joint, curve } of channels) {
-      rotation.fromArray(curve.evaluate(time));
-      joint.quaternion.slerp(rotation, gestureWeight);
+    if (state.yawnTime < 0 || !state.yawnWeight || !yawnArms) return;
+    for (const { joint, curve } of yawnTorso) {
+      rotation.fromArray(curve.evaluate(state.yawnTime));
+      joint.quaternion.slerp(rotation, state.yawnWeight);
     }
+    yawnArms(state.yawnTime, state.yawnWeight);
+    const curl = .21 * state.yawnWeight * smooth((state.yawnTime - 2.3) / .9) * smooth((8.05 - state.yawnTime) / 1.1);
+    for (const { fingers } of arms) for (const finger of fingers) finger.joint.rotateOnAxis(finger.axis, curl * finger.flex);
   };
 }

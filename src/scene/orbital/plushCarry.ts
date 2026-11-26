@@ -1,4 +1,4 @@
-import { Bone, Box3, Euler, MathUtils, Matrix4, Quaternion, Raycaster, Vector3, type Intersection, type Object3D } from 'three';
+import { Bone, Box3, Euler, MathUtils, Matrix4, Quaternion, Raycaster, SkinnedMesh, Vector3, type Intersection, type Object3D } from 'three';
 import { BEDROOM_LEFT, CABIN_DIVIDER_X, PLUSH_FLOOR_BOUNDS, RESIDENT_RADIUS, deckFromAuthoredX } from './cabinLayout.ts';
 import { dollOpen, plushFloorY, plushSupportHeight, type PlushBody, type PlushRect } from './plushMotion.ts';
 import { placeLimbEnd } from './residentRig.ts';
@@ -38,7 +38,32 @@ export function gripPlush(body: PlushBody, shape: PlushShape) {
 }
 export type PlushGrip = ReturnType<typeof gripPlush>;
 
+/** Sample the inward surface of the palms and fingertips in the grip's rest pose. */
+function bearHandSurface(mesh: Object3D, hand: Bone, along: Vector3, across: Vector3, inward: Vector3) {
+  const cells = new Map<string, Vector3>();
+  const point = new Vector3();
+  mesh.traverse(part => {
+    if (!(part instanceof SkinnedMesh)) return;
+    const { skinIndex, skinWeight } = part.geometry.attributes;
+    const handBones = part.skeleton.bones.map(bone => bone.name.startsWith(hand.name));
+    for (let i = 0; i < skinIndex.count; i++) {
+      let influence = 0;
+      for (let j = 0; j < 4; j++) {
+        if (handBones[skinIndex.getComponent(i, j)]) influence += skinWeight.getComponent(i, j);
+      }
+      if (influence < .70) continue;
+      hand.worldToLocal(part.getVertexPosition(i, point).applyMatrix4(part.matrixWorld));
+      const cell = Math.floor(point.dot(along) / .007) + ':' + Math.floor(point.dot(across) / .007);
+      const previous = cells.get(cell);
+      if (!previous || point.dot(inward) > previous.dot(inward)) cells.set(cell, point.clone());
+    }
+  });
+  return Array.from(cells.values());
+}
+
 export function createPlushPose(mesh: Object3D) {
+  mesh.parent?.updateWorldMatrix(true, false);
+  mesh.updateMatrixWorld(true);
   const basis = new Matrix4(), cross = new Vector3();
   const arms = ['Right', 'Left'].map((name, i) => {
     const joints = ['Arm', 'ForeArm', 'Hand'].map(part => mesh.getObjectByName('mixamorig' + name + part) as Bone);
@@ -55,8 +80,10 @@ export function createPlushPose(mesh: Object3D) {
     // Use the pad and knuckle of every finger, plus the palm heel, when fitting the hand.
     const pads = [knuckle.clone().multiplyScalar(.48), new Vector3(), ...fingers.map(({ joint }) =>
       hand.worldToLocal(joint.getWorldPosition(new Vector3())))];
-    return { joints, knuckle, localBasis, pads, fingers, side: i ? 1 : -1,
-      grip: null as PlushGrip | null, lastLift: -1, lastRotation: new Quaternion(), lateral: 0 };
+    const side = i ? 1 : -1;
+    const bearPads = bearHandSurface(mesh, hand, along, across, cross.clone().multiplyScalar(side));
+    return { joints, knuckle, localBasis, pads, bearPads, fingers, side,
+      grip: null as PlushGrip | null, lastLift: -1, lastCradle: -1, lastRotation: new Quaternion(), lateral: 0 };
   });
   const hips = mesh.getObjectByName('mixamorigHips')!, spine = mesh.getObjectByName('mixamorigSpine')!;
   const facing = new Quaternion(), relative = new Quaternion(), inverse = new Quaternion();
@@ -65,22 +92,27 @@ export function createPlushPose(mesh: Object3D) {
   const ray = new Raycaster(), hits: Intersection[] = [];
   const pad = new Vector3(), rayStart = new Vector3(), rayDirection = new Vector3();
   const normal = new Vector3(), along = new Vector3(), across = new Vector3(), scale = new Vector3();
+  const outward = new Vector3(), contact = new Vector3();
+  const animatedBend = new Vector3(), gripBend = new Vector3();
   return (root: Object3D, grip: PlushGrip, time: number, gripTime: number) => {
     const { body, shape } = grip, { half } = shape;
     const reach = MathUtils.smoothstep(time, gripTime - 1.25, gripTime - .35);
     const lift = MathUtils.smoothstep(time, gripTime, gripTime + 1.02);
     const turn = Math.atan2(Math.sin(root.rotation.y - body.yaw), Math.cos(root.rotation.y - body.yaw));
-    grip.rotation.set(body.pitch * (1 - lift), body.yaw + turn * lift, body.roll * (1 - lift), 'YXZ');
+    const bear = body.id === 'plush-bear';
+    const bearCradle = bear ? MathUtils.smoothstep(time, gripTime + .88, gripTime + 1.36) : 0;
+    grip.rotation.set(body.pitch * (1 - lift) - .15 * bearCradle, body.yaw + turn * lift, body.roll * (1 - lift), 'YXZ');
     grip.lift = lift;
     root.getWorldQuaternion(facing);
-    hips.getWorldPosition(grip.center).add(offset.set(0, half.y * .78, half.z + .112).applyQuaternion(facing));
+    hips.getWorldPosition(grip.center).add(offset.set(0, half.y * .78 + .012 * bearCradle, half.z + .112 - .009 * bearCradle).applyQuaternion(facing));
     if (lift < 1) {
       floor.set(grip.floorX, plushFloorY(grip.floorX, grip.floorZ) + body.y
         + plushSupportHeight(body.roll, body.pitch, half.x, half.y, half.z), grip.floorZ);
       root.parent!.localToWorld(floor);
       grip.center.lerpVectors(floor, grip.center, lift);
       // Arc out in front of the bent head, then settle back into the walking cradle.
-      grip.center.add(offset.set(0, 0, .22 * lift * (1 - lift)).applyQuaternion(facing));
+      const arc = bear ? .49 : .22;
+      grip.center.add(offset.set(0, 0, arc * lift * (1 - lift)).applyQuaternion(facing));
     }
     if (!reach) return;
     // Unbend the spine above the keyed pelvis so the face clears the toy and both feet keep
@@ -90,48 +122,59 @@ export function createPlushPose(mesh: Object3D) {
       offset.set(1, 0, 0).applyQuaternion(facing).applyQuaternion(inverse);
       spine.quaternion.premultiply(rotation.setFromAxisAngle(offset, -.39 * reach * (1 - lift)));
     }
-    // Toy orientation relative to the carrier. It becomes identity once the toy is cradled.
+    // Compare the toy and hands in the carrier frame so turning preserves the contact fit.
     relative.setFromEuler(grip.rotation).premultiply(inverse.setFromAxisAngle(offset.set(0, 1, 0), -root.rotation.y));
     inverse.copy(relative).invert();
     for (const arm of arms) {
       const { joints, side } = arm;
       for (const { joint, rotation: rest } of arm.fingers) joint.quaternion.slerp(rest, reach);
       // Fingers approach pointing down, then turn forwards around the sides as Luna rises.
-      normal.set(side, .16 - .20 * lift, -.48 + .66 * lift).normalize();
-      along.set(0, -1 + .70 * lift, .15 + .85 * lift).projectOnPlane(normal).normalize();
+      normal.set(side, .16 - .20 * lift + .11 * bearCradle, -.48 + .66 * lift + .10 * bearCradle).normalize();
+      along.set(0, -1 + .70 * lift + .08 * bearCradle, .15 + .85 * lift).projectOnPlane(normal).normalize();
       across.crossVectors(along, normal).multiplyScalar(side);
       rotation.setFromRotationMatrix(basis.makeBasis(along, across, cross.crossVectors(along, across)))
         .multiply(arm.localBasis);
-      const level = half.y * (.46 - .64 * lift), depth = half.z * (-.56 + .33 * lift);
+      // Wrap the bear's rounded forelegs instead of aiming behind the torso.
+      outward.set(side, .07 * bearCradle, .28 * bearCradle).normalize();
+      contact.set(0, half.y * (.46 - .64 * lift - .09 * bearCradle), half.z * (-.56 + .33 * lift - .20 * bearCradle));
       joints[2].getWorldScale(scale);
-      if (arm.grip !== grip || Math.abs(lift - arm.lastLift) > .001 || arm.lastRotation.angleTo(relative) > .004) {
+      if (arm.grip !== grip || Math.abs(lift - arm.lastLift) > .001 || Math.abs(bearCradle - arm.lastCradle) > .001
+        || arm.lastRotation.angleTo(relative) > .004) {
         // Slide the hand in from outside until the first pad touches any part, including wings.
         // The rigid cradle reuses its fit while walking, turning or changing decks.
         const outside = half.length() + .2;
-        rayDirection.set(-side, 0, 0).applyQuaternion(inverse);
+        rayDirection.copy(outward).negate().applyQuaternion(inverse);
         let lateral = 0;
-        for (const [i, point] of arm.pads.entries()) {
+        const surface = bear && arm.bearPads.length > 0;
+        const pads = surface ? arm.bearPads : arm.pads;
+        for (const [i, point] of pads.entries()) {
           pad.copy(point).sub(arm.knuckle).multiply(scale).applyQuaternion(rotation);
-          rayStart.set(side * outside, level + pad.y, depth + pad.z)
+          rayStart.copy(contact).add(pad).addScaledVector(outward, outside)
             .applyQuaternion(inverse).divideScalar(shape.scale).add(shape.origin);
           ray.set(rayStart, rayDirection);
           hits.length = 0;
           ray.intersectObject(shape.model, true, hits);
           if (hits.length) lateral = Math.max(lateral, outside - hits[0].distance * shape.scale
-            - side * pad.x + (i < 2 ? .014 : .006));
+            + (surface ? .004 : i < 2 ? .014 : .006));
         }
         arm.lateral = lateral || half.x;
         arm.grip = grip;
         arm.lastLift = lift;
+        arm.lastCradle = bearCradle;
         arm.lastRotation.copy(relative);
       }
-      goal.set(side * arm.lateral, level, depth)
+      goal.copy(contact).addScaledVector(outward, arm.lateral)
         .sub(offset.copy(arm.knuckle).multiply(scale).applyQuaternion(rotation))
         .applyQuaternion(facing).add(grip.center);
       rotation.premultiply(facing);
       joints[2].getWorldPosition(wrist).lerp(goal, reach);
       joints[2].getWorldQuaternion(animated).slerp(rotation, reach);
-      placeLimbEnd(joints, wrist, animated, offset.set(side, -.55, -.45).applyQuaternion(facing));
+      // Blend the elbow guide along with the wrist so an almost-zero grip weight keeps the keyed pose.
+      joints[1].getWorldPosition(animatedBend).sub(joints[0].getWorldPosition(offset)).normalize();
+      gripBend.set(side, -.55, -.45).normalize().applyQuaternion(facing);
+      const approach = 1 - MathUtils.smoothstep(time, gripTime - .28, gripTime);
+      const softReach = (.010 + .012 * approach) * MathUtils.smoothstep(reach, 0, .30);
+      placeLimbEnd(joints, wrist, animated, animatedBend.lerp(gripBend, reach), softReach);
     }
   };
 }

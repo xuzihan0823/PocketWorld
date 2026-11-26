@@ -15,7 +15,7 @@ function loadTS(path) {
   vm.runInNewContext(outputText, { exports: mod.exports, require: id => {
     if (id === 'three') return THREE;
     if (id === 'three/examples/jsm/loaders/GLTFLoader.js') return { GLTFLoader };
-    if (id.startsWith('.')) return loadTS(new URL(id + '.ts', path));
+    if (id.startsWith('.')) return loadTS(new URL(id.endsWith('.ts') ? id : id + '.ts', path));
     throw new Error('Unexpected handoff dependency ' + id);
   } });
   cache.set(path.href, mod.exports);

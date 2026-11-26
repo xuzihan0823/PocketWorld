@@ -62,6 +62,12 @@ export function stepSeatedIdle(
   return false;
 }
 
+const lapContact: Record<ResidentOutfit, [alongThigh: number, height: number]> = {
+  everyday: [.64, .137],
+  ribbon: [.55, .043],
+  cardigan: [.58, .068],
+};
+
 const cheekContact: Record<ResidentOutfit, [number, number, number]> = {
   everyday: [.053, .014, -.045],
   ribbon: [.053, .014, -.045],
@@ -83,21 +89,19 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     const inversePalm = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(across, fingers, palm)).invert();
     return {
       upper: bone(side + 'Arm'), forearm: bone(side + 'ForeArm'), hand, inversePalm,
+      restHand: hand.quaternion.clone(),
+      hip: bone(side + 'UpLeg'), knee: bone(side + 'Leg'), side: side === 'Left' ? 1 : -1,
       palmContact: middle.multiplyScalar(.57).addScaledVector(palm, .009),
       start: new Vector3(), rotation: new Quaternion(),
     };
   }
   const left = arm('Left'), right = arm('Right');
-  const leftHip = bone('LeftUpLeg'), leftKnee = bone('LeftLeg');
-  const rightHip = bone('RightUpLeg'), rightKnee = bone('RightLeg');
-  const freeHandOnLap = outfit === 'cardigan';
+  const [lapAlong, lapHeight] = lapContact[outfit];
   const legs = (['Left', 'Right'] as const).map(side => ({ shin: bone(side + 'Leg'), foot: bone(side + 'Foot') }));
   const point = new Vector3();
   const basis = new Matrix4();
   const cheek = new Vector3(...cheekContact[outfit]);
-  const cheekNormal = new Vector3(.55, -.71, -.44).normalize();
-  const cheekTangent = new Vector3(.20, .41, .89);
-  cheekTangent.addScaledVector(cheekNormal, -cheekTangent.dot(cheekNormal)).normalize();
+  const thigh = new Vector3(), thighUp = new Vector3();
 
   const room = new Quaternion(), parent = new Quaternion(), inverseParent = new Quaternion(), turn = new Quaternion();
   const headStart = new Quaternion(), handPose = new Quaternion(), wristTwist = new Quaternion();
@@ -120,13 +124,14 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
   }
 
   function solveHand(chain: ReturnType<typeof arm>, weight: number) {
-    const { upper, forearm, hand, inversePalm, palmContact, start, rotation } = chain;
+    const { upper, forearm, hand, inversePalm, palmContact, start, restHand, rotation, side } = chain;
+    hand.getWorldPosition(start);
+    hand.getWorldQuaternion(rotation);
     cross.crossVectors(tangent, normal);
     handPose.setFromRotationMatrix(basis.makeBasis(cross, tangent, normal)).multiply(inversePalm);
     hand.getWorldScale(scale);
     target.sub(point.copy(palmContact).multiply(scale).applyQuaternion(handPose));
-    const side = chain === left ? 1 : -1;
-    target.lerp(start, 1 - weight).addScaledVector(roomX, side * Math.sin(weight * Math.PI) * .06);
+    target.lerp(start, 1 - weight).addScaledVector(roomX, side * Math.sin(weight * Math.PI) * .04);
 
     upper.getWorldPosition(shoulder);
     forearm.getWorldPosition(elbow);
@@ -150,57 +155,54 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     rotation.slerp(handPose, weight);
     hand.getWorldPosition(wrist);
     lowerDirection.subVectors(wrist, elbow).normalize();
-    wristTwist.copy(rotation).multiply(hand.getWorldQuaternion(inverseParent).invert());
+    forearm.getWorldQuaternion(parent).multiply(restHand);
+    wristTwist.copy(rotation).multiply(parent.invert());
     const projection = wristTwist.x * lowerDirection.x + wristTwist.y * lowerDirection.y + wristTwist.z * lowerDirection.z;
     const pronation = 2 * Math.atan2(wristTwist.w < 0 ? -projection : projection, Math.abs(wristTwist.w));
-    rotate(forearm, lowerDirection, MathUtils.clamp(pronation * .65, -.95, .95));
+    rotate(forearm, lowerDirection, MathUtils.clamp(pronation * .88, -1.36, 1.36) * weight);
     hand.quaternion.copy(forearm.getWorldQuaternion(parent).invert()).multiply(rotation);
   }
 
-  function restOnCheek(weight: number, yaw: number) {
-    if (weight <= 0) return;
+  function restOnThigh(chain: ReturnType<typeof arm>, weight: number) {
+    chain.hip.getWorldPosition(target);
+    chain.knee.getWorldPosition(point);
+    thigh.subVectors(point, target).normalize();
+    thighUp.copy(roomY).projectOnPlane(thigh).normalize();
+    target.lerp(point, lapAlong).addScaledVector(thighUp, lapHeight).addScaledVector(roomX, chain.side * .012);
+    normal.copy(thighUp).negate();
+    tangent.copy(thigh).addScaledVector(roomX, -chain.side * .13).projectOnPlane(normal).normalize();
+    chain.upper.getWorldPosition(bend).addScaledVector(roomY, -.21)
+      .addScaledVector(roomZ, -.08).addScaledVector(roomX, chain.side * .055);
+    solveHand(chain, weight);
+  }
+
+  function leanOnSeat(lap: number, weight: number, yaw: number) {
     head.getWorldQuaternion(headStart);
-    left.hand.getWorldPosition(left.start);
-    left.hand.getWorldQuaternion(left.rotation);
-    right.hand.getWorldPosition(right.start);
-    right.hand.getWorldQuaternion(right.rotation);
-    rotate(spine[0], roomX, .56 * weight);
+    rotate(spine[0], roomX, .34 * lap + .22 * weight);
     rotate(spine[0], roomZ, -.16 * weight);
-    rotate(spine[1], roomX, .14 * weight);
-    rotate(spine[2], roomX, .08 * weight);
+    rotate(spine[1], roomX, .12 * lap + .02 * weight);
+    rotate(spine[2], roomX, .045 * lap + .035 * weight);
     rotate(neck, roomX, -.17 * weight);
     headStart.premultiply(turn.setFromAxisAngle(roomX, .53 * weight))
       .premultiply(turn.setFromAxisAngle(roomZ, -.24 * weight))
       .premultiply(turn.setFromAxisAngle(roomY, yaw * weight));
     head.quaternion.copy(head.parent!.getWorldQuaternion(parent).invert()).multiply(headStart);
-
-    normal.copy(cheekNormal).applyQuaternion(headStart).negate();
-    tangent.copy(cheekTangent).applyQuaternion(headStart);
-    head.localToWorld(target.copy(cheek));
-    leftHip.getWorldPosition(bend).lerp(leftKnee.getWorldPosition(point), .58)
-      .addScaledVector(roomX, .04).addScaledVector(roomY, .075);
-    solveHand(left, weight);
-
-    right.upper.getWorldPosition(bend)
-      .addScaledVector(roomY, -.15).addScaledVector(roomX, -.14);
-    if (freeHandOnLap) {
-      // The cardigan cuff needs more space than the dress sleeves when the arms cross.
-      rightHip.getWorldPosition(target).lerp(rightKnee.getWorldPosition(point), .46)
-        .addScaledVector(roomY, .076).addScaledVector(roomX, -.024);
-      normal.copy(roomY).negate();
-      tangent.copy(roomZ).addScaledVector(roomX, .20).normalize();
-    } else {
-      left.forearm.getWorldPosition(target)
-        .addScaledVector(roomY, -.03).addScaledVector(roomX, -.01);
-      normal.copy(roomY);
-      tangent.copy(roomX).addScaledVector(roomZ, .36).normalize();
-    }
-    solveHand(right, weight);
   }
 
-  return (idle: ReturnType<typeof createSeatedIdle>) => {
-    if (!idle.seat || idle.seat === 'floor' || idle.overlay || !idle.weight) return;
-    const { samples } = motions[idle.seat];
+  function supportCheek(weight: number) {
+    // Cup the side of the jaw with an upward finger line and a tucked elbow.
+    normal.copy(roomX).negate().addScaledVector(roomY, .30).addScaledVector(roomZ, -.28).normalize();
+    tangent.copy(roomY).addScaledVector(roomZ, .30).projectOnPlane(normal).normalize();
+    head.localToWorld(target.copy(cheek)).addScaledVector(roomX, .004).addScaledVector(roomY, -.025);
+    left.hip.getWorldPosition(bend).lerp(left.knee.getWorldPosition(point), .49)
+      .addScaledVector(roomX, .068).addScaledVector(roomY, .065);
+    solveHand(left, weight);
+  }
+
+  return (idle: ReturnType<typeof createSeatedIdle>, lapWeight: number) => {
+    const gesture = !!idle.weight && !idle.overlay;
+    if (lapWeight <= 0 && !(gesture && idle.seat === 'chair')) return;
+    const { samples } = motions[idle.seat === 'chair' ? 'chair' : 'sofa'];
     const frame = MathUtils.clamp(idle.time, 0, duration(samples)) * SEATED_IDLE_FPS;
     const start = Math.floor(frame), end = Math.min(start + 1, samples.length / 2 - 1);
     const first = MathUtils.lerp(samples[start * 2], samples[end * 2], frame - start);
@@ -217,7 +219,12 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     } else {
       roomY.set(0, 1, 0).applyQuaternion(room);
       roomZ.set(0, 0, 1).applyQuaternion(room);
-      restOnCheek(MathUtils.smoothstep(first, 0, 1) * weight, second);
+      const cheekWeight = gesture && idle.seat === 'sofa' ? MathUtils.smoothstep(first, 0, 1) * weight : 0;
+      leanOnSeat(lapWeight, cheekWeight, second);
+      restOnThigh(left, lapWeight);
+      restOnThigh(right, lapWeight);
+      if (cheekWeight > 0) supportCheek(cheekWeight);
+      rig.relaxFingers(lapWeight);
     }
   };
 }

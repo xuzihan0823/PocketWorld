@@ -191,11 +191,11 @@ function soleVertices(asset) {
   return vertices;
 }
 
-for (const file of ['luna-walk-room.glb', 'luna-cardigan.glb']) {
+for (const file of ['luna-walk-room.glb', 'luna-ribbon.glb', 'luna-cardigan.glb']) {
   test(`${file} keeps the supporting sole on the tread during both gaits`, async () => {
     const { gltf } = await load(new URL(`../../../assets/public/models/resident/${file}`, import.meta.url));
     const asset = clone(gltf.scene);
-    const rig = createResidentRig(asset, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), file !== 'luna-walk-room.glb');
+    const rig = createResidentRig(asset, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), file === 'luna-cardigan.glb');
     try {
       rig.applyPose(0, 0);
       rig.mesh.updateMatrixWorld(true);
@@ -206,6 +206,8 @@ for (const file of ['luna-walk-room.glb', 'luna-cardigan.glb']) {
         rig.mesh.rotation.y = ascending ? Math.PI : 0;
         const kneeError = [0, 0], sampleCount = [0, 0];
         let maxSwing = 0;
+        const arms = sides.map(side => ['ForeArm', 'Hand', 'HandMiddle1'].map(name =>
+          asset.getObjectByName('mixamorig' + side + name)));
         for (let i = -30; i <= 18 * 24 + 30; i++) {
           const travel = i / 24;
           const progress = ascending ? travel : CABIN_STAIRS.steps - travel;
@@ -215,6 +217,12 @@ for (const file of ['luna-walk-room.glb', 'luna-cardigan.glb']) {
           rig.applyPose(gait.phase, 1 - gait.weight);
           rig.applyStairPose(gait, CABIN_STAIRS.x, stairTreadSurface);
           rig.mesh.updateMatrixWorld(true);
+          if (gait.weight === 1) for (const [elbow, hand, knuckle] of arms) {
+            const wrist = hand.getWorldPosition(new Vector3());
+            const forearm = wrist.clone().sub(elbow.getWorldPosition(new Vector3()));
+            const palm = knuckle.getWorldPosition(new Vector3()).sub(wrist);
+            assert(forearm.angleTo(palm) < .55, 'stair arm swing keeps the wrist aligned with the forearm');
+          }
           for (const [side, vertices] of soles.entries()) {
             const foot = gait.feet[side];
             if (travel >= 7 && travel < 9) {

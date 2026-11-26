@@ -3,6 +3,7 @@ import { RESIDENT_SCALE } from '../residentRig';
 import { shelfRotation, AUTHORED_BOOK_RETREAT, smooth } from './bookMotion';
 import { shelfPoint, slotFor, type LibraryBook } from './catalog';
 import type { LibraryFlow, LibraryPhase } from './useLibrary';
+import type { createCabinActionPlayer } from '../cabinActions';
 
 const ASSET = './models/resident/luna-library.glb';
 const BOOK = 'LibraryBook';
@@ -67,7 +68,7 @@ export function loadLibraryMotion() {
     .catch(error => { pending = undefined; throw error; });
 }
 
-type LibrarySample = { progress: number; weight: number; coverProgress?: number };
+export type LibrarySample = { progress: number; weight: number; coverProgress?: number };
 
 export function libraryMotionSample(flow: LibraryFlow): LibrarySample | null {
   if (!flow.book) return null;
@@ -89,6 +90,15 @@ export function libraryMotionSample(flow: LibraryFlow): LibrarySample | null {
     coverProgress: Math.min(1, p / (1 - COVER_HANDOFF)),
   };
   return null;
+}
+
+export function applyTopShelfReach(flow: LibraryFlow, reducedMotion: boolean, apply?: ReturnType<typeof createCabinActionPlayer>) {
+  if (reducedMotion || !apply || flow.phase !== 'reach' || !flow.book || slotFor(flow.book).row !== 2) return false;
+  const p = flow.progress;
+  // The supplemental lift takes place before the keyed spine grip.
+  const weight = .68 * THREE.MathUtils.smoothstep(p, 0, .26) * (1 - THREE.MathUtils.smoothstep(p, .4, .70));
+  if (weight > 0) apply('reachHigh', .17 + p * .82, weight);
+  return true;
 }
 
 export function libraryMotionDuration(motion: LibraryMotion, flow: LibraryFlow) {

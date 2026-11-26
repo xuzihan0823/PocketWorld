@@ -17,13 +17,19 @@ function restore(bone: THREE.Bone, pose: BonePose) {
 }
 const tilt = (from: THREE.Vector3, to: THREE.Vector3) => Math.atan2(to.z - from.z, from.y - to.y);
 
-export function placeLimbEnd([base, middle, tip]: THREE.Bone[], point: THREE.Vector3, tipRotation: THREE.Quaternion, bendDirection?: THREE.Vector3) {
+export function placeLimbEnd([base, middle, tip]: THREE.Bone[], point: THREE.Vector3, tipRotation: THREE.Quaternion, bendDirection?: THREE.Vector3, softReach = 0) {
   const worldPosition = (joint: THREE.Bone) => joint.getWorldPosition(new THREE.Vector3());
   const worldRotation = (joint: THREE.Object3D) => joint.getWorldQuaternion(new THREE.Quaternion());
   const start = worldPosition(base), bend = worldPosition(middle), end = worldPosition(tip);
   const upper = bend.distanceTo(start), lower = end.distanceTo(bend);
   const axis = point.clone().sub(start);
-  const distance = THREE.MathUtils.clamp(axis.length(), Math.abs(upper - lower) + .0001, upper + lower - .0001);
+  const maximum = upper + lower - .0001;
+  const requested = axis.length(), softStart = maximum - softReach;
+  // Keep an eased elbow bend near full extension, where a hard clamp makes its velocity spike.
+  const eased = softReach > 0 && requested > softStart
+    ? softStart - softReach * Math.expm1((softStart - requested) / softReach)
+    : requested;
+  const distance = THREE.MathUtils.clamp(eased, Math.abs(upper - lower) + .0001, maximum);
   axis.normalize();
   const pole = bendDirection ?? bend.clone().sub(start);
   pole.addScaledVector(axis, -pole.dot(axis)).normalize();
@@ -329,6 +335,15 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
       upperLength: forearm.position.length(), lowerLength: hand.position.length(),
       palmBasis, palmOffset, fingerTipOffset, setFingers };
   });
+  // Sample a relaxed hand from the same finger controls used for object contact.
+  for (const arm of arms) arm.setFingers?.(.11, .16);
+  const relaxedFingers = controlMap.filter(({ target }) => /^mixamorig(?:Left|Right)Hand(?:Index|Middle|Ring|Pinky|Thumb)[123]$/.test(target.name))
+    .map(({ control, target, parentBasis, neutral }) => ({ target, rotation: parentBasis.clone().multiply(control.quaternion).multiply(neutral) }));
+  for (const arm of arms) arm.setFingers?.(0);
+  function relaxFingers(weight: number) {
+    for (const { target, rotation } of relaxedFingers) target.quaternion.slerp(rotation, weight);
+  }
+
   const skirtFront = new THREE.Bone(), skirtBack = new THREE.Bone();
   const dress = Array.from(bones.values()).filter(joint => /^Dress_.+_01$/.test(joint.name)).map(target => ({
     target, parentBasis: target.parent!.getWorldQuaternion(new THREE.Quaternion()).invert(),
@@ -461,6 +476,7 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
         joint.quaternion.slerp(strideRotation, weight);
       }
     }
+    if (gait.arms.length) relaxFingers(weight);
     pelvisShift.set(0, 0, 0);
     strideYaw.setFromAxisAngle(axisY, yaw);
     for (const [side, leg] of stairLegs.entries()) {
@@ -663,6 +679,6 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     }
   }
 
-  return { mesh, legs, arms, torso, neck, head, skirtFront, skirtBack, applyPose, applyStairPose, followMotion, applyArmCorrectives,
+  return { mesh, legs, arms, torso, neck, head, skirtFront, skirtBack, applyPose, applyStairPose, followMotion, applyArmCorrectives, relaxFingers,
     dispose: () => { for (const object of skinned) object.skeleton.dispose(); } };
 }

@@ -6,6 +6,7 @@ import {
   authoredBookStand,
   libraryHeldBalance,
   bookCoverGripPose,
+  CARDIGAN_CLOSED_COVER_INSET,
   bookGrabLocal,
   bookGrabSide,
   bookHalfStepOffset,
@@ -171,7 +172,8 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   const leftSupportOpen = contactVec(bookSupportPose(1).position);
   const rightSupportOpen = contactVec(bookSupportPose(0).position);
   const coverSlipGuide = contactVec(bookWingPoint(0, 1, 0.25, -0.025, -0.142));
-  const coverClosedPose = bookCoverGripPose(0);
+  const coverInset = rig.mesh.userData.outfit === 'cardigan' ? CARDIGAN_CLOSED_COVER_INSET : 0;
+  const coverClosedPose = bookCoverGripPose(0, coverInset);
   const coverClosedWorld = contactVec(coverClosedPose.position);
   const coverClosedQuat = coverClosedPose.quaternion.clone().premultiply(book.quaternion);
 
@@ -232,7 +234,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   if (phase === 'open') {
     const openVal = coverOpenCurve(flow);
     const settleT = smooth((p - 0.78) / 0.22);
-    const gazeOpen = new THREE.Vector3().lerpVectors(contactVec(bookCoverGripPose(openVal).position), contact(0, 0.05, -0.01), settleT);
+    const gazeOpen = new THREE.Vector3().lerpVectors(contactVec(bookCoverGripPose(openVal, coverInset).position), contact(0, 0.05, -0.01), settleT);
     applyTorsoAndGazeIK(rig, gazeOpen, -0.04, 0, 0, 1, dt);
 
     // Follow the same tilted underside frame as the page wing while its weight moves to the spine.
@@ -247,7 +249,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
     });
 
     // Right hand rides the actual front cover edge, then slips beneath the opened cover as book settles.
-    const coverPose = bookCoverGripPose(openVal);
+    const coverPose = bookCoverGripPose(openVal, coverInset);
     const coverEdgeWorld = contactVec(coverPose.position);
     const coverQuatWorld = coverPose.quaternion.clone().premultiply(book.quaternion);
     if (p <= 0.78) {
@@ -321,7 +323,7 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
 
   if (phase === 'close') {
     const openVal = coverOpenCurve(flow);
-    const coverPose = bookCoverGripPose(openVal);
+    const coverPose = bookCoverGripPose(openVal, coverInset);
     const coverEdgeWorld = contactVec(coverPose.position);
     const coverQuatWorld = coverPose.quaternion.clone().premultiply(book.quaternion);
     applyTorsoAndGazeIK(rig, bookCenterWorld, -0.04, 0, 0, 1, dt);

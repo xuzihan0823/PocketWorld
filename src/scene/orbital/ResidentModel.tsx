@@ -8,6 +8,7 @@ import { applyResidentSkin } from './residentSkin';
 import { createChairAnimation } from './chairAnimation';
 import { createSeatedIdlePlayer } from './seatedIdle';
 import { createSleeveContact } from './wardrobe/sleeveContact';
+import { createCardiganBookSleeve } from './library/cardiganBookSleeve';
 import { loadResidentAssets, loadResidentSeatContact, type ResidentAssets } from './wardrobe/residentAssets';
 import type { ResidentOutfit } from './wardrobe/outfit';
 import type { StairGait } from './stairGait';
@@ -34,7 +35,9 @@ export interface ResidentRig {
   followMotion: (dt: number, enabled: boolean, yaw: number, dx: number, dz: number, phase: number) => void;
   fitted?: ResidentAssets['fitted'];
   updateSleeveContact?: () => void;
+  applyBookSleeveFit?: (progress: number) => void;
   applyArmCorrectives: (enabled: boolean, deltaSeconds?: number) => void;
+  relaxFingers: (weight: number) => void;
   applySeatedIdle?: ReturnType<typeof createSeatedIdlePlayer>;
   applyChairPose?: (time: number, weight: number) => void;
   dispose: () => void;
@@ -57,7 +60,9 @@ function LoadedResident({ assets, rig, onMounted, prefetchSeat, chairActive }: {
     resident.fitted = assets.fitted;
     resident.applyChairPose = chair.apply;
     resident.applySeatedIdle = createSeatedIdlePlayer(resident, assets.outfit);
+    const bookSleeve = assets.outfit === 'cardigan' ? createCardiganBookSleeve(asset) : undefined;
     if (assets.outfit === 'cardigan') resident.updateSleeveContact = createSleeveContact(asset);
+    resident.applyBookSleeveFit = bookSleeve?.apply;
     resident.mesh.userData.outfit = assets.outfit;
     const restoreSkin = applyResidentSkin(resident.mesh);
     group.add(resident.mesh);
@@ -69,6 +74,7 @@ function LoadedResident({ assets, rig, onMounted, prefetchSeat, chairActive }: {
       restoreSkin();
       chairAnimation.current = null;
       chair.dispose();
+      bookSleeve?.dispose();
       resident.dispose();
     };
   }, [assets, rig, onMounted]);

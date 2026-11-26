@@ -110,12 +110,15 @@ export function bookCoverPose(openVal: number) {
   };
 }
 
-export function bookCoverGripPose(openVal: number): { position: THREE.Vector3; quaternion: THREE.Quaternion } {
+// The cardigan palm sits closer to its knuckles than the original hand.
+export const CARDIGAN_CLOSED_COVER_INSET = .011;
+
+export function bookCoverGripPose(openVal: number, closedInset = 0): { position: THREE.Vector3; quaternion: THREE.Quaternion } {
   const open = THREE.MathUtils.clamp(openVal, 0, 1);
   const cover = bookCoverPose(open);
   // Grip beside the spine while closed; the hand travels to the free edge as the cover opens.
   const prepare = 1 - smooth(open / .55);
-  const position = new THREE.Vector3(0.18 - .135 * prepare, 0.0185, -0.088 + .06 * Math.sin(Math.PI * open)).applyQuaternion(cover.quaternion).add(cover.position);
+  const position = new THREE.Vector3(0.18 - .135 * prepare, 0.0185 - closedInset * prepare, -0.088 + .06 * Math.sin(Math.PI * open)).applyQuaternion(cover.quaternion).add(cover.position);
   const normal = new THREE.Vector3(0, -1, 0).applyQuaternion(cover.quaternion);
   // Rest palm-down on the closed cover, then roll around its exposed edge.
   // At the closed cover the fingers lead inward from the reader's edge,

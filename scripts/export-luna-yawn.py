@@ -1,7 +1,6 @@
 """Bake a confirmed Mixamo idle onto Luna's upper-body rest basis.
 
 Run with Blender --background --python scripts/export-luna-yawn.py -- <Yawn.fbx>.
-For Looking Around (Idle Stand Looking Around), append looking-around after its FBX path.
 The planted lower body remains owned by the runtime neutral pose.
 """
 import json
@@ -16,12 +15,8 @@ from mathutils import Matrix, Quaternion, Vector
 ROOT = Path(__file__).resolve().parents[1]
 args = sys.argv[sys.argv.index("--") + 1:]
 source = Path(args[0])
-# Share the already-reviewed shoulder/rest-basis correction between idle clips.
-looking = len(args) > 1 and args[1] == "looking-around"
-if len(args) > 1 and not looking:
-    raise ValueError("Optional preset must be looking-around")
-clip_name = "Luna_Looking_Around" if looking else "Luna_Yawn"
-filename = "luna-looking-around.glb" if looking else "luna-yawn.glb"
+clip_name = "Luna_Yawn"
+filename = "luna-yawn.glb"
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=str(source))
 rig = next(o for o in bpy.context.scene.objects if o.type == "ARMATURE")

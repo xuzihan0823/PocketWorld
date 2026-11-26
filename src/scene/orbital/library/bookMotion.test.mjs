@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { load } from '../load-for-validation.mjs';
+import { createCabinActionPlayer } from '../cabinActions.ts';
 
 function loadTS(relativePath, deps = {}) {
   const source = fs.readFileSync(new URL(relativePath, import.meta.url), 'utf8');
@@ -101,6 +102,272 @@ function skinSurfaceContact(vertices, parts) {
   }
   return { distance, depth };
 }
+
+test('cardigan reaches and releases without folding its wrist or losing the closed cover', async () => {
+  const paths = ['luna-cardigan', 'luna-cabin-actions-cardigan'];
+  const [{ gltf: cardigan }, { gltf: actions }] = await Promise.all(paths.map(name =>
+    load(new URL(`../../../../assets/public/models/resident/${name}.glb`, import.meta.url))));
+  const asset = cardigan.scene;
+  loadTS('../wardrobe/garmentFit.ts').fitWardrobeGarment(asset, 'cardigan');
+  const rig = rigMod.createResidentRig(asset, cardigan.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), true);
+  rig.mesh.userData.outfit = 'cardigan';
+  const sleeveContact = loadTS('../wardrobe/sleeveContact.ts').createSleeveContact(rig.mesh);
+  const root = new THREE.Group().add(rig.mesh);
+  root.rotation.y = Math.PI + catalog.shelfYaw('habitat');
+  const motion = libraryMotion.readLibraryMotion(cardigan.animations);
+  const play = libraryMotion.createLibraryPlayer(rig.mesh, motion);
+  const corrected = loadTS('./cardiganBookPose.ts', { './bookMotion': bookMotion, './libraryMotion': libraryMotion,
+    '../residentRig': rigMod }).createCardiganBookPose(rig.mesh);
+  const mesh = asset.getObjectByName('Luna_Cardigan_Surface');
+  const { createCardiganBookSleeve, topShelfSleeveProgress } = loadTS('./cardiganBookSleeve.ts', { './catalog': catalog });
+  const sleeveFit = createCardiganBookSleeve(asset);
+  const { index, attributes: { position, skinIndex, skinWeight } } = mesh.geometry;
+  const originalWeights = skinWeight.array.slice();
+  const originalIndices = skinIndex.array.slice();
+  const originalPositions = position.array.slice();
+  const originalNormalAttribute = mesh.geometry.attributes.normal;
+  const originalNormals = originalNormalAttribute.array.slice();
+  const nodes = mesh.skeleton.bones.map(bone => bone.name);
+  function dominantBone(id) {
+    let strongest = 0;
+    for (let k = 1; k < 4; k++) if (skinWeight.getComponent(id, k) > skinWeight.getComponent(id, strongest)) strongest = k;
+    return nodes[skinIndex.getComponent(id, strongest)];
+  }
+  const handVertices = Array.from({ length: position.count }, (_, i) => i).filter(i => dominantBone(i).startsWith('mixamorigRightHand'));
+  const sleeve = [];
+  const sleeveBones = new Set(['mixamorigRightArm', 'mixamorigRightForeArm']);
+  const triangle = new THREE.Triangle();
+  const points = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  for (let i = 0; i < index.count; i += 3) {
+    const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    if (!ids.every(id => sleeveBones.has(dominantBone(id)))) continue;
+    const area = triangle.set(...ids.map((id, j) => points[j].fromBufferAttribute(position, id))).getArea();
+    if (area >= 1e-6) sleeve.push({ ids, area });
+  }
+  assert.ok(sleeve.length > 200 && handVertices.length > 100);
+  const bookSolids = roundedBookSolids(0);
+  const joints = ['Arm', 'ForeArm', 'Hand', 'HandMiddle1', 'HandIndex1', 'HandPinky1']
+    .map(part => asset.getObjectByName('mixamorigRight' + part));
+  const playCabin = createCabinActionPlayer(rig.mesh, Object.fromEntries(actions.animations.map(clip => [clip.name, clip])));
+  const bindPoint = joint => new THREE.Vector3().setFromMatrixPosition(mesh.skeleton.boneInverses[mesh.skeleton.bones.indexOf(joint)].clone().invert());
+  const bindElbow = bindPoint(joints[1]);
+  const bindForearm = bindPoint(joints[2]).sub(bindElbow);
+  const center = new THREE.Vector3();
+  const elbowSleeve = sleeve.filter(({ ids }) => {
+    points.forEach((point, i) => point.fromBufferAttribute(position, ids[i]));
+    center.copy(points[0]).add(points[1]).add(points[2]).multiplyScalar(1 / 3).applyMatrix4(mesh.bindMatrix);
+    const along = center.sub(bindElbow).dot(bindForearm) / bindForearm.lengthSq();
+    return along >= -.18 && along < .28;
+  });
+  assert.ok(elbowSleeve.length > 100);
+
+  // Include the part of the upper sleeve that is still mostly weighted to the torso.
+  const bindShoulder = bindPoint(joints[0]);
+  const bindUpper = bindElbow.clone().sub(bindShoulder);
+  const bindUpperLengthSq = bindUpper.lengthSq();
+  const bindUpperAxis = bindUpper.clone().normalize();
+  const upperSleeve = new Set(['mixamorigRightArm', 'mixamorigRightForeArm', 'mixamorigRightHand']);
+  const allowedSleeve = nodes.map(name => upperSleeve.has(name) || /^mixamorig(?:Spine[12]|Neck|RightShoulder)$/.test(name));
+  const cuts = [.37, .59, .77, .88];
+  const sections = cuts.map(() => []);
+  const along = new Float32Array(position.count).fill(NaN);
+  for (let id = 0; id < position.count; id++) {
+    let arm = 0, outside = 0;
+    for (let slot = 0; slot < 4; slot++) {
+      const joint = skinIndex.getComponent(id, slot), weight = skinWeight.getComponent(id, slot);
+      if (upperSleeve.has(nodes[joint])) arm += weight;
+      if (!allowedSleeve[joint]) outside += weight;
+    }
+    if (arm < .035 || outside > .001) continue;
+    center.fromBufferAttribute(position, id).applyMatrix4(mesh.bindMatrix).sub(bindShoulder);
+    const fraction = center.dot(bindUpper) / bindUpperLengthSq;
+    if (center.addScaledVector(bindUpper, -fraction).length() < .060) along[id] = fraction;
+  }
+  // Track each intersection point from the cloth's bind surface into the posed surface.
+  for (let i = 0; i < index.count; i += 3) {
+    const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    if (ids.some(id => !Number.isFinite(along[id]))) continue;
+    for (let edge = 0; edge < 3; edge++) {
+      const a = ids[edge], b = ids[(edge + 1) % 3];
+      cuts.forEach((cut, j) => {
+        if ((along[a] < cut) !== (along[b] < cut)) sections[j].push([a, b, (cut - along[a]) / (along[b] - along[a])]);
+      });
+    }
+  }
+  for (const section of sections) assert.ok(section.length >= 12, 'sample the full circumference of the upper sleeve');
+  function sleeveThickness(section, axis, bind = false) {
+    const edge = (id, point) => bind ? point.fromBufferAttribute(position, id).applyMatrix4(mesh.bindMatrix)
+      : mesh.getVertexPosition(id, point).applyMatrix4(mesh.matrixWorld);
+    const [a, b] = [new THREE.Vector3(), new THREE.Vector3()];
+    const across = new THREE.Vector3(0, 0, 1).projectOnPlane(axis).normalize();
+    const up = new THREE.Vector3().crossVectors(axis, across);
+    const ring = section.map(([start, end, t]) => {
+      edge(start, a).lerp(edge(end, b), t);
+      return [a.dot(across), a.dot(up)];
+    });
+    let thickness = Infinity;
+    for (let i = 0; i < 36; i++) {
+      const angle = i * Math.PI / 36;
+      const projected = ring.map(([x, y]) => x * Math.cos(angle) + y * Math.sin(angle));
+      thickness = Math.min(thickness, Math.max(...projected) - Math.min(...projected));
+    }
+    return thickness;
+  }
+  const bindThickness = sections.map(section => sleeveThickness(section, bindUpperAxis, true) * rigMod.RESIDENT_SCALE);
+  function sleeveRatios(axis) {
+    return sections.map((section, i) => sleeveThickness(section, axis) / bindThickness[i]);
+  }
+  // Check the actual outer-elbow crease between adjacent faces, including the torso-weighted sleeve.
+  const creaseFaces = [], creaseEdges = new Map();
+  for (let i = 0; i < index.count; i += 3) {
+    const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    if (ids.some(id => !Number.isFinite(along[id]) || along[id] < .65 || along[id] > 1.26)) continue;
+    const area = triangle.set(...ids.map((id, j) => points[j].fromBufferAttribute(position, id))).getArea();
+    if (area < 1e-6) continue;
+    const face = creaseFaces.length;
+    creaseFaces.push(ids);
+    for (let k = 0; k < 3; k++) {
+      const edge = [ids[k], ids[(k + 1) % 3]].map(id => [position.getX(id), position.getY(id), position.getZ(id)].map(n => Math.round(n * 1e6)).join(',')).sort().join('|');
+      if (!creaseEdges.has(edge)) creaseEdges.set(edge, []);
+      creaseEdges.get(edge).push(face);
+    }
+  }
+  const creasePairs = [...creaseEdges.values()].filter(faces => faces.length === 2);
+  assert.ok(creasePairs.length > 100, 'sample adjacent faces around the elbow');
+  function elbowCrease() {
+    const normals = creaseFaces.map(ids => triangle.set(...ids.map((id,j) => mesh.getVertexPosition(id,points[j])))
+      .getNormal(new THREE.Vector3()));
+    return Math.max(...creasePairs.map(([a,b]) => normals[a].angleTo(normals[b])));
+  }
+  const sample = (book, phase, progress, dt, fit = true, withLift = false) => {
+    const flow = { phase, progress, book };
+    const frame = libraryMotion.libraryMotionSample(flow);
+    const cover = libraryMotion.libraryCoverFlow(flow, frame);
+    const held = frame.coverProgress !== undefined;
+    const balance = bookMotion.libraryHeldBalance(cover);
+    root.position.fromArray(bookMotion.authoredBookStand('habitat', book, held, held ? balance.back : 0));
+    root.position.y -= held ? balance.drop : 0;
+    if (held) residentPose.applyLibraryPose(rig, root, 'habitat', cover, dt, true);
+    else armPose.resetArms(rig, 1);
+    rig.applyPose(0, 0);
+    rig.applyArmCorrectives(false);
+    play(book, frame);
+    const raised = withLift && libraryMotion.applyTopShelfReach(flow, false, playCabin);
+    if (fit) corrected('habitat', flow, motion, frame, raised);
+    sleeveContact();
+    sleeveFit.apply(topShelfSleeveProgress(flow, frame));
+    root.updateMatrixWorld(true);
+    const [upper, elbow, hand, middle, index, pinky] = joints.map(joint => joint.getWorldPosition(new THREE.Vector3()));
+    const forward = middle.sub(hand), forearm = hand.clone().sub(elbow).normalize();
+    const across = index.sub(pinky);
+    const upperAxis = elbow.sub(upper).normalize();
+    const plane = upperAxis.clone().cross(forearm).normalize();
+    const palmAcross = across.clone().projectOnPlane(forearm).normalize();
+    const roll = Math.atan2(forearm.dot(plane.clone().cross(palmAcross)), plane.dot(palmAcross));
+    return { wrist: forward.angleTo(forearm), normal: across.cross(forward).normalize(), roll, upperAxis,
+      hand, arm: joints.slice(0, 3).map(joint => joint.quaternion.clone().normalize()), cover, frame };
+  };
+  try {
+    for (let row = 0; row < 3; row++) {
+      const book = { ...catalog.freshLibrary().books[0], slotId: `s${row}-1` };
+      for (const hz of [30, 60, 120]) for (const phase of ['reach', 'release']) {
+        let last;
+        for (let i = 0; i <= 2.4 * hz; i++) {
+          const p = i / (2.4 * hz), reach = phase === 'reach' ? p : 1 - p;
+          const pose = sample(book, phase, p, 1 / hz);
+          const label = `${row}/${phase}@${p.toFixed(3)} ${hz}Hz`;
+          if (reach >= .18 && reach <= .82) assert.ok(pose.wrist < .82, `${label}: wrist bends ${pose.wrist}rad`);
+          if (last) pose.arm.forEach((q, j) => assert.ok(q.angleTo(last[j]) < 10 / hz, `${label}: arm rotation jumps`));
+          last = pose.arm;
+        }
+      }
+      for (const [phase, progress] of [['reach', .95], ['release', .05], ['extract', .25], ['insert', .75]]) {
+        const raw = sample(book, phase, progress, 1 / 60, false);
+        const posed = sample(book, phase, progress, 1 / 60);
+        assert.ok(raw.hand.distanceTo(posed.hand) < 1e-7 && raw.arm[2].angleTo(posed.arm[2]) < 1e-6, 'preserve the keyed spine grip');
+      }
+      if (row === 2) {
+        for (const [phase, progress, limits] of [
+          ['reach', .29, [.74, .87, .81, .63]], ['reach', .42, [.63, .87, .81, .67]],
+          ['reach', .79, [.47, .86, .73]], ['reach', .998, [.47, .86, .73]],
+          ['extract', .23, [.50, .82, .70]], ['insert', .77, [.50, .82, .70]], ['release', .21, [.46, .84, .73]],
+        ]) {
+          const { upperAxis } = sample(book, phase, progress, 1 / 60, true, true);
+          const thickness = sleeveRatios(upperAxis);
+          limits.forEach((limit, i) => assert.ok(thickness[i] > limit,
+            phase + '@' + progress + ': the upper sleeve flattens at section ' + cuts[i]));
+        }
+        assert.notEqual(mesh.geometry.attributes.skinWeight, skinWeight, 'give the active resident its own skin weights');
+        assert.deepEqual(skinWeight.array, originalWeights, 'leave the wardrobe cache intact');
+        assert.deepEqual(skinIndex.array, originalIndices, 'leave cached joint slots intact');
+        assert.deepEqual(position.array, originalPositions, 'leave cached bind vertices intact');
+        assert.deepEqual(originalNormalAttribute.array, originalNormals, 'leave cached normals intact');
+        sample(book, 'release', 1, 1 / 60);
+        assert.deepEqual(mesh.geometry.attributes.skinWeight.array, originalWeights, 'restore the weights after putting the book back');
+        assert.deepEqual(mesh.geometry.attributes.skinIndex.array, originalIndices, 'restore joint slots');
+        assert.deepEqual(mesh.geometry.attributes.position.array, originalPositions, 'restore bind vertices');
+        assert.deepEqual(mesh.geometry.attributes.normal.array, originalNormals, 'restore bind normals');
+        for (const hz of [30, 60, 120]) {
+          const frames = Math.round(libraryMotion.libraryMotionDuration(motion, { phase: 'reach', book }) * hz);
+          let previous;
+          for (let i = 0; i <= frames; i++) {
+            const p = i / frames;
+            const pose = sample(book, 'reach', p, 1 / hz, true, true);
+            if (p >= .25 && p <= .65) {
+              const thickness = sleeveRatios(pose.upperAxis);
+              [.56, .86, .77].forEach((limit, j) => assert.ok(thickness[j] > limit,
+                'lift@' + p.toFixed(3) + ': the upper sleeve flattens at section ' + cuts[j] + ' at ' + hz + ' Hz'));
+            }
+            if (p >= .26 && p <= .44) {
+              assert.ok(Math.abs(pose.roll) < THREE.MathUtils.degToRad(66), `lift@${p}: the palm rolls away from the shelf`);
+              assert.ok(pose.wrist < .82, `lift@${p}: wrist bends back`);
+            }
+            if (previous) pose.arm.forEach((q, j) => assert.ok(q.angleTo(previous[j]) < 10 / hz, `lift@${p}: arm jumps at ${hz}Hz`));
+            previous = pose.arm;
+          }
+        }
+        const before = sample(book, 'reach', .29, 1 / 60, false, true);
+        const posed = sample(book, 'reach', .29, 1 / 60, true, true);
+        assert.ok(posed.hand.y > 1.15 && posed.hand.distanceTo(before.hand) < .0003, 'retain the lifted wrist trajectory');
+        const ratios = elbowSleeve.map(({ ids, area }) => triangle.set(...ids.map((id, j) => mesh.getVertexPosition(id, points[j]))).getArea() / area)
+          .sort((a, b) => a - b);
+        assert.ok(ratios[Math.floor(ratios.length * .05)] > .77, 'elbow sleeve pinches during the raised reach');
+        assert.ok(elbowCrease() < THREE.MathUtils.degToRad(50), 'the lifted sleeve forms a sharp outer-elbow dent');
+        const posedVertices = [...new Set(creaseFaces.flat())];
+        const first = posedVertices.map(id => mesh.getVertexPosition(id, new THREE.Vector3()));
+        for (const p of [.65, .1, .42, .29]) sample(book, 'reach', p, 1 / 60, true, true);
+        assert.ok(posedVertices.every((id,i) => mesh.getVertexPosition(id, points[0]).distanceTo(first[i]) < 1e-7),
+          'seeking must reproduce the same sleeve without accumulated correction');
+        for (const p of [.83, .90, 1]) {
+          const keyed = sample(book, 'reach', p, 1 / 60);
+          const lifted = sample(book, 'reach', p, 1 / 60, true, true);
+          assert.ok(lifted.hand.distanceTo(keyed.hand) < 1e-7, 'rejoin the top shelf grip at the keyed position');
+          lifted.arm.forEach((q, j) => assert.ok(q.angleTo(keyed.arm[j]) < 1e-6, 'rejoin the top shelf grip at the keyed orientation'));
+        }
+      }
+      let closed;
+      for (const [phase, progress] of [['carry', 1], ['open', 0], ['close', 1], ['return-carry', 0]]) {
+        const state = sample(book, phase, progress, 1 / 60);
+        const pose = bookMotion.bookPose('habitat', book, state.cover, true);
+        libraryMotion.applyLibraryBookMotion(motion, 'habitat', book, state.frame, pose.position, pose.quaternion);
+        assert.ok(state.wrist < .90, `${row}/${phase}: no fold in the closed right wrist`);
+        assert.ok(state.normal.dot(new THREE.Vector3(0, 1, 0).applyQuaternion(pose.quaternion)) < -.90, 'palm points into the cover');
+        if (closed) assert.ok(state.hand.distanceTo(closed.hand) < .001 && state.arm[2].angleTo(closed.arm[2]) < .002, 'preserve the closed handoff');
+        closed = state;
+        const toBook = new THREE.Matrix4().compose(pose.position, pose.quaternion, new THREE.Vector3(1, 1, 1)).invert();
+        const hand = handVertices.map(id => mesh.getVertexPosition(id, new THREE.Vector3()).applyMatrix4(mesh.matrixWorld).applyMatrix4(toBook));
+        const { distance, depth } = skinSurfaceContact(hand, bookSolids);
+        assert.ok(distance < .005 && depth < .005, `${row}/${phase}: closed hand skin gap ${distance}m, penetration ${depth}m`);
+      }
+      for (const p of [.22, .26, .30, .34, .38, .42, .46]) {
+        sample(book, 'reach', p, 1 / 60);
+        const ratios = sleeve.map(({ ids, area }) => triangle.set(...ids.map((id, j) => mesh.getVertexPosition(id, points[j]))).getArea() / area)
+          .sort((a, b) => a - b);
+        assert.ok(ratios[Math.floor(ratios.length * .02)] > .49, `${row}@${p}: actual right sleeve collapses`);
+      }
+    }
+  } finally { sleeveFit.dispose(); rig.dispose(); }
+});
 
 test('十八个书位在伸手、抽出与推入全程保持手书贴合且手臂未超限', () => {
   const { rig, root } = makeRig();
