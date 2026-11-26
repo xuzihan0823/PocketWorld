@@ -21,18 +21,21 @@ test('wardrobe preserves fitted garment keys across swaps and releases the side 
     const shapes = mesh.geometry.morphAttributes.position ?? [];
     for (const [i, key] of keys.entries()) assert.equal(shapes[mesh.morphTargetDictionary[key]], originals[i]);
     if (outfit === 'cardigan') {
-      assert.equal(shapes.length, originals.length);
-      continue;
+      const stockings = asset.getObjectByName('Luna_Cardigan_Surface_1');
+      assert.ok(stockings?.isSkinnedMesh);
+      assert.deepEqual(Object.keys(stockings.morphTargetDictionary), keys);
     }
     assert.equal(shapes.length, originals.length + 1);
     const index = mesh.morphTargetDictionary.WardrobeSideEase;
     assert.ok(shapes[index].array.some(value => value !== 0));
     const walk = gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop');
-    const rig = createResidentRig(asset, walk);
+    const rig = createResidentRig(asset, walk, outfit === 'cardigan');
+    if (outfit === 'cardigan') mesh.morphTargetInfluences[mesh.morphTargetDictionary.SleeveContact_L] = .5;
     rig.applyArmCorrectives(false, .075);
     assert.equal(mesh.morphTargetInfluences[index], .5);
     rig.applyArmCorrectives(false, .075);
     assert.equal(mesh.morphTargetInfluences[index], 0);
+    if (outfit === 'cardigan') assert.equal(mesh.morphTargetInfluences[mesh.morphTargetDictionary.SleeveContact_L], .5);
     assert.equal(source.morphTargetInfluences[index], 1, 'the cached wardrobe asset has its own influences');
     rig.applyArmCorrectives(true);
     assert.equal(mesh.morphTargetInfluences[index], 1);
