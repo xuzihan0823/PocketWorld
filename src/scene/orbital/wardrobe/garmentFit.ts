@@ -47,9 +47,9 @@ export function fitWardrobeGarment(scene: Object3D, outfit: ResidentOutfit) {
           * smooth(z, -.086, -.045) * trunk * trunk;
         const along = (lateral - .07) * .395 - (y - .73) * .919;
         const across = (lateral - .07) * .919 + (y - .73) * .395;
-        const sleeve = .011 * smooth(-across, -.014, .020) * smooth(along, .005, .04)
+        const sleeve = .0132 * smooth(-across, -.014, .020) * smooth(along, .005, .04)
           * (1 - smooth(along, .13, .19)) * arm * arm;
-        delta[i * 3] = Math.sign(x) * (.919 * sleeve - .020 * waist);
+        delta[i * 3] = Math.sign(x) * (.919 * sleeve - .024 * waist);
         delta[i * 3 + 1] = .395 * sleeve;
         continue;
       }

@@ -280,6 +280,7 @@ export function OrbitalResidents(props: ResidentsProps) {
   const pendingComputer = useRef<{ action: WorldAction; perform: () => void; at: number } | null>(null);
   const catLocation = useRef<Point>([...CAT_HOME]);
   const walkWeight = useRef(0);
+  const armRelaxation = useRef(1);
   const libraryNav = useRef('');
   const libraryAsset = props.library?.motion;
   const libraryOpen = props.library ? props.library.view.phase !== 'idle' : false;
@@ -995,8 +996,10 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     const sofaSteps = s.posture === 'sofa' && sofa.time < SOFA_STEPS;
     const interactionPose = s.posture !== 'standing' || s.exiting || !!cabinPerformance.current || (libraryActive && !libraryWalking);
+    const cardigan = rig.current?.mesh.userData.outfit === 'cardigan';
+    const walkBlend = cardigan && !interactionPose && !libraryActive && !stairGait ? .21 : .14;
     walkWeight.current = (interactionPose && !sofaSteps) || p.reducedMotion ? 0
-      : clamp(walkWeight.current + (stepping ? 1 : -1) * dt / .14, 0, 1);
+      : clamp(walkWeight.current + (stepping ? 1 : -1) * dt / walkBlend, 0, 1);
     if (sofaSteps) walkWeight.current = Math.min(walkWeight.current, (SOFA_STEPS - sofa.time) / .16);
     const stride = stepping && libraryActive && !libraryWalking && !p.reducedMotion
       ? Math.sin(s.walkTime * Math.PI * 2) * .2 : 0;
@@ -1072,7 +1075,13 @@ export function OrbitalResidents(props: ResidentsProps) {
     }
     if (rig.current) {
       const playingChair = p.sceneId === 'habitat' && s.posture === 'chair';
-      rig.current.applyPose(stairGait?.phase ?? s.walkTime, ease(walkWeight.current) * (1 - (stairGait?.weight ?? 0)));
+      if (cardigan) {
+        const relaxed = !interactionPose && !libraryActive && !plushGrip.current && !p.inspectionId && !stairGait;
+        const step = p.reducedMotion ? 1 : dt / .15;
+        armRelaxation.current = clamp(armRelaxation.current + (relaxed ? step : -step), 0, 1);
+      }
+      rig.current.applyPose(stairGait?.phase ?? s.walkTime, ease(walkWeight.current) * (1 - (stairGait?.weight ?? 0)),
+        cardigan ? ease(armRelaxation.current) : 0);
       if (stairGait) rig.current.applyStairPose(stairGait, CABIN_STAIRS.x, stairTreadSurface);
       if (!playingChair && flow?.book && librarySample) libraryPlayer.current!.apply(flow.book, librarySample);
       if (!p.reducedMotion && flow?.phase === 'reach' && flow.book && librarySample
