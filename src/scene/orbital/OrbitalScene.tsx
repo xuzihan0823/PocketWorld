@@ -59,6 +59,7 @@ const FOCUS: Record<string, { target: [number, number, number]; offset: [number,
   clock: { target: [-2.06, 1.01, -2.615], offset: [0.10, 0.24, 1.15] },
 };
 interface OrbitalSceneProps extends WorldSceneProps {
+  sceneObserver?: React.ReactNode;
   onOutfitMounted: (outfit: ResidentOutfit, ready: boolean) => void;
   sceneObjects: Record<WorldSceneId, Record<string, WorldObjectState>>;
   gestureActive: boolean;
@@ -670,6 +671,7 @@ export function OrbitalScene(props: OrbitalSceneProps) {
         if (action.kind === 'pet' && action.objectId === 'pet') setCatMenu(action);
         else props.onAction(action);
       }} />
+      {props.sceneObserver}
     </Canvas>
     {props.sceneId === 'habitat' && props.viewMode === 'cabin' && !props.focusedObject && !catMenu
       && ['idle', 'active', 'error'].includes(props.transition.phase) && (

@@ -109,6 +109,35 @@ test('开衫摆臂随对侧脚交替，肘部微屈且手掌顺着小臂', async
   } finally { rig.dispose(); }
 });
 
+test('cardigan arms relax inward in the model frame and return to the authored poses', async () => {
+  const { gltf: cardigan } = await load(new URL('../../../assets/public/models/resident/luna-cardigan.glb', import.meta.url));
+  const rig = createResidentRig(cardigan.scene, cardigan.animations.find(c => c.name === 'Walk_Grounded_Loop'), true);
+  const bone = name => cardigan.scene.getObjectByName('mixamorig' + name);
+  const position = joint => rig.mesh.worldToLocal(joint.getWorldPosition(new THREE.Vector3()));
+  const spread = (side, sign) => {
+    const direction = position(bone(side + 'ForeArm')).sub(position(bone(side + 'Arm')));
+    return THREE.MathUtils.radToDeg(Math.atan2(sign * direction.x, -direction.y));
+  };
+  try {
+    rig.mesh.rotation.y = .95;
+    for (const weight of [0, .25, .50, .75, 1]) {
+      rig.applyPose(.63, weight);
+      const authored = [spread('Left', 1), spread('Right', -1)];
+      const foot = position(bone('LeftFoot'));
+      for (const relaxation of [.5, 1, 0]) {
+        rig.applyPose(.63, weight, relaxation);
+        const angles = [spread('Left', 1), spread('Right', -1)];
+        angles.forEach((angle, side) => {
+          const expected = 4 * (1 - weight) * relaxation;
+          const actual = authored[side] - angle;
+          assert.ok(Math.abs(actual - expected) < .001, `${side}, ${weight}, ${relaxation}: ${actual}, expected ${expected}`);
+        });
+        assert.ok(foot.distanceTo(position(bone('LeftFoot'))) < 1e-6);
+      }
+    }
+  } finally { rig.dispose(); }
+});
+
 test('standing pelvis and neck are upright over the actual sole support area', () => {
   const { asset, rig, mesh } = instance();
   try {

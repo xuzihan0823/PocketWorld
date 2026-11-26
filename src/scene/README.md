@@ -21,6 +21,8 @@
 - `audioEngine.ts` 提供音乐播放、静音、环境、脚步和团子音效。三首 C418 预置唱片通过 Vite 导入 MP3 地址，选片时复用本地导入唱片的 HTMLAudio 播放链路，不在首屏预加载音乐；第四张唱片仍为合成曲目。[唱片与闹铃来源](../../assets/audio/README.md)，[团子音效来源](../../assets/audio/cat/README.md)。
 - `geometry.ts` 提供场景共用的几何工具。
 
+布料预研使用独立的[实验台与资产接口说明](cloth/README.md)。单袖、双袖与裙摆的真实动作和性能数据见[布料验收](cloth/布料验收.md)。
+
 ## 模块接入
 
 跨模块的数据接口定义在 `src/types/`。日程通过 `ScheduleProvider` 和 `useSchedule` 接入家具与纸面，书柜通过 `useLibrary` 接入应用和住民。媒体模块通过 `GameCartridgeProps` 按需加载 `src/games/*/index.tsx`。

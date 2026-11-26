@@ -417,6 +417,8 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const stairHead = bone('Head');
   const headRestWorld = stairHead.getWorldQuaternion(new THREE.Quaternion());
   const stairArmChains = ['Right', 'Left'].map(side => ['Arm', 'ForeArm', 'Hand', 'HandMiddle1'].map(n => bone(side + n)));
+  const armAxis = new THREE.Vector3();
+  const armBasis = new THREE.Quaternion(), armOffset = new THREE.Quaternion();
   const limb = new THREE.Vector3(), aim = new THREE.Vector3();
   const pelvisShift = new THREE.Vector3();
   const kneeDirection = new THREE.Vector3();
@@ -575,11 +577,21 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     }
   }
 
-  function applyPose(phase: number, walkWeight: number) {
+  function applyPose(phase: number, walkWeight: number, armRelaxation = 0) {
     if (walkWeight === 1) sample(phase);
     else {
       applyBlendedPose(phase, walkWeight);
       if (walkWeight > 0) correctBlendedContact();
+      if (armRelaxation > 0) {
+        // Ease into the relaxed stance without changing the authored swing at full weight.
+        const inward = THREE.MathUtils.degToRad(4) * armRelaxation * (1 - walkWeight);
+        mesh.getWorldQuaternion(armBasis);
+        for (let side = 0; side < stairArmChains.length; side++) {
+          const [upper] = stairArmChains[side];
+          armAxis.set(0, 0, 1).applyQuaternion(armBasis).applyQuaternion(upper.parent!.getWorldQuaternion(armOffset).invert());
+          upper.quaternion.premultiply(armOffset.setFromAxisAngle(armAxis, side === 0 ? inward : -inward));
+        }
+      }
     }
   }
 
@@ -608,6 +620,10 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     });
   }
 
+  const wardrobeFits = skinned.flatMap(surface => {
+    const index = surface.morphTargetDictionary?.WardrobeSideEase;
+    return index === undefined || !surface.morphTargetInfluences ? [] : [{ index, weights: surface.morphTargetInfluences }];
+  });
   const correctives = (['Left', 'Right'] as const).flatMap(side => {
     const targets = skinned.flatMap(object => {
       const index = object.morphTargetDictionary?.[side + 'ArmContact'];
@@ -619,7 +635,12 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const down = new THREE.Vector3(), facing = new THREE.Vector3();
   const shoulderPoint = new THREE.Vector3(), elbowPoint = new THREE.Vector3(), wristPoint = new THREE.Vector3();
   const direction = new THREE.Vector3(), orientation = new THREE.Quaternion();
-  function applyArmCorrectives(enabled: boolean) {
+  function applyArmCorrectives(enabled: boolean, deltaSeconds = .15) {
+    // Fade the standing fit out before a seated or held-object contact pose takes over.
+    const step = Math.max(0, deltaSeconds) / .15;
+    for (const { index, weights } of wardrobeFits) {
+      weights[index] = enabled ? Math.min(1, weights[index] + step) : Math.max(0, weights[index] - step);
+    }
     if (!correctives.length) return;
     if (enabled) {
       down.copy(hips.getWorldPosition(shoulderPoint)).sub(neckBone.getWorldPosition(elbowPoint)).normalize();

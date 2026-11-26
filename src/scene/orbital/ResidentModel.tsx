@@ -29,12 +29,12 @@ export interface ResidentArm {
 export interface ResidentRig {
   legs: ResidentLeg[]; arms: ResidentArm[]; torso: THREE.Bone; neck: THREE.Bone; head?: THREE.Bone;
   skirtFront: THREE.Bone; skirtBack: THREE.Bone; mesh: THREE.Group;
-  applyPose: (phase: number, walkWeight: number) => void;
+  applyPose: (phase: number, walkWeight: number, armRelaxation?: number) => void;
   applyStairPose: (gait: StairGait, stairX: number, surfaceAt: (z: number, heelRun?: number) => number) => void;
   followMotion: (dt: number, enabled: boolean, yaw: number, dx: number, dz: number, phase: number) => void;
   fitted?: ResidentAssets['fitted'];
   updateSleeveContact?: () => void;
-  applyArmCorrectives: (enabled: boolean) => void;
+  applyArmCorrectives: (enabled: boolean, deltaSeconds?: number) => void;
   applySeatedIdle?: ReturnType<typeof createSeatedIdlePlayer>;
   applyChairPose?: (time: number, weight: number) => void;
   dispose: () => void;
