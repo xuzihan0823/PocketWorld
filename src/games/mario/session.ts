@@ -71,6 +71,7 @@ interface Options {
   onScore: (score: number, highScore: number) => void;
   onFinish: (result: TripResult) => void;
   onExit: () => void;
+  onSaveConflict?: () => void;
   random?: () => number;
   audio?: ReturnType<typeof createFishingAudio>;
 }
@@ -82,7 +83,7 @@ const CATCH_CARD_MS = 3_200;
 const NIBBLE_LEAD_MS = 540;
 
 export function createFishingSession(options: Options) {
-  const storage = openFishingStorage(options.getStorage);
+  const storage = openFishingStorage(options.getStorage, options.onSaveConflict);
   const engine = createFishingGame({ random: options.random ?? Math.random, progress: storage.progress, highScore: storage.highScore });
   const audio = options.audio ?? createFishingAudio();
   let state = engine.getSnapshot();
@@ -430,6 +431,7 @@ export function createFishingSession(options: Options) {
       else publish(true);
     },
     checkpoint: flush,
+    checkForChanges: storage.checkForChanges,
     dispose() {
       if (disposed) return;
       disposed = true;

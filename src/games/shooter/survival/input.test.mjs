@@ -161,3 +161,20 @@ test('Escape closes the standalone adventure log and returns to character select
     assert.equal(view.screen, 'armory');
   } finally { view.dispose(); }
 });
+
+test('both cartridge and room score writes preserve a newer record under the same lock', async () => {
+  const { recordShooterHighScore } = await import('../../../types/shooterHighScore.ts');
+  const queue = [];
+  let stored = '0';
+  const access = () => ({ getItem: () => stored, setItem: (_, value) => { stored = value; } });
+  globalThis.window = { navigator: { locks: { request(key, write) {
+    assert.equal(key, 'pocketworld:shooter:highscore'); queue.push(write); return Promise.resolve();
+  } } } };
+  try {
+    recordShooterHighScore(1000, access);
+    recordShooterHighScore(10, access);
+    queue.forEach(write => write());
+    assert.equal(stored, '1000');
+    assert.equal(recordShooterHighScore(10, access), 1000);
+  } finally { delete globalThis.window; }
+});

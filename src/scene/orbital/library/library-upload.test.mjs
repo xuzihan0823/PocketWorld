@@ -337,3 +337,53 @@ test('18 槽满柜和 512 KiB 空间上限均禁用按钮并拦截拖拽上传',
     uiBytesFull.dispose();
   }
 });
+
+test('目录态无装饰标题、提供 3×6 书架格位图，且取还书过渡态不渲染可见面板', () => {
+  const ui = mountLibrarySurface();
+  try {
+    // 目录态不渲染旧标题「这一柜，慢慢读。」且没有 h2
+    assert.equal(ui.findAll(n => n.type === 'h2').length, 0);
+    assert.doesNotMatch(ui.textContent(ui.find(n => n.type === 'section')), /这一柜，慢慢读/);
+
+    // 3×6 书架格位图完整渲染 18 格（3 格已放书、15 格空位）
+    const filledPips = ui.findAll(n => n.type === 'button' && String(n.props?.className ?? '').includes('library-slot-pip is-filled'));
+    const emptyPips = ui.findAll(n => n.type === 'span' && String(n.props?.className ?? '').includes('library-slot-pip is-empty'));
+    assert.equal(filledPips.length, 3);
+    assert.equal(emptyPips.length, 15);
+
+    // 点击已放书的格位可直接进入取书过渡态，且过渡态只保留隐形占位不展示任何状态面板
+    filledPips[0].props.onClick();
+    ui.render();
+    assert.equal(ui.controller().flow.current.phase, 'align');
+    assert.equal(ui.find(n => n.type === 'section'), undefined);
+    const transit = ui.find(n => n.type === 'div' && n.props?.className === 'library-surface is-transit');
+    assert.ok(transit, 'transition phase should render zero-footprint hidden anchor');
+    assert.equal(transit.props['aria-hidden'], 'true');
+    assert.equal(ui.textContent(transit), '');
+
+    // 推进到 open（隐形预排版），再到 reading（显示阅读版心），合书 close 时立刻收起
+    ui.controller().arrived();
+    for (let i = 0; i < 120 && ui.controller().flow.current.phase !== 'open'; i++) ui.controller().tick(0.05);
+    ui.render();
+    assert.equal(ui.controller().flow.current.phase, 'open');
+    const preloadingSection = ui.find(n => n.type === 'section');
+    assert.ok(String(preloadingSection?.props?.className ?? '').includes('is-preloading'));
+    assert.equal(preloadingSection?.props?.['aria-hidden'], true);
+
+    for (let i = 0; i < 120 && ui.controller().flow.current.phase !== 'reading'; i++) ui.controller().tick(0.05);
+    ui.render();
+    assert.equal(ui.controller().flow.current.phase, 'reading');
+    const readingSection = ui.find(n => n.type === 'section');
+    assert.ok(String(readingSection?.props?.className ?? '').includes('library-reading'));
+    assert.equal(String(readingSection?.props?.className ?? '').includes('is-preloading'), false);
+    assert.equal(readingSection?.props?.['aria-hidden'], undefined);
+
+    ui.controller().back();
+    ui.render();
+    assert.equal(ui.controller().flow.current.phase, 'close');
+    assert.equal(ui.find(n => n.type === 'section'), undefined);
+    assert.ok(ui.find(n => n.type === 'div' && n.props?.className === 'library-surface is-transit'));
+  } finally {
+    ui.dispose();
+  }
+});

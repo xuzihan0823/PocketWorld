@@ -127,9 +127,9 @@ export function loadClockState(
   storage?: Pick<Storage, 'getItem'> | null,
   nowMs = Date.now()
 ): ClockPersistentState {
-  if (!storage) return { ...DEFAULT_CLOCK_STATE };
   try {
-    const raw = storage.getItem(CLOCK_STORAGE_KEY);
+    const target = storage === undefined ? globalThis.localStorage : storage;
+    const raw = target?.getItem(CLOCK_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_CLOCK_STATE };
     const parsed = JSON.parse(raw) as Partial<ClockPersistentState>;
     const mode: ClockMode = parsed.mode === 'countdown' ? 'countdown' : 'alarm';
@@ -179,9 +179,9 @@ export function saveClockState(
   state: ClockPersistentState,
   storage?: Pick<Storage, 'setItem'> | null
 ): void {
-  if (!storage) return;
   try {
-    storage.setItem(CLOCK_STORAGE_KEY, JSON.stringify(state));
+    const target = storage === undefined ? globalThis.localStorage : storage;
+    target?.setItem(CLOCK_STORAGE_KEY, JSON.stringify(state));
   } catch {
     /* Ignore quota / private browsing storage errors. */
   }
