@@ -16,18 +16,18 @@ function setup() {
   return {engine:context.exports.roomAudio,discs:context.exports.PRESET_MUSIC_DISCS,nodes,intervals,audios,set reject(value){reject=value;}};
 }
 
-test('preset collection bundles the three supplied C418 tracks and retains one synth record', () => {
- const {discs,audios}=setup();
- assert.deepEqual(Array.from(discs,disc=>disc.title),['Sweden','Aria Math','Subwoofer Lullaby','微缩梦境 (Diorama Reverie)']);
- assert.equal(new Set(discs.map(disc=>disc.id)).size,4);
+test('preset collection contains only the three supplied C418 tracks and defaults to Sweden', () => {
+ const {engine,discs,audios}=setup();
+ assert.deepEqual(Array.from(discs,disc=>disc.title),['Sweden','Aria Math','Subwoofer Lullaby']);
+ assert.equal(new Set(discs.map(disc=>disc.id)).size,3);
+ assert.equal(engine.getSnapshot().disc.id,'disc-sweden');
  assert.equal(audios.length,0,'loading the catalog must not preload audio');
- for(const disc of discs.slice(0,3)) {
+ for(const disc of discs) {
   assert.equal(disc.artist,'C418');assert.equal(disc.synthPreset,undefined);
   assert.ok(disc.audioUrl.startsWith('../../assets/audio/records/'));
   assert.ok(fs.statSync(new URL(disc.audioUrl,import.meta.url)).size>1_000_000);
   assert.ok(disc.duration>200 && disc.duration<=310);
  }
- assert.equal(discs[3].audioUrl,'synth:starlight-dream');
 });
 
 test('bundled records reuse prepared audio, loop, release the previous track and survive pause/mute', async()=>{
@@ -50,7 +50,9 @@ test('bundled records reuse prepared audio, loop, release the previous track and
 });
 
 test('synth transport fade is independent of mute and mechanical effects; pause releases voices/timer', async()=>{
- const {engine,discs,nodes,intervals}=setup();engine.setMusicLevel(0);await engine.startMusic(discs.find(disc=>disc.synthPreset));
+ const {engine,nodes,intervals}=setup();
+ const synth={id:'synth-test',title:'Synth test',audioUrl:'synth:lofi-sunset',synthPreset:'lofi-sunset',discThemeColor:['#fff','#000']};
+ engine.setMusicLevel(0);await engine.startMusic(synth);
  const master=nodes[0],envelope=nodes[1];assert.equal(envelope.gain.value,0);assert.equal(envelope.to,master);
  engine.setMusicLevel(.5);assert.equal(envelope.gain.value,.5);assert.equal(master.gain.value,1);
  engine.playSfx('soft');assert.equal(nodes.at(-1).to,master);

@@ -28,15 +28,6 @@ export const PRESET_MUSIC_DISCS: MusicDisc[] = [
     discThemeColor: ['#34d399', '#059669'],
     duration: 208.56,
   },
-  {
-    id: 'disc-starlight-dream',
-    title: '微缩梦境 (Diorama Reverie)',
-    artist: 'Pocket Studio · Chillhop',
-    audioUrl: 'synth:starlight-dream',
-    discThemeColor: ['#c084fc', '#f472b6'],
-    synthPreset: 'starlight-dream',
-    duration: 180,
-  },
 ];
 
 /**
