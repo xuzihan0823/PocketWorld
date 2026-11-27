@@ -24,6 +24,18 @@ node scripts/bake-luna-cabin-actions.mjs /path/to/downloads
 
 来源、Take 和源文件校验值见[素材登记](../../models.sources.json)。
 
+### 小熊抱起节奏
+
+[Luna-Bear-Pickup.blend](./Luna-Bear-Pickup.blend) 保存三套衣装的原拾取动作、重排时间后的 `bearPickUp` 和 `Timing` 场景中的 `Bear_Pickup_Timing` 曲线。小熊抱起由约 3.97 秒缩短至 3.05 秒；弯腰、收尾更快，接触附近放缓，再连贯抬起。约 1.46 秒开始抬离地面。原姿势、脚底和双手接触路径保留，放下及其他娃娃、纸团仍使用原 `pickUp`。
+
+在 Blender 的 `Timing` 场景调整 `seconds` 曲线，再重导。横轴是原片 30 fps 帧号，纵轴是新片秒数，必须严格递增；此脚本仅重排时间，不导出角色网格或新的骨骼姿势。运行时片段复用原姿势数据，只增加采样时间与动画声明。接触求解、淡入淡出使用同次导出的 `bearPickupTiming.ts` 换算原片时间，取消时沿新片倒放。
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 --python scripts/retime-bear-pickup.py -- --scratch "$env:PI_SCRATCH_DIR" --from-blend
+```
+
+省略 `--from-blend` 会从当前运行模型和原 `pickUp` 重建制作源及默认节奏。原动作包经其他脚本重建后，须最后执行上述重导以恢复小熊片段。`--output-dir` 与 `--timing-output` 可指向仓库外以核对重导。相关回归：`bearPickup.test.mjs`、`contactHands.test.mjs`、`plushCarry.test.mjs`。
+
 ## 楼梯步态
 
 Luna 上、下楼各取 MotionSmith Take 1 中连续的左右两步。原文件均为 UE5 Manny 骨架、30 fps。帧号从 0 开始，上楼两个步段的边界为 48、64、80，下楼为 57、76、94，分别取脚趾开始离开踏面的帧。导出脚踝推进与抬升、脚掌俯仰、躯干倾斜、双膝屈曲、髋踝相对位置和双侧肩、肘、腕的运动方向。运行时按腿长和踏面尺寸重定向，并在首末级与平台衔接。两个方向都用支撑踝定位骨盆，按原片的前移曲线跨过左右脚换重的瞬间。骨盆至颈部的倾角驱动躯干，头部俯仰单独采样。上楼时，骨盆的抬升曲线限制承重腿伸直时身体的上升速度。下楼时，骨盆的降高曲线控制左右脚换重。前脚掌靠近踏板前缘，后跟越过台阶后逐渐下降，落脚时膝盖保留原片的轻微弯曲。[上楼原片](https://cosindra.ai/motionsmith/motions/walk-upstairs) · [下楼原片](https://cosindra.ai/motionsmith/motions/walk-downstairs)

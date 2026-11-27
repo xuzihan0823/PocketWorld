@@ -2,6 +2,7 @@ import { loadSceneAsset } from './assetQueue.ts';
 import { MathUtils, PropertyBinding, Quaternion, Vector3, type AnimationClip, type Object3D } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ResidentOutfit } from './wardrobe/outfit';
+import { bearPickupSourceTime } from './bearPickupTiming.ts';
 
 export const RUG_SEAT: [number, number] = [-4.06, .32];
 export const RUG_YAW = .32;
@@ -11,7 +12,7 @@ export const PICKUP_GRIP_TIME = 1.9;
 export const PAPER_PICKUP_PREFIX = 'schedule-paper-';
 export const CABIN_IDLE_OFFSETS = ['stretchNeck', 'sofaDoze', 'chairGlance', 'floorGlance'] as const;
 export const CABIN_ACTIONS = [
-  'floorSit', 'floorStand', 'pickUp', 'rubEye', 'think', 'reachHigh', 'shiftWeight', ...CABIN_IDLE_OFFSETS,
+  'floorSit', 'floorStand', 'pickUp', 'rubEye', 'think', 'reachHigh', 'shiftWeight', ...CABIN_IDLE_OFFSETS, 'bearPickUp',
 ] as const;
 type CabinActionName = typeof CABIN_ACTIONS[number];
 type CabinClips = Record<CabinActionName, AnimationClip>;
@@ -67,7 +68,7 @@ type PickupPerformance = {
   kind: 'paper'; time: number; leaving: boolean; id: string; point: Vector3;
   complete: () => void;
 };
-type PlushPerformance = { kind: 'plush'; placing: boolean; time: number; leaving: boolean };
+type PlushPerformance = { kind: 'plush'; placing: boolean; time: number; leaving: boolean; bearPickup?: boolean };
 export type CabinPerformance = FloorPerformance | PickupPerformance | PlushPerformance;
 export const newRugPerformance = (): FloorPerformance => ({
   kind: 'floor', phase: 'sit', time: 0, leaving: false,
@@ -78,12 +79,17 @@ export function leaveCabinPerformance(performance: CabinPerformance) {
   if (performance.phase === 'sit') performance.phase = 'undo-sit';
   if (performance.phase === 'seated') { performance.phase = 'rise'; performance.time = 0; }
 }
+export function pickupPoseTime(performance: CabinPerformance) {
+  return performance.kind === 'plush' && performance.bearPickup
+    ? bearPickupSourceTime(performance.time) : performance.time;
+}
 export function advanceCabinPerformance(performance: CabinPerformance, dt: number, clips: CabinClips) {
   const { time } = performance;
   if (performance.kind !== 'floor') {
     const reverse = performance.leaving !== (performance.kind === 'plush' && performance.placing);
-    performance.time = MathUtils.clamp(time + (reverse ? -dt : dt), 0, clips.pickUp.duration);
-    return reverse ? performance.time === 0 : performance.time === clips.pickUp.duration;
+    const duration = performance.kind === 'plush' && performance.bearPickup ? clips.bearPickUp.duration : clips.pickUp.duration;
+    performance.time = MathUtils.clamp(time + (reverse ? -dt : dt), 0, duration);
+    return reverse ? performance.time === 0 : performance.time === duration;
   }
   switch (performance.phase) {
     case 'sit':
@@ -108,7 +114,9 @@ export function applyCabinPerformance(
 ) {
   const { time } = performance;
   if (performance.kind !== 'floor') {
-    apply('pickUp', time, MathUtils.smoothstep(time, 0, .45) * MathUtils.smoothstep(clips.pickUp.duration - time, 0, .36));
+    const sourceTime = pickupPoseTime(performance);
+    const clip = performance.kind === 'plush' && performance.bearPickup ? 'bearPickUp' : 'pickUp';
+    apply(clip, time, MathUtils.smoothstep(sourceTime, 0, .45) * MathUtils.smoothstep(clips.pickUp.duration - sourceTime, 0, .36));
     return;
   }
   if (performance.phase === 'sit' || performance.phase === 'undo-sit') {
