@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { GameCartridgeProps } from '../../types/game';
+import { SAVE_KEY } from './storage';
 import { FIGHT_KEYS } from './catalog';
 import { FishingView, type FishingAction } from './FishingView';
 import { drawFishingBay } from './renderer';
@@ -10,6 +11,8 @@ type Session = ReturnType<typeof createFishingSession>;
 /** One mounted cartridge session. Every listener belongs to this mount. */
 export function FishingGame({ isActive = true, isMuted = false, onScoreChange, onGameOver, onExit }: GameCartridgeProps) {
   const [view, setView] = useState(initialView);
+  const [conflict, setConflict] = useState(false);
+  const [revision, setRevision] = useState(0);
   const sessionRef = useRef<Session | null>(null);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -22,6 +25,8 @@ export function FishingGame({ isActive = true, isMuted = false, onScoreChange, o
   }, [isActive, isMuted, onScoreChange, onGameOver, onExit]);
 
   useLayoutEffect(() => {
+    let stale = false;
+    let mounted = true;
     const session = createFishingSession({
       getStorage: () => window.localStorage,
       requestFrame: callback => window.requestAnimationFrame(callback),
@@ -31,6 +36,12 @@ export function FishingGame({ isActive = true, isMuted = false, onScoreChange, o
       onScore: (score, best) => settings.current.onScoreChange?.(score, best),
       onFinish: result => settings.current.onGameOver?.(result),
       onExit: () => settings.current.onExit(),
+      onSaveConflict: () => {
+        if (!mounted) return;
+        stale = true;
+        session.setActive(false);
+        setConflict(true);
+      },
     });
     sessionRef.current = session;
     const events = new AbortController();
@@ -39,12 +50,16 @@ export function FishingGame({ isActive = true, isMuted = false, onScoreChange, o
     let focused = document.hasFocus();
     let pagePresent = true;
     const sync = () => {
-      const active = settings.current.isActive && focused && pagePresent && !document.hidden;
+      if (focused && pagePresent) session.checkForChanges();
+      const active = !stale && settings.current.isActive && focused && pagePresent && !document.hidden;
       if (!active) session.setActive(false);
       session.setMuted(settings.current.isMuted);
       if (active) session.setActive(true);
     };
     syncHost.current = sync;
+    window.addEventListener('storage', event => {
+      if (event.key === SAVE_KEY || event.key === null) session.checkForChanges();
+    }, listener);
     const visibility = () => { focused = document.hasFocus(); sync(); };
     window.addEventListener('focus', () => { focused = true; sync(); }, listener);
     window.addEventListener('blur', () => { focused = false; sync(); }, listener);
@@ -117,12 +132,13 @@ export function FishingGame({ isActive = true, isMuted = false, onScoreChange, o
     session.setReducedMotion(motion.matches);
     sync();
     return () => {
+      mounted = false;
       events.abort();
       syncHost.current = null;
       sessionRef.current = null;
       session.dispose();
     };
-  }, []);
+  }, [revision]);
 
   const send = useCallback((action: FishingAction, gesture?: boolean) => sessionRef.current?.dispatch(action, gesture), []);
   const setCanvas = useCallback((element: HTMLCanvasElement | null) => { canvas.current = element; }, []);
@@ -133,7 +149,13 @@ export function FishingGame({ isActive = true, isMuted = false, onScoreChange, o
         sessionRef.current?.interfaceSound(event.isTrusted);
       }
     }}>
-      <FishingView snapshot={view.snapshot} scene={view.scene} isActive={view.active} onAction={send} canvasRef={setCanvas} onDockImageSettled={dockImageSettled} />
+      {conflict ? <section className="tf-view tf-save-conflict" role="alert">
+        <p>另一页已更新钓鱼存档。载入最新进度后即可继续。</p>
+        <button type="button" className="tf-button" disabled={!isActive} onClick={() => {
+          setConflict(false);
+          setRevision(value => value + 1);
+        }}>载入最新进度</button>
+      </section> : <FishingView snapshot={view.snapshot} scene={view.scene} isActive={view.active} onAction={send} canvasRef={setCanvas} onDockImageSettled={dockImageSettled} />}
     </div>
   );
 }

@@ -94,11 +94,13 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
 
   const active = view.phase !== 'idle';
   const isCatalog = view.phase === 'catalog';
+  const isLoading = view.phase === 'loading';
+  const isCatalogView = isCatalog || isLoading;
   const form = view.phase === 'form';
   const readingVisible = !!view.book && (view.phase === 'reading' || view.phase === 'turn');
   const readingMount = !!view.book && (view.phase === 'open' || view.phase === 'reading' || view.phase === 'turn');
   const readingPreloading = !!view.book && view.phase === 'open';
-  const surfaceVisible = isCatalog || form || readingVisible;
+  const surfaceVisible = isCatalogView || form || readingVisible;
   const canDropFile = (isCatalog || form) && !busy;
 
   const firstSlot = BOOK_SLOTS.find(slot => !data.books.some(book => book.slotId === slot.id));
@@ -202,7 +204,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
 
   // 过渡阶段（走近、对准、取书、合书、还书、上架）不显示面板，把 3D 演出完整让给画面；
   // 仅保留零占地隐形锚点以维持顶栏快捷提示隐藏与 Esc 取消监听。
-  if (!isCatalog && !form && !readingMount) {
+  if (!isCatalogView && !form && !readingMount) {
     return <div className="library-surface is-transit" aria-hidden="true" />;
   }
 
@@ -269,7 +271,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
 
   const surfaceClassName = [
     'library-surface',
-    isCatalog ? 'library-catalog-panel' : '',
+    isCatalogView ? 'library-catalog-panel' : '',
     readingMount ? 'library-reading' : '',
     readingPreloading ? 'is-preloading' : '',
     form ? 'library-adding' : '',
@@ -311,15 +313,15 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
         if (canDropFile) void handleFiles(e.dataTransfer?.files);
       }}
     >
-      {isCatalog && <>
+      {isCatalogView && <>
         <div className="library-topbar">
           <p className="library-capacity">
             <strong>已放 {data.books.length} / {CAPACITY} 本</strong>
-            <span>{capacity.fullReason ?? `自添 ${userBooksCount} / ${USER_BOOK_LIMIT} 本 · 已用 ${formatBookBytes(capacity.usedBytes)} / ${formatBookBytes(TOTAL_LIMIT)}`}</span>
+            <span>{isLoading ? '正在读取外部书籍…' : (capacity.fullReason ?? `自添 ${userBooksCount} / ${USER_BOOK_LIMIT} 本 · 已用 ${formatBookBytes(capacity.usedBytes)} / ${formatBookBytes(TOTAL_LIMIT)}`)}</span>
           </p>
-          <button type="button" className="library-ghost-btn" onClick={library.back} aria-label="离开书柜">
+          <button type="button" className="library-ghost-btn" onClick={library.back} aria-label={isLoading ? '取消读取书籍' : '离开书柜'}>
             <IconBack />
-            <span>返回房间</span>
+            <span>{isLoading ? '取消读取' : '返回房间'}</span>
           </button>
         </div>
 
@@ -337,6 +339,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
                         <button
                           key={slot.id}
                           type="button"
+                          disabled={isLoading}
                           className={`library-slot-pip is-filled${highlighted ? ' is-highlighted' : ''}`}
                           style={{ '--spine-color': occupant.color } as React.CSSProperties}
                           title={`第 ${row + 1} 层 ${slot.column + 1} 格：《${occupant.title}》`}
@@ -386,6 +389,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
               >
                 <button
                   type="button"
+                  disabled={isLoading}
                   className="library-title"
                   onFocus={() => setHoveredBookId(book.id)}
                   onBlur={() => setHoveredBookId(null)}
@@ -406,6 +410,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
                 {book.source === 'user' && (
                   <button
                     type="button"
+                    disabled={isLoading}
                     className="library-remove"
                     aria-label={`移除《${book.title}》`}
                     title={`移除《${book.title}》`}
@@ -418,7 +423,6 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
             );
           })}
         </ol>
-
         {error && <p className="library-error" role="alert">{error}</p>}
 
         <div className="library-catalog-footer">
@@ -426,12 +430,12 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
             type="button"
             className="library-primary"
             onClick={() => { setError(''); library.openForm(); }}
-            disabled={!capacity.canAdd}
+            disabled={!capacity.canAdd || isLoading}
           >
             <IconUpload />
             <span>{addDisabledLabel}</span>
           </button>
-          {capacity.canAdd && <p className="library-drop-hint">也可直接将 UTF-8 .txt / .md 文件拖入此处</p>}
+          {capacity.canAdd && !isLoading && <p className="library-drop-hint">也可直接将 UTF-8 .txt / .md 文件拖入此处</p>}
         </div>
       </>}
 

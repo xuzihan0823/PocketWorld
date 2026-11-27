@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as PointerInput } from 'react';
 import type { GameCartridgeProps } from '../../../types/game';
+import { recordShooterHighScore, shooterHighScore } from '../../../types/shooterHighScore';
 import { ShooterAudio } from '../audio';
 import { advance, chooseUpgrade, createRun, dash, DURATION, H, W, UPGRADES, switchVariant, upgradeRank, rerollUpgrades } from './engine';
 import { SPECIALS, PROFESSIONS, CLASS_LINKS, classLinkActive } from './professions';
@@ -20,7 +21,7 @@ import './style.css';
 
 type Screen = 'playing' | 'paused' | 'upgrade' | 'victory' | 'defeat' | 'history' | 'armory';
 type RecordEntry = { score: number; victory: boolean; date: string; time?: number; level?: number };
-const HIGH = 'pocketworld:shooter:highscore', HISTORY = 'pocketworld:shooter:history';
+const HISTORY = 'pocketworld:shooter:history';
 function read(key: string): string | null { try { return localStorage.getItem(key); } catch { return null; } }
 function save(key: string, value: string): void { try { localStorage.setItem(key, value); } catch { /* Storage is optional. */ } }
 function records(): RecordEntry[] {
@@ -36,10 +37,10 @@ export default function ShooterGame({ width = W, height = H, isActive = true, is
   const screenRef = useRef<Screen>('armory'), keys = useRef(new Set<string>()), joystick = useRef<Vec>({ x: 0, y: 0 });
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
   const props = useRef({ isActive, isMuted, onScoreChange, onGameOver, onExit }); props.current = { isActive, isMuted, onScoreChange, onGameOver, onExit };
-  const storedBest = Number(read(HIGH));
-  const best = useRef(Number.isFinite(storedBest) ? Math.max(0, storedBest) : 0), scoreSent = useRef(-1), ended = useRef(false), initialBest = useRef(best.current);
+  const [bestScore, setBestScore] = useState(() => shooterHighScore());
+  const best = useRef(bestScore), scoreSent = useRef(-1), ended = useRef(false), initialBest = useRef(best.current);
   const [screen, setScreen] = useState<Screen>('armory'), [hud, setHud] = useState(() => snapshot(game.current));
-  const [bestScore, setBestScore] = useState(best.current), [history, setHistory] = useState(records);
+  const [history, setHistory] = useState(records);
   const [quiet, setQuiet] = useState(false), quietRef = useRef(false);
   const [selectedWeapon, setSelectedWeapon] = useState<WeaponId>('pistol'), selectedRef = useRef<WeaponId>('pistol');
   const [selectedVariant,setSelectedVariant]=useState<VariantId>('hex'), variantRef=useRef<VariantId>('hex');
@@ -58,12 +59,15 @@ export default function ShooterGame({ width = W, height = H, isActive = true, is
   }, [clearInput]);
   const publish = useCallback(() => {
     const r = game.current;
-    if (r.score > best.current) { best.current = r.score; save(HIGH, String(r.score)); setBestScore(r.score); }
-    if (scoreSent.current !== r.score) { scoreSent.current = r.score; props.current.onScoreChange?.(r.score, best.current); }
+    if (scoreSent.current === r.score) return;
+    scoreSent.current = r.score;
+    best.current = recordShooterHighScore(Math.max(r.score, best.current));
+    setBestScore(best.current);
+    props.current.onScoreChange?.(r.score, best.current);
   }, []);
   const start = useCallback(() => {
     if (!props.current.isActive) return;
-    game.current = createRun(Math.random, selectedRef.current,variantRef.current); ended.current = false; scoreSent.current = -1; initialBest.current = best.current;
+    game.current = createRun(Math.random, selectedRef.current,variantRef.current); ended.current = false; scoreSent.current = -1; initialBest.current = shooterHighScore(best.current);
     setHud(snapshot(game.current)); audio.current.startTrack(); view('playing'); publish(); audio.current.unlock();
   }, [publish, view]);
   const pause = useCallback(() => {

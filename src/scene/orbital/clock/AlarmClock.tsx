@@ -36,9 +36,7 @@ interface ClockRuntimeSnapshot {
 }
 
 class ClockStore {
-  private state: ClockPersistentState = loadClockState(
-    typeof localStorage !== 'undefined' ? localStorage : null
-  );
+  private state: ClockPersistentState = loadClockState();
   private ringingSource: ClockRingingSource = null;
   private previewing = false;
   private now = new Date();
@@ -72,7 +70,7 @@ class ClockStore {
 
   private persist(next: ClockPersistentState): void {
     this.state = next;
-    saveClockState(next, typeof localStorage !== 'undefined' ? localStorage : null);
+    saveClockState(next);
   }
 
   public tick(now = new Date()): void {

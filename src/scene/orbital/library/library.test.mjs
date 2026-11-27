@@ -127,7 +127,8 @@ test('移除用户书释放原书位，其他内容、进度及刷新恢复保�
   const next = await m.mutateLibrary(d => ({ ...d, books: [...d.books, m.makeUserBook(d, '另一本', '', '另一段')] }));
   assert.equal(next.books.at(-1).slotId, b.slotId); assert.equal(next.books[0].anchor, 50); assert.equal(next.books.filter(x => x.id === b.id).length, 0);
 });
-function controller(reducedMotion = false) {
+function controller(reducedMotion = false, adapter) {
+  const listeners = new Map();
   const m = fixture(), effects = [], errors = [], actions = [], frames = [], sfx = [];
   const react = { useRef: current => ({ current }), useState: v => [typeof v === 'function' ? v() : v, () => {}], useCallback: fn => fn, useEffect: fn => effects.push(fn) };
   const dependencies = { react, three: THREE, '../assetQueue.ts': assetQueue, './catalog': m, '../../audioEngine': { roomAudio: { playSfx: type => sfx.push(type) } } };
@@ -137,7 +138,7 @@ function controller(reducedMotion = false) {
       if (!(name in dependencies)) throw new Error('Missing controller fixture dependency: ' + name);
       return dependencies[name];
     };
-    vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL(filename, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, { exports, ...m.globals, require, window: { addEventListener() {}, removeEventListener() {}, setTimeout: fn => fn(), clearTimeout() {} } });
+    vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL(filename, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, { exports, ...m.globals, require, AbortController, window: { addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener: name => listeners.delete(name), setTimeout: fn => fn(), clearTimeout() {} } });
     return exports;
   };
   dependencies['../residentRig'] = loadModule('../residentRig.ts');
@@ -145,7 +146,7 @@ function controller(reducedMotion = false) {
   dependencies['./bookMotion'] = loadModule('./bookMotion.ts');
   dependencies['./cardiganPickup'] = loadModule('./cardiganPickup.ts');
   dependencies['./libraryMotion'] = loadModule('./libraryMotion.ts');
-  const c = loadModule('./useLibrary.ts').useLibrary({ sceneId: 'habitat', reducedMotion, onAction: a => actions.push(a), onReturn: () => actions.push('return'), error: s => errors.push(s) }); effects.forEach(fn => fn());
+  const c = loadModule('./useLibrary.ts').useLibrary({ adapter, sceneId: 'habitat', reducedMotion, onAction: a => actions.push(a), onReturn: () => actions.push('return'), error: s => errors.push(s) }); effects.forEach(fn => fn());
   const advance = () => { for (let i = 0; i < 250; i++) { if (['approach', 'reading', 'catalog', 'align', 'recenter', 'idle'].includes(c.flow.current.phase)) break; c.tick(.04); } };
   const enter = (itemId) => {
     c.dispatch({ sceneId: 'habitat', objectId: 'book-01', kind: 'read', payload: { itemId } });
@@ -154,7 +155,7 @@ function controller(reducedMotion = false) {
     c.arrived();
   };
   const open = id => { c.choose(id); c.arrived(); c.setPages([{ start: 0, end: 10, text: '首页' }, { start: 10, end: 20, text: '末页' }]); advance(); };
-  return { c, m, errors, actions, sfx, advance, enter, open };
+  return { c, m, errors, actions, sfx, advance, enter, open, storageChanged: () => listeners.get('storage')({ key: m.LIBRARY_KEY }) };
 }
 test('直接触发添加不能绕过状态校验；表单保存成功才生成实体书', async () => {
   const { c, enter } = controller(); await assert.rejects(c.add('绕过', '', '正文'), /表单/); enter(); assert.equal(c.flow.current.phase, 'catalog'); c.openForm(); await c.add('新书', '', '正文'); assert.equal(c.flow.current.phase, 'shelving');
@@ -332,4 +333,51 @@ test('书柜满槽后 openForm 被拦截并报告满柜原因', async () => {
   assert.equal(c.flow.current.phase, 'catalog');
   assert.match(errors.at(-1), /18\/18/);
   assert.equal(m.readLibrary(m.storage).books.length, 18);
+});
+
+test('removing a book in another tab during a turn finishes the motion and returns to the catalog', async () => {
+  const { c, m, enter, open, advance, storageChanged } = controller();
+  enter(); c.openForm();
+  const book = await c.add('短篇', '', '一页又一页');
+  advance(); open(book.id); c.turn(1);
+  await m.mutateLibrary(data => ({ ...data, books: data.books.filter(item => item.id !== book.id) }));
+  storageChanged();
+  assert.equal(c.flow.current.phase, 'turn');
+  advance();
+  assert.equal(c.flow.current.phase, 'recenter');
+  c.arrived();
+  assert.equal(c.flow.current.phase, 'catalog');
+  assert.equal(c.flow.current.book, null);
+  assert.equal(m.readLibrary(m.storage).revision, 2);
+});
+
+test('external reading uses provider pages and saves their zero-based index after reflow', async () => {
+  const saved = [];
+  const adapter = {
+    async loadBook(id) { return { id, title: '外部正文', pages: ['first', 'second'] }; },
+    async saveBookmark(id, page, signal) { assert.equal(signal.aborted, false); saved.push([id, page]); },
+  };
+  const { c, m, enter, advance } = controller(false, adapter);
+  enter(); c.choose('book-01');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.flow.current.book.title, '外部正文');
+  const text = c.flow.current.book.text;
+  assert.equal(text, 'first\fsecond');
+  c.arrived(); c.setPages(m.paginate(text, 3, 1, () => 1)); advance();
+  c.turn(1); advance(); c.turn(1); advance();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(saved, [['book-01', 0], ['book-01', 1]]);
+  assert.equal(m.memory.has(m.LIBRARY_KEY), false);
+});
+
+test('cancelling an external book load ignores a late response and allows another selection', async () => {
+  let complete, signal;
+  const adapter = { loadBook(id, abort) { signal = abort; return new Promise(resolve => { complete = resolve; }); } };
+  const { c, enter } = controller(false, adapter);
+  enter(); c.choose('book-01'); c.back();
+  assert.equal(signal.aborted, true);
+  complete({ id: 'book-01', title: '旧请求', pages: ['old'] });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.flow.current.phase, 'catalog');
+  assert.equal(c.flow.current.book, null);
 });
