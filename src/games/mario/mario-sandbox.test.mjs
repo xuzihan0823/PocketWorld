@@ -31,7 +31,7 @@ test('sandbox exports a component and bundles the real game without room or othe
   const art = ['bay-dusk.webp', 'dock-street.webp', 'tackle-interior.webp', 'market-interior.webp', 'career-gallery.webp', 'tavern-mark.webp', 'seafood-menu.webp']
     .map(name => resolve(moduleDir, '../../../assets/games/ski', name));
   assert.ok(art.every(asset => inputs.includes(asset)));
-  assert.ok(inputs.every(path => dirname(path) === moduleDir || art.includes(path)), inputs.join('\n'));
+  assert.ok(inputs.every(path => dirname(path) === moduleDir || path === resolve(moduleDir, '../../types/storageWrite.ts') || art.includes(path)), inputs.join('\n'));
 });
 
 test('room navigation removes all dev values but preserves path, other parameters and fragment', () => {

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as computerLayout from './computerLayout.ts';
+import { recordShooterHighScore } from '../../../types/shooterHighScore.ts';
 import * as cartridgeMotion from './cartridge-motion.ts';
 import { HIGHSCORE_KEY as fishingScoreKey } from '../../../games/mario/storage.ts';
 
@@ -70,6 +71,7 @@ function mount({ game = null, modules = {}, focusedObject = 'computer', width = 
       if (name === '../../audioEngine') return { roomAudio: { cancelPreparedMusic() {} } };
       if (name === '../ObjectHandle') return { ObjectHandle: 'ObjectHandle' };
       if (name === '../Primitives') return { SoftBox: 'SoftBox' };
+      if (name === '../../../types/shooterHighScore') return { recordShooterHighScore: score => recordShooterHighScore(score, () => localStorage) };
       if (name === '../SuppliedAsset') return { SuppliedAsset: 'SuppliedAsset' };
       if (name === './RecordPlayer') return { RecordPlayer: 'RecordPlayer' };
       if (name === './ComputerScreen') return { ComputerScreen: 'ComputerScreen' };
@@ -335,7 +337,7 @@ test('room score callbacks keep fishing, legacy ski and shooter records separate
     view.find(node => node.type === Game).props.onScoreChange(15, 15);
     assert.equal(data.get(shooter), '15');
     assert.equal(data.get(fishingScoreKey), '5');
-    assert.deepEqual(reads, [fishingScoreKey, fishingScoreKey, shooter]);
+    assert.deepEqual(reads, [fishingScoreKey, fishingScoreKey, shooter, shooter]);
     assert.deepEqual(writes, [fishingScoreKey, shooter]);
   } finally { view.dispose(); }
 });

@@ -57,7 +57,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     window.clearTimeout(hintTimer.current);
     hintTimer.current = window.setTimeout(() => setAnnouncement(''), 5500);
   }, []);
-  const library = useLibrary({ sceneId: baseWorld.sceneId, reducedMotion: baseWorld.reducedMotion, onAction: baseWorld.onAction, onReturn: baseWorld.onReturn, error: onFeatureError });
+  const library = useLibrary({ adapter: adapters?.library, sceneId: baseWorld.sceneId, reducedMotion: baseWorld.reducedMotion, onAction: baseWorld.onAction, onReturn: baseWorld.onReturn, error: onFeatureError });
   const [cleaning, setCleaning] = useState<CleaningPhase>('idle');
   const [cleanTick, setCleanTick] = useState(0);
   const cleaningRef = useRef<CleaningPhase>('idle');

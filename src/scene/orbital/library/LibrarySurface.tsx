@@ -132,6 +132,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
 
   const phaseLabel: Record<string, string> = {
     prepare: '正在整理书柜',
+    loading: '正在读取书籍',
     approach: '正在走向书柜',
     align: '正在对准书位',
     reach: '正在伸手取书',
@@ -232,7 +233,7 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
       if (canDropFile) void handleFiles(e.dataTransfer?.files);
     }}>
     {!form && !reading && <>
-      <header><h2>这一柜，慢慢读。</h2><button onClick={library.back} disabled={!['catalog', 'approach'].includes(view.phase)} aria-label="离开书柜">返回房间</button></header>
+      <header><h2>这一柜，慢慢读。</h2><button onClick={library.back} disabled={!['catalog', 'approach', 'loading'].includes(view.phase)}>{view.phase === 'loading' ? '取消读取' : '返回房间'}</button></header>
       <p className="library-capacity">已放 {data.books.length} / {CAPACITY} 本<span>{capacity.fullReason ?? `自添 ${userBooksCount} / ${USER_BOOK_LIMIT} 本 · 已用 ${formatBookBytes(capacity.usedBytes)} / ${formatBookBytes(TOTAL_LIMIT)} · 支持拖入 .txt / .md`}</span></p>
       {view.phase === 'catalog' ? <>
         <ol className="library-catalog">{data.books.map(book => <li key={book.id}><button className="library-title" onClick={() => library.choose(book.id)}><i style={{ background: book.color }} /><span>{book.title}<small>{book.author} · {BOOK_SLOTS.find(s => s.id === book.slotId)!.row + 1} 层</small></span></button>{book.source === 'user' && <button className="library-remove" aria-label={`移除《${book.title}》`} onClick={() => setConfirm(book.id)}>移除</button>}</li>)}</ol>
