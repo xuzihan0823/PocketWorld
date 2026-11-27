@@ -1,3 +1,4 @@
+import type { SoundEvent } from '../audio';
 import { ARSENAL, STARTERS, armamentOf, variantsFor } from './arsenal';
 import type { VariantId } from './arsenal';
 export { ARSENAL } from './arsenal';
@@ -5,7 +6,7 @@ import { WEAPONS, weaponOf } from './weapons';
 import type { WeaponId } from './weapons';
 import { TRAITS, emptyEnchantments, isTrait, traitDescription } from './traits';
 import type { Enchantments, TraitId } from './traits';
-import { SPECIALS, emptySpecials, isSpec, CLASS_TRAITS, PROFESSIONS } from './professions';
+import { SPECIALS, emptySpecials, isSpec, CLASS_TRAITS, PROFESSIONS, CLASS_LINKS, classLinkActive, clusterDescription } from './professions';
 import type { SpecId } from './professions';
 import { segmentCircleEntry } from './collision';
 export { SPECIALS, PROFESSIONS } from './professions';
@@ -16,18 +17,18 @@ export type SupportId = 'power' | 'rapid' | 'spread' | 'orbit' | 'magnet' | 'boo
 export type UpgradeId = SupportId | TraitId | SpecId;
 export type Upgrade = { id: UpgradeId; name: string; icon: string; description: string; color: string; tag: string; weapon?: WeaponId };
 export const UPGRADES: (Upgrade & { id: SupportId })[] = [
-  { id: 'power', name: '超大能量', icon: '✦', description: '全武器伤害 +18%，最多四级。', color: '#f3be51', tag: '全局辅助' },
-  { id: 'rapid', name: '连发糖果', icon: '»', description: '全武器攻击间隔缩短 10%，最多四级。', color: '#f58c85', tag: '全局辅助' },
-  { id: 'spread', name: '好事成双', icon: '⋈', description: '额外一弹，但每弹伤害降低；扫把范围 +12，最多两级。', color: '#b09ad5', tag: '全局辅助' },
-  { id: 'orbit', name: '卫星小饼干', icon: '❋', description: '身边多一枚旋转饼干，碰到怪物就攻击。', color: '#d6ad60', tag: '环绕武器' },
-  { id: 'magnet', name: '口袋吸吸', icon: '◎', description: '经验拾取范围 +40%，最多三级。', color: '#7ac2c2', tag: '成长辅助' },
-  { id: 'boots', name: '蹦蹦软靴', icon: '↗', description: '移动速度 +8%，冲刺冷却缩短，最多三级。', color: '#86b887', tag: '灵巧走位' },
-  { id: 'heart', name: '草莓奶昔', icon: '♥', description: '生命上限 +15，立即恢复 25 点生命，最多三级。', color: '#e78caa', tag: '生命恢复' },
-  { id: 'pulse', name: '泡泡冲击', icon: '◌', description: '周期性发出泡泡，击退并伤害周围怪物。', color: '#8eabdc', tag: '范围武器' },
+  { id: 'power', name: '月晶共鸣', icon: '✦', description: '全武器伤害 +18%，最多四级。', color: '#f3be51', tag: '全局辅助' },
+  { id: 'rapid', name: '加速符纹', icon: '»', description: '全武器攻击间隔缩短 10%，最多四级。', color: '#f58c85', tag: '全局辅助' },
+  { id: 'spread', name: '分光符纹', icon: '⋈', description: '额外一弹，但每弹伤害降低；扫把范围 +12，最多两级。', color: '#b09ad5', tag: '全局辅助' },
+  { id: 'orbit', name: '护身月轮', icon: '❋', description: '身边多一枚旋转月轮，接触怪物时造成伤害。', color: '#d6ad60', tag: '环绕武器' },
+  { id: 'magnet', name: '拾星磁阵', icon: '◎', description: '经验拾取范围 +40%，最多三级。', color: '#7ac2c2', tag: '成长辅助' },
+  { id: 'boots', name: '疾行护符', icon: '↗', description: '移动速度 +8%，冲刺冷却缩短，最多三级。', color: '#86b887', tag: '灵巧走位' },
+  { id: 'heart', name: '红莓药剂', icon: '♥', description: '生命上限 +15，立即恢复 25 点生命，最多三级。', color: '#e78caa', tag: '生命恢复' },
+  { id: 'pulse', name: '月泉震波', icon: '◌', description: '周期性释放月泉震波，伤害并击退周围怪物。', color: '#8eabdc', tag: '范围武器' },
 ];
 export type Enemy = Vec & { id: number; kind: number; hp: number; max: number; radius: number; speed: number; seed: number; flash: number; hit: number; charge: number; burn?: number; burnDps?: number; burnTick?: number; chill?: number; slow?: number; reaction?: number };
 export type Bullet = Vec & { vx: number; vy: number; life: number; damage: number; radius: number; kind: WeaponId; hits: number[]; traits?: Enchantments; secondary?: boolean; bounces?: number; procDone?: boolean; reactionDone?: boolean; specs?: Record<SpecId, number>; variant?: VariantId; delay?: number; target?: Vec; duration?: number; explosiveFollowup?: boolean };
-export type Blast = Vec & { radius: number; life: number; max: number; color: string };
+export type Blast = Vec & { radius: number; life: number; max: number; color: string; coneAngle?: number };
 export type Gem = Vec & { value: number; life: number; heart: boolean };
 export type Particle = Vec & { vx: number; vy: number; life: number; max: number; color: string; size: number };
 export type Float = Vec & { label: string; life: number; color: string };
@@ -37,7 +38,7 @@ export type Run = {
   level: number; xp: number; need: number; score: number; kills: number; upgrades: Record<SupportId, number>;
   enemies: Enemy[]; bullets: Bullet[]; gems: Gem[]; particles: Particle[]; texts: Float[];
   shot: number; spawn: number; pulseCd: number; pulseRing: number; shake: number; nextId: number; boss: boolean;
-  choices: Upgrade[]; sounds: ('launch' | 'hit' | 'destroy' | 'wave' | 'impact' | 'critical' | 'switch' | 'pickup' | 'dash')[]; random: () => number;
+  choices: Upgrade[]; sounds: SoundEvent[]; random: () => number;
   variant: VariantId; weaponNotice: number;
   readonly weapon: WeaponId; cooldowns: Record<WeaponId, number>; aim: number; recoil: number; sweep: number; blasts: Blast[];
   enchants: Record<WeaponId, Enchantments>; leechCd: Record<WeaponId, number>; arcs: { from: Vec; to: Vec; life: number }[];
@@ -49,6 +50,11 @@ export type Run = {
 };
 export const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 const dist = (a: Vec, b: Vec): number => Math.hypot(a.x - b.x, a.y - b.y);
+export const CLUSTER_CONE_HALF_ANGLE = 32 * Math.PI / 180;
+const CLUSTER_CONE_REACH = 112;
+const CLUSTER_CONE_COS = Math.cos(CLUSTER_CONE_HALF_ANGLE);
+const CLUSTER_DAMAGE_PER_RANK = .14;
+const MINI_MINE_TRIGGER = 24;
 export function createRun(random = Math.random, weapon: WeaponId = 'pistol', variant: VariantId = STARTERS[weapon]): Run {
   return {
     phase: 'playing', time: 0, player: { x: 1000, y: 1000 }, facing: 1, moving: false,
@@ -72,10 +78,19 @@ export function switchVariant(r: Run, id?: VariantId): boolean {
   r.variant = next; r.weaponNotice = 2.2; r.shot = Math.max(.18, r.cooldowns[r.weapon]);
   r.recoil = 0; r.sweep = 0; r.heat = 0; sound(r, 'switch'); return true;
 }
-function explode(r: Run, b: Bullet): void {
-  const radius = ((armamentOf(b.variant ?? STARTERS[b.kind]).radius || 82) + r.upgrades.spread * 7) * (b.secondary ? .58 : 1) * (r.profession === 'rocket' ? 1.1 : 1);
+function addBlast(r: Run, blast: Blast): void {
   if (r.blasts.length >= LIMITS.blasts) r.blasts.shift();
-  r.blasts.push({ x: b.x, y: b.y, radius, life: .5, max: .5, color: '#ff86ab' });
+  r.blasts.push(blast);
+}
+
+function explode(r: Run, b: Bullet): void {
+  const arm = armamentOf(b.variant ?? STARTERS[b.kind]);
+  const radiusScale = b.secondary ? (arm.id === 'mine' ? .55 : .58) : 1;
+  const radius = ((arm.radius || 82) + r.upgrades.spread * 7) * radiusScale * (r.profession === 'rocket' ? 1.1 : 1);
+  const clusterRank = b.secondary ? 0 : (b.specs?.cluster ?? 0);
+  const angle = Math.atan2(b.vy, b.vx);
+  const coneTargets = clusterRank && arm.id === 'launcher' ? clusterConeTargets(r, b, angle) : [];
+  addBlast(r, { x: b.x, y: b.y, radius, life: .5, max: .5, color: '#ff86ab' });
   let killed = false;
   // A primary explosion chain hits each enemy once; independent secondary blasts
   // may overlap, but cannot start another chain or generate cluster children.
@@ -86,13 +101,49 @@ function explode(r: Run, b: Bullet): void {
     applyImpact(r, e, b); b.damage = baseDamage; killed ||= e.hp <= 0; const d = Math.max(1, dist(e, b));
     e.x = clamp(e.x + (e.x - b.x) / d * 24, 40, WORLD - 40); e.y = clamp(e.y + (e.y - b.y) / d * 24, 40, WORLD - 40);
   }
-  if (!b.secondary && b.specs?.embers && r.fields.length < LIMITS.fields) r.fields.push({ x: b.x, y: b.y, radius: radius * .75, life: 3, tick: .4, damage: b.specs.embers * 9 });
-  if (!b.secondary && b.specs?.cluster) for (let i = 0; i < 3 && r.bullets.length < LIMITS.bullets; i++) {
-    const a = i * Math.PI * 2 / 3; r.bullets.push({ x: b.x + Math.cos(a) * 15, y: b.y + Math.sin(a) * 15, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, life: .4, damage: b.damage * .14 * b.specs.cluster, radius: 5, kind: 'rocket', hits: [], secondary: true });
+  if (!b.secondary && b.specs?.embers && r.fields.length < LIMITS.fields) {
+    const linked = classLinkActive('rocket', b.specs);
+    r.fields.push({ x: b.x, y: b.y, radius: radius * .75, life: linked ? 4 : 3, tick: .4, damage: b.specs.embers * 9 });
+    if (linked) label(r, b, CLASS_LINKS.rocket.name, '#ffb883');
+  }
+  if (clusterRank) {
+    const damage = b.damage * CLUSTER_DAMAGE_PER_RANK * clusterRank;
+    if (arm.id === 'launcher') {
+      for (const target of coneTargets) hurt(r, target, damage);
+      addBlast(r, {
+        x: b.x, y: b.y, radius: CLUSTER_CONE_REACH, life: .32, max: .32, color: '#ffe098', coneAngle: angle,
+      });
+    } else {
+      spawnClusterCharges(r, b, damage, arm.id === 'mine');
+    }
   }
   if (killed && !b.secondary && b.specs?.fuse) { ring(r, b, radius * 1.3, '#e5b77b'); for (const e of r.enemies) if (e.hp > 0 && dist(b, e) < radius * 1.3) hurt(r, e, b.damage * .2 * b.specs.fuse); }
-  burst(r, b, '#ffbe45', 18); label(r, b, '噗嘭！', '#fff3ba'); r.shake = Math.min(5, r.shake + 2); sound(r, 'wave');
+  burst(r, b, '#ffbe45', 18); label(r, b, '噗嘭！', '#fff3ba'); r.shake = Math.min(5, r.shake + 2); sound(r, 'blast');
 }
+function clusterConeTargets(r: Run, origin: Vec, angle: number): Enemy[] {
+  const forwardX = Math.cos(angle), forwardY = Math.sin(angle);
+  return r.enemies.filter(enemy => {
+    if (enemy.hp <= 0) return false;
+    const dx = enemy.x - origin.x, dy = enemy.y - origin.y;
+    const distance = Math.hypot(dx, dy);
+    return distance <= CLUSTER_CONE_REACH && dx * forwardX + dy * forwardY >= distance * CLUSTER_CONE_COS;
+  });
+}
+
+function spawnClusterCharges(r: Run, origin: Vec, damage: number, mines: boolean): void {
+  for (let i = 0; i < 3 && r.bullets.length < LIMITS.bullets; i++) {
+    const angle = i * Math.PI * 2 / 3;
+    const x = Math.cos(angle), y = Math.sin(angle);
+    r.bullets.push(mines ? {
+      x: clamp(origin.x + x * 62, 40, WORLD - 40), y: clamp(origin.y + y * 62, 40, WORLD - 40),
+      vx: 0, vy: 0, life: 5, delay: .35, damage, radius: 5, kind: 'rocket', variant: 'mine', hits: [], secondary: true,
+    } : {
+      x: origin.x + x * 15, y: origin.y + y * 15, vx: x * 200, vy: y * 200,
+      life: .4, damage, radius: 5, kind: 'rocket', variant: 'launcher', hits: [], secondary: true,
+    });
+  }
+}
+
 function sound(r: Run, s: Run['sounds'][number]): void { if (r.sounds.length < 12) r.sounds.push(s); }
 function burst(r: Run, p: Vec, color: string, n = 8): void {
   for (let i = 0; i < n; i++) {
@@ -117,7 +168,7 @@ function drop(r: Run, p: Vec, value: number, heart = false): void {
 function hurt(r: Run, e: Enemy, damage: number): void {
   if (e.hp <= 0) return;
   r.damageDealt += Math.min(e.hp, damage);
-  e.hp -= damage; e.flash = .1;
+  e.hp -= damage; e.flash = .12;
   label(r, e, String(Math.round(damage)), '#fffaf0');
   burst(r, e, '#f8df9c', 2); sound(r, 'impact');
   if (e.hp > 0) return;
@@ -130,22 +181,23 @@ function hurt(r: Run, e: Enemy, damage: number): void {
   sound(r, 'destroy');
 }
 function ring(r: Run, p: Vec, radius: number, color: string): void {
-  if (r.blasts.length >= LIMITS.blasts) r.blasts.shift();
-  r.blasts.push({ x: p.x, y: p.y, radius, color, life: .4, max: .4 });
+  addBlast(r, { x: p.x, y: p.y, radius, color, life: .4, max: .4 });
 }
 function applyImpact(r: Run, e: Enemy, b: Bullet): void {
   if (e.hp <= 0) return;
   const t = b.traits ?? emptyEnchantments(), chilled = (e.chill ?? 0) > 0;
   const s = b.specs;
   const critChance = (t.crit > 0 ? .1 + t.crit * .08 : 0) + (b.kind === 'pistol' ? (s?.deadeye ?? 0) * .1 : 0);
-  const critical = !b.secondary && critChance > 0 && r.random() < critChance;
+  const exposed = b.kind === 'pistol' && s && e.hp / e.max < .35 && classLinkActive('pistol', s);
+  const chance = critChance + (exposed ? .15 : 0);
+  const critical = !b.secondary && chance > 0 && r.random() < chance;
   const fresh = r.profession === 'pistol' && b.kind === 'pistol' && e.hp / e.max > .8 ? 1.12 : 1;
   const execute = b.kind === 'pistol' && e.hp / e.max < .35 ? 1 + (s?.execute ?? 0) * .35 : 1;
   hurt(r, e, b.damage * (critical ? 1.7 : 1) * fresh * execute);
   if (!b.secondary && b.kind === 'pistol') { const a = Math.atan2(b.vy, b.vx); e.x += Math.cos(a) * 4; e.y += Math.sin(a) * 4; }
   if (!b.secondary && b.kind === 'wand' && s?.gravity) for (const other of r.enemies) if (other !== e && other.hp > 0 && dist(other, e) < 100) { const d = Math.max(1, dist(other, e)), push = Math.min(d, 6 * s.gravity); other.x += (e.x - other.x) / d * push; other.y += (e.y - other.y) / d * push; }
   if (b.secondary) return;
-  if (critical) { label(r, e, 'CRITICAL!', '#ffe675'); sound(r, 'critical'); r.shake = Math.max(r.shake, 2); if (r.hitStopCd <= 0) { r.hitStop = .035; r.hitStopCd = .18; } }
+  if (critical) { label(r, e, exposed ? CLASS_LINKS.pistol.name : '暴击！', '#ffe675'); sound(r, 'critical'); r.shake = Math.max(r.shake, 2); if (r.hitStopCd <= 0) { r.hitStop = .035; r.hitStopCd = .18; } }
   if (t.burn) {
     const arm = armamentOf(b.variant ?? STARTERS[b.kind]);
     const dps = arm.damage * arm.count / arm.interval * (.1 + t.burn * .05);
@@ -206,7 +258,9 @@ export function upgradeRank(r: Run, u: Upgrade): number {
 export function rollChoices(r: Run, avoid: UpgradeId[] = []): Upgrade[] {
   const shuffle = <T>(pool: T[]): T[] => { for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(r.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } return pool; };
   const w = r.weapon;
-  const traits: Upgrade[] = shuffle(SPECIALS.filter(s => s.weapon === w && r.specials[s.id] < 3)).sort((a,b) => Number(avoid.includes(a.id)) - Number(avoid.includes(b.id))).map(s => ({ ...s, tag: `${PROFESSIONS[w].name} · 专属秘术` }));
+  const link = CLASS_LINKS[w];
+  const partner = link.cards.find(id => r.specials[id] === 0 && link.cards.some(other => r.specials[other] > 0));
+  const traits: Upgrade[] = shuffle(SPECIALS.filter(s => s.weapon === w && r.specials[s.id] < 3)).sort((a,b) => Number(avoid.includes(a.id)) - Number(avoid.includes(b.id)) || Number(b.id === partner) - Number(a.id === partner)).map(s => ({ ...s, description: s.id === 'cluster' ? clusterDescription(r.variant) : s.description, tag: `${PROFESSIONS[w].name} · 专属秘术` }));
   const elemental: Upgrade[] = TRAITS.filter(t => CLASS_TRAITS[w].includes(t.id) && r.enchants[w][t.id] < 3).map(t => ({ ...t, weapon:w,tag:`${weaponOf(w).short} · 元素秘术`,description:traitDescription(t.id,w) }));
   const supports = shuffle(UPGRADES.filter(u => !isTrait(u.id) && r.upgrades[u.id] < (u.id === 'power' || u.id === 'rapid' ? 4 : u.id === 'spread' ? 2 : 3)));
   const utilities = shuffle([...supports,...elemental]).sort((a,b) => Number(avoid.includes(a.id)) - Number(avoid.includes(b.id)));
@@ -281,7 +335,7 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
   }
   for (const h of r.hazards) {
     const before = h.delay; h.delay -= dt; h.life -= dt;
-    if (before > 0 && h.delay <= 0) { ring(r, h, h.radius, '#e7a6ff'); if (dist(h, r.player) < h.radius && r.invincible <= 0) { r.hp = Math.max(0, r.hp - 16); r.invincible = .7; r.shake = 4; r.damageFlash = .2; sound(r, 'hit'); } }
+    if (before > 0 && h.delay <= 0) { ring(r, h, h.radius, '#e7a6ff'); if (dist(h, r.player) < h.radius && r.invincible <= 0) { r.hp = Math.max(0, r.hp - 16); r.invincible = .7; r.shake = 4; r.damageFlash = .28; sound(r, 'hit'); } }
   }
   r.hazards = r.hazards.filter(h => h.life > 0);
   if (r.time >= 540 && !r.boss) {
@@ -303,6 +357,7 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
       r.recoil = .14;
       r.shotCounts[r.weapon] = shotNumber;
       const specs = { ...r.specials };
+      const linked = classLinkActive(r.weapon, specs);
       let damage = weapon.damage * (1 + r.upgrades.power * .18) / (weapon.mode === 'melee' ? 1 : 1 + r.upgrades.spread * .55);
       if (r.weapon === 'pistol' && shotNumber % 6 === 0 && specs.sixth) { damage *= 1 + specs.sixth * .8; label(r,r.player,'第六发！','#eac383'); }
       if (r.weapon === 'machine') { if (!r.moving) damage *= 1 + specs.stabilizer * .15; if (r.profession === 'machine' && shotNumber % 10 === 0) damage *= 2; }
@@ -326,6 +381,11 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
         }
         if (circular) ring(r,r.player,range,'#a8cdb0');
         if (struck >= 2 && specs.reap && r.leechCd.broom <= 0) { r.hp = Math.min(r.maxHp, r.hp + specs.reap); r.leechCd.broom = 1; }
+        if (circular && linked) label(r, r.player, CLASS_LINKS.broom.name, '#c3ff9a');
+        if (circular && linked) for (const angle of [a + Math.PI / 2, a - Math.PI / 2]) {
+          if (r.bullets.length >= LIMITS.bullets) break;
+          r.bullets.push({ ...r.player, vx: Math.cos(angle) * 380, vy: Math.sin(angle) * 380, damage: damage * .5, radius: 8, life: 1.2, kind: 'broom', hits: [], secondary: true });
+        }
         if (specs.gale) for (let i=0;i<specs.gale && r.bullets.length<LIMITS.bullets;i++) { const angle = a + (i-(specs.gale-1)/2)*.2; r.bullets.push({ ...r.player,vx:Math.cos(angle)*380,vy:Math.sin(angle)*380,damage:damage*.5,radius:8,life:1.2,kind:'broom',hits:[],secondary:true }); }
         if (traits.ricochet && swing.procDone && r.bullets.length < LIMITS.bullets) {
           const blade: Bullet = { ...swing, x: target.x, y: target.y, damage: damage * .4, hits: [target.id], procDone: true };
@@ -344,11 +404,21 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
           r.bullets.push({ ...r.player, ...flight, variant:weapon.id, duration:weapon.life, delay:weapon.id==='burst'?i*.08:weapon.mode==='mine'?.35:0, life:weapon.life, damage:damage*(bonus?.5:1)/(1+twin*.65/weapon.count), radius:r.weapon==='rocket'?9:r.weapon==='wand'?10:5+r.upgrades.power*.4,kind:r.weapon,hits:[],traits,specs,secondary:bonus });
         }
         if (r.weapon === 'broom') {
-          const radial = specs.whirl > 0 && shotNumber % 3 === 0, extra = specs.gale + (radial ? 4 + specs.whirl : 0);
+          const radial = specs.whirl > 0 && shotNumber % 3 === 0, extra = specs.gale + (radial ? 4 + specs.whirl + (linked ? 2 : 0) : 0);
           for(let i=0;i<extra && r.bullets.length<LIMITS.bullets;i++){ const angle=radial?i*Math.PI*2/extra:a+(i-(extra-1)/2)*.2; r.bullets.push({...r.player,vx:Math.cos(angle)*380,vy:Math.sin(angle)*380,damage:damage*.5,radius:8,life:1.2,kind:'broom',hits:[],secondary:true}); }
-          if(radial)ring(r,r.player,70,'#b7c999');
+          if (radial) {
+            ring(r, r.player, 70, '#b7c999');
+            if (linked) label(r, r.player, CLASS_LINKS.broom.name, '#c3ff9a');
+          }
         }
-        if (r.weapon === 'machine' && specs.capacitor && shotNumber % 12 === 0) { ring(r,r.player,180,'#e2cf88'); for(const e of alive) if(e.hp>0 && dist(e,r.player)<180) hurt(r,e,18*specs.capacitor); }
+        if (r.weapon === 'machine' && specs.capacitor) {
+          const overcharged = linked && r.heat >= .75;
+          if (shotNumber % (overcharged ? 8 : 12) === 0) {
+            ring(r, r.player, 180, overcharged ? '#7fffe2' : '#e2cf88');
+            for (const e of alive) if (e.hp > 0 && dist(e, r.player) < 180) hurt(r, e, 18 * specs.capacitor);
+            if (overcharged) label(r, r.player, CLASS_LINKS.machine.name, '#7fffe2');
+          }
+        }
       }
       r.shot = weapon.interval * .9 ** r.upgrades.rapid * (r.weapon === 'machine' ? 1 - specs.spinup * .08 * r.heat : 1);
       r.cooldowns[r.weapon] = r.shot; sound(r, 'launch');
@@ -381,7 +451,7 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
     e.y += (r.player.y - e.y) / d * e.speed * chargeSpeed * slow * dt;
     if (orbits.some(o => dist(o, e) < e.radius + 12) && e.hit <= 0) { hurt(r, e, 16 * (1 + r.upgrades.power * .2)); e.hit = .45; }
     if (e.hp > 0 && d < e.radius + 15 && r.invincible <= 0) {
-      r.hp = Math.max(0, r.hp - (e.kind === 3 ? 28 : e.kind === 2 ? 20 : 12)); r.invincible = .7; r.shake = 4; r.damageFlash = .2;
+      r.hp = Math.max(0, r.hp - (e.kind === 3 ? 28 : e.kind === 2 ? 20 : 12)); r.invincible = .7; r.shake = 4; r.damageFlash = .28;
       burst(r, r.player, '#ef9da6', 12); sound(r, 'hit');
       e.x -= (r.player.x - e.x) / d * 25; e.y -= (r.player.y - e.y) / d * 25;
     }
@@ -404,7 +474,10 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
     if ((b.delay ?? 0) > 0) { b.delay = Math.max(0,b.delay!-dt); if (arm.mode !== 'mine') { b.x=r.player.x;b.y=r.player.y;continue; } }
     if (mode==='mine') {
       b.life-=dt;
-      if ((b.delay??0)<=0 && alive.some(e=>e.hp>0&&dist(e,b)<42+e.radius)) detonate(r,b);
+      const triggerRadius = b.secondary ? MINI_MINE_TRIGGER : 42;
+      if (b.life > 0 && (b.delay ?? 0) <= 0 && alive.some(enemy => enemy.hp > 0 && dist(enemy, b) < triggerRadius + enemy.radius)) {
+        detonate(r, b);
+      }
       continue;
     }
     if (arm.homing === 'seek' && !b.secondary) {
@@ -428,8 +501,12 @@ export function advance(r: Run, delta: number, input: Vec = { x: 0, y: 0 }): voi
       b.hits.push(e.id);
       applyImpact(r, e, b);
       if(b.kind==='broom'&&!b.secondary&&b.hits.length>=2&&b.specs?.reap&&r.leechCd.broom<=0){r.hp=Math.min(r.maxHp,r.hp+b.specs.reap);r.leechCd.broom=1;}
-      if (b.kind === 'wand' && !b.secondary && b.specs?.sigil) b.damage *= 1 + b.specs.sigil * .12;
       const capacity=b.secondary?1:Math.min(8,arm.pierce+(b.kind==='pistol'?(b.specs?.silver??0):0)+(b.kind==='wand'?(b.traits?.ricochet??0)+Number(r.profession==='wand'):0));
+      if (b.kind === 'wand' && !b.secondary && b.specs?.sigil && b.hits.length < capacity) {
+        const linked = classLinkActive('wand', b.specs);
+        b.damage *= 1 + b.specs.sigil * .12 + (linked ? .08 : 0);
+        if (linked && b.hits.length === 1) label(r, e, CLASS_LINKS.wand.name, '#e8afff');
+      }
       if(b.hits.length>=capacity){if(!redirect(r,b))b.life=0;stopped=true;break;}
       if(b.kind==='pistol'||arm.id==='prism')b.damage*=.8;
     }
