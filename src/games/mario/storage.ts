@@ -1,3 +1,4 @@
+import { withStorageWriteLock } from '../../types/storageWrite.ts';
 import { BAIT_LIMIT, CAREER_LIMIT, FISH_CAPACITY, FISH_CATALOG, FISH_MASS, LEGACY_FISH_COUNT, ORDER_CAPACITY, RECIPE_CATALOG, isBaitId, isRecipeId, type FishId } from './catalog.ts';
 import type { AnglingProgress, CatchWeight, FishingOrder, FishingProgress } from './model.ts';
 
@@ -107,31 +108,50 @@ function readScore(raw: string | null) {
   return integer(value, 0, Number.MAX_SAFE_INTEGER) ? value : 0;
 }
 
-export function openFishingStorage(getStorage: () => StorageAccess) {
+export function openFishingStorage(getStorage: () => StorageAccess, onConflict?: () => void) {
+  let baseline: string | null = null;
   let save: Save = {};
   let lastScore = 0;
   try {
     const storage = getStorage();
-    save = decodeSave(storage.getItem(SAVE_KEY) ?? storage.getItem(LEGACY_SAVE_KEY));
+    baseline = storage.getItem(SAVE_KEY) ?? null;
+    save = decodeSave(baseline ?? storage.getItem(LEGACY_SAVE_KEY));
   }
   catch { save = { preserve: true }; } // Don't overwrite a record we could not read.
   try { lastScore = readScore(getStorage().getItem(HIGHSCORE_KEY)); }
   catch { /* In-memory best still works. */ }
   let dirty = false;
+  let pending = false;
+  function changedElsewhere(storage: StorageAccess) {
+    if (save.preserve || (storage.getItem(SAVE_KEY) ?? null) === baseline) return false;
+    save.preserve = true;
+    onConflict?.();
+    return true;
+  }
 
   return {
     progress: save.progress,
     highScore: lastScore,
     markDirty() { dirty = true; },
+    checkForChanges() {
+      try { changedElsewhere(getStorage()); } catch { /* Retry at the next checkpoint. */ }
+    },
     flush(progress: () => FishingProgress, highScore: number) {
-      if (dirty && !save.preserve) {
-        try {
-          const encoded = JSON.stringify(progress());
-          if (new TextEncoder().encode(encoded).length <= SAVE_BYTE_LIMIT) {
-            getStorage().setItem(SAVE_KEY, encoded);
-            dirty = false;
-          }
-        } catch { /* Keep dirty so a later lifecycle checkpoint can retry. */ }
+      if (dirty && !save.preserve && !pending) {
+        pending = true;
+        withStorageWriteLock(SAVE_KEY, () => {
+          try {
+            const storage = getStorage();
+            if (save.preserve || changedElsewhere(storage)) return;
+            const encoded = JSON.stringify(progress());
+            if (new TextEncoder().encode(encoded).length <= SAVE_BYTE_LIMIT) {
+              storage.setItem(SAVE_KEY, encoded);
+              baseline = encoded;
+              dirty = false;
+            }
+          } catch { /* Keep dirty so a later checkpoint can retry. */ }
+          finally { pending = false; }
+        }, () => { pending = false; });
       }
       if (highScore > lastScore) {
         try {

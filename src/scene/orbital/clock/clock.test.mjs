@@ -362,3 +362,16 @@ test('suspended classic audio stays empty, resumes one burst and never revives a
     globalThis.window = previousWindow;
   }
 });
+
+test('clock defaults and in-memory changes survive denial of the storage property itself', () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new DOMException('denied', 'SecurityError'); } });
+  try {
+    const state = clockStateMod.loadClockState();
+    assert.deepEqual(state, clockStateMod.DEFAULT_CLOCK_STATE);
+    assert.doesNotThrow(() => clockStateMod.saveClockState({ ...state, alarmEnabled: true }));
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
+    else delete globalThis.localStorage;
+  }
+});

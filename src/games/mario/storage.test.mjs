@@ -132,3 +132,32 @@ test('write failure retains dirty state for retry and best never replaces a larg
   assert.deepEqual(log, [SAVE_KEY]);
   assert.equal(data.get(HIGHSCORE_KEY), '10');
 });
+
+test('queued writers compare the live save inside the lock and can reopen the winning snapshot', () => {
+  const queue = [];
+  const store = new Map();
+  const access = () => ({ getItem: key => store.get(key) ?? null, setItem: (key, value) => store.set(key, value) });
+  const locks = { request(key, callback) {
+    assert.equal(key, SAVE_KEY);
+    queue.push(callback);
+    return Promise.resolve();
+  } };
+  let conflicts = 0;
+  globalThis.window = { navigator: { locks } };
+  try {
+    const a = openFishingStorage(access);
+    const b = openFishingStorage(access, () => conflicts++);
+    a.markDirty(); b.markDirty();
+    a.flush(() => ({ ...empty(), coins: 20 }), 0);
+    b.flush(() => ({ ...empty(), coins: 10 }), 0);
+    queue.splice(0).forEach(write => write());
+    assert.equal(conflicts, 1);
+    assert.equal(openFishingStorage(access).progress.coins, 20);
+    b.markDirty(); b.flush(empty, 0);
+    assert.equal(queue.length, 0);
+    const fresh = openFishingStorage(access);
+    fresh.markDirty(); fresh.flush(() => ({ ...fresh.progress, coins: 21 }), 0);
+    queue.shift()();
+    assert.equal(openFishingStorage(access).progress.coins, 21);
+  } finally { delete globalThis.window; }
+});

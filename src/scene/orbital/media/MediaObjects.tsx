@@ -1,3 +1,4 @@
+import { recordShooterHighScore } from '../../../types/shooterHighScore';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -26,10 +27,7 @@ const gameModules = import.meta.glob<{ default: React.ComponentType<GameCartridg
 const gameNames: Record<GameId, string> = { mario: '潮汐小馆', shooter: '团团魔法录' };
 
 // Keep the room's persistence independent of the lazily loaded cartridge runtime.
-const highScoreKeys: Record<GameId, string> = {
-  mario: 'pocketworld:mario:highscore:v2',
-  shooter: 'pocketworld:shooter:highscore',
-};
+const fishingHighScoreKey = 'pocketworld:mario:highscore:v2';
 
 function Label({ children, position, width = 180 }: { children: React.ReactNode; position: Point; width?: number }) {
   return <Html center position={position} distanceFactor={4} style={{ pointerEvents: 'none', width, textAlign: 'center', color: '#f3e6c9', font: '12px monospace', textShadow: '0 1px 3px #242723', userSelect: 'none', overflowWrap: 'anywhere' }}><span>{children}</span></Html>;
@@ -225,16 +223,14 @@ export const MediaObjects: React.FC<WorldSceneProps> = props => {
     let best = Math.max(0, current, high);
     if (game === 'mario' && !Number.isSafeInteger(best)) return;
     try {
-      const key = highScoreKeys[game];
-      const raw = localStorage.getItem(key);
-      const stored = Number(raw);
       if (game === 'mario') {
+        const raw = localStorage.getItem(fishingHighScoreKey);
+        const stored = Number(raw);
         // Match the fishing save format; a malformed record must not become a new best.
         if (raw !== null && /^\d{1,16}$/.test(raw) && Number.isSafeInteger(stored)) best = Math.max(best, stored);
-        if (raw !== String(best)) localStorage.setItem(key, String(best));
+        if (raw !== String(best)) localStorage.setItem(fishingHighScoreKey, String(best));
       } else {
-        if (Number.isFinite(stored)) best = Math.max(best, stored);
-        localStorage.setItem(key, String(best));
+        best = recordShooterHighScore(best);
       }
     } catch { /* Scores remain available when storage is disabled. */ }
     setScore(previous => previous.current === current && previous.high === best ? previous : { current, high: best });
