@@ -1213,9 +1213,9 @@ export function OrbitalResidents(props: ResidentsProps) {
         </group>
       </group>
     </CabinFadeGroup>
-    {props.sceneId === 'habitat' && <CabinFadeGroup part="upper">
-      <Suspense fallback={null}><SlipperPair resident={resident} room={slipperRoom.current} reducedMotion={props.reducedMotion} /></Suspense>
-    </CabinFadeGroup>}
+    {props.sceneId === 'habitat' && <Suspense fallback={null}>
+      <SlipperPair resident={resident} room={slipperRoom.current} reducedMotion={props.reducedMotion} />
+    </Suspense>}
     {props.sceneId === 'habitat' && props.loadPlush !== false && <PlushDolls shapes={plushShapes} bodies={plushBodies} grip={plushGrip} world={props} />}
     {props.loadCat !== false && <CabinFadeGroup part="lower">
       <ObjectHandle id="pet" action="pet" hint="和团子互动" world={props} panorama position={[CAT_HOME[0], CAT_MAT_Y, CAT_HOME[1]]}
