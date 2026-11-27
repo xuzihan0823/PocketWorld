@@ -1,4 +1,4 @@
-import { Bone, Box3, Euler, MathUtils, Matrix4, Quaternion, Raycaster, SkinnedMesh, Vector3, type Intersection, type Object3D } from 'three';
+import { Bone, Box3, Euler, MathUtils, Matrix4, Mesh, Quaternion, Raycaster, SkinnedMesh, Vector3, type Intersection, type Object3D } from 'three';
 import { BEDROOM_LEFT, CABIN_DIVIDER_X, PLUSH_FLOOR_BOUNDS, RESIDENT_RADIUS, deckFromAuthoredX } from './cabinLayout.ts';
 import { dollOpen, plushFloorY, plushSupportHeight, type PlushBody, type PlushRect } from './plushMotion.ts';
 import { placeLimbEnd } from './residentRig.ts';
@@ -28,7 +28,24 @@ export function createPlushShape(model: Object3D, height: number) {
   const half = bounds.getSize(new Vector3());
   const scale = height / half.y;
   half.multiplyScalar(scale / 2);
-  return { half, model, origin: bounds.getCenter(new Vector3()), scale };
+  // This is the untouched, static GLTF source, not the moving display clone.
+  // Hundreds of palm-pad rays share these bounds; reject misses before traversing
+  // meshes and transforming their spheres/rays again. Exact Mesh.raycast still
+  // determines every contact, with the original triangles and material sides.
+  const parts: { mesh: Mesh; bounds: Box3 }[] = [];
+  model.traverse(part => {
+    if (!(part instanceof Mesh)) return;
+    if (!part.geometry.boundingBox) part.geometry.computeBoundingBox();
+    parts.push({ mesh: part, bounds: part.geometry.boundingBox!.clone().applyMatrix4(part.matrixWorld) });
+  });
+  const raycast = (ray: Raycaster, hits: Intersection[]) => {
+    for (const { mesh, bounds } of parts) {
+      if (ray.layers.test(mesh.layers) && ray.ray.intersectsBox(bounds)) mesh.raycast(ray, hits);
+    }
+    hits.sort((a, b) => a.distance - b.distance);
+    return hits;
+  };
+  return { half, model, origin: bounds.getCenter(new Vector3()), scale, raycast };
 }
 export type PlushShape = ReturnType<typeof createPlushShape>;
 
@@ -175,7 +192,7 @@ export function createPlushPose(mesh: Object3D) {
             .applyQuaternion(inverse).divideScalar(shape.scale).add(shape.origin);
           ray.set(rayStart, rayDirection);
           hits.length = 0;
-          ray.intersectObject(shape.model, true, hits);
+          shape.raycast(ray, hits);
           if (hits.length) lateral = Math.max(lateral, outside - hits[0].distance * shape.scale
             - side * pad.x + (arm.calibration ? .0015 : i < 2 ? .014 : .006));
         }

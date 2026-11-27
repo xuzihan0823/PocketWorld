@@ -27,6 +27,7 @@ import { createLibraryPlayer, libraryCoverFlow, libraryMotionSample, loadLibrary
 import { readingStand, shelfOrigin, shelfPoint, shelfYaw, slotFor } from './library/catalog';
 import { HIP_HEIGHT as HIP, ResidentModel, type ResidentLeg, type ResidentRig } from './ResidentModel';
 import { WALK_SPEED } from './residentRig';
+import { createResidentFrameClock } from './residentFrameClock';
 import { sampleStairGait, stairFootfall, stairTreadSurface, type StairGait } from './stairGait';
 import { createIdlePlayer, createIdleState, loadYawn, stepIdle, STANDING_IDLE } from './standingIdle';
 import { CHAIR_SIT_SECONDS, createChairMotion, stepChairMotion } from './chairMotion';
@@ -238,6 +239,7 @@ function chairRoute(room: Room, pose: ChairPose, start: Point, target: Point, ex
 /** Keep authored prop coordinates for seating, collision and interaction. The parent places Luna in the stack. */
 export function OrbitalResidents(props: ResidentsProps) {
   const current = useRef(props);
+  const frameClock = useMemo(createResidentFrameClock, []);
   current.current = props;
   const { camera } = useThree();
   const cabinPerformance = useRef<CabinPerformance | null>(null);
@@ -630,7 +632,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       pendingComputer.current = null;
       keys.current.clear();
     };
-    const hide = () => { if (document.hidden) clear(); };
+    const hide = () => { frameClock.reset(); if (document.hidden) clear(); };
     const activity = () => { idleInput.current = true; };
     const dragging = (event: PointerEvent) => { if (event.buttons) activity(); };
     window.addEventListener('pointerdown', activity);
@@ -671,8 +673,10 @@ export function OrbitalResidents(props: ResidentsProps) {
 
   useFrame((_, rawDelta) => {
     const root = resident.current;
-    if (!root) return;
-    const dt = Math.min(Math.max(rawDelta, 0), 0.04);
+    const animationDt = frameClock.step(rawDelta, document.hidden);
+    if (!root || animationDt === 0) return;
+    // Collision and loose-prop integration keep the existing safe movement step.
+    const dt = Math.min(animationDt, 0.04);
     const p = current.current;
     const s = state.current;
     const cabin = cabinMotion.current;
@@ -768,7 +772,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     const canIdle = p.sceneId === 'habitat' && !!rig.current && !p.reducedMotion && !document.hidden;
     const pauseIdle = !p.enabled || !!p.focusedObject;
     const activeSeat = canIdle && (!pauseIdle || (seatIdle.seat === seat && seatIdle.weight > 0)) ? seat : null;
-    const holdSeat = stepSeatedIdle(seatIdle, dt, activeSeat,
+    const holdSeat = stepSeatedIdle(seatIdle, animationDt, activeSeat,
       s.exiting || (settledFloor && floor.leaving) || pauseIdle, cabin.clips);
     if (!p.approachEnabled && cabinPerformance.current) {
       if (cabinPerformance.current.kind === 'plush' && !cabinPerformance.current.placing) plushGrip.current = null;
@@ -782,7 +786,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         const yaw = Math.atan2(grip.floorX - root.position.x, grip.floorZ - root.position.z);
         root.rotation.y = angle(root.rotation.y, yaw, 1 - Math.exp(-dt * 10));
       }
-      if (!holdSeat && advanceCabinPerformance(performance, document.hidden ? 0 : dt * (p.reducedMotion ? 4 : 1), cabin.clips)) {
+      if (!holdSeat && advanceCabinPerformance(performance, animationDt * (p.reducedMotion ? 4 : 1), cabin.clips)) {
         cabinPerformance.current = null;
         p.paperPickup.current = null;
         if (performance.kind === 'plush' && plushGrip.current && performance.placing !== performance.leaving) {
@@ -1192,7 +1196,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         root.rotation.y, frameDx, frameDz, stairGait?.phase ?? s.walkTime);
       rig.current.applyArmCorrectives(!interactionPose && !libraryActive && !plushGrip.current);
     }
-    if (library && rig.current) library.tick(dt);
+    if (library && rig.current) library.tick(animationDt);
     rig.current?.updateSleeveContact?.();
     root.userData.onStairs = !!stairSample;
     root.userData.posture = s.exiting ? 'standing-up' : s.posture;

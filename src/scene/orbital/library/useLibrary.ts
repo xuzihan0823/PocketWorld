@@ -103,29 +103,38 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
     setView({ ...s });
   }, []);
   const tick = useCallback((dt: number) => {
-    const s = flow.current, clips = motion.current;
-    const duration = (clips && libraryMotionDuration(clips, s)) ?? times[s.phase];
-    if (!duration) return;
-    // Compress the authored interaction modestly so reduced motion does not skip its foot plants and handoff.
-    const rate = clips && s.book && s.phase !== 'shelving' ? .8 : .5;
-    const seconds = live.current.reducedMotion ? Math.max(.28, duration * rate) : duration;
-    s.progress = Math.min(1, s.progress + Math.min(dt, .04) / seconds);
-    if (s.progress < 1) return;
-    switch (s.phase) {
-      case 'prepare': if (s.exit) finishExit(); else update({ phase: 'approach' }); break;
-      case 'reach': update({ phase: 'extract' }); break;
-      case 'extract': update({ phase: 'carry' }); break;
-      case 'carry': update({ phase: 'open' }); break;
-      case 'open': update({ phase: s.exit || s.closeRequested ? 'close' : 'reading' }); break;
-      case 'turn': update({ page: s.targetPage, phase: s.exit || s.closeRequested ? 'close' : 'reading' }); void commitAnchor(); break;
-      case 'close': update({ phase: 'return-carry' }); break;
-      case 'return-carry': update({ phase: 'insert' }); break;
-      case 'insert': update({ phase: 'release' }); break;
-      case 'release': {
-        if (pendingData.current) { dataRef.current = pendingData.current; setData(pendingData.current); pendingData.current = null; }
-        update({ phase: 'recenter', book: null, pages: [] }); break;
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    // The resident clock supplies visible elapsed time, independently of collision.
+    // Carry the remainder across timed phases so low FPS cannot stretch each handoff.
+    let remaining = dt;
+    while (remaining > 0) {
+      const s = flow.current, clips = motion.current;
+      const duration = (clips && libraryMotionDuration(clips, s)) ?? times[s.phase];
+      if (!duration) return; // Walking and reading wait for explicit input/arrival.
+      // Compress the authored interaction modestly so reduced motion does not skip its foot plants and handoff.
+      const rate = clips && s.book && s.phase !== 'shelving' ? .8 : .5;
+      const seconds = live.current.reducedMotion ? Math.max(.28, duration * rate) : duration;
+      const left = (1 - s.progress) * seconds;
+      if (remaining < left) { s.progress += remaining / seconds; return; }
+      remaining -= left;
+      s.progress = 1;
+      switch (s.phase) {
+        case 'prepare': if (s.exit) finishExit(); else update({ phase: 'approach' }); break;
+        case 'reach': update({ phase: 'extract' }); break;
+        case 'extract': update({ phase: 'carry' }); break;
+        case 'carry': update({ phase: 'open' }); break;
+        case 'open': update({ phase: s.exit || s.closeRequested ? 'close' : 'reading' }); break;
+        case 'turn': update({ page: s.targetPage, phase: s.exit || s.closeRequested ? 'close' : 'reading' }); void commitAnchor(); break;
+        case 'close': update({ phase: 'return-carry' }); break;
+        case 'return-carry': update({ phase: 'insert' }); break;
+        case 'insert': update({ phase: 'release' }); break;
+        case 'release': {
+          if (pendingData.current) { dataRef.current = pendingData.current; setData(pendingData.current); pendingData.current = null; }
+          update({ phase: 'recenter', book: null, pages: [] }); break;
+        }
+        case 'shelving': update({ phase: 'catalog', book: null }); break;
+        default: return;
       }
-      case 'shelving': update({ phase: 'catalog', book: null }); break;
     }
   }, [commitAnchor, update, finishExit]);
   const arrived = useCallback((success = true) => {
