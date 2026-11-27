@@ -10,7 +10,7 @@ const compiledApp = ts.transpileModule(appSource, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true },
 }).outputText;
 
-function mountApp({ presetCount = 4, focusedObject = 'music-player', initialViewMode = 'cabin', blockedAutoplay = false } = {}) {
+function mountApp({ presetCount = 4, focusedObject = 'music-player', initialViewMode = 'cabin' } = {}) {
   const slots = [];
   let cursor = 0, dirty = true, tree;
   const effects = [];
@@ -74,16 +74,16 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player', initialView
     getSnapshot: () => audioSnapshot,
     unlock: async () => true,
     prepareMusic: disc => preparedDiscs.push(disc),
-    async startMusic(disc, options) {
-      starts.push({ disc, options });
+    async startMusic(disc) {
+      starts.push(disc);
       audioSnapshot.status = 'starting';
       await Promise.resolve();
-      Object.assign(audioSnapshot, { disc, status: blockedAutoplay ? 'idle' : 'playing', isPlaying: !blockedAutoplay });
+      Object.assign(audioSnapshot, { disc, status: 'playing', isPlaying: true });
       dirty = true;
-      return !blockedAutoplay;
+      return true;
     },
     pauseMusic() { audioSnapshot.status = 'paused'; audioSnapshot.isPlaying = false; dirty = true; },
-    resumeMusic: async () => true,
+    resumeMusic: () => roomAudio.startMusic(audioSnapshot.disc),
     stopMusic() {},
     setMuted() {},
   };
@@ -181,13 +181,10 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player', initialView
     revokedUrls,
     preparedDiscs,
     starts,
-    audioSnapshot,
-    pauseMusic: roomAudio.pauseMusic,
-    set blocked(value) { blockedAutoplay = value; },
     view(mode) { find(n => n.type === 'OrbitalScene').props.onViewModeChange(mode); render(); },
     gesture(type) { target.dispatchEvent(new Event(type)); render(); },
     async settle() { await Promise.resolve(); await Promise.resolve(); render(); },
-    async flushAutoplay() {
+    async flushTimers() {
       for (const [id, timer] of [...timers]) if (timer.delay === 0) { timers.delete(id); timer.fn(); }
       await Promise.resolve(); await Promise.resolve(); render();
     },
@@ -255,59 +252,42 @@ test('App caps local music imports at the 6 vinyl rack slots for both click and 
   }
 });
 
-test('cabin entry autoplays the default record once and respects a later manual pause across reentry', async () => {
-  const app = mountApp({ initialViewMode: 'orbit' });
+test('cabin entry and ordinary pointer or keyboard gestures never start music', async () => {
+  for (const initialViewMode of ['orbit', 'cabin']) {
+    const app = mountApp({ initialViewMode });
+    try {
+      await app.flushTimers();
+      app.gesture('pointerdown'); app.gesture('keydown');
+      app.view('cabin');
+      await app.flushTimers();
+      app.gesture('pointerdown'); app.gesture('keydown');
+      app.view('orbit'); app.view('cabin');
+      await app.flushTimers();
+      assert.equal(app.starts.length, 0);
+      assert.equal(app.scene().props.isMusicPlaying, false);
+    } finally { app.dispose(); }
+  }
+});
+
+test('manual record selection starts music and manual pause survives reentry until resumed', async () => {
+  const app = mountApp();
   try {
-    await app.flushAutoplay();
-    app.gesture('pointerdown');
-    assert.equal(app.starts.length, 0);
-    app.view('cabin');
-    await app.flushAutoplay();
+    const disc = app.scene().props.discs[1];
+    app.scene().props.onSelectDisc(disc);
+    await app.settle();
     assert.equal(app.starts.length, 1);
-    assert.equal(app.starts[0].disc.id, 'preset-0');
-    assert.equal(app.starts[0].options.autoplay, true);
+    assert.equal(app.starts[0].id, disc.id);
     assert.equal(app.scene().props.isMusicPlaying, true);
-    app.pauseMusic();
-    app.gesture('keydown');
+    app.scene().props.onToggleMusic();
+    app.gesture('pointerdown'); app.gesture('keydown');
     app.view('orbit'); app.view('cabin');
-    await app.flushAutoplay();
+    await app.flushTimers();
     assert.equal(app.starts.length, 1);
     assert.equal(app.scene().props.isMusicPlaying, false);
-  } finally { app.dispose(); }
-});
-
-test('blocked autoplay retries on pointer and keyboard gestures without overlapping requests', async () => {
-  const app = mountApp({ blockedAutoplay: true });
-  try {
-    await app.flushAutoplay();
-    assert.equal(app.starts.length, 1);
-    app.gesture('pointerdown'); app.gesture('keydown');
+    app.scene().props.onToggleMusic();
+    await app.settle();
     assert.equal(app.starts.length, 2);
-    await app.settle();
-    app.blocked = false;
-    app.gesture('keydown');
-    await app.settle();
-    assert.equal(app.starts.length, 3);
+    assert.equal(app.starts[1].id, disc.id);
     assert.equal(app.scene().props.isMusicPlaying, true);
-    app.gesture('pointerdown');
-    assert.equal(app.starts.length, 3);
   } finally { app.dispose(); }
-});
-
-test('manual pause or another selected record cancels pending autoplay and unmount removes retries', async () => {
-  for (const status of ['paused', 'playing']) {
-    const app = mountApp({ blockedAutoplay: true });
-    await app.flushAutoplay();
-    Object.assign(app.audioSnapshot, { status, isPlaying: status === 'playing', disc: { id: 'manual-record' } });
-    app.gesture('pointerdown');
-    await app.settle();
-    assert.equal(app.starts.length, 1);
-    app.dispose();
-    app.gesture('keydown');
-    assert.equal(app.starts.length, 1);
-  }
-  const app = mountApp();
-  app.dispose();
-  await app.flushAutoplay();
-  assert.equal(app.starts.length, 0);
 });

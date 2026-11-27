@@ -50,7 +50,6 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const fileInput = useRef<HTMLInputElement>(null);
   const ownedUrls = useRef<string[]>([]);
   const enteredFromUrl = useRef(false);
-  const autoMusicDone = useRef(false);
   const inputDepth = useRef(0);
   const hintTimer = useRef<number>();
   const onFeatureError = useCallback((message: string) => {
@@ -116,30 +115,6 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     }
     setBoosting(active);
   }, []);
-  useEffect(() => {
-    if (viewMode !== 'cabin' || autoMusicDone.current) return;
-    let disposed = false;
-    let pending = false;
-    const start = () => {
-      if (disposed || pending || autoMusicDone.current) return;
-      const current = roomAudio.getSnapshot();
-      if (current.status !== 'idle') { autoMusicDone.current = true; return; }
-      pending = true;
-      void roomAudio.startMusic(current.disc, { autoplay: true }).then(started => {
-        pending = false;
-        if (!disposed && (started || roomAudio.getSnapshot().status !== 'idle')) autoMusicDone.current = true;
-      });
-    };
-    const timer = window.setTimeout(start, 0);
-    window.addEventListener('pointerdown', start, true);
-    window.addEventListener('keydown', start, true);
-    return () => {
-      disposed = true;
-      window.clearTimeout(timer);
-      window.removeEventListener('pointerdown', start, true);
-      window.removeEventListener('keydown', start, true);
-    };
-  }, [viewMode]);
   useEffect(() => {
     if (enteredFromUrl.current || new URLSearchParams(window.location.search).get('game') !== 'ski') return;
     // Wait for the final StrictMode mount before starting the computer transaction.
