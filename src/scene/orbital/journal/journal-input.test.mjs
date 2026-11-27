@@ -86,6 +86,60 @@ test('journal arrows outside editable controls still turn the book', () => {
   } finally { fixture.cleanup(); }
 });
 
+function appKeyboard(focusedObject = 'journal') {
+  const source = ts.createSourceFile('App.tsx', readFileSync(new URL('../../../App.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let handler;
+  const visit = node => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'down' && node.initializer) handler = node.initializer.getText(source);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  assert.ok(handler, 'App keyboard handler must exist');
+  const target = new HTMLElement('TEXTAREA');
+  let returns = 0;
+  const down = vm.runInNewContext(ts.transpileModule(`(${handler})`, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, {
+    HTMLElement, document: { activeElement: target }, cleaningRef: { current: 'idle' }, viewMode: 'cabin', activeGame: null,
+    world: { focusedObject, onReturn() { returns++; } }, library: { flow: { current: { phase: 'idle' } } },
+    roomAudio: { getSnapshot: () => ({ isMuted: false }), setMuted() { throw new Error('Typing must not toggle mute'); } },
+  });
+  return {
+    target,
+    get returns() { return returns; },
+    key(code, options = {}) {
+      const event = { target, code, preventDefault() { this.defaultPrevented = true; }, ...options };
+      down(event);
+      return event;
+    },
+  };
+}
+
+test('Escape returns from focused journal text and date fields', () => {
+  for (const tagName of ['TEXTAREA', 'INPUT']) {
+    const fixture = appKeyboard();
+    fixture.target.tagName = tagName;
+    assert.equal(fixture.key('Escape').defaultPrevented, true);
+    assert.equal(fixture.returns, 1);
+    assert.equal(fixture.target.blurs, 1);
+  }
+});
+
+test('journal composition and ordinary editing retain their keyboard events', () => {
+  const fixture = appKeyboard();
+  for (const [code, options] of [['Escape', { isComposing: true }], ['Escape', { keyCode: 229 }], ['ArrowLeft', {}], ['ArrowRight', {}], ['KeyM', {}], ['KeyE', {}]]) {
+    assert.equal(fixture.key(code, options).defaultPrevented, undefined);
+  }
+  assert.equal(fixture.returns, 0);
+  assert.equal(fixture.target.blurs, 0);
+  assert.equal(fixture.key('Escape', { defaultPrevented: true }).defaultPrevented, true);
+  assert.equal(fixture.returns, 0);
+});
+
+test('journal Escape exception does not change other feature input handling', () => {
+  const fixture = appKeyboard('schedule');
+  assert.equal(fixture.key('Escape').defaultPrevented, undefined);
+  assert.equal(fixture.returns, 0);
+});
+
 function descendants(node) {
   if (Array.isArray(node)) return node.flatMap(descendants);
   if (!node || typeof node !== 'object') return [];
