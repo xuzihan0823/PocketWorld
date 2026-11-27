@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Group, Mesh, MeshStandardMaterial } from 'three';
+import { Group, Mesh, MeshStandardMaterial, Texture } from 'three';
 import * as cutaway from './cabinCutaway.ts';
-const { cabinDeckOpacity, quickCabinFrame } = cutaway;
+const { cabinDeckOpacity, collectZoomFades, quickCabinFrame } = cutaway;
 
 test('single-floor framing hides the other room while overview shows both', () => {
   assert.deepEqual(cabinDeckOpacity('overview', 0), { lower: 1, upper: 1 });
@@ -104,4 +104,77 @@ test('quick travel conceals Luna and the old room at relocation on either deck',
     assert.equal(relocation[from], 0);
     assert.deepEqual(end, { ...cabinDeckOpacity(to, 1), resident: 1, relocate: true });
   }
+});
+
+test('faded materials stay cached across fade cycles, sync dynamic maps, and dispose cleanly on teardown', () => {
+  const room = new Group();
+  const original = new MeshStandardMaterial({ color: '#f5f0e1' });
+  const customHook = () => {};
+  const customKey = () => 'custom-fade-key';
+  original.onBeforeCompile = customHook;
+  original.customProgramCacheKey = customKey;
+  const mesh = new Mesh(undefined, original);
+  room.add(mesh);
+
+  const fade = cutaway.createCabinGroupFade();
+  fade.set(room, .4);
+  const firstFaded = mesh.material;
+  let disposed = 0;
+  firstFaded.addEventListener('dispose', () => { disposed += 1; });
+  assert.equal(firstFaded.onBeforeCompile, customHook);
+  assert.equal(firstFaded.customProgramCacheKey, customKey);
+
+  // Returning to 0 or 1 restores the original without evicting the compiled faded material.
+  fade.set(room, 0);
+  assert.equal(mesh.material, original);
+  assert.equal(disposed, 0);
+
+  // Dynamic map/color updates made while opaque are synchronized on the next fade.
+  const tex = new Texture();
+  original.map = tex;
+  original.color.set('#ffffff');
+  fade.set(room, .6);
+  assert.equal(mesh.material, firstFaded);
+  assert.equal(firstFaded.map, tex);
+  assert.equal(firstFaded.color.getHexString(), 'ffffff');
+  assert.equal(firstFaded.opacity, .6);
+
+  fade.set(room, 1);
+  assert.equal(mesh.material, original);
+  assert.equal(disposed, 0);
+
+  // Disposing the original material also frees its cached faded clone.
+  original.dispose();
+  assert.equal(disposed, 1);
+
+  // Disposing the fade controller cleans up remaining cached clones.
+  const other = new MeshStandardMaterial();
+  const otherMesh = new Mesh(undefined, other);
+  room.add(otherMesh);
+  fade.set(room, .5);
+  const otherFaded = otherMesh.material;
+  let otherDisposed = 0;
+  otherFaded.addEventListener('dispose', () => { otherDisposed += 1; });
+  fade.dispose();
+  assert.equal(otherMesh.material, other);
+  assert.equal(otherDisposed, 1);
+  tex.dispose();
+  other.dispose();
+});
+
+test('collectZoomFades selects ordered framebuffer fade layers without cloning materials', () => {
+  assert.deepEqual(collectZoomFades({ lower: 1, upper: 1, resident: .5, interior: 1 }), ['resident']);
+  assert.deepEqual(collectZoomFades({ lower: 1, upper: .4, resident: 1, interior: 1 }), ['upper']);
+  assert.deepEqual(collectZoomFades({ lower: .4, upper: 1, resident: 1, interior: 1 }), ['lower']);
+  assert.deepEqual(collectZoomFades({ lower: 1, upper: 1, resident: 0, interior: 1 }), []);
+  assert.deepEqual(collectZoomFades({ lower: 1, upper: 1, resident: 1, interior: 1 }), []);
+  assert.deepEqual(
+    collectZoomFades({ lower: .3, upper: .6, resident: .5, interior: 1 }, ['lower', 'upper', 'resident']),
+    ['lower', 'upper', 'resident'],
+  );
+  assert.deepEqual(
+    collectZoomFades({ lower: .6, upper: .3, resident: .5, interior: 1 }, ['upper', 'lower', 'resident']),
+    ['upper', 'lower', 'resident'],
+  );
+  assert.deepEqual(collectZoomFades({ lower: 1, upper: .5, resident: 1, interior: .8 }), []);
 });

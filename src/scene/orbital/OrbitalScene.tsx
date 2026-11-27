@@ -11,7 +11,7 @@ import { roomAudio } from '../audioEngine';
 import { CAMERA_FOV, HOME_TARGET, HOME_ZOOM, OUTFIT_TARGET, outfitCameraPosition, cabinCameraFrame, stairCameraFrames, type CabinView } from './cabinView';
 import { CabinFadeGroup, CabinOpacityContext, CabinUpperDeck } from './CabinUpperDeck';
 import { CabinZoomRenderer } from './CabinZoomRenderer';
-import { cabinDeckOpacity, cabinZoomIsolation, quickCabinFrame, QUICK_CABIN_DURATION, type CabinOpacity } from './cabinCutaway';
+import { cabinDeckOpacity, cabinZoomIsolation, collectZoomFades, quickCabinFrame, QUICK_CABIN_DURATION, type CabinOpacity, type CabinZoomFadePart } from './cabinCutaway';
 import { BedroomGuard, CabinStaircase } from './CabinStructure';
 import { stairApproachPoint, stairLanding, type CabinResidentView } from './cabinStairs';
 import { Cosmos, createSunState, type SunState } from './Cosmos';
@@ -81,7 +81,7 @@ interface OrbitalSceneProps extends WorldSceneProps {
 interface CabinCameraProps {
   cabinView: CabinView;
   viewRevision: number;
-  quickDeck: CabinDeck | null;
+  quickDeckRef: React.MutableRefObject<CabinDeck | null>;
   quickTravel: React.MutableRefObject<((target: CabinDeck) => boolean) | null>;
   onQuickTravelFinish: () => void;
   onQuickTravelTarget: (target: CabinDeck | null) => void;
@@ -247,7 +247,7 @@ function CameraRig(props: CameraRigProps) {
   }, [props.transition.id, props.focusedObject, props.transition.phase === 'error', props.viewMode, size.width, size.height]);
   useFrame((_, delta) => {
     const flight = props.flight;
-    props.deckOpacity.current.zoomFade = null;
+    props.deckOpacity.current.zoomFades.length = 0;
     flight.boosting = props.boosting && (flight.mode === 'orbit' || flight.mode === 'approach');
     const finishedApproach = stepFlightState(flight, delta, props.reducedMotion);
     roomAudio.setThrusterBoost(flight.boost);
@@ -314,13 +314,18 @@ function CameraRig(props: CameraRigProps) {
     if (inHabitat && !locked && !moving.current && !deck.settling && !onStairs && !deck.onStairs
       && !quickFlight.current && deck.viewRevision === props.viewRevision) deck.zoomRatio = zoomRatio;
     const isolation = cabinZoomIsolation(deck.zoomRatio ?? zoomRatio);
-    if (props.quickDeck && inHabitat && !locked) {
-      const nextDeck = props.quickDeck;
+    const nextDeck = props.quickDeckRef.current;
+    if (nextDeck && inHabitat && !locked) {
       controls.current.enabled = false;
       if (!quickFlight.current) {
         fromPosition.current.copy(camera.position);
         fromTarget.current.copy(controls.current.target);
-        quickFlight.current = { elapsed: 0, start: { ...opacity }, zoom: camera instanceof THREE.PerspectiveCamera ? camera.zoom : HOME_ZOOM, moved: false };
+        quickFlight.current = {
+          elapsed: 0,
+          start: { ...opacity },
+          zoom: camera instanceof THREE.PerspectiveCamera ? camera.zoom : HOME_ZOOM,
+          moved: false,
+        };
         moving.current = false;
       }
       const quick = quickFlight.current;
@@ -332,6 +337,8 @@ function CameraRig(props: CameraRigProps) {
       opacity.resident = frame.resident;
       if (frame.relocate && !quick.moved) {
         if (!props.quickTravel.current?.(nextDeck)) {
+          props.quickDeckRef.current = null;
+          quickFlight.current = null;
           deck.settling = true;
           props.onQuickTravelFinish();
           return;
@@ -340,6 +347,9 @@ function CameraRig(props: CameraRigProps) {
         opacity.resident = props.reducedMotion ? 1 : 0;
         props.onCabinViewChange(nextDeck);
       }
+      const leavingDeck: CabinDeck = nextDeck === 'upper' ? 'lower' : 'upper';
+      const fadeOrder: readonly CabinZoomFadePart[] = [leavingDeck, nextDeck, 'resident'];
+      collectZoomFades(opacity, fadeOrder, opacity.zoomFades);
       const blend = easeInOutCubic(progress);
       const end = cabinFrames[nextDeck];
       const eye = stairEye.current.lerpVectors(end.target, end.position, cabinFrameScale(end.distance));
@@ -351,6 +361,8 @@ function CameraRig(props: CameraRigProps) {
       }
       camera.lookAt(controls.current.target);
       if (progress === 1) {
+        props.quickDeckRef.current = null;
+        quickFlight.current = null;
         deck.onStairs = false;
         deck.settling = true;
         props.onQuickTravelFinish();
@@ -378,11 +390,10 @@ function CameraRig(props: CameraRigProps) {
         opacity[part] = Math.abs(next - fade[part]) < .008 ? fade[part] : next;
       }
     }
-    if (inHabitat && !locked && !moving.current && !onStairs && !landed && !deck.settling) {
-      const other = activeDeck === 'lower' ? 'upper' : 'lower';
-      if (opacity[activeDeck] === 1 && opacity[other] > 0 && opacity[other] < 1) opacity.zoomFade = other;
-    }
     opacity.resident = 1;
+    if (inHabitat && !locked && !moving.current && !landed && !deck.settling) {
+      collectZoomFades(opacity, ['lower', 'upper'], opacity.zoomFades);
+    }
     if (!moving.current) {
       const adjusting = inHabitat && !locked && (onStairs || deck.settling);
       controls.current.enabled = !locked && !adjusting;
@@ -557,13 +568,23 @@ function useCabinLoadStage(open: boolean, residentSettled: boolean, entering: bo
   };
 }
 
+// Keep the static Lightformer Environment memoized so React state updates never re-bake the CubeCamera/PMREM.
+const OrbitalEnvironment = React.memo(function OrbitalEnvironment() {
+  return <Environment resolution={128} frames={1}>
+    <Lightformer form="rect" intensity={1.55} color="#faf7f2" position={[0, 5, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[10, 8, 1]} />
+    <Lightformer intensity={0.85} color="#c8e0f6" position={[5, 1, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[5, 4, 1]} />
+  </Environment>;
+});
+
+const OrbitalCosmos = React.memo(Cosmos);
+
 function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpen: boolean; outfitPreview: boolean; shadowSize: number }) {
   const [walkTarget, setWalkTarget] = useState<[number, number, number] | null>(null);
   const deckOpacity = useRef<CabinOpacity>({
     ...cabinDeckOpacity(props.cabinView, props.outfitPreview ? 1 : 0),
     resident: 1,
     interior: props.viewMode === 'cabin' ? 1 : 0,
-    zoomFade: null,
+    zoomFades: [],
   });
   const residentView = useRef<CabinResidentView>({ deck: 'lower', stairAscent: null, stairFrom: null });
   const sofaTime = useRef<number | null>(null);
@@ -604,7 +625,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
   const canWalk = inCabin && !props.cleaning && !props.catMenuOpen && !props.focusedObject && !props.gestureActive
     && (!props.library || props.library.flow.current.phase === 'idle') && ['idle', 'active', 'error'].includes(props.transition.phase);
   const walkTo = (id: WorldSceneId, point: [number, number, number]) => {
-    if (!canWalk || props.cleaning || props.quickDeck || props.sceneId !== id) return;
+    if (!canWalk || props.cleaning || props.quickDeckRef.current || props.sceneId !== id) return;
     void roomAudio.unlock();
     // Crossing decks is a manual stair action: walk to this deck's landing and wait for E.
     setWalkTarget(id === 'habitat' ? stairApproachPoint(residentView.current.deck, [point[0], point[2]]) : point);
@@ -639,11 +660,8 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
     <PerspectiveCamera makeDefault fov={CAMERA_FOV} position={initialCameraPos} near={0.08} far={2000} />
     <CameraRig {...props} flight={flight} residentView={residentView} deckOpacity={deckOpacity} />
     <CabinZoomRenderer opacity={deckOpacity} />
-    <Cosmos reducedMotion={props.reducedMotion} sun={sun} flight={flight} />
-    <Environment resolution={128} frames={1}>
-      <Lightformer form="rect" intensity={1.55} color="#faf7f2" position={[0, 5, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[10, 8, 1]} />
-      <Lightformer intensity={0.85} color="#c8e0f6" position={[5, 1, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[5, 4, 1]} />
-    </Environment>
+    <OrbitalCosmos reducedMotion={props.reducedMotion} sun={sun} flight={flight} />
+    <OrbitalEnvironment />
     <CabinOpacityContext.Provider value={deckOpacity}>
     {(['habitat', 'observatory'] as WorldSceneId[]).map(id => {
       if (id === 'observatory' && !needsObservatory && !visitedObservatory) return null;
@@ -658,7 +676,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
         },
         // A panorama click is a request to walk over; once focused, the props are already in reach.
         onApproach: (point: [number, number, number], action: WorldAction, perform: () => void) => {
-          if (!inCabin || props.quickDeck || id !== props.sceneId) return false;
+          if (!inCabin || props.quickDeckRef.current || id !== props.sceneId) return false;
           if (focusedObject) { perform(); return true; }
           return interaction.current?.(point, action, perform) ?? false;
         },
@@ -724,6 +742,70 @@ const visibleSceneEvents: NonNullable<React.ComponentProps<typeof Canvas>['event
   }),
 });
 
+interface QuickControlsHandle {
+  setTarget: (target: CabinDeck | null) => void;
+  setBusy: (busy: boolean) => void;
+}
+
+function CabinQuickControls({
+  showCabinControls,
+  gestureActive,
+  quickDeckRef,
+  quickTargetRef,
+  controlsRef,
+  onLeaveCabin,
+}: {
+  showCabinControls: boolean;
+  gestureActive: boolean;
+  quickDeckRef: React.MutableRefObject<CabinDeck | null>;
+  quickTargetRef: React.MutableRefObject<CabinDeck | null>;
+  controlsRef: React.MutableRefObject<QuickControlsHandle | null>;
+  onLeaveCabin?: () => void;
+}) {
+  const [quickTarget, setQuickTarget] = useState<CabinDeck | null>(() => quickTargetRef.current);
+  const [busy, setBusy] = useState(() => !!quickDeckRef.current);
+  useEffect(() => {
+    controlsRef.current = { setTarget: setQuickTarget, setBusy };
+    setQuickTarget(quickTargetRef.current);
+    setBusy(!!quickDeckRef.current);
+    return () => { controlsRef.current = null; };
+  }, [controlsRef, quickTargetRef, quickDeckRef]);
+  const canQuickTravel = showCabinControls && !gestureActive && !busy;
+  const triggerQuickTravel = useCallback(() => {
+    if (!canQuickTravel || !quickTarget) return;
+    quickDeckRef.current = quickTarget;
+    setBusy(true);
+  }, [canQuickTravel, quickTarget, quickDeckRef]);
+  useEffect(() => {
+    if (!canQuickTravel || !quickTarget) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyR' || event.repeat || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')) return;
+      event.preventDefault();
+      quickDeckRef.current = quickTarget;
+      setBusy(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [canQuickTravel, quickTarget, quickDeckRef]);
+  useEffect(() => {
+    if (!showCabinControls || gestureActive) {
+      quickDeckRef.current = null;
+      setBusy(false);
+    }
+  }, [showCabinControls, gestureActive, quickDeckRef]);
+  if (!showCabinControls || (!quickTarget && !onLeaveCabin)) return null;
+  return <nav className="orbital-cabin-controls" aria-label="生活舱导航">
+    {quickTarget && <button type="button" className="orbital-flight-pill" aria-keyshortcuts="R"
+      disabled={!canQuickTravel} onClick={triggerQuickTravel}>
+      {quickTarget === 'upper' ? '快速上楼' : '快速下楼'}<kbd className="orbital-keycap" aria-hidden="true">R</kbd>
+    </button>}
+    {onLeaveCabin && <button type="button" className="orbital-flight-pill" aria-keyshortcuts="F" onClick={onLeaveCabin}>
+      出舱巡航<kbd className="orbital-keycap" aria-hidden="true">F</kbd>
+    </button>}
+  </nav>;
+}
+
 export function OrbitalScene(props: OrbitalSceneProps) {
   const container = useRef<HTMLDivElement>(null);
   const [catMenu, setCatMenu] = useState<WorldAction | null>(null);
@@ -746,27 +828,21 @@ export function OrbitalScene(props: OrbitalSceneProps) {
   const maxDpr = sceneMaxDpr(quality.dpr, viewport.width, viewport.height, viewport.dpr);
   const outfitPreview = useMemo(() => props.viewMode === 'cabin' && !!previewOutfit(window.location.search), []);
   const quickTravel = useRef<((target: CabinDeck) => boolean) | null>(null);
-  const [quickTarget, setQuickTarget] = useState<CabinDeck | null>(null);
-  const [quickDeck, setQuickDeck] = useState<CabinDeck | null>(null);
+  const quickDeckRef = useRef<CabinDeck | null>(null);
+  const quickTargetRef = useRef<CabinDeck | null>(null);
+  const quickControlsRef = useRef<QuickControlsHandle | null>(null);
+  const onQuickTravelTarget = useCallback((target: CabinDeck | null) => {
+    quickTargetRef.current = target;
+    quickControlsRef.current?.setTarget(target);
+  }, []);
+  const onQuickTravelFinish = useCallback(() => {
+    quickDeckRef.current = null;
+    quickControlsRef.current?.setBusy(false);
+  }, []);
   const [view, setView] = useState<{ mode: CabinView; revision: number }>({ mode: outfitPreview ? 'lower' : 'overview', revision: 0 });
-  const selectView = (mode: CabinView) => setView(current => ({ mode, revision: current.revision + 1 }));
+  const selectView = useCallback((mode: CabinView) => setView(current => ({ mode, revision: current.revision + 1 })), []);
   const showCabinControls = props.sceneId === 'habitat' && props.viewMode === 'cabin' && !props.cleaning && !props.focusedObject && !catMenu
     && ['idle', 'active', 'error'].includes(props.transition.phase);
-  const canQuickTravel = showCabinControls && !props.gestureActive && !quickDeck;
-  useEffect(() => {
-    if (!canQuickTravel || !quickTarget) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== 'KeyR' || event.repeat || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')) return;
-      event.preventDefault();
-      setQuickDeck(quickTarget);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [canQuickTravel, quickTarget]);
-  useEffect(() => {
-    if (!showCabinControls || props.gestureActive) setQuickDeck(null);
-  }, [showCabinControls, props.gestureActive]);
   useEffect(() => {
     if (props.viewMode === 'cabin') return () => roomAudio.stopCatMeow();
   }, [props.viewMode]);
@@ -816,26 +892,23 @@ export function OrbitalScene(props: OrbitalSceneProps) {
     onDoubleClick={e => { if ((e.target as HTMLElement).tagName === 'CANVAS' && props.focusedObject && !props.activeGame) props.onReturn(); }}>
     <Canvas events={visibleSceneEvents} shadows dpr={[1, maxDpr]} gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
       onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.shadowMap.type = THREE.PCFSoftShadowMap; }}>
-      <AdaptiveQuality paused={!!props.activeGame || props.cleaning || !!quickDeck || !['cabin', 'orbit'].includes(props.viewMode)} onChange={setQualityLevel} />
+      <AdaptiveQuality paused={!!props.activeGame || props.cleaning || !['cabin', 'orbit'].includes(props.viewMode)} pausedRef={quickDeckRef} onChange={setQualityLevel} />
       <WorldContent {...props} catMenuOpen={!!catMenu} outfitPreview={outfitPreview} shadowSize={quality.shadowSize}
-        quickDeck={quickDeck} quickTravel={quickTravel} onQuickTravelFinish={() => setQuickDeck(null)} onQuickTravelTarget={setQuickTarget}
+        quickDeckRef={quickDeckRef} quickTravel={quickTravel} onQuickTravelFinish={onQuickTravelFinish} onQuickTravelTarget={onQuickTravelTarget}
         cabinView={view.mode} viewRevision={view.revision} onCabinViewChange={selectView} onAction={action => {
-          if (quickDeck) return;
+          if (quickDeckRef.current) return;
         if (action.kind === 'pet' && action.objectId === 'pet') setCatMenu(action);
         else props.onAction(action);
       }} />
     </Canvas>
-    {showCabinControls && (quickTarget || props.onLeaveCabin) && (
-      <nav className="orbital-cabin-controls" aria-label="生活舱导航">
-        {quickTarget && <button type="button" className="orbital-flight-pill" aria-keyshortcuts="R"
-          disabled={!canQuickTravel} onClick={() => setQuickDeck(quickTarget)}>
-          {quickTarget === 'upper' ? '快速上楼' : '快速下楼'}<kbd className="orbital-keycap" aria-hidden="true">R</kbd>
-        </button>}
-        {props.onLeaveCabin && <button type="button" className="orbital-flight-pill" aria-keyshortcuts="F" onClick={props.onLeaveCabin}>
-          出舱巡航<kbd className="orbital-keycap" aria-hidden="true">F</kbd>
-        </button>}
-      </nav>
-    )}
+    <CabinQuickControls
+      showCabinControls={showCabinControls}
+      gestureActive={props.gestureActive}
+      quickDeckRef={quickDeckRef}
+      quickTargetRef={quickTargetRef}
+      controlsRef={quickControlsRef}
+      onLeaveCabin={props.onLeaveCabin}
+    />
     {catMenu && <CatInteraction onChoose={choice => {
       setCatMenu(null);
       if (choice) {
