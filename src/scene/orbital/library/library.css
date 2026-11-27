@@ -64,9 +64,6 @@
  .orbital-app:has(.library-surface) .orbital-footer { display:none; }
 }
 
-.library-views { display:flex; gap:6px; margin:0 0 12px; }
-.library-views button { flex:1; padding:6px; }
-.library-views button[aria-pressed=true] { background:#d6ddc9; border-color:#7c8b70; color:#364833; }
 @media(max-height:600px) {
  .library-surface { top:12px; bottom:12px; left:auto; right:12px; width:min(390px,48vw); max-height:none; padding:16px; }
  .library-reading { height:auto; max-height:none; }
