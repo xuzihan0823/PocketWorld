@@ -64,6 +64,8 @@ type ResidentsProps = WorldModelProps & {
   paperPickup: React.MutableRefObject<PaperPickup | null>;
   paperBodies?: React.MutableRefObject<PaperBallBody[]>;
   interaction: React.MutableRefObject<NonNullable<WorldModelProps['onApproach']> | null>;
+  /** Bumped when the trash-can clean-up finishes; loose props return to their authored spots. */
+  cleanTick: number;
 };
 type Approach = { point: Point; height: number; action: WorldAction; perform: () => void; elapsed: number };
 const RADIUS = RESIDENT_RADIUS;
@@ -130,6 +132,7 @@ function interactionAnchor(sceneId: string, objectId: string, point: Point): Poi
   if (objectId === 'cabinet' || objectId === 'cabinet-item') { const [x, , z] = shelfPoint(sceneId, .55, 0, .65); return [x, z]; }
   if (objectId === 'lamp') return sceneId === 'habitat' ? [NIGHTSTAND_X - .11, NIGHTSTAND_Z + .77] : [-1.42, -2.55];
   if (objectId === 'clock') return [NIGHTSTAND_X + .22, NIGHTSTAND_Z + .64];
+  if (objectId === 'trash-can') return [TRASH_CAN.position[0] - .5, TRASH_CAN.position[2]];
   return point;
 }
 /** Solve the ankle target; the independent foot bone keeps the sole level. */
@@ -274,7 +277,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     plushBodies.current = props.sceneId === 'habitat' ? createPlushBodies(PLUSH_DOLLS) : [];
     plushGrip.current = null;
     slipperRoom.current.boxes = room.boxes;
-  }, [props.sceneId, room]);
+  }, [props.sceneId, room, props.cleanTick]);
   const idle = useRef(createIdleState());
   const idleMotion = useRef({ rig: null as ResidentRig | null, player: null as ReturnType<typeof createIdlePlayer> | null,
     clip: null as THREE.AnimationClip | null, loading: false, retryAt: 0 });
@@ -369,6 +372,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       targets.push({ id: 'sofa', kind: 'sit', hint: '坐进懒人沙发', point: SOFA_ENTRY, reach: .85 });
       targets.push({ id: 'rug-seat', kind: 'sit', hint: '坐在地毯上', point: RUG_SEAT, reach: .72 });
       targets.push({ id: 'clock', kind: 'inspect', hint: '设置闹钟', point: [NIGHTSTAND_X + .22, NIGHTSTAND_Z + .64], reach: 0.46 });
+      targets.push({ id: 'trash-can', kind: 'clean', hint: '踩下踏板 · 打扫房间', point: [TRASH_CAN.position[0] - .5, TRASH_CAN.position[2]], reach: .62 });
       targets.push({ id: 'stairs', kind: 'inspect', hint: deck === 'lower' ? '上楼' : '下楼', point: stairLanding(deck), reach: .62 });
     }
     const found = targets
@@ -1240,7 +1244,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       </group>
     </CabinFadeGroup>
     {props.sceneId === 'habitat' && <Suspense fallback={null}>
-      <SlipperPair resident={resident} room={slipperRoom.current} reducedMotion={props.reducedMotion} />
+      <SlipperPair resident={resident} room={slipperRoom.current} reducedMotion={props.reducedMotion} resetKey={props.cleanTick} />
     </Suspense>}
     {props.sceneId === 'habitat' && props.loadPlush !== false && <PlushDolls shapes={plushShapes} bodies={plushBodies} grip={plushGrip} world={props} />}
     {props.loadCat !== false && <CabinFadeGroup part="lower">

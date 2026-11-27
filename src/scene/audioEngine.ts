@@ -829,6 +829,49 @@ class RoomAudioEngine {
     this.triggerBarefootStep(ctx, now, foot, surface, variant, baseIntensity);
   }
 
+  /** One synthesized broom stroke for the trash-can clean-up; obeys global mute. */
+  public playCleaningSweep(alternate = false): void {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    if (ctx.state !== 'running') void ctx.resume().catch(() => { /* Skip when audio stays locked. */ });
+    const noiseBuffer = this.ensureNoiseBuffer(ctx);
+    if (!noiseBuffer) return;
+
+    const now = ctx.currentTime;
+    const out = this.musicGain ?? ctx.destination;
+    const pitch = (alternate ? 1.12 : 0.94) * (0.97 + Math.random() * 0.06);
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.playbackRate.setValueAtTime(0.34 * pitch, now);
+
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.Q.setValueAtTime(0.85, now);
+    band.frequency.setValueAtTime(760 * pitch, now);
+    band.frequency.exponentialRampToValueAtTime(1780 * pitch, now + 0.17);
+    band.frequency.exponentialRampToValueAtTime(540 * pitch, now + 0.52);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.075, now + 0.075);
+    gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.55);
+
+    noise.connect(band);
+    band.connect(gain);
+    gain.connect(out);
+    noise.onended = () => {
+      noise.disconnect();
+      band.disconnect();
+      gain.disconnect();
+    };
+
+    const offset = Math.random() * Math.max(0, noiseBuffer.duration - 0.05);
+    noise.start(now, offset);
+    noise.stop(now + 0.56);
+  }
+
   private ensureNoiseBuffer(ctx: AudioContext): AudioBuffer | null {
     if (this.noiseBuffer && this.noiseBufferCtx === ctx) return this.noiseBuffer;
     try {
