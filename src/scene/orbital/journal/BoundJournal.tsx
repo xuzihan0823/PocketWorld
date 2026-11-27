@@ -117,15 +117,16 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount, coverT
     edges.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(leafCount * (B.segments * 2 + 1) * 6 * 3), 3));
     return {
       geometry, sheets,
+      sheetMaterials: sheets.map(mesh => mesh.material as THREE.MeshStandardMaterial[]),
       board: new RoundedBoxGeometry(1.49, B.board, 2.08, 3, 0.009),
       spine: ribbonGeometry(), lining: ribbonGeometry(), edges,
     };
   }, [leafCount]);
   useEffect(() => () => {
     data.geometry.dispose(); data.board.dispose(); data.spine.dispose(); data.lining.dispose(); data.edges.dispose();
-    data.sheets.forEach(mesh => {
+    data.sheets.forEach((mesh, i) => {
       mesh.skeleton.dispose();
-      new Set(mesh.material as THREE.MeshStandardMaterial[]).forEach(material => material.dispose());
+      new Set(data.sheetMaterials[i]).forEach(material => material.dispose());
     });
   }, [data]);
 
@@ -140,10 +141,18 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount, coverT
     if (textureRevision.current !== book.revision || drawn.current.leafCount !== leafCount) {
       textureRevision.current = book.revision;
       data.sheets.forEach((mesh, i) => {
+        const original = data.sheetMaterials[i];
+        const active = Array.isArray(mesh.material) ? mesh.material as THREE.MeshStandardMaterial[] : null;
         for (let side = 0; side < 2; side++) {
-          const material = (mesh.material as THREE.MeshStandardMaterial[])[4 + side];
           const texture = book.textures.get(i * 2 + side) ?? null;
-          if (texture !== material.map) { material.map = texture; material.color.set(texture ? '#ffffff' : '#f5f0e1'); material.needsUpdate = true; }
+          const targets = active && active !== original ? [original[4 + side], active[4 + side]] : [original[4 + side]];
+          for (const material of targets) {
+            if (material && texture !== material.map) {
+              material.map = texture;
+              material.color.set(texture ? '#ffffff' : '#f5f0e1');
+              material.needsUpdate = true;
+            }
+          }
         }
       });
     }

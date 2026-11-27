@@ -176,3 +176,44 @@ test('handled book wheel stops native bubbling while unhandled schedule wheel re
     }
   } finally { cleanups.forEach(cleanup => cleanup?.()); }
 });
+
+test('BoundJournal preserves assigned page textures when cabin fade restores original materials', () => {
+  const effects = [];
+  let frame;
+  const { createCabinGroupFade } = load('../cabinCutaway.ts', { three: THREE });
+  const { BoundJournal } = load('./BoundJournal.tsx', {
+    react: {
+      useRef: initial => ({ current: initial === null ? { position: { set() {} }, rotation: { z: 0 } } : initial }),
+      useMemo: fn => fn(),
+      useEffect: effect => effects.push(effect),
+    },
+    'react/jsx-runtime': jsx, three: THREE,
+    '@react-three/fiber': { useFrame: fn => { frame = fn; } },
+    'three/examples/jsm/geometries/RoundedBoxGeometry.js': { RoundedBoxGeometry },
+    './bookModel': bookModel, './coverTexture': { clothTexture: texture },
+    '../../audioEngine': { roomAudio: { playSfx() {} } },
+  });
+  const front = new THREE.Texture(), back = new THREE.Texture();
+  const control = { current: { spread: 0, cursor: 0, ready: false, revision: 1, textures: new Map([[0, front], [1, back]]) } };
+  const tree = BoundJournal({ opened: false, control, reducedMotion: true, leafCount: 1 });
+  const cleanups = effects.map(effect => effect());
+  const leaf = descendants(tree).find(node => node.type === 'primitive').props.object;
+  const group = new THREE.Group();
+  group.add(leaf);
+  const fade = createCabinGroupFade();
+  try {
+    fade.set(group, 0.35);
+    assert.notEqual(leaf.material[4].map, front);
+    frame({}, 0.016);
+    assert.equal(leaf.material[4].map, front);
+    assert.equal(leaf.material[5].map, back);
+    fade.set(group, 1);
+    assert.equal(leaf.material[4].map, front);
+    assert.equal(leaf.material[5].map, back);
+  } finally {
+    fade.restore();
+    front.dispose();
+    back.dispose();
+    cleanups.forEach(cleanup => cleanup?.());
+  }
+});
