@@ -117,7 +117,6 @@ export function RecordPlayer(props: WorldSceneProps) {
         roomAudio.pauseMusic(); transport.playbackResult(false);
       }
     } else if (transport.phase === 'playing' && !audio.isPlaying) transport.toggle();
-    else if (transport.phase === 'paused' && audio.isPlaying && audio.disc.id === transport.disc.id) transport.toggle();
     for (const event of transport.tick(delta, props.reducedMotion)) {
       if (event.type === 'pause') roomAudio.pauseMusic();
       if (event.type === 'contact') roomAudio.playSfx('soft');
