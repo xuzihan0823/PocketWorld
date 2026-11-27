@@ -113,4 +113,19 @@
   .world-page textarea { font-size: 22px; line-height: 29px; }
   .world-page h2 { font-size: 25px; }
 }
+.orbital-cleaning { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: #050408; opacity: 0; pointer-events: none; transition: opacity .52s ease; }
+.orbital-cleaning.is-visible { opacity: 1; pointer-events: auto; }
+.orbital-cleaning.is-out { opacity: 0; pointer-events: auto; transition-duration: .7s; }
+.orbital-cleaning-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 0 24px; color: #f1e8d5; text-align: center; animation: orbital-cleaning-in .5s ease-out both; }
+.orbital-cleaning-card p { margin: 0; font-family: 'Songti SC', Georgia, serif; font-size: 26px; letter-spacing: 7px; text-indent: 7px; }
+.orbital-cleaning-card small { color: #96907f; font-size: 11px; letter-spacing: 2.4px; }
+.orbital-cleaning-broom { position: relative; width: 52px; height: 52px; border: 1px solid rgba(201, 179, 131, .55); border-radius: 50%; animation: orbital-broom-sweep 1.3s ease-in-out infinite; }
+.orbital-cleaning-broom::before { content: ''; position: absolute; left: 50%; top: 8px; width: 2px; height: 27px; border-radius: 1px; background: #c9b383; transform-origin: bottom center; transform: translateX(-50%) rotate(-30deg); }
+.orbital-cleaning-broom::after { content: ''; position: absolute; left: 50%; bottom: 7px; width: 17px; height: 10px; border-radius: 0 0 6px 6px; background: #c9b383; transform: translateX(-50%) rotate(16deg); }
+@keyframes orbital-cleaning-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes orbital-broom-sweep { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(11deg); } }
+@media (max-width: 720px) {
+  .orbital-cleaning-card p { font-size: 22px; letter-spacing: 5px; text-indent: 5px; }
+  .orbital-cleaning-card small { letter-spacing: 1.6px; line-height: 1.7; }
+}
 @media (prefers-reduced-motion: reduce) { .orbital-app * { scroll-behavior: auto; transition-duration: .01ms !important; animation-duration: .01ms !important; } }

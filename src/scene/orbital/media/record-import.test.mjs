@@ -130,6 +130,7 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
       if (name === './scene/orbital/useWorldController') return { useWorldController: () => world };
       if (name === './scene/orbital/wardrobe/WardrobeSurface') return { WardrobeSurface: 'WardrobeSurface' };
       if (name === './scene/orbital/wardrobe/outfit') return { readOutfit: () => 'everyday' };
+      if (name === './scene/orbital/cleaning') return { cleaningTiming: () => ({ fadeIn: 0, sweep: 0, fadeOut: 0, sweepInterval: 1 }), cleaningSweepCount: () => 1 };
       if (name === './scene/orbital/OrbitalDustPrompt') return { DustPrompt: 'DustPrompt' };
       if (name === './scene/orbital/spacecraftFlight') return { readInitialViewMode: () => 'cabin' };
       if (name === './scene/orbital/orbital.css') return {};

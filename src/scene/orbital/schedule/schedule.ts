@@ -131,6 +131,10 @@ export function discardSchedulePage(state: ScheduleNotebook, id: string): Schedu
   if (!page) return state;
   return { ...state, posted: state.posted.filter(p => p.id !== id), discarded: [...state.discarded, { id, seed: page.number }].slice(-24) };
 }
+/** A room clean-up sweeps every loose paper ball; the sheets themselves are untouched. */
+export function clearDiscardedPaper(state: ScheduleNotebook): ScheduleNotebook {
+  return state.discarded.length ? { ...state, discarded: [] } : state;
+}
 export function flattenSchedule(state: ScheduleNotebook): ScheduleEntry[] {
   return [...state.posted, state.current, ...state.queued].flatMap(page => page.entries);
 }

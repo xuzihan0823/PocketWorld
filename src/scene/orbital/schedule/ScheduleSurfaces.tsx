@@ -5,13 +5,13 @@ import type { WorldSceneProps } from '../../../types/world';
 import { ObjectHandle } from '../ObjectHandle';
 import { PAPER_PICKUP_PREFIX, type PaperPickup } from '../cabinActions';
 import { useSchedule } from './ScheduleContext';
-import { PAPER_BALL_Y, discardSchedulePage, paperBallPosition, tearSchedulePage, turnSchedulePage } from './schedule';
+import { PAPER_BALL_Y, clearDiscardedPaper, discardSchedulePage, paperBallPosition, tearSchedulePage, turnSchedulePage } from './schedule';
 import type { PaperBallBody } from './paperBallMotion';
 import { BOOK_POSITION, FloorPaperBall, FlyingPaper, GLASS_POSITION, PostedPaper, type PaperFlight } from './SchedulePaper';
 import { roomAudio } from '../../audioEngine';
 import './schedule.css';
 
-export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; paperPickup: React.RefObject<PaperPickup | null>; paperBodies?: React.RefObject<readonly PaperBallBody[]> }) {
+export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; cleanTick: number; paperPickup: React.RefObject<PaperPickup | null>; paperBodies?: React.RefObject<readonly PaperBallBody[]> }) {
   const { book, state, commit, ready, error, retry, collectPaper } = useSchedule();
   const { size } = useThree();
   const narrow = size.width < 720;
@@ -26,6 +26,13 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; pa
   const selected = state.posted[selectedIndex];
   const settled = ['active', 'error', 'idle'].includes(props.transition.phase);
   useEffect(() => setMessage(''), [state.current, props.focusedObject]);
+  const sweptTick = useRef(0);
+  useEffect(() => {
+    if (props.cleanTick <= 0 || props.cleanTick === sweptTick.current || !ready) return;
+    sweptTick.current = props.cleanTick;
+    const next = clearDiscardedPaper(state);
+    if (next !== state) commit(next);
+  }, [props.cleanTick, ready, state, commit]);
 
   const turn = (direction: -1 | 1) => {
     if (!bookView || busy.current || !settled || !ready || !book.current.ready) return;

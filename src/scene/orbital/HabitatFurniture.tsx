@@ -154,8 +154,11 @@ export const HabitatFurniture: React.FC<WorldModelProps & { stage?: number }> = 
       <FurnitureChair world={world} />
       {stage >= 2 && <FurnitureBookcase world={world} />}
       {stage >= 3 && <>
-        <ReusableAsset name="Furniture_TrashCan" path="furniture/trash-can.glb" castShadow={false}
-          height={TRASH_CAN.height} position={TRASH_CAN.position} rotation={[0, TRASH_CAN.yaw, 0]} />
+        <ObjectHandle id="trash-can" panorama action="clean" hint="踩下踏板 · 打扫房间" world={world}
+          onClick={event => event.stopPropagation()}>
+          <ReusableAsset name="Furniture_TrashCan" path="furniture/trash-can.glb" castShadow={false}
+            height={TRASH_CAN.height} position={TRASH_CAN.position} rotation={[0, TRASH_CAN.yaw, 0]} />
+        </ObjectHandle>
         <FurnitureHatch />
       </>}
     </>}
