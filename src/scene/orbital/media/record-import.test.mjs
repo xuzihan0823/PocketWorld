@@ -133,6 +133,7 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
       if (name === './scene/orbital/OrbitalDustPrompt') return { DustPrompt: 'DustPrompt' };
       if (name === './scene/orbital/spacecraftFlight') return { readInitialViewMode: () => 'cabin' };
       if (name === './scene/orbital/orbital.css') return {};
+      if (name === '../assets/brand/pocketworld-wordmark.webp') return 'wordmark.webp';
       throw new Error(`Unexpected dependency: ${name}`);
     },
   };

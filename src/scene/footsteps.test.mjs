@@ -125,6 +125,7 @@ function mount(kind, overrides = {}, idleLibrary) {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
     './scene/orbital/orbital.css': {},
+    '../assets/brand/pocketworld-wordmark.webp': 'wordmark.webp',
   };
   if (overrides.library) Object.assign(dependencies, libraryDependencies(residentRig));
   const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
