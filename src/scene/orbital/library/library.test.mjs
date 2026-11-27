@@ -186,6 +186,38 @@ for (const reducedMotion of [false, true]) test(`翻页边界、连点、动画�
   open('book-01'); c.choose('book-02'); assert.equal(c.flow.current.book.id, 'book-01'); advance(); c.arrived(); assert.equal(c.flow.current.book.id, 'book-02'); assert.equal(c.flow.current.phase, 'align');
 });
 
+for (const reducedMotion of [false, true]) test(`重复分页不取消双向翻页或重置动作进度（${reducedMotion ? '减少动态效果' : '普通'}）`, async () => {
+  const { c, m, enter, open, advance } = controller(reducedMotion);
+  enter(); open('book-01');
+  for (const direction of [1, -1]) {
+    const page = c.flow.current.page, targetPage = page + direction;
+    c.turn(direction);
+    c.tick(.04);
+    const progress = c.flow.current.progress;
+    for (let i = 0; i < 3; i++) c.setPages(c.flow.current.pages.map(p => ({ ...p })));
+    assert.equal(c.flow.current.phase, 'turn');
+    assert.equal(c.flow.current.page, page);
+    assert.equal(c.flow.current.targetPage, targetPage);
+    assert.equal(c.flow.current.progress, progress);
+    advance();
+    assert.equal(c.flow.current.phase, 'reading');
+    assert.equal(c.flow.current.page, targetPage);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(m.readLibrary(m.storage).books[0].anchor, c.flow.current.pages[targetPage].start);
+  }
+});
+
+test('实际分页变化仍按当前正文锚点重新定位并更新内容', () => {
+  const { c, enter, open, advance } = controller();
+  enter(); open('book-01'); c.turn(1); advance();
+  const pages = [{ start: 0, end: 5, text: '第一页' }, { start: 5, end: 15, text: '第二页' }, { start: 15, end: 20, text: '第三页' }];
+  c.setPages(pages);
+  assert.equal(c.flow.current.page, 1);
+  assert.equal(c.flow.current.pages[1].text, '第二页');
+  c.setPages(pages.map(p => ({ ...p, text: p.text + '更新' })));
+  assert.equal(c.flow.current.pages[1].text, '第二页更新');
+});
+
 test('书柜取书、展开、翻页、合书、插回及新书上架按阶段触发对应音效', async () => {
   const { c, sfx, enter, open, advance } = controller();
   enter();
