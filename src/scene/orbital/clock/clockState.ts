@@ -236,7 +236,8 @@ export function resetCountdown(state: ClockPersistentState, newDurationSec?: num
 
 export function evaluateClockTick(
   state: ClockPersistentState,
-  now: Date
+  now: Date,
+  previousTick?: Date
 ): { nextState: ClockPersistentState; triggered: ClockRingingSource; remainingSec: number } {
   let nextState = state;
   let triggered: ClockRingingSource = null;
@@ -263,12 +264,17 @@ export function evaluateClockTick(
   }
 
   if (nextState.alarmEnabled) {
-    const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentKey = dateMinuteKey(now);
-    if (currentHHMM === nextState.alarmTime && nextState.lastTriggeredKey !== currentKey) {
+    const { hours, minutes } = parseAlarmTime(nextState.alarmTime);
+    const target = new Date(nowMs);
+    target.setHours(hours, minutes, 0, 0);
+    if (target.getTime() > nowMs) target.setDate(target.getDate() - 1);
+    const targetKey = dateMinuteKey(target);
+    const currentMinute = dateMinuteKey(now) === targetKey;
+    const crossedTarget = previousTick !== undefined && previousTick.getTime() < target.getTime();
+    if ((currentMinute || crossedTarget) && nextState.lastTriggeredKey !== targetKey) {
       nextState = {
         ...nextState,
-        lastTriggeredKey: currentKey,
+        lastTriggeredKey: targetKey,
       };
       if (!triggered) triggered = 'alarm';
     }

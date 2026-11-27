@@ -76,8 +76,8 @@ class ClockStore {
   }
 
   public tick(now = new Date()): void {
+    const { nextState, triggered } = evaluateClockTick(this.state, now, this.now);
     this.now = now;
-    const { nextState, triggered } = evaluateClockTick(this.state, now);
     const stateChanged = nextState !== this.state;
     if (stateChanged) {
       this.persist(nextState);
@@ -150,6 +150,7 @@ class ClockStore {
 
   public setAlarmTime(time: string): void {
     this.audio.unlock();
+    this.now = new Date();
     const alarmTime = normalizeAlarmTime(time, this.state.alarmTime);
     this.persist({
       ...this.state,
@@ -161,6 +162,7 @@ class ClockStore {
 
   public toggleAlarmEnabled(): void {
     this.audio.unlock();
+    this.now = new Date();
     const nextEnabled = !this.state.alarmEnabled;
     if (!nextEnabled && this.ringingSource === 'alarm') {
       this.ringingSource = null;
@@ -489,12 +491,25 @@ export function AlarmClockSurface({
   }, [isMuted]);
 
   useEffect(() => {
-    clockStore.tick(new Date());
-    const timer = window.setInterval(() => {
+    const tick = () => {
       clockStore.tick(new Date());
       setTickCount(c => (c + 1) % 1000);
-    }, 250);
-    return () => window.clearInterval(timer);
+    };
+    const resume = () => { if (document.visibilityState === 'visible') tick(); };
+    const unlockAudio = () => clockStore.audio.unlock();
+    tick();
+    const timer = window.setInterval(tick, 250);
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('focus', resume);
+    window.addEventListener('pointerdown', unlockAudio, true);
+    window.addEventListener('keydown', unlockAudio, true);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('focus', resume);
+      window.removeEventListener('pointerdown', unlockAudio, true);
+      window.removeEventListener('keydown', unlockAudio, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -542,6 +557,7 @@ export function AlarmClockSurface({
           <button
             type="button"
             onClick={() => {
+              clockStore.audio.unlock();
               roomAudio.playSfx('switch');
               onFocusClock();
             }}
