@@ -15,7 +15,8 @@ import { INSPECTION_SECONDS, inspectOutfit } from './wardrobe/inspectPose';
 import type { ResidentOutfit } from './wardrobe/outfit';
 import { JOURNAL_POSITION } from './journalLayout';
 import { SCHEDULE_BOOK_POSITION } from './schedule/bookLayout';
-import { paperBallBoxes } from './schedule/schedule';
+import { PAPER_BALL_Y } from './schedule/schedule';
+import { PAPER_BALL_MOVER_RADIUS, resolveMoverAgainstPaperBalls, stepPaperBalls, syncPaperBallBodies, type PaperBallBody } from './schedule/paperBallMotion';
 import { usePaperBallLitter } from './schedule/paperBallLitter';
 import { Cat } from './Cat';
 import { CHAIR_POSES, chairFront, type ChairPose } from './chairPose';
@@ -61,6 +62,7 @@ type ResidentsProps = WorldModelProps & {
   loadCat?: boolean;
   sofaTime: React.MutableRefObject<number | null>;
   paperPickup: React.MutableRefObject<PaperPickup | null>;
+  paperBodies?: React.MutableRefObject<PaperBallBody[]>;
   interaction: React.MutableRefObject<NonNullable<WorldModelProps['onApproach']> | null>;
 };
 type Approach = { point: Point; height: number; action: WorldAction; perform: () => void; elapsed: number };
@@ -247,16 +249,14 @@ export function OrbitalResidents(props: ResidentsProps) {
   const spawn = useMemo(() => { const start = props.sceneId === 'habitat' ? HABITAT_SPAWN : [0.25, 0.5] as Point; const point = reachable(start, obstacles(room, CHAIR_POSES[props.sceneId]), walkBounds(room, start[0])); return [point[0], 0, point[1]] as [number, number, number]; }, [room]);
   const resident = useRef<THREE.Group>(null);
   const litter = usePaperBallLitter();
-  const ballBoxes = useMemo(() => props.sceneId === 'habitat' ? paperBallBoxes(litter, RADIUS) : [], [litter, props.sceneId]);
-  const ballBoxesRef = useRef(ballBoxes);
-  ballBoxesRef.current = ballBoxes;
-  // A ball that landed under Luna's feet is skipped so she can step off instead of getting stuck.
-  const ballObstacles = () => {
-    const root = resident.current;
-    if (!root) return ballBoxesRef.current;
-    const { x, z } = root.position;
-    return ballBoxesRef.current.filter(([a, b, c, d]) => !(x > a && x < b && z > c && z < d));
-  };
+  const localPaperBodies = useRef<PaperBallBody[]>([]);
+  const paperBodiesRef = props.paperBodies ?? localPaperBodies;
+  const litterRef = useRef(litter);
+  litterRef.current = litter;
+  paperBodiesRef.current = props.sceneId === 'habitat' ? syncPaperBallBodies(paperBodiesRef.current, litter) : [];
+  const findPaperBall = (objectId: string) => isPaperPickup(objectId)
+    ? paperBodiesRef.current.find(body => body.id === objectId.slice(PAPER_PICKUP_PREFIX.length))
+    : undefined;
   const deckFrame = useRef<THREE.Group>(null);
   const rig = useRef<ResidentRig | null>(null);
   const plushBodies = useRef<PlushBody[]>(props.sceneId === 'habitat' ? createPlushBodies(PLUSH_DOLLS) : []);
@@ -478,7 +478,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       return;
     }
     if (task.action.objectId === 'chair') {
-      const path = chairRoute(room, pose, start, chairEntry(room, pose), ballObstacles());
+      const path = chairRoute(room, pose, start, chairEntry(room, pose));
       if (path.length) {
         state.current.path = path;
         return;
@@ -487,7 +487,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       p.onHover('chair', '前方空间不足，请先移开挡路的物品');
       return;
     }
-    const boxes = obstacles(room, pose, ballObstacles());
+    const boxes = obstacles(room, pose);
     const doll = findDoll(task.action.objectId);
     const local = approachRoute(start, task.point, boxes, walkBounds(room, start[0]), fixed,
       task.action.objectId === 'pet' ? PET_REACH : isPaperPickup(task.action.objectId) ? PAPER_PICKUP_REACH : doll ? .52 : undefined,
@@ -545,7 +545,8 @@ export function OrbitalResidents(props: ResidentsProps) {
         if (!s.exiting && !cabinPerformance.current) planApproach();
         return false;
       }
-      const target: Point = doll ? [doll.x, doll.z] : action.objectId === 'pet' ? [...catLocation.current]
+      const paperBall = findPaperBall(action.objectId);
+      const target: Point = doll ? [doll.x, doll.z] : paperBall ? [paperBall.x, paperBall.z] : action.objectId === 'pet' ? [...catLocation.current]
         : action.objectId === 'wardrobe' ? WARDROBE_STAND : action.objectId === 'chair' ? [pose.x, pose.z]
         : interactionAnchor(p.sceneId, action.objectId, [point[0], point[2]]);
       if (s.posture === 'standing' && !s.exiting && !s.stairs && !cabinPerformance.current && !rug && !paper && !doll
@@ -657,8 +658,8 @@ export function OrbitalResidents(props: ResidentsProps) {
     if (!s.exiting && !cabinPerformance.current && resident.current) {
       const pose = CHAIR_POSES[props.sceneId];
       const point: Point = [props.walkTarget[0], props.walkTarget[2]];
-      const target = reachable(point, obstacles(room, pose, ballObstacles()), walkBounds(room, point[0]));
-      s.path = chairRoute(room, pose, nextWalkStart(resident.current), target, ballObstacles());
+      const target = reachable(point, obstacles(room, pose), walkBounds(room, point[0]));
+      s.path = chairRoute(room, pose, nextWalkStart(resident.current), target);
     }
   }, [props.walkTarget]);
 
@@ -697,7 +698,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       const key = `${flow!.phase}/${libraryTarget[0]}/${libraryTarget[2]}`;
       if (libraryNav.current !== key) {
         libraryNav.current = key; keys.current.clear(); stand();
-        const end: Point = [libraryTarget[0], libraryTarget[2]], boxes = obstacles(room, CHAIR_POSES[p.sceneId], ballObstacles());
+        const end: Point = [libraryTarget[0], libraryTarget[2]], boxes = obstacles(room, CHAIR_POSES[p.sceneId]);
         if (!free(end, boxes, walkBounds(room, end[0]))) { library!.arrived(false); return; }
         if (!s.exiting) {
           s.path = residentRoute(room, nextWalkStart(root), end, boxes);
@@ -715,6 +716,10 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (doll && Math.hypot(doll.x - pending.point[0], doll.z - pending.point[1]) > .065) {
         pending.point = [doll.x, doll.z]; planApproach();
       }
+      const paperBall = findPaperBall(pending.action.objectId);
+      if (paperBall && Math.hypot(paperBall.x - pending.point[0], paperBall.z - pending.point[1]) > .04) {
+        pending.point = [paperBall.x, paperBall.z]; planApproach();
+      }
       pending.elapsed += dt;
       if (pending.elapsed > 8 || p.focusedObject) cancelApproach();
     }
@@ -731,7 +736,7 @@ export function OrbitalResidents(props: ResidentsProps) {
       s.path = [];
       if (s.external) { s.external = false; p.onArrive(); }
       if (s.posture !== 'standing') beginExit();
-      else if (wanted !== 'standing') s.path = residentRoute(room, nextWalkStart(root), entry, obstacles(room, pose, ballObstacles()));
+      else if (wanted !== 'standing') s.path = residentRoute(room, nextWalkStart(root), entry, obstacles(room, pose));
     }
     const surfaceAt = (x: number, z: number): 'wood' | 'rug' =>
       p.sceneId === 'observatory' && x >= -2.95 && x <= -0.05 && z >= -0.3 && z <= 1.9 ? 'rug' : 'wood';
@@ -783,7 +788,7 @@ export function OrbitalResidents(props: ResidentsProps) {
         if (performance.kind === 'paper' && !performance.leaving) performance.complete();
         if (approach.current) planApproach();
         else if (s.external && p.walkTarget) {
-          s.path = chairRoute(room, pose, [root.position.x, root.position.z], [p.walkTarget[0], p.walkTarget[2]], ballObstacles());
+          s.path = chairRoute(room, pose, [root.position.x, root.position.z], [p.walkTarget[0], p.walkTarget[2]]);
         }
       }
       root.position.y = cabinPerformance.current?.kind === 'floor' ? RUG_TOP : 0;
@@ -798,10 +803,10 @@ export function OrbitalResidents(props: ResidentsProps) {
       if (result.done) {
         s.posture = 'standing'; s.exiting = false; s.blend = 0; s.sit = 0;
         chairMotion.current = createChairMotion();
-        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0],libraryTarget[2]], obstacles(room, pose, ballObstacles()));
+        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0],libraryTarget[2]], obstacles(room, pose));
         else if (approach.current) planApproach();
-        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry,[p.walkTarget[0],p.walkTarget[2]],obstacles(room, pose, ballObstacles()));
-        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose, ballObstacles()));
+        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry,[p.walkTarget[0],p.walkTarget[2]],obstacles(room, pose));
+        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose));
       }
     } else if (s.posture === 'sofa' && sofaClip) {
       const previous = sofa.time;
@@ -814,10 +819,10 @@ export function OrbitalResidents(props: ResidentsProps) {
       walking = Math.min(previous, SOFA_STEPS) !== Math.min(sofa.time, SOFA_STEPS);
       if (s.exiting && sofa.time === 0) {
         s.posture = 'standing'; s.exiting = false;
-        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose, ballObstacles()));
+        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose));
         else if (approach.current) planApproach();
-        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose, ballObstacles()));
-        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose, ballObstacles()));
+        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
+        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose));
       }
     } else if (s.exiting) {
       // Move off the support before lowering the pelvis; preserve the actual in-flight pose.
@@ -835,10 +840,10 @@ export function OrbitalResidents(props: ResidentsProps) {
         root.position.set(entry[0], 0, entry[1]);
         s.posture = 'standing'; s.exiting = false; s.blend = 0; s.sit = 0;
         roomAudio.playFootstep({ surface: surfaceAt(entry[0], entry[1]), intensity: 0.78 });
-        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose, ballObstacles()));
+        if (libraryWalking && libraryTarget) s.path = residentRoute(room, entry, [libraryTarget[0], libraryTarget[2]], obstacles(room, pose));
         else if (approach.current) planApproach();
-        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose, ballObstacles()));
-        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose, ballObstacles()));
+        else if (s.external && p.walkTarget) s.path = residentRoute(room, entry, [p.walkTarget[0], p.walkTarget[2]], obstacles(room, pose));
+        else if (wanted !== 'standing') s.path = residentRoute(room, entry, destination(wanted), obstacles(room, pose));
       }
     } else if (s.posture !== 'standing') {
       s.blend = Math.min(1, s.blend + dt / (p.reducedMotion ? 0.4 : 0.9));
@@ -890,15 +895,14 @@ export function OrbitalResidents(props: ResidentsProps) {
           if (s.path.length) {
             const usesChairCircle = approach.current?.action.objectId === 'chair' || (s.external && !approach.current);
             const clear = usesChairCircle
-              ? clearSegment([beforeX, beforeZ], [x, z], [...room.boxes, ...ballObstacles()], { x: pose.x, z: pose.z, radius: CHAIR_CONTACT }, bounds)
-              : clearSegment([beforeX, beforeZ], [x, z], obstacles(room, pose, ballObstacles()), undefined, bounds);
+              ? clearSegment([beforeX, beforeZ], [x, z], room.boxes, { x: pose.x, z: pose.z, radius: CHAIR_CONTACT }, bounds)
+              : clearSegment([beforeX, beforeZ], [x, z], obstacles(room, pose), undefined, bounds);
             if (clear) { root.position.x = x; root.position.z = z; }
             else if (approach.current) planApproach();
           } else {
             const circle = { x: pose.x, z: pose.z, radius: CHAIR_CONTACT };
-            const boxes = [...room.boxes, ...ballObstacles()];
-            if (clearSegment([beforeX, beforeZ], [x, beforeZ], boxes, circle, bounds)) root.position.x = x;
-            if (clearSegment([root.position.x, beforeZ], [root.position.x, z], boxes, circle, bounds)) root.position.z = z;
+            if (clearSegment([beforeX, beforeZ], [x, beforeZ], room.boxes, circle, bounds)) root.position.x = x;
+            if (clearSegment([root.position.x, beforeZ], [root.position.x, z], room.boxes, circle, bounds)) root.position.z = z;
           }
           walking = Math.hypot(root.position.x - beforeX, root.position.z - beforeZ) > 0.001;
           root.rotation.y = angle(root.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 14));
@@ -925,8 +929,12 @@ export function OrbitalResidents(props: ResidentsProps) {
               if (!shape) { cancelApproach(); return; }
               plushGrip.current = gripPlush(doll, shape);
               cabinPerformance.current = { kind: 'plush', placing: false, leaving: false, time: 0 };
-            } else cabinPerformance.current = { kind: 'paper', time: 0, leaving: false, id: id.slice(PAPER_PICKUP_PREFIX.length),
-              point: new THREE.Vector3(request.point[0], request.height, request.point[1]), complete: request.perform };
+            } else {
+              const paperBall = findPaperBall(id);
+              if (paperBall) Object.assign(paperBall, { vx: 0, vz: 0, vy: 0, spin: 0, rollVel: 0, pitchVel: 0, y: 0 });
+              cabinPerformance.current = { kind: 'paper', time: 0, leaving: false, id: id.slice(PAPER_PICKUP_PREFIX.length),
+                point: new THREE.Vector3(paperBall?.x ?? request.point[0], PAPER_BALL_Y, paperBall?.z ?? request.point[1]), complete: request.perform };
+            }
             cancelApproach();
           }
         } else {
@@ -945,7 +953,7 @@ export function OrbitalResidents(props: ResidentsProps) {
             if (wanted === 'chair') chairMotion.current = createChairMotion();
           }
         }
-        else s.path = residentRoute(room, [root.position.x, root.position.z], entry, obstacles(room, pose, ballObstacles()));
+        else s.path = residentRoute(room, [root.position.x, root.position.z], entry, obstacles(room, pose));
       }
       root.position.y = cabinPerformance.current?.kind === 'floor' ? RUG_TOP : 0;
       s.sit = 0;
@@ -992,11 +1000,27 @@ export function OrbitalResidents(props: ResidentsProps) {
         plushBounds(false), p.reducedMotion);
       stepPlushDolls(floorDolls.upper, dt, deck === 'upper' ? [mover] : [], room.plushBoxes,
         plushBounds(true), p.reducedMotion);
+      paperBodiesRef.current = syncPaperBallBodies(paperBodiesRef.current, litterRef.current);
+      const pickingPaperId = cabinPerformance.current?.kind === 'paper' ? cabinPerformance.current.id : null;
+      const activePaperBalls = pickingPaperId
+        ? paperBodiesRef.current.filter(body => body.id !== pickingPaperId)
+        : paperBodiesRef.current;
+      const paperMovers = [
+        { ...mover, radius: PAPER_BALL_MOVER_RADIUS },
+        ...floorDolls.lower.map(doll => ({ x: doll.x, z: doll.z, vx: doll.vx, vz: doll.vz, radius: doll.radius, active: true, strength: 0.85 })),
+      ];
+      const dollCircles = floorDolls.lower.map(doll => ({ x: doll.x, z: doll.z, radius: doll.radius }));
+      stepPaperBalls(activePaperBalls, dt, deck === 'lower' ? paperMovers : paperMovers.slice(1),
+        room.plushBoxes, plushBounds(false), p.reducedMotion, Math.random, dollCircles);
       if (s.posture === 'standing' && !s.exiting && !libraryActive && !stairSample && !cabinPerformance.current) {
-        resolveMoverAgainstPlush(root.position, RADIUS, floorDolls[deck], (x, z) => free([x, z], [...room.boxes, ...ballObstacles()], DECK_WALK_BOUNDS[deck]));
+        resolveMoverAgainstPlush(root.position, RADIUS, floorDolls[deck], (x, z) => free([x, z], room.boxes, DECK_WALK_BOUNDS[deck]));
+        if (deck === 'lower') {
+          resolveMoverAgainstPaperBalls(root.position, PAPER_BALL_MOVER_RADIUS, activePaperBalls, (x, z) => free([x, z], room.boxes, DECK_WALK_BOUNDS.lower));
+        }
       }
       slipperRoom.current.boxes = [...room.boxes, ...plushObstacleBoxes(floorDolls.upper)];
     } else {
+      paperBodiesRef.current = [];
       slipperRoom.current.boxes = room.boxes;
     }
     const deck = room.observatory ? 'lower' : deckFromAuthoredX(root.position.x);
@@ -1179,6 +1203,7 @@ export function OrbitalResidents(props: ResidentsProps) {
     p.sofaTime.current = s.posture === 'sofa' ? sofa.time - SOFA_STEPS : null;
     root.userData.sofaTime = p.sofaTime.current;
     root.userData.plushBodies = plushBodies.current;
+    root.userData.paperBodies = paperBodiesRef.current;
     const nearbyList = p.showNearbyHints === false ? [] : nearbyActions();
     const nearby = nearbyList[0] ?? null;
     const rugHint = cabinPerformance.current?.kind === 'floor' && !cabinPerformance.current.leaving
@@ -1200,10 +1225,11 @@ export function OrbitalResidents(props: ResidentsProps) {
   const canCatWalk = (x: number, z: number) => {
     const luna = resident.current?.position;
     return !props.catMenuOpen && approach.current?.action.objectId !== 'pet'
-      && free([x, z], [...room.boxes, ...ballObstacles()], DECK_WALK_BOUNDS.lower)
+      && free([x, z], room.boxes, DECK_WALK_BOUNDS.lower)
       && (!luna || state.current.stairs || deckFromAuthoredX(luna.x) === 'upper'
         || Math.hypot(x - luna.x, z - luna.z) > RADIUS + .28)
-      && plushBodies.current.every(plush => plush === plushGrip.current?.body || Math.hypot(x - plush.x, z - plush.z) > plush.radius + .28);
+      && plushBodies.current.every(plush => plush === plushGrip.current?.body || Math.hypot(x - plush.x, z - plush.z) > plush.radius + .28)
+      && paperBodiesRef.current.every(ball => Math.hypot(x - ball.x, z - ball.z) > ball.radius + .22);
   };
   return <group name={`OrbitalResidents_${props.sceneId}`}>
     <CabinFadeGroup part="resident">

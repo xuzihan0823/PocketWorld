@@ -42,6 +42,7 @@ import { FeatureSurfaces } from './FeatureSurfaces';
 import { AlarmClock3D, AlarmClockSurface } from './clock/AlarmClock';
 import { ScheduleProvider } from './schedule/ScheduleContext';
 import { ScheduleSurfaces } from './schedule/ScheduleSurfaces';
+import type { PaperBallBody } from './schedule/paperBallMotion';
 import { BOOK_POSITION } from './schedule/SchedulePaper';
 import { SCHEDULE_BOOK_POSITION } from './schedule/bookLayout';
 import { OrbitalResidents } from './OrbitalResidents';
@@ -592,6 +593,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
   const residentView = useRef<CabinResidentView>({ deck: 'lower', stairAscent: null, stairFrom: null });
   const sofaTime = useRef<number | null>(null);
   const paperPickup = useRef<PaperPickup | null>(null);
+  const paperBodies = useRef<PaperBallBody[]>([]);
   const interaction = useRef<NonNullable<WorldSceneProps['onApproach']> | null>(null);
   const sun = useMemo(createSunState, []);
   const flight = useMemo(() => createFlightState(props.viewMode), []);
@@ -698,7 +700,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
         {(showInterior || visitedCabin) && <group visible={showInterior}>
           <CabinFadeGroup part="lower" name={id === 'habitat' ? 'Cabin_LowerDeck' : undefined}>
             <HabitatShell world={world} deck="lower" onFloorClick={onFloorClick} />
-            {id === 'habitat' && cabinLoading.furniture && <ScheduleSurfaces {...world} paperPickup={paperPickup}
+            {id === 'habitat' && cabinLoading.furniture && <ScheduleSurfaces {...world} paperPickup={paperPickup} paperBodies={paperBodies}
               visible={inCabin && props.sceneId === 'habitat'} />}
             {cabinLoading.furniture && <>
               <Suspense fallback={null}><HabitatFurniture {...world} stage={cabinLoading.furnitureStage} /></Suspense>
@@ -721,7 +723,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
             </CabinUpperDeck>
           </>}
           {id === props.sceneId && <>
-            <OrbitalResidents {...world} outfit={readOutfit(props.sceneObjects.habitat.wardrobe?.itemId)} catMenuOpen={props.catMenuOpen} sofaTime={sofaTime} paperPickup={paperPickup} onHover={(objectId, hint) => { if (inCabin) props.onHover(objectId, hint); }} interaction={interaction}
+            <OrbitalResidents {...world} outfit={readOutfit(props.sceneObjects.habitat.wardrobe?.itemId)} catMenuOpen={props.catMenuOpen} sofaTime={sofaTime} paperPickup={paperPickup} paperBodies={paperBodies} onHover={(objectId, hint) => { if (inCabin) props.onHover(objectId, hint); }} interaction={interaction}
               inspectionId={focusedObject === 'wardrobe' && props.transition.phase === 'active' && props.transition.action?.kind === 'select' ? props.transition.id : undefined}
               onInspectionEnd={props.onReturn} onOutfitMounted={onResidentMounted}
               prefetchSeat={cabinLoading.equipment} loadPlush={cabinLoading.plush} loadCat={cabinLoading.cat}

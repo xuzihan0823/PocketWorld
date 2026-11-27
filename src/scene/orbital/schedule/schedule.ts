@@ -14,9 +14,10 @@ export interface SchedulePage {
   notes: string;
 }
 export interface PaperBall { id: string; seed: number }
-export const PAPER_BALL_RADIUS = 0.1;
+export const PAPER_BALL_RADIUS = 0.08;
+export const PAPER_BALL_Y = 0.105;
 export function paperBallPosition(seed: number): [number, number, number] {
-  return [0.25 + Math.sin(seed * 2.4) * 0.65, 0.105, -0.68 + Math.cos(seed * 1.8) * 0.45];
+  return [0.25 + Math.sin(seed * 2.4) * 0.65, PAPER_BALL_Y, -0.68 + Math.cos(seed * 1.8) * 0.45];
 }
 export function paperBallBoxes(balls: readonly PaperBall[], inflate = 0): [number, number, number, number][] {
   const radius = PAPER_BALL_RADIUS + inflate;
