@@ -1,6 +1,6 @@
 import { createPlushPose, dropSpot, gripPlush, plushBounds, plushLabels, type PlushGrip, type PlushShape } from './plushCarry';
 import { createPaperPose } from './schedule/paperGrip';
-import { RUG_SEAT, RUG_TOP, RUG_YAW, PICKUP_GRIP_TIME, PAPER_PICKUP_REACH, PAPER_PICKUP_PREFIX, advanceCabinPerformance, applyCabinPerformance, createCabinActionPlayer, isPaperPickup, isRugSeat, leaveCabinPerformance, loadCabinActions, newRugPerformance, type CabinPerformance, type PaperPickup } from './cabinActions';
+import { RUG_SEAT, RUG_TOP, RUG_YAW, PICKUP_GRIP_TIME, PAPER_PICKUP_REACH, PAPER_PICKUP_PREFIX, advanceCabinPerformance, applyCabinPerformance, createCabinActionPlayer, isPaperPickup, isRugSeat, leaveCabinPerformance, loadCabinActions, newRugPerformance, pickupPoseTime, type CabinPerformance, type PaperPickup } from './cabinActions';
 import { SOFA_ENTRY, SOFA_STEPS, loadSofaClip, sofaPlayer } from './sofaMotion';
 import { DECK_WALK_BOUNDS, UPPER_DECK_OFFSET, deckFromAuthoredX, BED_POSITION, CAT_HOME, CAT_MAT_Y, COMPUTER_STAND, FLOOR_SOFA, PLUSH_DOLLS, TRASH_CAN, HABITAT_SPAWN, WARDROBE_FOOTPRINT, WARDROBE_STAND, NIGHTSTAND_X, NIGHTSTAND_Z, LOW_FURNITURE_CLEARANCE, RESIDENT_RADIUS, WALK_BOUNDS } from './cabinLayout';
 import { CABIN_STAIRS, STAIR_DISTANCE, STAIR_TREAD_RUN, otherDeck, sampleCabinStairs, stairDestination, stairLanding, type CabinResidentView } from './cabinStairs';
@@ -926,7 +926,7 @@ export function OrbitalResidents(props: ResidentsProps) {
               const shape = plushShapes.get(doll.id);
               if (!shape) { cancelApproach(); return; }
               plushGrip.current = gripPlush(doll, shape);
-              cabinPerformance.current = { kind: 'plush', placing: false, leaving: false, time: 0 };
+              cabinPerformance.current = { kind: 'plush', placing: false, leaving: false, time: 0, bearPickup: doll.id === 'plush-bear' };
             } else cabinPerformance.current = { kind: 'paper', time: 0, leaving: false, id: id.slice(PAPER_PICKUP_PREFIX.length),
               point: new THREE.Vector3(request.point[0], request.height, request.point[1]), complete: request.perform };
             cancelApproach();
@@ -1149,7 +1149,7 @@ export function OrbitalResidents(props: ResidentsProps) {
           plushPose.current = { mesh: rig.current.mesh, apply: createPlushPose(rig.current.mesh) };
         }
         plushGrip.current.visible = deckFrame.current?.visible ?? true;
-        plushPose.current.apply(root, plushGrip.current, performance?.kind === 'plush' ? performance.time : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
+        plushPose.current.apply(root, plushGrip.current, performance?.kind === 'plush' ? pickupPoseTime(performance) : cabin.clips.pickUp.duration, PICKUP_GRIP_TIME);
       }
       const lapWeight = s.posture === 'sofa' && sofaClip && !sofaSteps
         ? THREE.MathUtils.smoothstep(sofa.time - SOFA_STEPS, sofaClip.duration * .62, sofaClip.duration * .94) : 0;

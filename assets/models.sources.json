@@ -24,9 +24,9 @@
       "file": "resident/luna-cabin-actions-ribbon.glb",
       "source": "PocketWorld everyday cabin actions, derived from the MotionSmith takes registered under resident/luna-cabin-actions-everyday.glb.",
       "used": true,
-      "bytes": 761452,
-      "sha256": "406c2661b7b363ecc1fa54ee8430db93f369d5b50d9981c9d8982f36383d4fd2",
-      "processing": "Bind-relative retargeting to the ribbon skeleton with sock and floor-contact calibration."
+      "bytes": 767896,
+      "sha256": "6e4e27237b3574bad60b930b40073dc2638c27271ccdcdf2ddcba8b7479b2229",
+      "processing": "Bind-relative retargeting to the ribbon skeleton with sock and floor-contact calibration. Blender timing source Luna-Bear-Pickup.blend and scripts/retime-bear-pickup.py append a 3.05-second bearPickUp clip, sharing original poses and exporting the synchronized contact clock."
     },
     {
       "file": "resident/luna-cardigan.glb",
@@ -351,9 +351,9 @@
       "license": "The MotionSmith gallery permits commercial game use without attribution.",
       "licensePage": "https://cosindra.ai/license",
       "used": true,
-      "bytes": 1013604,
-      "sha256": "2966d4f116d6e160ac5e2bfab39e55a9931fa3fae06cdd4eac6a5ea652983971",
-      "processing": "scripts/bake-luna-cabin-actions.mjs maps Manny joints to the outfit, fits floor contact and dress panels, fits hand gestures to the face or waist, and exports masked idle rotations and action tracks without meshes or textures."
+      "bytes": 1022432,
+      "sha256": "96fdc304fc30083c8d660ea6d38b98a526cf5187ae628a3d5c86c9e412695ef9",
+      "processing": "scripts/bake-luna-cabin-actions.mjs maps Manny joints to the outfit, fits floor contact and dress panels, fits hand gestures to the face or waist, and exports masked idle rotations and action tracks without meshes or textures. Blender timing source Luna-Bear-Pickup.blend and scripts/retime-bear-pickup.py append a 3.05-second bearPickUp clip, sharing original poses and exporting the synchronized contact clock."
     },
     {
       "file": "assets/public/models/resident/luna-cardigan-hands.glb",
@@ -373,9 +373,9 @@
       "license": "Existing Luna model license and MotionSmith commercial game-use permission; original source records retained.",
       "licensePage": "https://cosindra.ai/license",
       "used": true,
-      "bytes": 791940,
-      "sha256": "a9daaa32bb12c70fa12ca1a8e7180fb16fb89ad6cff60b68a77c943d442be3fb",
-      "processing": "scripts/bake-luna-floor-hands.py replaces only 76 upper-limb rotation channels in floorSit/floorStand. Other nine clips, pelvis/legs, times and GLB schema are preserved. Editable source: assets/models/resident/Luna-Cardigan-Floor-Hands.blend. Base bundle SHA-256 d4b514a03bfc10ad237a012fc3cad55c57151d1e02db69a0b08fc73e99c7aa4a."
+      "bytes": 798224,
+      "sha256": "5b3ab926e32c0d24eda35e6242aec20d5efa156c280966e61d1cebf3ed1e97bb",
+      "processing": "scripts/bake-luna-floor-hands.py replaces only 76 upper-limb rotation channels in floorSit/floorStand. Editable source: assets/models/resident/Luna-Cardigan-Floor-Hands.blend. Base bundle SHA-256 d4b514a03bfc10ad237a012fc3cad55c57151d1e02db69a0b08fc73e99c7aa4a. Blender timing source Luna-Bear-Pickup.blend and scripts/retime-bear-pickup.py append a 3.05-second bearPickUp clip, sharing original poses and exporting the synchronized contact clock; all eleven original clips remain unchanged."
     }
   ]
 }
