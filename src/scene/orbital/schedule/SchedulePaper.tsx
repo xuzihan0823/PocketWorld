@@ -2,7 +2,8 @@ import { paperGeometry } from './paperGeometry';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { paperBallPosition, type PaperBall, type SchedulePage } from './schedule';
+import { PAPER_BALL_Y, paperBallPosition, type PaperBall, type SchedulePage } from './schedule';
+import { isValidPaperBallBody, type PaperBallBody } from './paperBallMotion';
 import type { PaperPickup } from '../cabinActions';
 import { SCHEDULE_BOOK_POSITION } from './bookLayout';
 import { roomAudio } from '../../audioEngine';
@@ -89,13 +90,23 @@ export function PostedPaper({ page, position, onSelect }: { page: SchedulePage; 
     </mesh>)}
   </group>;
 }
-export function FloorPaperBall({ ball, pickup }: { ball: PaperBall; pickup: React.RefObject<PaperPickup | null> }) {
+export function FloorPaperBall({ ball, pickup, bodies }: { ball: PaperBall; pickup: React.RefObject<PaperPickup | null>; bodies?: React.RefObject<readonly PaperBallBody[]> }) {
   const mesh = useRef<THREE.Mesh>(null);
   const start = useMemo(() => paperBallPosition(ball.seed), [ball.seed]);
   useFrame(() => {
     if (!mesh.current) return;
-    if (pickup.current?.id === ball.id) mesh.current.position.copy(pickup.current.position);
-    else mesh.current.position.fromArray(start);
+    if (pickup.current?.id === ball.id) {
+      mesh.current.position.copy(pickup.current.position);
+      return;
+    }
+    const body = bodies?.current?.find(item => item.id === ball.id);
+    if (body && isValidPaperBallBody(body)) {
+      mesh.current.position.set(body.x, PAPER_BALL_Y + body.y, body.z);
+      mesh.current.rotation.set(body.pitch, body.yaw, body.roll, 'YXZ');
+    } else {
+      mesh.current.position.fromArray(start);
+      mesh.current.rotation.set(0.4, ball.seed, 0.3);
+    }
   });
   const { geometry } = useMemo(() => paperGeometry(true), []);
   useEffect(() => () => geometry.dispose(), [geometry]);

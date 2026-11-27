@@ -33,6 +33,7 @@ const cabinLayout = load('./orbital/cabinLayout.ts', {});
 const cabinStairs = load('./orbital/cabinStairs.ts', { './cabinLayout.ts': cabinLayout });
 const catalog = load('./orbital/library/catalog.ts', {});
 const scheduleModel = load('./orbital/schedule/schedule.ts', {});
+const paperBallMotion = load('./orbital/schedule/paperBallMotion.ts', { './schedule.ts': scheduleModel });
 
 function libraryDependencies(residentRig) {
   const authored = load('./orbital/library/pageTurnFrames.ts', {});
@@ -101,6 +102,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     './journalLayout': load('./orbital/journalLayout.ts', {}),
     './schedule/bookLayout': load('./orbital/schedule/bookLayout.ts', {}),
     './schedule/schedule': scheduleModel,
+    './schedule/paperBallMotion': paperBallMotion,
     './schedule/paperBallLitter': { usePaperBallLitter: () => overrides.paperBalls ?? [] },
     './chairPose': load('./orbital/chairPose.ts', {}),
     './chairMotion': load('./orbital/chairMotion.ts', {}),
@@ -406,45 +408,80 @@ test('the pedal trash can blocks walking only inside the habitat', () => {
   }
 });
 
-test('floor paper balls block walking only inside the habitat', () => {
+test('floor paper balls can be kicked around with tight solid collision only inside the habitat', () => {
   const ball = { id: 'ball-1', seed: 1 };
   const [x, , z] = scheduleModel.paperBallPosition(ball.seed);
   for (const sceneId of ['habitat', 'observatory']) {
     const view = mount('orbital', { sceneId, paperBalls: [ball] });
     try {
-      view.root.position.set(x - 1.1, 0, z);
+      view.root.position.set(x - 0.85, 0, z);
       view.key('KeyD');
-      for (let i = 0; i < 150; i++) view.frame(1 / 60);
-      const endX = view.root.position.x;
+      for (let i = 0; i < 150; i++) {
+        view.frame(1 / 60);
+        if (sceneId === 'habitat') {
+          const live = view.root.userData.paperBodies[0];
+          const gap = Math.hypot(live.x - view.root.position.x, live.z - view.root.position.z);
+          assert.ok(gap >= paperBallMotion.PAPER_BALL_MOVER_RADIUS + live.radius - 0.01, `solid separation violated: gap=${gap}`);
+        }
+      }
       if (sceneId === 'habitat') {
-        assert.ok(endX > x - 1.1 && endX <= x - 0.33 + 1e-4, `habitat walk stopped at ${endX}`);
+        const live = view.root.userData.paperBodies[0];
+        assert.ok(live.x > x + 0.25, `paper ball should be kicked east from ${x}, got ${live.x}`);
+        assert.ok(view.root.position.x > x - 0.26, `Luna should kick past the old blocking zone, got ${view.root.position.x}`);
       } else {
-        assert.ok(endX > x + 0.33, `observatory should not collide with habitat paper balls (${endX})`);
+        assert.equal(view.root.userData.paperBodies.length, 0);
+        assert.ok(view.root.position.x > x + 0.33, `observatory should not collide with habitat paper balls (${view.root.position.x})`);
       }
     } finally { view.dispose(); }
   }
 });
 
-test('a paper ball stays pickable while its collider blocks walking', () => {
+test('a paper ball pinned against the desk keeps tight non-clipping separation', () => {
+  const ball = { id: 'pinned-ball', seed: 1 };
+  const view = mount('orbital', { sceneId: 'habitat', paperBalls: [ball] });
+  try {
+    view.frame(1 / 60);
+    const live = view.root.userData.paperBodies[0];
+    // Place the paper ball flush against the front edge of the desk (z = -1.675).
+    live.x = 0.4;
+    live.z = -1.675 + live.radius;
+    view.root.position.set(0.4, 0, live.z + 0.85);
+    view.key('KeyW');
+    for (let i = 0; i < 150; i++) {
+      view.frame(1 / 60);
+      const gap = Math.hypot(live.x - view.root.position.x, live.z - view.root.position.z);
+      assert.ok(gap >= paperBallMotion.PAPER_BALL_MOVER_RADIUS + live.radius - 0.01, `pinned separation failed: gap=${gap}`);
+    }
+    // Tighter than the old 0.33 m square box: Luna can walk right up to ~0.26 m from the ball center.
+    const finalGap = Math.hypot(live.x - view.root.position.x, live.z - view.root.position.z);
+    assert.ok(finalGap < 0.31, `expected tighter pinned standoff < 0.31 m, got ${finalGap}`);
+  } finally { view.dispose(); }
+});
+
+test('a paper ball stays pickable at its live kicked position without getting kicked away on approach', () => {
   const ball = { id: 'paper-1', seed: 3 };
-  const [x, , z] = scheduleModel.paperBallPosition(ball.seed);
   const hints = [];
   const view = mount('orbital', { paperBalls: [ball], onHover: (_id, hint) => hints.push(hint) });
   try {
+    view.frame(1 / 60);
+    const live = view.root.userData.paperBodies[0];
+    live.x = 0.85;
+    live.z = 0.65;
     const request = { sceneId: 'habitat', objectId: 'schedule-paper-paper-1', kind: 'select' };
     view.root.position.set(2.52, 0, 1.10);
-    view.props.interaction.current([x, 0.105, z], request, () => {});
+    view.props.interaction.current([live.x, 0.105, live.z], request, () => {});
     let walked = 0;
     for (let i = 0; i < 1200; i++) {
       const before = view.root.position.clone();
       view.frame(1 / 60);
       if (view.root.position.distanceTo(before) > 0.001) walked = i;
-      if (Math.hypot(view.root.position.x - x, view.root.position.z - z) <= .44) break;
+      if (Math.hypot(view.root.position.x - live.x, view.root.position.z - live.z) <= .44 && i > 10) break;
     }
-    const gap = Math.hypot(view.root.position.x - x, view.root.position.z - z);
+    const gap = Math.hypot(view.root.position.x - live.x, view.root.position.z - live.z);
     assert.ok(walked > 0, 'the approach actually walks instead of teleporting');
     assert.ok(gap <= .44, `Luna must reach pickup range, gap=${gap}`);
-    assert.ok(gap >= .33 - 1e-3, `the ball still keeps Luna outside its body, gap=${gap}`);
+    assert.ok(gap >= paperBallMotion.PAPER_BALL_MOVER_RADIUS + live.radius - 1e-3, `the ball keeps Luna outside its body, gap=${gap}`);
+    assert.ok(Math.hypot(live.x - 0.85, live.z - 0.65) < 0.01, 'approaching to pick up must not kick the target ball away');
     assert.ok(!hints.some(hint => hint?.includes('前方空间不足')));
   } finally { view.dispose(); }
 });

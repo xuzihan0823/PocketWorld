@@ -216,6 +216,7 @@ test('paper-ball colliders sit on the same floor spot as the rendered crumples',
   assert.equal(y, 0.105);
   assert.deepEqual(JSON.parse(JSON.stringify(paperBallBoxes([{ id: 'ball', seed }]))),
     [[x - PAPER_BALL_RADIUS, x + PAPER_BALL_RADIUS, z - PAPER_BALL_RADIUS, z + PAPER_BALL_RADIUS]]);
-  assert.deepEqual(JSON.parse(JSON.stringify(paperBallBoxes([{ id: 'ball', seed }], 0.23)[0])), [x - 0.33, x + 0.33, z - 0.33, z + 0.33]);
+  assert.equal(PAPER_BALL_RADIUS, 0.08);
+  assert.deepEqual(JSON.parse(JSON.stringify(paperBallBoxes([{ id: 'ball', seed }], 0.23)[0])), [x - 0.31, x + 0.31, z - 0.31, z + 0.31]);
   assert.deepEqual(paperBallBoxes([]), []);
 });

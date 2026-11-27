@@ -5,12 +5,13 @@ import type { WorldSceneProps } from '../../../types/world';
 import { ObjectHandle } from '../ObjectHandle';
 import { PAPER_PICKUP_PREFIX, type PaperPickup } from '../cabinActions';
 import { useSchedule } from './ScheduleContext';
-import { discardSchedulePage, paperBallPosition, tearSchedulePage, turnSchedulePage } from './schedule';
+import { PAPER_BALL_Y, discardSchedulePage, paperBallPosition, tearSchedulePage, turnSchedulePage } from './schedule';
+import type { PaperBallBody } from './paperBallMotion';
 import { BOOK_POSITION, FloorPaperBall, FlyingPaper, GLASS_POSITION, PostedPaper, type PaperFlight } from './SchedulePaper';
 import { roomAudio } from '../../audioEngine';
 import './schedule.css';
 
-export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; paperPickup: React.RefObject<PaperPickup | null> }) {
+export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; paperPickup: React.RefObject<PaperPickup | null>; paperBodies?: React.RefObject<readonly PaperBallBody[]> }) {
   const { book, state, commit, ready, error, retry, collectPaper } = useSchedule();
   const { size } = useThree();
   const narrow = size.width < 720;
@@ -109,10 +110,12 @@ export function ScheduleSurfaces(props: WorldSceneProps & { visible: boolean; pa
     {state.discarded.filter(ball => flight?.page.id !== ball.id).map(ball => {
       const world = { ...props, onApproach: (_point: [number, number, number], action: Parameters<typeof props.onAction>[0]) => {
         if (!props.visible || !ready || busy.current) return false;
-        return props.onApproach?.(paperBallPosition(ball.seed), action, () => { collectPaper(ball.id); }) ?? false;
+        const live = props.paperBodies?.current?.find(body => body.id === ball.id);
+        const point: [number, number, number] = live ? [live.x, PAPER_BALL_Y + live.y, live.z] : paperBallPosition(ball.seed);
+        return props.onApproach?.(point, action, () => { collectPaper(ball.id); }) ?? false;
       } };
       return <ObjectHandle key={ball.id} id={PAPER_PICKUP_PREFIX + ball.id} action="select" hint="捡起纸团" panorama
-        world={world} onClick={event => event.stopPropagation()}><FloorPaperBall ball={ball} pickup={props.paperPickup} /></ObjectHandle>;
+        world={world} onClick={event => event.stopPropagation()}><FloorPaperBall ball={ball} pickup={props.paperPickup} bodies={props.paperBodies} /></ObjectHandle>;
     })}
     {flight && <FlyingPaper flight={flight} reducedMotion={props.reducedMotion} onComplete={() => { busy.current = false; setFlight(null); }} />}
     {focused && !flight && (glassView || message || error) && <Html center transform={!narrow} position={glassView ? [GLASS_POSITION[0], GLASS_POSITION[1] - 0.52, GLASS_POSITION[2] + 0.018] : BOOK_POSITION} distanceFactor={narrow ? undefined : 0.62} zIndexRange={[24, 21]}>
