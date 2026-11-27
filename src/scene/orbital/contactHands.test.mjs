@@ -9,6 +9,7 @@ import { createPlushPose, createPlushShape, gripPlush } from './plushCarry.ts';
 import { createPlushBodies } from './plushMotion.ts';
 import { PLUSH_DOLLS } from './cabinLayout.ts';
 import { applyCabinPerformance, createCabinActionPlayer, PICKUP_GRIP_TIME } from './cabinActions.ts';
+import { bearPickupSourceTime } from './bearPickupTiming.ts';
 
 const model = name => new URL('../../../assets/public/models/' + name, import.meta.url);
 async function resident(authored = true) {
@@ -111,14 +112,14 @@ test('cardigan bear grip seats real palms during pickup, carry and reversed rele
     }
   });
   const ray = new Raycaster(), hits = [], point = new Vector3();
-  const times = [1.9, 2.1, 2.3, 2.5, 2.7, 2.92, 3.3, clips.pickUp.duration];
+  const times = [1.46, 1.64, 1.81, 1.98, 2.14, 2.30, 2.60, clips.bearPickUp.duration];
   const forward = new Map();
   try {
     for (const time of [...times, ...times.toReversed()]) {
-      const walking = time === clips.pickUp.duration;
+      const walking = time === clips.bearPickUp.duration;
       rig.applyPose(.28, walking ? 1 : 0);
-      if (!walking) applyCabinPerformance({ kind: 'plush', time }, clips, animate);
-      hold(root, grip, time, PICKUP_GRIP_TIME);
+      if (!walking) applyCabinPerformance({ kind: 'plush', time, bearPickup: true }, clips, animate);
+      hold(root, grip, bearPickupSourceTime(time), PICKUP_GRIP_TIME);
       toy.position.copy(grip.center); toy.rotation.copy(grip.rotation); toy.updateMatrixWorld(true); deck.updateMatrixWorld(true);
       const snapshots = [];
       for (const side of ['Right', 'Left']) {
@@ -133,7 +134,7 @@ test('cardigan bear grip seats real palms during pickup, carry and reversed rele
         }
         distances.sort((a, b) => a - b);
         assert.ok(distances.length > 25, 'test includes actual palm surface');
-        assert.ok(distances[0] < (time >= 2.7 ? .0045 : .008), `${side} palm floats ${distances[0]} m at ${time}`);
+        assert.ok(distances[0] < (bearPickupSourceTime(time) >= 2.7 ? .0045 : .008), `${side} palm floats ${distances[0]} m at ${time}`);
         assert.ok(distances[Math.floor(distances.length / 2)] < .015, `${side} palm broadly separates from bear`);
         snapshots.push(p.wrist.toArray(), p.normal.toArray());
       }
@@ -174,11 +175,11 @@ test('cardigan bear wrist trajectories are continuous at 30, 60 and 120 Hz', asy
   try {
     for (const hz of [30, 60, 120]) for (const reverse of [false, true]) {
       const grip = gripPlush(body, shape); let previous;
-      const count = Math.ceil(clips.pickUp.duration * hz);
+      const count = Math.ceil(clips.bearPickUp.duration * hz);
       for (let i = 0; i <= count; i++) {
-        const t = Math.min(clips.pickUp.duration, (reverse ? count - i : i) / hz);
-        rig.applyPose(0, 0); applyCabinPerformance({ kind: 'plush', time: t }, clips, animate);
-        hold(root, grip, t, PICKUP_GRIP_TIME); deck.updateMatrixWorld(true);
+        const t = Math.min(clips.bearPickUp.duration, (reverse ? count - i : i) / hz);
+        rig.applyPose(0, 0); applyCabinPerformance({ kind: 'plush', time: t, bearPickup: true }, clips, animate);
+        hold(root, grip, bearPickupSourceTime(t), PICKUP_GRIP_TIME); deck.updateMatrixWorld(true);
         const state = ['Right', 'Left'].map(side => ({
           position: position(rig, side + 'Hand'), rotation: rig.mesh.getObjectByName('mixamorig' + side + 'Hand').getWorldQuaternion(new Quaternion()),
         }));

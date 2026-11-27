@@ -11,6 +11,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { load as loadModel } from './orbital/load-for-validation.mjs';
 import * as cabinActions from './orbital/cabinActions.ts';
 import * as stairGait from './orbital/stairGait.ts';
+import { createCabinGroupFade } from './orbital/cabinCutaway.ts';
 
 const { gltf: residentModel } = await loadModel(new URL('../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
@@ -125,6 +126,7 @@ function mount(kind, overrides = {}, idleLibrary) {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
     './scene/orbital/orbital.css': {},
+    '../assets/brand/pocketworld-wordmark.webp': 'wordmark.webp',
   };
   if (overrides.library) Object.assign(dependencies, libraryDependencies(residentRig));
   const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
@@ -161,7 +163,7 @@ function mount(kind, overrides = {}, idleLibrary) {
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
-    root, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    tree, root, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -175,6 +177,62 @@ function mount(kind, overrides = {}, idleLibrary) {
     dispose() { cleanups.forEach(cleanup => cleanup?.()); },
   };
 }
+
+test('拖鞋经历楼层渐隐后恢复原始材质与完整透明度', () => {
+  const world = mount('orbital');
+  const original = new THREE.MeshStandardMaterial();
+  const geometry = new THREE.BoxGeometry(.15, .1, .32);
+  const side = { center: [-4, .1], baseY: .014, halfHeight: .05, parts: [{ geometry, material: original }] };
+  const { SlipperPair } = load('./orbital/Slippers.tsx', {
+    react: {
+      useMemo: fn => fn(), useRef: value => ({ current: value }),
+      createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
+    },
+    three: THREE,
+    '@react-three/fiber': { useFrame() {} },
+    './useSceneGLTF': { useSceneGLTF: () => ({ scene: new THREE.Group() }) },
+    './cabinLayout': cabinLayout,
+    './CabinUpperDeck': { CabinUpperDeck: 'CabinUpperDeck' },
+    './slipperMotion': load('./orbital/slipperMotion.ts', {}),
+    './slipperModel': { extractSlipperModel: () => ({ left: side, right: side }), SLIPPER_MODEL_URL: '' },
+  });
+  const fades = [], meshes = [];
+  const root = new THREE.Group();
+  function attach(node, parent) {
+    if (Array.isArray(node)) { node.forEach(child => attach(child, parent)); return; }
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'SlipperPair') { attach(SlipperPair(node.props), parent); return; }
+    if (node.type === 'mesh') {
+      const mesh = new THREE.Mesh(node.props.geometry, node.props.material);
+      parent.add(mesh);
+      meshes.push(mesh);
+    } else if (['group', 'CabinFadeGroup', 'CabinUpperDeck'].includes(node.type)) {
+      const group = new THREE.Group();
+      parent.add(group);
+      if (node.type !== 'group') fades.push({ group, fade: createCabinGroupFade() });
+      parent = group;
+    }
+    attach(node.props?.children, parent);
+  }
+  attach(world.tree, root);
+  try {
+    assert.equal(meshes.length, 2, '挂载左右两只拖鞋');
+    for (const opacity of [.8, .5, .2, 0, .2, .5, .8, 1]) {
+      for (let frame = 0; frame < 30; frame++) {
+        for (const { group, fade } of fades) fade.set(group, opacity);
+      }
+    }
+    for (const mesh of meshes) {
+      assert.equal(mesh.material.opacity, 1, '返回二层后拖鞋不应残留透明度');
+      assert.equal(mesh.material, original, '渐隐结束后恢复原始材质');
+    }
+  } finally {
+    fades.forEach(({ fade }) => fade.restore());
+    geometry.dispose();
+    original.dispose();
+    world.dispose();
+  }
+});
 
 test('书柜站位等待动画绑定，成功保持烘焙站位，失败平滑退回原有站位', async () => {
   const { gltf } = await loadModel(new URL('../../assets/public/models/resident/luna-library.glb', import.meta.url));

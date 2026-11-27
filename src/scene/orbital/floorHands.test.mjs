@@ -129,17 +129,25 @@ test('floor sit, cancel and stand are continuous at 30/60/120 Hz including the p
 });
 
 function unchangedDigest(bytes){
- const n=bytes.readUInt32LE(12),d=JSON.parse(bytes.subarray(20,20+n)),copy=Buffer.from(bytes),start=n+28;
+ const n=bytes.readUInt32LE(12),d=JSON.parse(bytes.subarray(20,20+n)),start=n+28;
+ const bear=d.animations.find(a=>a.name==='bearPickUp');
+ if(bear){
+  const accessor=Math.min(...bear.samplers.map(s=>s.input)),view=d.accessors[accessor].bufferView;
+  d.buffers[0].byteLength=d.bufferViews[view].byteOffset;
+  d.accessors.length=accessor;d.bufferViews.length=view;
+  d.animations=d.animations.filter(a=>a!==bear);
+ }
+ const copy=Buffer.from(bytes.subarray(start,start+d.buffers[0].byteLength));
  for(const a of d.animations)if(['floorSit','floorStand'].includes(a.name))for(const c of a.channels){
   const name=d.nodes[c.target.node].name;
   if(c.target.path!=='rotation'||!/^mixamorig(Left|Right)(Shoulder|Arm|ForeArm|Hand)/.test(name))continue;
-  const acc=d.accessors[a.samplers[c.sampler].output],view=d.bufferViews[acc.bufferView];copy.fill(0,start+(view.byteOffset??0)+(acc.byteOffset??0),start+(view.byteOffset??0)+(acc.byteOffset??0)+acc.count*16);
+  const acc=d.accessors[a.samplers[c.sampler].output],view=d.bufferViews[acc.bufferView];copy.fill(0,(view.byteOffset??0)+(acc.byteOffset??0),(view.byteOffset??0)+(acc.byteOffset??0)+acc.count*16);
  }
- return createHash('sha256').update(copy).digest('hex');
+ return createHash('sha256').update(JSON.stringify(d)).update(copy).digest('hex');
 }
 test('animation skeleton, pelvis, legs, feet and all unrelated clips retain the original bytes',()=>{
- assert.equal(animations.length,11);assert.equal(raw.length,791940);
- // Digest excludes only the authorized arm/hand rotations of the two floor clips.
- assert.equal(unchangedDigest(raw),'dcde4e3aef3063ebda8a5f4765d83d4c24c684f66ea6b1c1dde0b9508bd7d5f7');
+ assert.equal(animations.length,12);assert.equal(raw.length,798224);
+ // Normalize the appended bear timing, then exclude only the original floor hand rotations.
+ assert.equal(unchangedDigest(raw),'101d0a5a0bc8157b3641a8448fc30a777073a171fee8c639a9d26beeb35173dd');
  if(process.env.FLOOR_BASE)assert.equal(unchangedDigest(raw),unchangedDigest(fs.readFileSync(process.env.FLOOR_BASE)));
 });
