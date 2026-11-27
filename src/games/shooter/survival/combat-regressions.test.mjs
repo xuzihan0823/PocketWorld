@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRequire } from 'node:module';
-const { createRun, advance, dash, LIMITS } = createRequire(import.meta.url)('./dist/engine.cjs');
+const { createRun, advance, dash, rollChoices, LIMITS } = createRequire(import.meta.url)('./dist/engine.cjs');
 const enemy = (id, x, y = 1000, radius = 10) => ({ id, x, y, radius, kind: 0, hp: 10000, max: 10000, speed: 0, seed: 0, flash: 0, hit: 0, charge: 4 });
 function arena(family = 'machine', variant = 'prism') {
   const r = createRun(() => .5, family, variant);
@@ -82,7 +82,7 @@ test('explosive chain ends with no fresh targets, including when projectile budg
   for (const variant of ['launcher', 'mortar', 'mine']) {
     const r = arena('rocket', variant), target = enemy(1, 1040);
     r.enemies = [target, { ...enemy(2, 1230), hp: 0 }];
-    const b = bullet(variant, { x: 1040, vx: 0, kind: 'rocket', life: .01, damage: 10, traits: { ricochet: 3 } });
+    const b = bullet(variant, { x: 1040, vx: 0, kind: 'rocket', life: variant === 'mine' ? 8 : .01, damage: 10, traits: { ricochet: 3 } });
     r.bullets = [b, ...Array.from({ length: LIMITS.bullets - 1 }, () => bullet('mine', { kind: 'rocket', x: 400, y: 400, vx: 0, life: 10, secondary: true }))];
     advance(r, .02); assert.equal(target.hp, 9990); assert.ok(b.life <= 0); assert.ok(r.bullets.length <= LIMITS.bullets);
     for (let i = 0; i < 10; i++) advance(r, .05);
@@ -156,10 +156,105 @@ for (const [variant, twin, rank] of [['star', 0, 1], ['star', 2, 1], ['frostfan'
   });
 }
 
+test('launcher cluster hits every enemy in a short cone along the incoming rocket', () => {
+  const r = arena('rocket', 'mine');
+  const near = enemy(1, 1000, 958), far = enemy(2, 1000, 890);
+  const rear = enemy(3, 1000, 1040), side = enemy(4, 1050, 970);
+  const outside = enemy(5, 1000, 875);
+  r.enemies = [near, far, rear, side, outside];
+  r.bullets = [bullet('launcher', { kind: 'rocket', vx: 0, vy: -100, life: .01, damage: 100, specs: { cluster: 2 } })];
+
+  advance(r, .02);
+
+  assert.equal(near.hp, 9872);
+  assert.equal(far.hp, 9972);
+  assert.equal(rear.hp, 9900);
+  assert.equal(side.hp, 9900);
+  assert.equal(outside.hp, 10000);
+  assert.equal(r.bullets.length, 0);
+  assert.equal(r.blasts.find(blast => blast.coneAngle !== undefined)?.coneAngle, -Math.PI / 2);
+});
+
+test('mortar cluster still launches three short-lived rockets with the original damage and speed', () => {
+  const r = arena('rocket', 'mortar');
+  r.bullets = [bullet('mortar', { kind: 'rocket', vx: 0, life: .01, damage: 100, target: { x: 1040, y: 1000 }, specs: { cluster: 2 } })];
+
+  advance(r, .02);
+
+  assert.equal(r.blasts[0].radius, 118 * 1.1);
+  assert.equal(r.bullets.length, 3);
+  for (const child of r.bullets) {
+    assert.ok(child.secondary);
+    assert.equal(child.variant, 'launcher');
+    assert.equal(child.life, .4);
+    assert.ok(Math.abs(child.damage - 28) < 1e-9);
+    assert.ok(Math.abs(Math.hypot(child.vx, child.vy) - 200) < 1e-9);
+  }
+  for (let i = 0; i < 10; i++) advance(r, .05);
+  assert.equal(r.bullets.length, 0);
+  assert.equal(r.blasts.filter(blast => blast.radius === 82 * .58 * 1.1).length, 3);
+});
+
+test('mine cluster places three smaller mines that arm and explode independently', () => {
+  const r = arena('rocket', 'mine');
+  r.enemies = [enemy(1, 1040)];
+  r.bullets = [bullet('mine', { x: 1040, kind: 'rocket', vx: 0, damage: 100, life: 8, specs: { cluster: 2 } })];
+
+  advance(r, .02);
+
+  const children = [...r.bullets];
+  assert.equal(children.length, 3);
+  for (const [i, child] of children.entries()) {
+    assert.ok(child.secondary);
+    assert.equal(child.variant, 'mine');
+    assert.equal(child.delay, .35);
+    assert.equal(child.life, 5);
+    assert.equal(Math.hypot(child.vx, child.vy), 0);
+    assert.ok(Math.abs(Math.hypot(child.x - 1040, child.y - 1000) - 62) < 1e-9);
+    const other = children[(i + 1) % children.length];
+    assert.ok(Math.abs(Math.hypot(child.x - other.x, child.y - other.y) - 62 * Math.sqrt(3)) < 1e-9);
+  }
+
+  const [child, second, third] = children;
+  const close = enemy(2, child.x, child.y);
+  const outside = enemy(3, child.x + 75, child.y);
+  const outsideTrigger = enemy(4, second.x - 40, second.y);
+  r.enemies = [close, outside, outsideTrigger];
+  for (let i = 0; i < 6; i++) advance(r, .05);
+  assert.equal(close.hp, 10000);
+  for (let i = 0; i < 3; i++) advance(r, .05);
+  assert.equal(close.hp, 9972);
+  assert.equal(outside.hp, 10000);
+  assert.equal(outsideTrigger.hp, 10000);
+  assert.deepEqual(r.bullets, [second, third]);
+  assert.ok(r.blasts.some(blast => blast.radius === 95 * .55 * 1.1));
+});
+
+test('an armed mine cannot trigger on a tick after its remaining lifetime runs out', () => {
+  for (const secondary of [false, true]) {
+    const r = arena('rocket', 'mine');
+    const target = enemy(1, 1040);
+    r.enemies = [target];
+    r.bullets = [bullet('mine', { x: 1040, kind: 'rocket', vx: 0, life: .01, secondary })];
+    advance(r, .05);
+    assert.equal(target.hp, target.max);
+    assert.equal(r.bullets.length, 0);
+    assert.equal(r.blasts.length, 0);
+  }
+});
+
+test('cluster card describes the currently equipped alchemist weapon', () => {
+  for (const [variant, description] of [['launcher', /短锥爆风/], ['mortar', /小火箭/], ['mine', /小地雷/]]) {
+    const r = arena('rocket', variant);
+    r.specials.embers = 1;
+    assert.match(rollChoices(r).find(choice => choice.id === 'cluster')?.description ?? '', description);
+  }
+});
+
 test('a follow-up whose target dies expires without resurrecting a mine or looping explosions', () => {
   for(const variant of ['launcher','mortar','mine']) {
     const r=arena('rocket',variant), a=enemy(1,1040), target=enemy(2,1230);
-    r.enemies=[a,target];const b=bullet(variant,{x:1040,vx:0,kind:'rocket',life:.01,target:{x:1040,y:1000},traits:{ricochet:3}});r.bullets=[b];
+    r.enemies=[a,target];const b=bullet(variant,{x:1040,vx:0,kind:'rocket',life:variant==='mine'?8:.01,target:{x:1040,y:1000},traits:{ricochet:3}});r.bullets=[b];
     advance(r,.02);assert.equal(b.bounces,1);target.hp=0;
     for(let i=0;i<60;i++)advance(r,.05);
     assert.equal(b.bounces,1);assert.equal(r.bullets.length,0);assert.equal(a.hp,9964);

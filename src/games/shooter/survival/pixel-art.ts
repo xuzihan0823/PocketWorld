@@ -3,15 +3,161 @@ import { STARTERS, armamentOf } from './arsenal';
 import type { VariantId } from './arsenal';
 export const INK = '#201b32';
 export type Sprite = { rows: string[]; colors: Record<string,string> };
-const heroRows = ['.......xx.......','......xhhx......','.....xhhhhx.....','....xhhHhhhx....','...xhhHhhhhhx...','..xxxxxxxxxxxx..','...xsssssSSx....','...xsxsxsSSx....','...xssssssSx....','....xsssSxx.....','...xcccccccxx...','..xccccHcccxax..','.xaxcccHcccxax..','..xxcccccccxx...','...xcccCcccx....','...xcccCcccx....','..xccCCCCCccx...','..xxxxxxxxxxx...','...xbbx.xbbx....','...xxxx.xxxx....'];
-export function heroSprite(id: WeaponId): Sprite {
-  const palettes: Record<WeaponId,[string,string,string]> = { pistol:['#9b684e','#d5a668','#ad705c'],machine:['#4b8591','#9ed3c3','#546b8f'],rocket:['#a86550','#e1b56d','#a36a54'],wand:['#766090','#b99ddd','#685181'],broom:['#657e65','#c5ce86','#8c6b79'] };
-  const [hat,light,robe]=palettes[id]; const rows=[...heroRows];
-  if(id==='pistol'){rows[0]='................';rows[1]='.....xxxxxx.....';rows[2]='....xhhhhhhx....';rows[3]='....xhhHhhhx....';rows[4]='...xxhhhhhhxx...';}
-  if(id==='machine'){rows[0]='................';rows[1]='....xxxxxxx.....';rows[2]='...xhhhhhhhxx...';rows[3]='...xhhHhhhhhx...';rows[4]='...xHxxHxxHhx...';}
-  if(id==='rocket'){rows[0]='................';rows[1]='.....xxxxxx.....';rows[2]='....xhhhhhhx....';rows[3]='...xhhHhhhhhx...';rows[4]='...xhhHhhhhhx...';}
-  return {rows,colors:{x:INK,h:hat,H:light,s:'#f1d2ab',S:'#d4a68b',c:robe,C:hat,a:'#ebc69c',b:'#5b4855'}};
+function heroColors(highlight: string, hat: string, hairLight: string, hair: string, cloth: string, shade: string, gold: string): Sprite['colors'] {
+  return { x: INK, H: highlight, h: hat, l: hairLight, T: hair, c: cloth, C: shade,
+    G: gold, J: '#fff6ba', s: '#ffe0be', j: '#ffaaa5', b: '#51415e' };
 }
+
+// Silhouettes and accents follow the five poster illustrations.
+const HEROES: Record<WeaponId, Sprite> = {
+  pistol: {
+    colors: heroColors('#975938', '#633747', '#eee2ef', '#a39cbb', '#d18856', '#7c4a42', '#ffd377'),
+    rows: [
+      '........xx......x...',
+      '......xxhhxx...xlx..',
+      '.....xhhhhhhx.xlx...',
+      '....xhhHhhhhxxlx....',
+      '...xhhHhhhhGGxlx....',
+      '..xhhhGGGGGJGGx.....',
+      '.xHHGGJGGGGGGHxx....',
+      'xHHHHHHHHHHHHHHHxx..',
+      '.xxxxxxxxxxxxxxxxx..',
+      '..xTTllTTllTTx......',
+      '..xTlssllsslTx......',
+      '..xTsxsjsxssTx......',
+      '..xTssssssssTx......',
+      '.xTTxssssssxTTx.....',
+      '.xTTxcGccGcxTTx.....',
+      '..xHccGGGGccHxx.....',
+      '..xHcscGGcscHHx.....',
+      '.xHHcccGGcccHHHx....',
+      '.xHcCCcGGcCCcHHx....',
+      'xHHcCCGGGGCCcHHHx...',
+      '.xxxxCCCCxxxxxxxx...',
+      '....xbbbxxbbbx......',
+      '....xbbbx.xbbx......',
+      '....xxxxx.xxxx......',
+    ],
+  },
+  machine: {
+    colors: heroColors('#187f8f', '#20536f', '#65f3ef', '#169cae', '#237d99', '#174258', '#ffc66f'),
+    rows: [
+      '.........xxxx.......',
+      '......xxxTTTTxx.....',
+      '....xxTlllTTTTTx....',
+      '...xTlllTxGJJGxx....',
+      '..xTTTTGJJJxJlllGx..',
+      '..xTGJlllJGxGJJJx...',
+      '.xxTGJJJJJGTTTTxx...',
+      '.xTxxGGGGGTTlTTx....',
+      'xTlTxTllTTTllTTxx...',
+      'xTlTxlssssllTxTlTx..',
+      'xTTTxssxsxssTxTlTx..',
+      'xTTTxsssssssxTlTTx..',
+      '.xTTTxsssssx.xTlTx..',
+      '..xTTxccccx..xTTx...',
+      '..xTxcGccGGxxTTTx...',
+      '...xCCGGGGGcxxTx....',
+      '...xCssGGssCCxx.....',
+      '...xCccGGcccCXx.....',
+      '..xcccccccccCCx.....',
+      '..xcCCCCCCCCCCx.....',
+      '...xxxxxxxxxxx......',
+      '....xbbbxxbbbx......',
+      '....xbbbx.xbbx......',
+      '....xxxxx.xxxx......',
+    ],
+  },
+  rocket: {
+    colors: heroColors('#a04742', '#733645', '#ff906c', '#c74250', '#bf3e54', '#63304b', '#ffe28f'),
+    rows: [
+      '.......xxxxxx.......',
+      '.....xxhhhhhhxx.....',
+      '....xhhHHhhhhhhx....',
+      '...xhhhhxGJJGxhhx...',
+      '...xGGJJGxGJGGhhx...',
+      '..xGJllJGxGGHHHHHx..',
+      '..xGGGGGHHHxxxxxx...',
+      '..xxxxTTTTTTlTx.....',
+      '..xTllTTlllTTTx.....',
+      '.xTllsslsllTTxTTx...',
+      '.xTTssxsssxssxTlTx..',
+      'xTTTxssssssssxTTlTx.',
+      'xTllTxssssssxTTllTx.',
+      '.xTTTxGGccGGxTTTTx..',
+      '..xTxcHHGGHHcxTTx...',
+      '...xHcGGccGGcHxx....',
+      '..xHHcccsscccHHx....',
+      '..xHHcGcsscGcHHx....',
+      '.xHHHcGGccGGcHHHx...',
+      '.xHHHcCCGGCCcHHHx...',
+      'xHHxxxxxxxxxxHHHHx..',
+      '....xbbbxxbbbx......',
+      '....xbbbx.xbbx......',
+      '....xxxxx.xxxx......',
+    ],
+  },
+  wand: {
+    colors: heroColors('#8950bd', '#4c2d78', '#e8b8ff', '#a16dcd', '#9a50b5', '#582b87', '#ffda82'),
+    rows: [
+      '.........xhhxx......',
+      '.......xxhHHhhxx....',
+      '......xhhhhhhhhhx...',
+      '.....xhhhGhhhhhhx...',
+      '....xhhhGJGhhhhhx...',
+      '...xhhhGGGGGhhhhx...',
+      '..xhhhhG.GGhhhhhx...',
+      '.xhhhHHHHHHHHHHxxx..',
+      'xHHHHHHHHHHHHHHHHHx.',
+      '.xxxxxxxxxxxxxxxxx..',
+      '..xTTlTlTllTTTx.....',
+      '.xTlTTssllssTTx.....',
+      '.xTTxjsxsxjssTTx....',
+      'xTlTTxssssssxTlTx...',
+      'xTTTTxsssssxxTTTTx..',
+      '.xTTxcsGGsccxTTTx...',
+      '..xxccGGGGcccxx.....',
+      '..xCcssGGsscCCx.....',
+      '.xCccclGGcccCCCx....',
+      '.xCcccGGGGcccCCx....',
+      'xCCCCccGGccCCCCx....',
+      '..xxxxxxxxxxxx......',
+      '....xbbbxxbbbx......',
+      '....xxxxx.xxxx......',
+    ],
+  },
+  broom: {
+    colors: heroColors('#448152', '#214b50', '#daf78d', '#81ae54', '#398f6b', '#1c584f', '#ffe0a0'),
+    rows: [
+      '...............xxx..',
+      '..........xxxxxhhx..',
+      '........xxhhhhhhx...',
+      '......xxhhhhHhhx....',
+      '.....xhhHhhhHhhx....',
+      '....xhhhhhjhhhhhx...',
+      '...xhhhjjJjjhhhHx...',
+      '..xHHHHHjJjHHHHHxx..',
+      '.xHHHHHHjJJHHHHHHHx.',
+      'xHHHHHHHHHHHHHHHHHHx',
+      '.xxxxxxxxxxxxxxxxxx.',
+      '..xTTlTTlTTTTTx.....',
+      '.xTTlsslllssTTx.....',
+      '.xTTssxsssxsTTTx....',
+      'xTlTxssssssxTllTx...',
+      'xTTTTxssssxTTTTTx...',
+      '.xTxxcGssGcxTTTx....',
+      '..xHccGGGGccHx......',
+      '..xHHccGGccHHHx.....',
+      '.xHHHcGGGcHHHHx.....',
+      '.xHHHCCCCCHHHHx.....',
+      '..xxxxxxxxxxxxx.....',
+      '....xbbbxxbbbx......',
+      '....xxxxx.xxxx......',
+    ],
+  },
+};
+
+export function heroSprite(id: WeaponId): Sprite { return HEROES[id]; }
 export const WEAPON_SPRITES: Record<WeaponId,Sprite> = {
   pistol:{rows:['.................','...xxxxxxxxxxx...','..xGGGGGGGGGGGx..','..xGHHHHGGGxxx...','..xGGGGGGGGx.....','...xxxxGGxx......','......xBBx.......','......xBBx.......','......xxxx.......'],colors:{x:INK,G:'#c39c71',H:'#f4d99c',B:'#735a79'}},
   machine:{rows:['......xxxxx..........','..xxxxxHHHxxxxxxxxxx.','.xGGGGGGGGGGGMMMMMMMx','.xGHHHHHGGGGGxMxMxMx.','.xGGGGGGGGGGGMMMMMMMx','..xxxxGGxxxGxxxxxxxx.','.....xBBx.xGx........','.....xBBx.xGx........','.....xxxx.xxx........'],colors:{x:INK,G:'#699d9a',H:'#b6debd',B:'#665578',M:'#b2a4bd'}},
@@ -36,3 +182,5 @@ export function variantSprite(family:WeaponId,variant:VariantId=STARTERS[family]
   const rows=VARIANT_ROWS[variant];
   return rows?{rows,colors:{x:INK,G:armamentOf(variant).color,H:'#f4dfb2',B:'#765b80',M:'#ad91bd'}}:WEAPON_SPRITES[family];
 }
+
+export const MUSHROOM: Sprite = { rows: ['.....xxxxxx.....','...xxHHHHHHxx...','..xHHWWGGHHHHx..','.xHGGWWGGGGWWHx.','xHGGGGGGGGGWWGHx','xxxxxxxxxxxxxxxx','...xSSSSSSSSx...','...xSxSSSSxSx...','...xSSSxxSSSx...','....xxxxxxxx....'], colors: {x:INK,H:'#ff9ac4',G:'#c83b91',W:'#ffe4ca',S:'#d7c4e6'} };
