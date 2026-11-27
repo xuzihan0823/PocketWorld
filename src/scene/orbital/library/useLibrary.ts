@@ -96,6 +96,7 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
   }, [update]);
   const setPages = useCallback((pages: TextPage[]) => {
     const s = flow.current;
+    if (pages.length === s.pages.length && pages.every((page, i) => page.start === s.pages[i].start && page.end === s.pages[i].end && page.text === s.pages[i].text)) return;
     const anchor = s.pages[s.page]?.start ?? s.book?.anchor ?? 0;
     const page = Math.max(0, pages.findIndex((p, i) => anchor < p.end || i === pages.length - 1));
     s.pages = pages; s.page = page;
