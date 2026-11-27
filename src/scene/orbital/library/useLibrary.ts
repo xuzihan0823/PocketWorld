@@ -17,7 +17,6 @@ const phaseSfx: Partial<Record<LibraryPhase, RoomSfxType>> = {
   shelving: 'book-shelf-add',
 };
 export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: boolean; onAction: (action: WorldAction) => void; onReturn: () => void; error: (message: string) => void }) {
-  const [cameraView, setCameraView] = useState<'shelf' | 'close' | 'side'>('shelf');
   const [data, setData] = useState(() => { try { return readLibrary(localStorage); } catch { return freshLibrary(); } });
   const [view, setView] = useState(initialFlow);
   const motion = useRef<LibraryMotion | null>();
@@ -165,6 +164,6 @@ export function useLibrary(options: { sceneId: WorldSceneId; reducedMotion: bool
     return true;
   }, [update]);
   const fail = useCallback(() => { live.current.error('人物加载失败，已将书籍恢复在架；请重试人物加载或刷新页面。'); update(initialFlow()); live.current.onReturn(); }, [update]);
-  return { fail, cameraView, setCameraView, data, view, flow, motion, tick, arrived, choose, turn, setPages, add, remove, openForm, closeForm: () => { if (!saving.current && flow.current.phase === 'form') update({ phase: 'catalog' }); }, back, dispatch, slots: BOOK_SLOTS };
+  return { fail, data, view, flow, motion, tick, arrived, choose, turn, setPages, add, remove, openForm, closeForm: () => { if (!saving.current && flow.current.phase === 'form') update({ phase: 'catalog' }); }, back, dispatch, slots: BOOK_SLOTS };
 }
 export type LibraryController = ReturnType<typeof useLibrary>;
