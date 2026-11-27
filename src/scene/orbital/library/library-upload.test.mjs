@@ -135,6 +135,7 @@ function mountLibrarySurface({ initialUserBooks = [], userBookByteFiller = false
   deps['../residentRig'] = load(fs.readFileSync(new URL('../residentRig.ts', import.meta.url), 'utf8'));
   deps['./pageTurnFrames'] = load(fs.readFileSync(new URL('./pageTurnFrames.ts', import.meta.url), 'utf8'));
   deps['./bookMotion'] = load(fs.readFileSync(new URL('./bookMotion.ts', import.meta.url), 'utf8'));
+  deps['./cardiganPickup'] = load(fs.readFileSync(new URL('./cardiganPickup.ts', import.meta.url), 'utf8'));
   deps['./libraryMotion'] = load(fs.readFileSync(new URL('./libraryMotion.ts', import.meta.url), 'utf8'));
   const { useLibrary } = load(useLibrarySource);
   const { LibrarySurface } = load(surfaceSource);

@@ -21,10 +21,12 @@ function loadTS(path) {
   cache.set(path.href, mod.exports);
   return mod.exports;
 }
-const path = new URL('../assets/public/models/resident/luna-walk-room.glb', import.meta.url);
+const cardigan = process.argv.includes('--cardigan');
+const path = new URL(`../assets/public/models/resident/luna-${cardigan ? 'cardigan' : 'walk-room'}.glb`, import.meta.url);
 const { gltf, mesh } = await load(path);
 const { createResidentRig, RESIDENT_SCALE } = loadTS(new URL('../src/scene/orbital/residentRig.ts', import.meta.url));
-const rig = createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
+const rig = createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), cardigan);
+if (cardigan) rig.mesh.userData.outfit = 'cardigan';
 rig.applyPose(0, 0);
 const armContact = process.argv.includes('--arm-contact');
 if (armContact) {
@@ -41,6 +43,7 @@ if (process.argv.includes('--handoff')) {
   const r = loadTS(new URL('residentPose.ts', dir));
   const book = loadTS(new URL('catalog.ts', dir)).freshLibrary().books[0];
   const actor = new THREE.Group(); actor.add(rig.mesh); actor.rotation.y = Math.PI;
+  if (cardigan) actor.rotation.y += loadTS(new URL('catalog.ts', dir)).shelfYaw('habitat');
   actor.position.fromArray(b.authoredBookStand('habitat', book, true));
   actor.updateMatrixWorld(true);
   for (let i = 0; i < 100; i++) {

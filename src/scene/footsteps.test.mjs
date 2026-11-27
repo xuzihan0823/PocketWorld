@@ -11,6 +11,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { load as loadModel } from './orbital/load-for-validation.mjs';
 import * as cabinActions from './orbital/cabinActions.ts';
 import * as stairGait from './orbital/stairGait.ts';
+import { createCabinGroupFade } from './orbital/cabinCutaway.ts';
 
 const { gltf: residentModel } = await loadModel(new URL('../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
@@ -37,13 +38,15 @@ const paperBallMotion = load('./orbital/schedule/paperBallMotion.ts', { './sched
 function libraryDependencies(residentRig) {
   const authored = load('./orbital/library/pageTurnFrames.ts', {});
   const bookMotion = load('./orbital/library/bookMotion.ts', { three: THREE, './catalog': catalog, './pageTurnFrames': authored });
-  const armPose = load('./orbital/library/armPose.ts', { three: THREE });
+  const cardiganPalms = load('./orbital/library/cardiganPalms.ts', {});
+  const cardiganPickup = load('./orbital/library/cardiganPickup.ts', {});
+  const armPose = load('./orbital/library/armPose.ts', { three: THREE, './cardiganPalms': cardiganPalms });
   return {
     './library/catalog': catalog,
     './library/bookMotion': bookMotion,
     './library/armPose': armPose,
     './library/residentPose': load('./orbital/library/residentPose.ts', { three: THREE, './bookMotion': bookMotion, './catalog': catalog, './armPose': armPose, './pageTurnFrames': authored }),
-    './library/libraryMotion': load('./orbital/library/libraryMotion.ts', { three: THREE, './bookMotion': bookMotion, './catalog': catalog, '../residentRig': residentRig }),
+    './library/libraryMotion': load('./orbital/library/libraryMotion.ts', { three: THREE, './bookMotion': bookMotion, './catalog': catalog, '../residentRig': residentRig, './cardiganPickup': cardiganPickup }),
   };
 }
 
@@ -125,6 +128,7 @@ function mount(kind, overrides = {}, idleLibrary) {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
     './scene/orbital/orbital.css': {},
+    '../assets/brand/pocketworld-wordmark.webp': 'wordmark.webp',
   };
   if (overrides.library) Object.assign(dependencies, libraryDependencies(residentRig));
   const files = { orbital: './orbital/OrbitalResidents.tsx', app: '../App.tsx' };
@@ -151,6 +155,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     if (node.type === 'group' && node.props.ref) {
       const group = new THREE.Group();
       if (node.props.position) group.position.set(...node.props.position);
+      if (node.props.name === 'OrbitalResident' && overrides.start) group.position.fromArray(overrides.start);
       node.props.ref.current = group;
       groups.push({ group, name: node.props.name });
     }
@@ -160,7 +165,7 @@ function mount(kind, overrides = {}, idleLibrary) {
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
   return {
-    root, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    tree, root, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -174,6 +179,62 @@ function mount(kind, overrides = {}, idleLibrary) {
     dispose() { cleanups.forEach(cleanup => cleanup?.()); },
   };
 }
+
+test('拖鞋经历楼层渐隐后恢复原始材质与完整透明度', () => {
+  const world = mount('orbital');
+  const original = new THREE.MeshStandardMaterial();
+  const geometry = new THREE.BoxGeometry(.15, .1, .32);
+  const side = { center: [-4, .1], baseY: .014, halfHeight: .05, parts: [{ geometry, material: original }] };
+  const { SlipperPair } = load('./orbital/Slippers.tsx', {
+    react: {
+      useMemo: fn => fn(), useRef: value => ({ current: value }),
+      createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
+    },
+    three: THREE,
+    '@react-three/fiber': { useFrame() {} },
+    './useSceneGLTF': { useSceneGLTF: () => ({ scene: new THREE.Group() }) },
+    './cabinLayout': cabinLayout,
+    './CabinUpperDeck': { CabinUpperDeck: 'CabinUpperDeck' },
+    './slipperMotion': load('./orbital/slipperMotion.ts', {}),
+    './slipperModel': { extractSlipperModel: () => ({ left: side, right: side }), SLIPPER_MODEL_URL: '' },
+  });
+  const fades = [], meshes = [];
+  const root = new THREE.Group();
+  function attach(node, parent) {
+    if (Array.isArray(node)) { node.forEach(child => attach(child, parent)); return; }
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'SlipperPair') { attach(SlipperPair(node.props), parent); return; }
+    if (node.type === 'mesh') {
+      const mesh = new THREE.Mesh(node.props.geometry, node.props.material);
+      parent.add(mesh);
+      meshes.push(mesh);
+    } else if (['group', 'CabinFadeGroup', 'CabinUpperDeck'].includes(node.type)) {
+      const group = new THREE.Group();
+      parent.add(group);
+      if (node.type !== 'group') fades.push({ group, fade: createCabinGroupFade() });
+      parent = group;
+    }
+    attach(node.props?.children, parent);
+  }
+  attach(world.tree, root);
+  try {
+    assert.equal(meshes.length, 2, '挂载左右两只拖鞋');
+    for (const opacity of [.8, .5, .2, 0, .2, .5, .8, 1]) {
+      for (let frame = 0; frame < 30; frame++) {
+        for (const { group, fade } of fades) fade.set(group, opacity);
+      }
+    }
+    for (const mesh of meshes) {
+      assert.equal(mesh.material.opacity, 1, '返回二层后拖鞋不应残留透明度');
+      assert.equal(mesh.material, original, '渐隐结束后恢复原始材质');
+    }
+  } finally {
+    fades.forEach(({ fade }) => fade.restore());
+    geometry.dispose();
+    original.dispose();
+    world.dispose();
+  }
+});
 
 test('书柜站位等待动画绑定，成功保持烘焙站位，失败平滑退回原有站位', async () => {
   const { gltf } = await loadModel(new URL('../../assets/public/models/resident/luna-library.glb', import.meta.url));
@@ -265,13 +326,52 @@ test('the floor sofa blocks walking from the rug only inside the habitat', () =>
       for (let i = 0; i < 150; i++) view.frame(1 / 60);
       const end = view.root.position.z;
       if (sceneId === 'habitat') {
-        const edge = z + cabinLayout.FLOOR_SOFA.footprint.back;
-        assert.ok(end > z - 1.4 && end <= edge - .23);
+        const edge = z + cabinLayout.FLOOR_SOFA.footprints[0][2] - cabinLayout.LOW_FURNITURE_CLEARANCE;
+        assert.ok(end <= edge && end > edge - .025, `sofa contact at ${end}, expected near ${edge}`);
       } else {
         assert.ok(end > z);
       }
     } finally { view.dispose(); }
   }
+});
+
+test('walking and floor-click routing can reach the empty rug-side corner of the sofa', () => {
+  const [x, , z] = cabinLayout.FLOOR_SOFA.position;
+  const target = [x + .70, 0, z - .90];
+  for (const click of [false, true]) {
+    let arrivals = 0;
+    const view = mount('orbital', { start: [target[0], 0, z - 1.30], walkTarget: click ? target : null, onArrive: () => arrivals++ });
+    try {
+      if (!click) view.key('KeyS');
+      for (let i = 0; i < (click ? 180 : 27); i++) view.frame(1 / 60);
+      assert.ok(Math.abs(view.root.position.x - target[0]) < .02);
+      assert.ok(Math.abs(view.root.position.z - target[2]) < .03, 'the old rectangular air wall is open');
+      if (click) assert.equal(arrivals, 1);
+    } finally { view.dispose(); }
+  }
+});
+
+test('the bed foot allows closer contact and floor-click routes still go around the solid bed', () => {
+  const [x, , z] = cabinLayout.BED_POSITION;
+  const view = mount('orbital');
+  try {
+    view.root.position.set(x, 0, z + 1.85);
+    view.key('KeyW');
+    for (let i = 0; i < 90; i++) view.frame(1 / 60);
+    view.key('KeyW', 'keyup');
+    const edge = z + 1.30 + cabinLayout.LOW_FURNITURE_CLEARANCE;
+    assert.ok(view.root.position.z >= edge && view.root.position.z < edge + .025);
+  } finally { view.dispose(); }
+  const target = [x - 1.15, 0, z + .3];
+  const routed = mount('orbital', { start: [x + 1.15, 0, z + .3], walkTarget: target });
+  try {
+    for (let i = 0; i < 420; i++) {
+      routed.frame(1 / 60);
+      const { x: px, z: pz } = routed.root.position;
+      assert.ok(Math.abs(px - x) >= .86 || Math.abs(pz - z) >= 1.30, 'route never enters the bed');
+    }
+    assert.ok(routed.root.position.distanceTo(new THREE.Vector3(...target)) < .03);
+  } finally { routed.dispose(); }
 });
 
 test('the pedal trash can blocks walking only inside the habitat', () => {
@@ -681,7 +781,8 @@ test('the static bed blocks walking without offering keyboard interaction, and n
     view.key('KeyA');
     for (let i = 0; i < 60; i++) view.frame(1 / 60);
     view.key('KeyA', 'keyup');
-    assert.ok(view.root.position.x >= x + .86 + cabinLayout.RESIDENT_RADIUS, 'the bed remains a solid obstacle');
+    const edge = x + .86 + cabinLayout.LOW_FURNITURE_CLEARANCE;
+    assert.ok(view.root.position.x >= edge && view.root.position.x < edge + .025, 'the bed blocks only at the closer contact boundary');
 
     for (const [px, pz, id] of [
       [cabinLayout.NIGHTSTAND_X - .11, cabinLayout.NIGHTSTAND_Z + .77, 'lamp'],
@@ -1191,12 +1292,9 @@ test('standing idle starts early, ignores Space and resets on movement, focus an
   } finally { view.dispose(); }
 });
 
-test('loaded looking gesture ignores Space and is interrupted by movement, focus, disabling and reduced motion', async () => {
-  const idleLibrary = {};
-  for (const name of ['luna-yawn', 'luna-looking-around']) {
-    const { gltf } = await loadModel(new URL(`../../assets/public/models/resident/${name}.glb`, import.meta.url));
-    idleLibrary[`./models/resident/${name}.glb`] = gltf;
-  }
+test('loaded yawn ignores Space and is interrupted by movement, focus, disabling and reduced motion', async () => {
+  const { gltf } = await loadModel(new URL('../../assets/public/models/resident/luna-yawn.glb', import.meta.url));
+  const idleLibrary = { './models/resident/luna-yawn.glb': gltf };
   for (const trigger of [view => view.key('KeyD'),
     view => { view.props.focusedObject = 'journal'; }, view => { view.props.enabled = false; },
     view => { view.props.reducedMotion = true; }]) {
@@ -1205,19 +1303,18 @@ test('loaded looking gesture ignores Space and is interrupted by movement, focus
     try {
       advance(8);
       await new Promise(setImmediate);
-      for (let i = 0; i < 35 * 60 && view.root.userData.standingIdle.lookTime < 1; i++) view.frame(1 / 60);
-      assert(view.root.userData.standingIdle.lookTime >= 1, 'real clip must be playing before interruption');
-      const lookBeforeSpace = view.root.userData.standingIdle.lookTime;
+      for (let i = 0; i < 80 * 60 && view.root.userData.standingIdle.yawnTime < 1; i++) view.frame(1 / 60);
+      assert(view.root.userData.standingIdle.yawnTime >= 1, 'real clip must be playing before interruption');
+      const yawnBeforeSpace = view.root.userData.standingIdle.yawnTime;
       view.key('Space'); view.frame(1 / 60);
-      assert.ok(view.root.userData.standingIdle.lookTime > lookBeforeSpace);
+      assert.ok(view.root.userData.standingIdle.yawnTime > yawnBeforeSpace);
       trigger(view); view.frame(1 / 60);
       assert.equal(view.root.userData.standingIdle.elapsed, 0);
       advance(.5);
-      assert.equal(view.root.userData.standingIdle.lookTime, -1);
+      assert.equal(view.root.userData.standingIdle.yawnTime, -1);
       assert.equal(view.root.userData.standingIdle.weight, 0);
       if (view.props.reducedMotion) {
         advance(120);
-        assert.equal(view.root.userData.standingIdle.lookTime, -1);
         assert.equal(view.root.userData.standingIdle.yawnTime, -1);
         assert.equal(view.root.userData.standingIdle.elapsed, 0);
       }

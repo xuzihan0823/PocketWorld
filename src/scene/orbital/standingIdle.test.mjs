@@ -19,21 +19,18 @@ const { createResidentRig } = compile('./residentRig.ts');
 const random = () => .5;
 const raw = readFileSync(new URL('../../../assets/public/models/resident/luna-yawn.glb', import.meta.url));
 const { animations: [clip] } = await new GLTFLoader().parseAsync(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength), '');
-const lookRaw = readFileSync(new URL('../../../assets/public/models/resident/luna-looking-around.glb', import.meta.url));
-const { animations: [lookClip] } = await new GLTFLoader().parseAsync(lookRaw.buffer.slice(lookRaw.byteOffset, lookRaw.byteOffset + lookRaw.byteLength), '');
 
 test('all gestures finish without overlap and ordinary idle dominates at 30/60/120 Hz', () => {
   for (const hz of [30, 60, 120]) {
     for (const sample of [0, .5, .999]) {
       const rng = () => sample, state = createIdleState(rng);
-      const counts = [0, 0, 0, 0], seconds = [0, 0, 0, 0];
-      const durations = [lookClip.duration, clip.duration, STANDING_IDLE.shortDuration.listen, STANDING_IDLE.shortDuration.clasp];
+      const counts = [0, 0, 0], seconds = [0, 0, 0];
+      const durations = [clip.duration, STANDING_IDLE.shortDuration.listen, STANDING_IDLE.shortDuration.clasp];
       let previous = -1, started = 0, ended = -Infinity;
       for (let frame = 0; frame < hz * 1200; frame++) {
-        stepIdle(state, 1 / hz, true, clip.duration, rng, lookClip.duration);
-        assert([state.lookTime, state.yawnTime, state.shortTime].filter(time => time >= 0).length <= 1);
-        const active = state.lookTime >= 0 ? 0 : state.yawnTime >= 0 ? 1
-          : state.shortTime < 0 ? -1 : state.shortKind === 'listen' ? 2 : 3;
+        stepIdle(state, 1 / hz, true, clip.duration, rng);
+        assert([state.yawnTime, state.shortTime].filter(time => time >= 0).length <= 1);
+        const active = state.yawnTime >= 0 ? 0 : state.shortTime < 0 ? -1 : state.shortKind === 'listen' ? 1 : 2;
         if (active >= 0) seconds[active] += 1 / hz;
         if (active !== previous) {
           if (previous >= 0) {
@@ -49,70 +46,11 @@ test('all gestures finish without overlap and ordinary idle dominates at 30/60/1
         }
         previous = active;
       }
-      assert(counts[0] > counts[1]);
-      assert(seconds[0] > seconds[1]);
-      assert(counts[2] > 0 && Math.abs(counts[2] - counts[3]) <= 1);
+      assert(counts.every(count => count > 0));
+      assert(Math.abs(counts[1] - counts[2]) <= 1);
       assert(1200 - seconds.reduce((total, time) => total + time) > 1200 * .60);
     }
   }
-});
-
-test('looking interruption holds current sample while fading, resets deadlines, and absent clips never block yawns', () => {
-  const state = createIdleState(random);
-  for (let i = 0; i < 31 * 60; i++) stepIdle(state, 1 / 60, true, clip.duration, random, lookClip.duration);
-  assert(state.lookTime > 1);
-  const held = state.lookTime;
-  stepIdle(state, 1 / 60, false, clip.duration, random, lookClip.duration);
-  assert.equal(state.lookTime, held);
-  assert.equal(state.elapsed, 0);
-  assert.equal(state.nextLook, 25);
-  for (let i = 0; i < 60; i++) stepIdle(state, 1 / 60, true, clip.duration, random, lookClip.duration);
-  assert.equal(state.lookTime, -1);
-  assert.equal(state.lookWeight, 0);
-  const offline = createIdleState(random);
-  for (let i = 0; i < 62 * 60; i++) stepIdle(offline, 1 / 60, true, clip.duration, random, 0);
-  assert(offline.yawnTime > 1);
-  assert.equal(offline.lookTime, -1);
-});
-
-test('real looking clip keeps root and foot matrices fixed and blends continuously into walking', async () => {
-  const { gltf } = await load(new URL('../../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
-  const rig = createResidentRig(gltf.scene, gltf.animations.find(c => c.name === 'Walk_Grounded_Loop'));
-  const player = createIdlePlayer(rig.mesh, clip, lookClip);
-  assert.equal(lookClip.name, 'Luna_Looking_Around');
-  assert(Math.abs(lookClip.duration - 190 / 30) < 1e-6);
-  assert.equal(lookClip.tracks.length, 54);
-  rig.applyPose(0, 0); rig.mesh.updateMatrixWorld(true);
-  const fixed = ['Hips', 'LeftFoot', 'RightFoot', 'LeftToeBase', 'RightToeBase'].map(n => rig.mesh.getObjectByName('mixamorig' + n));
-  const anchors = fixed.map(b => b.matrixWorld.clone());
-  const bones = []; rig.mesh.traverse(b => { if (b.isBone) bones.push(b); });
-  const state = createIdleState(random);
-  let previous;
-  try {
-    for (let i = 0; i < 34 * 120; i++) {
-      stepIdle(state, 1 / 120, true, clip.duration, random, lookClip.duration);
-      rig.applyPose(0, 0); player(state); rig.mesh.updateMatrixWorld(true);
-      fixed.forEach((b, k) => assert.deepEqual(b.matrixWorld.elements, anchors[k].elements));
-      bones.forEach(b => assert(b.quaternion.toArray().every(Number.isFinite)));
-      if (previous) bones.forEach((b, k) => assert(b.quaternion.angleTo(previous[k]) < .12, 'pose pop at ' + i));
-      previous = bones.map(b => b.quaternion.clone());
-    }
-    for (const time of [.5, 2, 4, 5.8]) {
-      Object.assign(state, { lookTime: time, lookWeight: 1, weight: 1, elapsed: 27, interrupted: false });
-      previous = undefined;
-      for (let i = 0; i <= 60; i++) {
-        stepIdle(state, 1 / 120, false, clip.duration, random, lookClip.duration);
-        rig.applyPose(i / 120, Math.min(1, i / 36));
-        rig.mesh.updateMatrixWorld(true);
-        const walkingFeet = fixed.map(b => b.matrixWorld.clone());
-        player(state); rig.mesh.updateMatrixWorld(true);
-        fixed.forEach((b, k) => assert.deepEqual(b.matrixWorld.elements, walkingFeet[k].elements));
-        if (previous) bones.forEach((b, k) => assert(b.quaternion.angleTo(previous[k]) < .22, 'walk interruption pop'));
-        previous = bones.map(b => b.quaternion.clone());
-      }
-      assert.equal(state.lookTime, -1);
-    }
-  } finally { rig.dispose(); }
 });
 
 test('ordinary idle dominates ten minutes at 30/60/120 Hz and yawns play once in full', () => {
@@ -201,32 +139,22 @@ test('ordinary idle visibly moves head and hands while preserving planted feet',
   } finally { rig.dispose(); }
 });
 
-test('丁香针织开衫的两个待机动作均可绑定，并驱动两侧手腕', async () => {
+test('丁香针织开衫的伸懒腰可绑定，并驱动两侧手腕', async () => {
   const { gltf } = await load(new URL('../../../assets/public/models/resident/luna-cardigan.glb', import.meta.url));
-  const fitted = [clip, lookClip].map(original => {
-    const motion = gltf.animations.find(animation => animation.name === original.name);
-    assert.ok(motion, original.name);
-    assert.ok(Math.abs(motion.duration - original.duration) < 1e-5);
-    for (const side of ['Left', 'Right']) {
-      assert.ok(motion.tracks.some(track => track.name === 'mixamorig' + side + 'Hand.quaternion'));
-    }
-    return motion;
-  });
-  const player = createIdlePlayer(gltf.scene, ...fitted);
+  const motion = gltf.animations.find(animation => animation.name === clip.name);
+  assert.ok(motion, clip.name);
+  assert.ok(Math.abs(motion.duration - clip.duration) < 1e-5);
+  const player = createIdlePlayer(gltf.scene, motion);
   const state = createIdleState(random);
-  for (const [index, gesture] of ['yawn', 'look'].entries()) {
-    state[gesture + 'Time'] = fitted[index].duration / 2;
-    state[gesture + 'Weight'] = 1;
-    player(state);
-    for (const side of ['Left', 'Right']) {
-      const name = 'mixamorig' + side + 'Hand';
-      const sample = fitted[index].tracks.find(track => track.name === name + '.quaternion')
-        .createInterpolant().evaluate(state[gesture + 'Time']);
-      const expected = new THREE.Quaternion().fromArray(sample).normalize();
-      assert.ok(gltf.scene.getObjectByName(name).quaternion.angleTo(expected) < .001);
-    }
-    state[gesture + 'Time'] = -1;
-    state[gesture + 'Weight'] = 0;
+  state.yawnTime = motion.duration / 2;
+  state.yawnWeight = 1;
+  player(state);
+  for (const side of ['Left', 'Right']) {
+    const name = 'mixamorig' + side + 'Hand';
+    const sample = motion.tracks.find(track => track.name === name + '.quaternion')
+      .createInterpolant().evaluate(state.yawnTime);
+    const expected = new THREE.Quaternion().fromArray(sample).normalize();
+    assert.ok(gltf.scene.getObjectByName(name).quaternion.angleTo(expected) < .001);
   }
 });
 
@@ -462,7 +390,7 @@ test('resting arms lower independently with cloth correctives and release for a 
   try {
     apply();
     const initial = w();
-    for (let i = 0; i < 60; i++) stepIdle(state, 1 / 60, false, 0, random, 0, true);
+    for (let i = 0; i < 60; i++) stepIdle(state, 1 / 60, false, 0, random, true);
     apply(false);
     assert.equal(state.weight, 0);
     assert.equal(state.shortTime, -1);

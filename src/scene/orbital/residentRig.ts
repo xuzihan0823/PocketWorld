@@ -174,7 +174,8 @@ function createFollowMotion(bones: Iterable<THREE.Bone>, head: THREE.Bone, longH
   };
 }
 
-export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip, authoredStanding = false): ResidentRig {
+export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationClip, authoredStanding = false,
+  handMotion?: { scene: THREE.Object3D; animations: THREE.AnimationClip[] }): ResidentRig {
   const bones = new Map<string, THREE.Bone>();
   const skinned: THREE.SkinnedMesh[] = [];
   asset.traverse(object => {
@@ -416,6 +417,12 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
   const standingHipHeight = hips.getWorldPosition(new THREE.Vector3()).y;
   const stairHead = bone('Head');
   const headRestWorld = stairHead.getWorldQuaternion(new THREE.Quaternion());
+  mesh.userData.contactHands = handMotion?.scene.userData.contactHands;
+  const stairHands = ['Luna_Stair_Up', 'Luna_Stair_Down'].map(name =>
+    handMotion?.animations.find(value => value.name === name)?.tracks.map(track => ({
+      joint: mesh.getObjectByName(THREE.PropertyBinding.parseTrackName(track.name).nodeName) as THREE.Bone,
+      sample: track.createInterpolant(),
+    })));
   const stairArmChains = ['Right', 'Left'].map(side => ['Arm', 'ForeArm', 'Hand', 'HandMiddle1'].map(n => bone(side + n)));
   const limb = new THREE.Vector3(), aim = new THREE.Vector3();
   const pelvisShift = new THREE.Vector3();
@@ -448,7 +455,8 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
     strideRotation.copy(meshYaw).multiply(stridePitch.setFromAxisAngle(axisX, gait.headPitch)).multiply(headRestWorld);
     strideRotation.premultiply(stairHead.parent!.getWorldQuaternion(parentRotation).invert());
     stairHead.quaternion.slerp(strideRotation, weight);
-    for (const [side, directions] of gait.arms.entries()) {
+    const authoredHands = stairHands[descent ? 1 : 0];
+    for (const [side, directions] of (authoredHands ? [] : gait.arms).entries()) {
       const chain = stairArmChains[side];
       for (let i = 0; i < chain.length - 1; i++) {
         const joint = chain[i];
@@ -458,6 +466,10 @@ export function createResidentRig(asset: THREE.Object3D, clip: THREE.AnimationCl
         strideRotation.premultiply(joint.parent!.getWorldQuaternion(parentRotation).invert());
         joint.quaternion.slerp(strideRotation, weight);
       }
+    }
+    if (authoredHands && gait.arms.length) {
+      for (const { joint, sample } of authoredHands)
+        joint.quaternion.slerp(strideRotation.fromArray(sample.evaluate(gait.phase)), weight);
     }
     pelvisShift.set(0, 0, 0);
     strideYaw.setFromAxisAngle(axisY, yaw);

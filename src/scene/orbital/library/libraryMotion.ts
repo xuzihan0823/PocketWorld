@@ -1,5 +1,6 @@
 import { loadSceneAsset } from '../assetQueue.ts';
 import * as THREE from 'three';
+import { CARDIGAN_PICKUP } from './cardiganPickup';
 import { RESIDENT_SCALE } from '../residentRig';
 import { shelfRotation, AUTHORED_BOOK_RETREAT, smooth } from './bookMotion';
 import { shelfPoint, slotFor, type LibraryBook } from './catalog';
@@ -103,10 +104,18 @@ export function libraryCoverFlow(flow: LibraryFlow, sample: LibrarySample | null
 }
 
 export function createLibraryPlayer(mesh: THREE.Object3D, motion: LibraryMotion) {
-  const clips = motion.map(clip => ({ duration: clip.duration, channels: clip.tracks.map(({ name, property, track }) => {
+  const clips = motion.map((clip, row) => ({ duration: clip.duration, channels: clip.tracks.map(({ name, property, track }) => {
     const joint = mesh.getObjectByName(name);
     if (!(joint instanceof THREE.Bone)) throw new Error(`Incompatible Luna book joint ${name}`);
-    return { target: joint[property], property, curve: track.createInterpolant(),
+    // The garment has its own finger joint placement and skinned pad thickness.
+    // Replace the affected rotation tracks with those fitted in Blender; sampling
+    // them here keeps the original clip clock, reverse seeks and handoff weight.
+    const keys = mesh.userData.outfit === 'cardigan' && property === 'quaternion'
+      ? (CARDIGAN_PICKUP[row] as Record<string, number[][]>)[name] : undefined;
+    const curve = keys ? new THREE.QuaternionKeyframeTrack(track.name, keys.map(key => key[0] / 30),
+      keys.flatMap(key => new THREE.Quaternion().fromArray(key, 1).normalize().toArray())).createInterpolant()
+      : track.createInterpolant();
+    return { target: joint[property], property, curve,
       hipsPosition: name === 'mixamorigHips' && property === 'position' };
   }) }));
   const position = new THREE.Vector3(), quaternion = new THREE.Quaternion();

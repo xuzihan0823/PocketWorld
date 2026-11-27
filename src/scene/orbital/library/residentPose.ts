@@ -56,6 +56,12 @@ export function applyLibraryPose(rig: ResidentRig, root: THREE.Group, scene: str
   if (authored && flow.book && ['open', 'reading', 'turn', 'close'].includes(phase)) {
     const balance = libraryHeldBalance(flow);
     root.position.fromArray(authoredBookStand(scene, flow.book, true, balance.back));
+    // The cardigan has a shorter left reach. Shift the planted body toward
+    // the opposite corner while the left fingers carry the returning sheet.
+    if (rig.mesh.userData.outfit === 'cardigan' && flow.phase === 'turn' && flow.direction < 0) {
+      const reach = smooth((p - .10) / .20) * (1 - smooth((p - .42) / .20));
+      root.position.add(new THREE.Vector3(...shelfVector(scene, .015 * reach, 0, -.016 * reach)));
+    }
     root.position.y -= balance.drop;
   }
   rig.mesh.updateWorldMatrix(true, true);

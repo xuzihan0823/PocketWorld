@@ -197,7 +197,6 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
   };
 
   const page = view.pages[view.page];
-  const views = <nav className="library-views" aria-label="书柜视角">{([['shelf', '书柜'], ['close', '近景'], ['side', '侧面']] as const).map(([id, label]) => <button key={id} aria-pressed={library.cameraView === id} onClick={() => library.setCameraView(id)}>{label}</button>)}</nav>;
   const userBooksCount = data.books.filter(b => b.source === 'user').length;
   const addDisabledLabel = capacity.slotsLeft === 0
     ? `添加书籍 · 书柜已满（${CAPACITY}/${CAPACITY}）`
@@ -234,7 +233,6 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
     }}>
     {!form && !reading && <>
       <header><h2>这一柜，慢慢读。</h2><button onClick={library.back} disabled={!['catalog', 'approach'].includes(view.phase)} aria-label="离开书柜">返回房间</button></header>
-      {views}
       <p className="library-capacity">已放 {data.books.length} / {CAPACITY} 本<span>{capacity.fullReason ?? `自添 ${userBooksCount} / ${USER_BOOK_LIMIT} 本 · 已用 ${formatBookBytes(capacity.usedBytes)} / ${formatBookBytes(TOTAL_LIMIT)} · 支持拖入 .txt / .md`}</span></p>
       {view.phase === 'catalog' ? <>
         <ol className="library-catalog">{data.books.map(book => <li key={book.id}><button className="library-title" onClick={() => library.choose(book.id)}><i style={{ background: book.color }} /><span>{book.title}<small>{book.author} · {BOOK_SLOTS.find(s => s.id === book.slotId)!.row + 1} 层</small></span></button>{book.source === 'user' && <button className="library-remove" aria-label={`移除《${book.title}》`} onClick={() => setConfirm(book.id)}>移除</button>}</li>)}</ol>
@@ -244,7 +242,6 @@ export function LibrarySurface({ library }: { library: LibraryController }) {
     </>}
     {reading && <>
       <header><div><h2>{view.book!.title}</h2><p>{view.book!.author}</p></div><button onClick={library.back} disabled={!['reading', 'turn'].includes(view.phase)}>合书归位</button></header>
-      {views}
       <div ref={textArea} className="library-text" onPointerDown={event => {
         if (event.pointerType !== 'touch') return;
         if (pointers.current.size) multi.current = true; else multi.current = !event.isPrimary;

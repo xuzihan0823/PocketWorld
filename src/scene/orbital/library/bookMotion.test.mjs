@@ -20,10 +20,10 @@ function loadTS(relativePath, deps = {}) {
 const catalog = loadTS('./catalog.ts');
 const authored = loadTS('./pageTurnFrames.ts');
 const bookMotion = loadTS('./bookMotion.ts', { './catalog': catalog, './pageTurnFrames': authored });
-const armPose = loadTS('./armPose.ts');
+const armPose = loadTS('./armPose.ts', { './cardiganPalms': loadTS('./cardiganPalms.ts') });
 const residentPose = loadTS('./residentPose.ts', { './bookMotion': bookMotion, './catalog': catalog, './armPose': armPose, './pageTurnFrames': authored });
 const rigMod = loadTS('../residentRig.ts');
-const libraryMotion = loadTS('./libraryMotion.ts', { './bookMotion': bookMotion, './catalog': catalog, '../residentRig': rigMod });
+const libraryMotion = loadTS('./libraryMotion.ts', { './bookMotion': bookMotion, './catalog': catalog, '../residentRig': rigMod, './cardiganPickup': loadTS('./cardiganPickup.ts') });
 const { gltf } = await load(new URL('../../../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
 function makeRig() {
@@ -1147,5 +1147,145 @@ test('three shelf grips and their returns load anatomical finger pads and an opp
         }
       }
     }
+  } finally { rig.dispose(); }
+});
+
+// Locate the flesh side once at bind. The cardigan's right Middle1 pivot
+// is offset toward the wrist, so use three other knuckles for this selection.
+// During playback only deformed triangle vertices contribute to the normal.
+function cardiganPalmSurface(side, vertices, bind) {
+  const bindPoint = digit => new THREE.Vector3().setFromMatrixPosition(bind(side + 'Hand' + digit));
+  const wrist = bindPoint('');
+  const [index, ring, pinky] = ['Index1', 'Ring1', 'Pinky1'].map(bindPoint);
+  const forward = index.clone().add(ring).add(pinky).divideScalar(3).sub(wrist);
+  const across = index.clone().sub(pinky);
+  const normal = across.clone().cross(forward).normalize().multiplyScalar(side === 'Right' ? 1 : -1);
+  across.addScaledVector(forward, -across.dot(forward) / forward.lengthSq()).normalize();
+  const triangles = [];
+  for (const mesh of new Set(vertices.map(v => v.mesh))) {
+    const byId = new Map(vertices.filter(v => v.mesh === mesh).map(v => [v.id, v]));
+    const indices = mesh.geometry.index;
+    for (let i = 0; i < indices.count; i += 3) {
+      const corners = [0, 1, 2].map(k => byId.get(indices.getX(i + k)));
+      if (corners.some(v => !v)) continue;
+      const triangle = new THREE.Triangle(...corners.map(v => v.point));
+      const delta = triangle.getMidpoint(new THREE.Vector3()).sub(wrist);
+      const along = delta.dot(forward) / forward.lengthSq();
+      if (along > .2 && along < .85 && Math.abs(delta.dot(across)) < .018 &&
+          Math.abs(delta.dot(normal)) < .018 && triangle.getNormal(new THREE.Vector3()).dot(normal) > .75) {
+        triangles.push(corners);
+      }
+    }
+  }
+  assert.ok(triangles.length >= 12, `${side} central palm needs a measurable skin patch`);
+  return () => {
+    const sum = new THREE.Vector3();
+    for (const corners of triangles) {
+      const [a, b, c] = corners.map(({ mesh, id }) => mesh.getVertexPosition(id, new THREE.Vector3()).applyMatrix4(mesh.matrixWorld));
+      sum.add(b.sub(a).cross(c.sub(a)));
+    }
+    return sum.normalize();
+  };
+}
+
+test('cardigan uses its fitted skin pads and palm frame throughout the library sequence', async t => {
+  const { gltf } = await load(new URL('../../../../assets/public/models/resident/luna-cardigan.glb', import.meta.url));
+  const rig = rigMod.createResidentRig(gltf.scene, gltf.animations.find(clip => clip.name === 'Walk_Grounded_Loop'), true);
+  rig.mesh.userData.outfit = 'cardigan';
+  const root = new THREE.Group(); root.add(rig.mesh); root.rotation.y = Math.PI + catalog.shelfYaw('habitat');
+  const motion = libraryMotion.readLibraryMotion(gltf.animations), play = libraryMotion.createLibraryPlayer(rig.mesh, motion);
+  const surfaces = []; gltf.scene.traverse(o => { if (o.isSkinnedMesh) surfaces.push(o); });
+  const joint = name => gltf.scene.getObjectByName('mixamorig' + name);
+  const at = name => joint(name).getWorldPosition(new THREE.Vector3());
+  const skeleton = surfaces[0].skeleton;
+  const bind = name => skeleton.boneInverses[skeleton.bones.indexOf(joint(name))].clone().invert();
+  const localBind = ['Right','Left'].map(side => new THREE.Quaternion().setFromRotationMatrix(
+    new THREE.Matrix4().extractRotation(bind(side+'ForeArm').invert().multiply(bind(side+'Hand')))));
+  const handSkin = ['Right','Left'].map(side => surfaces.flatMap(mesh => {
+    const {position,skinIndex,skinWeight} = mesh.geometry.attributes, points = [];
+    for (let id=0; id<position.count; id++) {
+      let best=0;
+      for (let i=1; i<4; i++) if (skinWeight.getComponent(id,i)>skinWeight.getComponent(id,best)) best=i;
+      if (mesh.skeleton.bones[skinIndex.getComponent(id,best)].name.startsWith('mixamorig'+side+'Hand'))
+        points.push({mesh,id,point:new THREE.Vector3().fromBufferAttribute(position,id).applyMatrix4(mesh.bindMatrix)});
+    }
+    return points;
+  }));
+  const skinNormals = ['Right', 'Left'].map((side, i) => cardiganPalmSurface(side, handSkin[i], bind));
+  const pads = ['Index','Middle','Ring','Pinky','Thumb'].map(digit => {
+    const tip = new THREE.Vector3().setFromMatrixPosition(bind('RightHand'+digit+'4'));
+    return handSkin[0].slice().sort((a,b)=>a.point.distanceToSquared(tip)-b.point.distanceToSquared(tip)).slice(0,12);
+  });
+  const metrics = {bend:0, bound:0, pad:0, thumb:0, bearing:0, penetration:0, readGap:0, turnGap:0, continuity:0};
+  const solids = roundedBookSolids(0);
+  try {
+    for (const row of [0,1,2]) {
+      const book = {...catalog.freshLibrary().books[0], slotId:`s${row}-2`};
+      const phases = [['reach',72,1],['extract',36,1],['carry',288,1],['open',100,1],['reading',1,1],
+        ['turn',100,1],['turn',100,-1],['close',100,1],['return-carry',288,1],['insert',36,1],['release',72,1]];
+      let previous;
+      for (const [phase,count,direction] of phases) for (let frame=0; frame<=count; frame++) {
+        const flow={book,phase,progress:frame/count,direction};
+        const sample=libraryMotion.libraryMotionSample(flow), cover=libraryMotion.libraryCoverFlow(flow,sample);
+        root.position.fromArray(bookMotion.authoredBookStand('habitat',book,!sample || sample.coverProgress!==undefined));
+        root.updateMatrixWorld(true);
+        if (sample && sample.coverProgress===undefined) armPose.resetArms(rig,1);
+        else residentPose.applyLibraryPose(rig,root,'habitat',cover,1/30,true);
+        rig.applyPose(0,0); if (sample) play(book,sample); root.updateMatrixWorld(true);
+        const pose=bookMotion.bookPose('habitat',book,cover,true);
+        if (sample) libraryMotion.applyLibraryBookMotion(motion,'habitat',book,sample,pose.position,pose.quaternion);
+        const inverse=pose.quaternion.clone().invert();
+        const local = point=>point.sub(pose.position).applyQuaternion(inverse);
+        const skin = patch=>patch.map(({mesh,id})=>local(mesh.getVertexPosition(id,new THREE.Vector3()).applyMatrix4(mesh.matrixWorld)));
+        const palms = ['Right','Left'].map((side,i)=>{
+          const wrist=at(side+'Hand'), index=at(side+'HandIndex1'), pinky=at(side+'HandPinky1');
+          const forearm=wrist.clone().sub(at(side+'ForeArm')), forward=index.clone().lerp(pinky,.5).sub(wrist);
+          const normal=index.sub(pinky).cross(forward).normalize().multiplyScalar(i ? -1 : 1).applyQuaternion(inverse);
+          metrics.bend=Math.max(metrics.bend,THREE.MathUtils.radToDeg(forearm.angleTo(forward)));
+          metrics.bound=Math.max(metrics.bound,THREE.MathUtils.radToDeg(joint(side+'Hand').quaternion.angleTo(localBind[i])));
+          return normal;
+        });
+        if (previous) metrics.continuity=Math.max(metrics.continuity,...palms.map((n,i)=>n.angleTo(previous[i])));
+        previous=palms;
+        const facing = skinNormals.map(normal => normal().applyQuaternion(inverse));
+        const time=sample && sample.coverProgress===undefined ? sample.progress*180 : -1;
+        if (time>=59.99 && time<=132.01) {
+          assert.ok(facing[0].y > .9, 'right palmar skin presses into the near cover');
+          const gaps=pads.map((pad,i)=>skinSurfaceContact(skin(pad),i===4?solids.slice(2,4):[solids[0]]).distance);
+          metrics.pad=Math.max(metrics.pad,...gaps.slice(0,4));metrics.thumb=Math.max(metrics.thumb,gaps[4]);
+        }
+        if (time>=123.99) {
+          const worldUp = new THREE.Vector3(0, 1, 0).applyQuaternion(inverse);
+          assert.ok(facing[1].dot(worldUp) > .9, 'left palmar skin bears upward during the handoff');
+          const c=skinSurfaceContact(skin(handSkin[1]),solids);
+          metrics.bearing=Math.max(metrics.bearing,c.distance); metrics.penetration=Math.max(metrics.penetration,c.depth);
+        }
+        if (pose.open < 1e-6 && (time > 179.99 || sample?.coverProgress !== undefined))
+          assert.ok(facing[0].y < -.9 && facing[1].y > .9, 'closed handoff loads opposite palmar surfaces');
+        if (phase==='open' || phase==='close') {
+          const bearing = skinSurfaceContact(skin(handSkin[1]),roundedBookSolids(pose.open));
+          assert.ok(bearing.distance < .002 && bearing.depth < .0015, `left skin follows the moving cover at ${phase} ${frame}`);
+        }
+        if (phase==='reading') {
+          const opened=roundedBookSolids(1);
+          for (const patch of handSkin) metrics.readGap=Math.max(metrics.readGap,skinSurfaceContact(skin(patch),opened).distance);
+          assert.ok(palms.every(n=>n.y>.94),'the loaded palms face up under the open book');
+          assert.ok(facing.every(n => n.y > .85), 'both skinned palms face the underside when reading');
+        }
+        if (phase==='turn' && flow.progress>=bookMotion.PAGE_CONTACT_START && flow.progress<=bookMotion.PAGE_CONTACT_END) {
+          const active=direction===1 ? 0:1;
+          const expected=bookMotion.turningHandPose(flow.progress,direction).position;
+          metrics.turnGap=Math.max(metrics.turnGap,local(at((active?'Left':'Right')+'HandMiddle4')).distanceTo(expected));
+          assert.ok(palms[active].y<-.8 && palms[1-active].y>.94,'sweep palm faces down and bearing palm stays underneath');
+          assert.ok(facing[active].y < -.85 && facing[1-active].y > .85, 'the active skin faces the sheet and the support skin faces its load');
+        }
+      }
+    }
+    assert.ok(metrics.bend < 65 && metrics.bound < 70, 'palm to forearm and wrist to bind pose, degrees');
+    assert.ok(metrics.continuity < .32, 'a hand reverses between samples');
+    assert.ok(metrics.pad < .002 && metrics.thumb < .002, 'four finger pads and the opposed thumb on the spine');
+    assert.ok(metrics.bearing < .002 && metrics.penetration < .001, 'bearing skin against the closed book');
+    assert.ok(metrics.readGap < .002 && metrics.turnGap < .001, 'reading support and active fingertip on the sheet');
+    t.diagnostic(JSON.stringify(metrics));
   } finally { rig.dispose(); }
 });

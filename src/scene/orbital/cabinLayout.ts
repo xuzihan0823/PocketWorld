@@ -10,6 +10,7 @@ export const CAT_CUSHION_TOP = .08;
 // Floor area shared by the resident walker and loose props such as the slippers.
 export const HABITAT_SPAWN: [number, number] = [2.52, 1.10];
 export const RESIDENT_RADIUS = 0.23;
+export const LOW_FURNITURE_CLEARANCE = 0.16;
 export const WALK_BOUNDS = { left: CABIN_LEFT + .25 + RESIDENT_RADIUS, right: 3.76, back: -2.96, front: 2.96 };
 
 export const CABIN_DIVIDER_X = -1.86;
@@ -47,8 +48,17 @@ export const FLOOR_SOFA = {
   // Aim the seat centreline at the bedside rug (−4.05, 0.115). The throw offsets the asset pivot.
   yaw: 2.577,
   width: 1.49,
-  // X/Z offsets measured after scaling and turning the entire GLB, including its fringe.
-  footprint: { left: -.69, right: .83, back: -.86, front: .93 },
+  // Conservative strips of the scaled, rotated GLB silhouette, including the throw and fringe.
+  footprints: [
+    [-.420, .286, -.860, -.635],
+    [-.605, .527, -.635, -.412],
+    [-.631, .684, -.412, -.189],
+    [-.657, .827, -.189, .034],
+    [-.683, .827, .034, .257],
+    [-.690, .716, .257, .481],
+    [-.543, .572, .481, .704],
+    [-.191, .414, .704, .928],
+  ] as [number, number, number, number][],
 };
 
 // Pedal trash can placed against the starboard wall north of the bookcase, pedal facing the room (-X).

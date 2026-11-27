@@ -49,7 +49,6 @@ import { OrbitalResidents } from './OrbitalResidents';
 import { CatInteraction } from './cat/CatInteraction';
 import catMeowUrl from '../../../assets/audio/cat/tuanzi-meow.mp3';
 import { shelfPoint, shelfVector } from './library/catalog';
-import { sideLibraryCamera } from './library/sideCamera';
 import { JOURNAL_PAGE_POSITION } from './journalLayout';
 import { AdaptiveQuality } from './SceneQuality';
 import { SCENE_QUALITY, sceneMaxDpr, type QualityLevel } from './adaptiveQuality';
@@ -98,8 +97,6 @@ function CameraRig(props: CameraRigProps) {
   const fromTarget = useRef(new THREE.Vector3());
   const destination = useRef(new THREE.Vector3());
   const target = useRef(new THREE.Vector3());
-  const fromLens = useRef(new THREE.Vector2());
-  const toLens = useRef(new THREE.Vector2());
   const moving = useRef(false), cameraProgress = useRef(0), localFlight = useRef(false);
   const viewFlight = useRef<{ active: boolean; elapsed: number; duration: number; mode: 'entering-cabin' | 'leaving-cabin' }>({ active: false, elapsed: 0, duration: ENTER_CABIN_DURATION, mode: 'entering-cabin' });
   const currentView = useRef('habitat/');
@@ -125,15 +122,6 @@ function CameraRig(props: CameraRigProps) {
     const ratio = deckCamera.current.zoomRatio;
     if (ratio === null) return 1;
     return THREE.MathUtils.clamp(ratio * floorFramingDistance, 5, cabinFrames.overview.distance * 1.5) / distance;
-  };
-  const cameraView = props.library?.cameraView;
-  const sideView = props.focusedObject === 'book-01' && cameraView === 'side';
-  const sideSlot = sideView ? props.library?.view.book?.slotId : undefined;
-  const sideReading = !!sideSlot && ['open', 'reading', 'turn', 'close'].includes(props.library!.view.phase);
-  const setLensOffset = (x: number, y: number) => {
-    if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    if (x || y) camera.setViewOffset(size.width, size.height, x, y, size.width, size.height);
-    else if (camera.view?.enabled) camera.clearViewOffset();
   };
   useEffect(() => {
     if (!controls.current) return;
@@ -187,9 +175,6 @@ function CameraRig(props: CameraRigProps) {
     const origin = new THREE.Vector3(...SCENE_ORIGINS[props.sceneId]);
     fromPosition.current.copy(camera.position);
     fromTarget.current.copy(controls.current.target);
-    const lens = camera instanceof THREE.PerspectiveCamera ? camera.view : null;
-    fromLens.current.set(lens?.enabled ? lens.offsetX : 0, lens?.enabled ? lens.offsetY : 0);
-    toLens.current.set(0, 0);
     if (props.viewMode === 'entering-cabin') {
       props.deckOpacity.current.resident = 1;
       const frame = cabinFrames[props.cabinView];
@@ -209,29 +194,18 @@ function CameraRig(props: CameraRigProps) {
     if (!controls.current || props.transition.phase === 'idle' || props.viewMode !== 'cabin') return;
     if (!props.focusedObject && props.transition.phase !== 'returning' && props.transition.phase !== 'error'
       && props.transition.action?.kind !== 'travel') return;
-    const view = `${props.transition.toScene}/${props.focusedObject ?? ''}/${size.width}/${size.height}/${cameraView ?? ''}/${sideSlot ?? ''}/${sideReading}`;
+    const view = `${props.transition.toScene}/${props.focusedObject ?? ''}/${size.width}/${size.height}`;
     if (view === currentView.current && props.transition.phase !== 'returning' && props.transition.phase !== 'error') return;
     currentView.current = view;
     fromPosition.current.copy(camera.position);
     fromTarget.current.copy(controls.current.target);
-    const lens = camera instanceof THREE.PerspectiveCamera ? camera.view : null;
     if (camera instanceof THREE.PerspectiveCamera) zoomFlight.current = [camera.zoom, props.focusedObject ? 1 : HOME_ZOOM];
-    fromLens.current.set(lens?.enabled ? lens.offsetX : 0, lens?.enabled ? lens.offsetY : 0);
-    toLens.current.set(0, 0);
     const origin = new THREE.Vector3(...SCENE_ORIGINS[props.transition.toScene]);
     const pose = props.focusedObject ? FOCUS[props.focusedObject] : null;
-    if (sideView && camera instanceof THREE.PerspectiveCamera && size.width > 0 && size.height > 0) {
-      const side = sideLibraryCamera(props.transition.toScene, sideSlot, sideReading, size.width, size.height, camera.fov);
-      target.current.fromArray(side.target).add(origin);
-      destination.current.fromArray(side.offset).add(target.current);
-      toLens.current.set(...side.lensOffset);
-    } else if (pose) {
+    if (pose) {
       target.current.copy(origin).add(new THREE.Vector3(...pose.target));
       const offset = new THREE.Vector3(...pose.offset);
       if (props.focusedObject === 'journal') offset.multiplyScalar(Math.max(1, 0.9 / (size.width / size.height)));
-      if (props.focusedObject === 'book-01') {
-        if (cameraView === 'close') { offset.set(1.75, .65, .30); target.current.y = 1.08; }
-      }
       if (props.focusedObject?.startsWith('schedule')) {
         offset.multiplyScalar(Math.max(1, (narrow && props.focusedObject === 'schedule' ? 0.5 : 0.62) / (size.width / size.height)));
         if (narrow && props.focusedObject === 'schedule') target.current.x = origin.x + BOOK_POSITION[0];
@@ -241,7 +215,7 @@ function CameraRig(props: CameraRigProps) {
         target.current.y = origin.y + CLOCK_POSITION[1] - 0.10;
         offset.multiplyScalar(Math.max(1, 0.68 / (size.width / size.height)));
       }
-      if (props.focusedObject === 'book-01' && narrow) { const close = cameraView === 'close'; offset.multiplyScalar(close ? 1.9 : 1.6); target.current.y -= close ? .40 : .55; }
+      if (props.focusedObject === 'book-01' && narrow) { offset.multiplyScalar(1.6); target.current.y -= .55; }
       if (props.focusedObject === 'book-01' && !narrow) target.current.x += .45;
       if (props.focusedObject === 'cabinet' || props.focusedObject === 'book-01') {
         target.current.sub(origin);
@@ -264,10 +238,9 @@ function CameraRig(props: CameraRigProps) {
       camera.position.copy(destination.current);
       controls.current.target.copy(target.current);
       controls.current.update();
-      setLensOffset(toLens.current.x, toLens.current.y);
       moving.current = false;
     } else { moving.current = true; cameraProgress.current = 0; localFlight.current = props.focusedObject === 'book-01'; }
-  }, [props.transition.id, props.focusedObject, props.transition.phase === 'error', props.viewMode, size.width, size.height, cameraView, sideSlot, sideReading]);
+  }, [props.transition.id, props.focusedObject, props.transition.phase === 'error', props.viewMode, size.width, size.height]);
   useFrame((_, delta) => {
     const flight = props.flight;
     props.deckOpacity.current.zoomFade = null;
@@ -316,7 +289,6 @@ function CameraRig(props: CameraRigProps) {
       camera.position.lerpVectors(fromPosition.current, destination.current, eased);
       controls.current.target.lerpVectors(fromTarget.current, target.current, eased);
       camera.lookAt(controls.current.target);
-      setLensOffset(THREE.MathUtils.lerp(fromLens.current.x, toLens.current.x, eased), THREE.MathUtils.lerp(fromLens.current.y, toLens.current.y, eased));
       if (raw >= 1) {
         vf.active = false;
         const settled: SpacecraftViewMode = vf.mode === 'entering-cabin' ? 'cabin' : 'orbit';
@@ -459,7 +431,6 @@ function CameraRig(props: CameraRigProps) {
     if (travel && !props.reducedMotion) camera.position.y += Math.sin(progress * Math.PI) * 3;
     controls.current.target.lerpVectors(fromTarget.current, target.current, progress);
     camera.lookAt(controls.current.target);
-    setLensOffset(THREE.MathUtils.lerp(fromLens.current.x, toLens.current.x, progress), THREE.MathUtils.lerp(fromLens.current.y, toLens.current.y, progress));
     if (progress >= 1) moving.current = false;
   });
   const inTransition = props.viewMode === 'entering-cabin' || props.viewMode === 'leaving-cabin';

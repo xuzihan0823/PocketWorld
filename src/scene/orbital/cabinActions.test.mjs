@@ -67,12 +67,12 @@ test('rub eye remains a standing idle while thinking is reserved for choosing a 
   const idle = createIdleState(() => 0);
   const seen = new Set();
   for (let i = 0; i < 3600; i++) {
-    stepIdle(idle, .05, true, 8, () => 0, 6, true, { rubEye: { duration: 3 } });
-    assert.ok([idle.yawnTime, idle.lookTime, idle.shortTime].filter(time => time >= 0).length <= 1);
+    stepIdle(idle, .05, true, 8, () => 0, true, { rubEye: { duration: 3 } });
+    assert.ok([idle.yawnTime, idle.shortTime].filter(time => time >= 0).length <= 1);
     if (idle.shortTime >= 0) seen.add(idle.shortKind);
   }
   assert.deepEqual([...seen], ['listen', 'clasp', 'rubEye']);
-  stepIdle(idle, .05, false, 8, () => 0, 6);
+  stepIdle(idle, .05, false, 8, () => 0);
   assert.equal(idle.elapsed, 0);
 });
 
@@ -81,17 +81,17 @@ test('the new standing gestures use the same rotation and interruptible fade as 
   const clips = { rubEye: { duration: 3 }, shiftWeight: { duration: 6 }, stretchNeck: { duration: 5 } };
   const seen = new Set();
   for (let i = 0; i < 60 * 200; i++) {
-    stepIdle(idle, 1 / 60, true, 0, () => 0, 0, true, clips);
+    stepIdle(idle, 1 / 60, true, 0, () => 0, true, clips);
     if (idle.shortTime > .9) seen.add(idle.shortKind);
     if (idle.shortKind === 'stretchNeck' && idle.shortWeight === 1) break;
   }
   assert.deepEqual([...seen], ['listen', 'clasp', 'rubEye', 'shiftWeight', 'stretchNeck']);
   const time = idle.shortTime;
-  stepIdle(idle, .05, false, 0, () => 0, 0, false, clips);
+  stepIdle(idle, .05, false, 0, () => 0, false, clips);
   assert.equal(idle.shortTime, time);
   assert.equal(idle.elapsed, 0);
   assert.ok(idle.shortWeight > 0 && idle.shortWeight < 1);
-  for (let i = 0; i < 6; i++) stepIdle(idle, .05, false, 0, () => 0, 0, false, clips);
+  for (let i = 0; i < 6; i++) stepIdle(idle, .05, false, 0, () => 0, false, clips);
   assert.equal(idle.shortTime, -1);
   assert.equal(idle.shortWeight, 0);
 });

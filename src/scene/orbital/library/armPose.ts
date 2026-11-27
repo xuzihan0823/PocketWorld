@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CARDIGAN_PALMS } from './cardiganPalms';
 import type { ResidentArm, ResidentRig } from '../ResidentModel';
 
 const origin = new THREE.Vector3();
@@ -143,7 +144,19 @@ export function reachPalm(
   solveShoulder(rig, arm, contact, side, shoulderWeight);
 
   const localOffset = new THREE.Vector3();
-  const palm = arm.palmOffset?.clone() ?? (side ? new THREE.Vector3(-0.025, -0.004, 0.014) : new THREE.Vector3(-0.008, -0.025, -0.004));
+  // The cardigan middle-knuckle pivot lies inside the palm. Use the Blender
+  // bearing frame fitted to the index and pinky roots and the loaded hand skin.
+  const fitted = rig.mesh.userData.outfit === 'cardigan' ? CARDIGAN_PALMS[side] : undefined;
+  const basis = fitted ? arm.palmBasis.clone() : arm.palmBasis;
+  if (fitted) basis.multiply(new THREE.Quaternion().fromArray(fitted.basis));
+  const palm = fitted
+    ? new THREE.Vector3().fromArray(fitted.offset).applyQuaternion(arm.palmBasis)
+    : arm.palmOffset?.clone() ?? (side ? new THREE.Vector3(-0.025, -0.004, 0.014) : new THREE.Vector3(-0.008, -0.025, -0.004));
+  if (fitted) {
+    // Relaxing the fingers brings the fleshy pads closer to the underside.
+    const relaxed = THREE.MathUtils.clamp((.04 - (opts.fingerCurl ?? .04)) / .16, 0, 1);
+    palm.add(new THREE.Vector3(0, 0, fitted.openPadDepth * relaxed).applyQuaternion(basis));
+  }
   const tip = arm.fingerTipOffset?.clone() ?? palm.clone().multiplyScalar(1.55);
   if (opts.tipWeight !== undefined) localOffset.lerpVectors(palm, tip, opts.tipWeight);
   else if (opts.mode === 'tip') localOffset.copy(tip);
@@ -151,7 +164,7 @@ export function reachPalm(
   else localOffset.copy(palm);
 
   const handWorldQuat = new THREE.Quaternion();
-  const palmBasisInv = arm.palmBasis ? arm.palmBasis.clone().invert() : new THREE.Quaternion();
+  const palmBasisInv = basis ? basis.clone().invert() : new THREE.Quaternion();
   const wrist = contact.clone();
 
   const elbowPos = new THREE.Vector3();
@@ -163,9 +176,9 @@ export function reachPalm(
   for (let i = 0; i < 4; i++) {
     reachArm(rig, arm, wrist, side, opts.poleHint);
     arm.hand.updateWorldMatrix(true, false);
-    if (opts.quaternion && arm.palmBasis) {
+    if (opts.quaternion && basis) {
       const blend = opts.blend ?? 1;
-      const restPalm = arm.hand.getWorldQuaternion(handWorldQuat).multiply(arm.palmBasis);
+      const restPalm = arm.hand.getWorldQuaternion(handWorldQuat).multiply(basis);
       const base = restPalm.clone().slerp(opts.quaternion, blend);
 
       // Share pronation/supination twist along the forearm so the wrist never pinches ("拧麻花").

@@ -24,6 +24,18 @@ node scripts/bake-luna-cabin-actions.mjs /path/to/downloads
 
 来源、Take 和源文件校验值见[素材登记](../../models.sources.json)。
 
+### 小熊抱起节奏
+
+[Luna-Bear-Pickup.blend](./Luna-Bear-Pickup.blend) 保存三套衣装的原拾取动作、重排时间后的 `bearPickUp` 和 `Timing` 场景中的 `Bear_Pickup_Timing` 曲线。小熊抱起由约 3.97 秒缩短至 3.05 秒；弯腰、收尾更快，接触附近放缓，再连贯抬起。约 1.46 秒开始抬离地面。原姿势、脚底和双手接触路径保留，放下及其他娃娃、纸团仍使用原 `pickUp`。
+
+在 Blender 的 `Timing` 场景调整 `seconds` 曲线，再重导。横轴是原片 30 fps 帧号，纵轴是新片秒数，必须严格递增；此脚本仅重排时间，不导出角色网格或新的骨骼姿势。运行时片段复用原姿势数据，只增加采样时间与动画声明。接触求解、淡入淡出使用同次导出的 `bearPickupTiming.ts` 换算原片时间，取消时沿新片倒放。
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 --python scripts/retime-bear-pickup.py -- --scratch "$env:PI_SCRATCH_DIR" --from-blend
+```
+
+省略 `--from-blend` 会从当前运行模型和原 `pickUp` 重建制作源及默认节奏。原动作包经其他脚本重建后，须最后执行上述重导以恢复小熊片段。`--output-dir` 与 `--timing-output` 可指向仓库外以核对重导。相关回归：`bearPickup.test.mjs`、`contactHands.test.mjs`、`plushCarry.test.mjs`。
+
 ## 楼梯步态
 
 Luna 上、下楼各取 MotionSmith Take 1 中连续的左右两步。原文件均为 UE5 Manny 骨架、30 fps。帧号从 0 开始，上楼两个步段的边界为 48、64、80，下楼为 57、76、94，分别取脚趾开始离开踏面的帧。导出脚踝推进与抬升、脚掌俯仰、躯干倾斜、双膝屈曲、髋踝相对位置和双侧肩、肘、腕的运动方向。运行时按腿长和踏面尺寸重定向，并在首末级与平台衔接。两个方向都用支撑踝定位骨盆，按原片的前移曲线跨过左右脚换重的瞬间。骨盆至颈部的倾角驱动躯干，头部俯仰单独采样。上楼时，骨盆的抬升曲线限制承重腿伸直时身体的上升速度。下楼时，骨盆的降高曲线控制左右脚换重。前脚掌靠近踏板前缘，后跟越过台阶后逐渐下降，落脚时膝盖保留原片的轻微弯曲。[上楼原片](https://cosindra.ai/motionsmith/motions/walk-upstairs) · [下楼原片](https://cosindra.ai/motionsmith/motions/walk-downstairs)
@@ -39,6 +51,16 @@ node scripts/bake-luna-stairs.mjs /path/to/MotionSmith_walk_upstairs_take1.glb /
 衣柜第三套采用用户提供的 Tripo 文件 `anime girl 3d model.glb`。开衫、胸前蝴蝶结、条纹长袜与蓝色长发沿用原网格和 UV。日常装的虹膜、高光、眼睑、鼻尖、双颊和唇形已按新头部正面与刘海边界重新绘入底色。下巴尖端略微上提，沿下颌两侧逐渐收回。下巴前缘随头骨运动，颈部保持平滑过渡。第三格的预览标识为 `cardigan`。
 
 [Blender 制作源](./Luna-Cardigan.blend)内置贴图、骨架、袖侧修形与动作。[运行模型](../../public/models/resident/luna-cardigan.glb)使用 Luna 的 115 根骨骼。制作源打开时显示自然站姿，上臂外展约 18°。领口主要随胸廓，袖山向锁骨和上臂逐渐过渡，侧腰略收以留出袖口间距。行走时，左右臂按日常装的肩肘轨迹与对侧脚交替摆动，手掌朝向按开衫网格上的指根定位。手臂靠近衣身时才触发对应侧的衣料修形。后腰罗纹和下摆褶边以骨盆为支撑，平滑分配左右腿的影响。两侧袖子和手指独立绑定，发束随头部和发链运动，袜底保存步态支撑点。固定椅的[接触缓存](../../public/models/resident/luna-cardigan-seat.bin)按新网格对坐垫和扶手采样 98 帧。编辑网格或坐姿时须同时更新缓存及 `_CONTACT_ID`。
+
+肘上袖筒以同侧上臂为支撑，在肘弯附近平滑过渡到前臂。袖筒中段原先混入的胸椎权重会在抬手时把布面拉向身体，产生塌陷与扭曲；当前绑定已在 Blender 中修正，肩口、领口和袖口保留原有过渡。三层取还书的真实蒙皮回归见 `src/scene/orbital/cardiganElbow.test.mjs`。
+
+重新导出手动编辑后的权重：
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 --python scripts/repair-luna-cardigan-elbows.py
+```
+
+脚本读取上述制作源，首次处理未标记的旧源时重建两侧袖部权重；已修正的源只导出当前编辑值，不重复叠加修复。导出时逐点核对 Blender 与 GLB 的绑定坐标，并处理 UV 接缝副本，只更新 `JOINTS_0` / `WEIGHTS_0`。顶点顺序、拓扑、贴图、形态键、骨架、动画和 `_CONTACT_ID` 保持不变，原座椅缓存继续使用。`--source`、`--base`、`--blend`、`--output` 可用于仓库外对照导出。
 
 ## 云朵连帽衫制作源（已下架）
 
@@ -75,9 +97,9 @@ blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tm
 
 ### 运行资源
 
-- `assets/public/models/resident/luna-walk-room.glb`：保留 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–98 帧，30 fps，时间归零后 97/30 秒）。31,140 个三角形，7,068,924 bytes。
+- `assets/public/models/resident/luna-walk-room.glb`：保留 `Walk_Grounded_Loop`，加入 `ChairSit_Contact`（第 1–98 帧，30 fps，时间归零后 97/30 秒）。31,140 个三角形，7,100,588 bytes（含自然站姿与沙发手势片段）。
 - 同目录 `luna-seat-contact.bin`：98 帧、3,251 个局部顶点的蒙皮前修形，1,911,608 bytes。不能只替换 GLB 而遗漏该文件；普通 glTF 查看器只显示骨骼动作，不会自动应用此缓存。
-- GLB 与接触缓存合计 8.98 MB；源 `.blend` 不在 `assets/public/`，不进入网页构建。
+- GLB 与接触缓存合计 9.01 MB；源 `.blend` 不在 `assets/public/`，不进入网页构建。
 
 原始 4096 × 4096 底色 JPEG 来自用户提供的 Tripo GLB，在 Git 提交 `2e1ff72` 的 `art/resident/animated-transfer/walk-repair/luna-walk-repaired.glb` 中也有相同副本。当前运行时与 `Luna-ArmContact.blend` 底色已在 Blender 中缩为 2048 × 2048；法线图维持原有 2048 × 2048 数据，粗糙度图以同尺寸单通道 PNG 保存，实际使用的绿色通道逐像素不变。当前材质将法线强度设为 0.18、金属系数设为 0，并复用底色作为 0.55 强度的自发光，用来减轻室内近景的发际线和眼周暗块。
 
@@ -85,7 +107,7 @@ blender --background --python scripts/bake-luna-sofa.py -- "$CMU_SUBJECT_75" /tm
 
 在仓库根目录运行 `blender --background --python scripts/resize-luna-textures.py`。脚本只缩小日常装、蝴蝶结外套与丁香开衫中最长边超过 2048 的图片，保持宽高比；同步打包对应 Blender 制作源。GLB 中仅替换缩放图片的 bufferView，校验其余二进制数据和模型描述不变，避免重新导出网格破坏 `_CONTACT_ID`、修形或动画。已达上限的图片不重新编码，重复执行不会改写资源。可用 `-- --report <仓库外路径>` 保存处理报告。完成其他模型制作脚本后，应再运行此命令，确保运行资源符合 2K 上限。
 
-日常装 GLB 为 6.74 MiB，蝴蝶结外套为 6.25 MiB；丁香开衫原本即为 2K，保持 7.43 MiB。两张底色由 4096² 降为 2048²，各减少 75% 像素；文件体积不按像素数等比下降，仍包含未改动的贴图、几何和动作。
+包含自然站姿与沙发手势片段后，日常装 GLB 为 6.77 MiB，蝴蝶结外套为 6.28 MiB；丁香开衫为 7.46 MiB。两张底色由 4096² 降为 2048²，各减少 75% 像素；文件体积不按像素数等比下降，仍包含未改动的贴图、几何和动作。
 
 ### 数据贴图无损整理
 
@@ -112,7 +134,7 @@ python scripts/pack-luna-chair.py --output <外部目录>
 
 ## 坐姿待机
 
-懒人沙发托腮采用 CMU `13_04` 的左肘弯曲和头部转向（120 Hz，第 1573–2149 帧）。桌前固定椅晃腿采用 CMU `01_06` 坐在高处时的左右膝屈伸（120 Hz，第 985–1357 帧）。两段均从原始记录取坐稳后的片段，并导出为 10 Hz 曲线，托腮的放手段略放慢。网页在既有落座姿势上求解手掌接触和小腿摆角。懒人沙发保留原有骨盆、贴地双脚和坐垫承重。固定椅保留臀部与膝位。日常装的左手贴住下颌，右手托住左前臂。
+懒人沙发托腮采用 CMU `13_04` 的左肘弯曲和头部转向（120 Hz，第 1573–2149 帧）。桌前固定椅晃腿采用 CMU `01_06` 坐在高处时的左右膝屈伸（120 Hz，第 985–1357 帧）。两段均从原始记录取坐稳后的片段，并导出为 10 Hz 曲线，托腮的放手段略放慢。网页沿原曲线时序混合下述 Blender 搭腿与托腮姿态，并求解固定椅的小腿摆角。懒人沙发保留原有骨盆、贴地双脚和坐垫承重。三套衣装坐稳时双手分搭大腿或裙面；托腮时左手顺着脸侧抬起，右手继续搭腿。固定椅保留臀部与膝位。
 
 下载 [13_04.amc](https://mocap.cs.cmu.edu/subjects/13/13_04.amc) 和 [01_06.amc](https://mocap.cs.cmu.edu/subjects/01/01_06.amc) 到仓库外的同一目录，从仓库根目录运行以下命令生成 `src/scene/orbital/seatedIdleFrames.ts`。
 
@@ -121,6 +143,24 @@ python3 scripts/extract-luna-seated-idles.py <AMC目录>
 ```
 
 动捕由 CMU Graphics Lab 在 NSF EIA-0196217 资助下制作，允许在商业作品中使用及改编。原始或转换后的数据适用数据库条款。 [CMU Motion Capture Database](https://mocap.cs.cmu.edu/)
+
+## 自然垂臂与沙发手势
+
+[`Luna-Relaxed-Poses.blend`](Luna-Relaxed-Poses.blend) 保存三套衣装各自的 `Relaxed_everyday`、`Relaxed_ribbon`、`Relaxed_cardigan` 场景。每个场景的第 1 帧为自然站姿，第 31 帧为双手搭腿，第 61 帧为左手托腮；这是可编辑姿态库，运行时过渡仍使用原走停、落座与 CMU 手势时序。
+
+`scripts/bake-luna-rest.py` 从 Blender 骨骼求值导出 `Luna_Relaxed_Standing`、`Luna_Sofa_Lap`、`Luna_Sofa_Cheek` 三个旋转片段，追加到各自运行模型。站定时日常装与蝴蝶结外套上臂相对竖直方向外展约 9.44°，丁香开衫单独外展约 16.97°，前臂稍向外打开；三套均保持掌心朝内，环顾只驱动躯干和头颈。拖动视角与滚轮缩放只打断装饰待机，不撤掉基础站姿。沙发落座后段逐渐进入搭腿，托腮时右手保持原接触，起身沿原时轴退出。减少动态效果时保留自然站姿和双手搭腿。原模型二进制数据、UV 拆点、形态键、骨权与接触缓存不变。
+
+使用 `--from-blend --update-standing` 可以仅按脚本重做第 1 帧站姿，保留第 31／61 帧的沙发手势。导出按当前 bufferView 的实际偏移计算原始数据边界，兼容贴图缩小后的 GLB。
+
+开衫右手的 `RightHandMiddle1` 绑定位置偏向掌内，不能单独用它到手腕的向量判断真实掌向。制作时以食指、无名指和小指指根的平均位置确定掌轴，结合真实蒙皮复核接触；腕部旋转相对真实绑定姿态分担到前臂。回归见 `src/scene/orbital/relaxedPoses.test.mjs`。
+
+从仓库根目录运行以下命令，将中间输出留在仓库外。修改源文件的关键姿态后，使用 `--from-blend` 重新导出到临时目录，核对后替换对应三套运行 GLB，并更新素材清单。
+
+```powershell
+node scripts/sample-luna-rest.mjs . "$env:PI_SCRATCH_DIR/rest-reference.json"
+blender --background --factory-startup --python-exit-code 1 --python scripts/bake-luna-rest.py -- --root . --input "$env:PI_SCRATCH_DIR/rest-reference.json" --blend "$env:PI_SCRATCH_DIR/Luna-Relaxed-Poses.blend" --output-dir "$env:PI_SCRATCH_DIR/rest-models"
+blender --background --factory-startup --python-exit-code 1 --python scripts/bake-luna-rest.py -- --root . --from-blend --blend assets/models/resident/Luna-Relaxed-Poses.blend --output-dir "$env:PI_SCRATCH_DIR/rest-models"
+```
 
 ## 日常裙装的站姿修形
 
@@ -143,14 +183,22 @@ blender --background --factory-startup --python-exit-code 1 \
 
 复建命令为 `blender --background --python scripts/export-luna-yawn.py -- <Yawn.fbx路径>`。输入由用户下载提供，许可见来源清单中的 Adobe Mixamo FAQ。普通待机与额外动作的节奏及打断条件见 SPEC.md。
 
+丁香针织开衫使用 `luna-cardigan.glb` 内嵌的 `Luna_Yawn`。其伸展修复的可编辑源为 [Luna-Cardigan-Stretch.blend](./Luna-Cardigan-Stretch.blend)：535 个局部袖面顶点从胸廓牵引改为随上臂运动，在肘部平滑过渡到前臂；6.2–8.25 秒的双侧上臂和前臂减少轴向扭转，手掌随前臂展开，收手关键帧采用约 0.1 秒的四元数平滑。动作仍为 8.33 秒，前半段遮嘴及其他动作保持原样。
 
-## 站立环顾
+```sh
+blender --background --factory-startup --python-exit-code 1 --python scripts/repair-cardigan-yawn.py
+```
+
+首次制作从运行 GLB 导入，以逆绑定矩阵恢复真实绑定基准；节点初始姿势不能代替蒙皮绑定姿势。已有制作源时导出当前编辑结果，不重复叠加修复。脚本只更新袖部 `JOINTS_0` / `WEIGHTS_0` 及六条上臂、前臂、手腕旋转轨道，保留几何、UV、形态键、贴图、其余动作和 `_CONTACT_ID`。与袖部及掌向修复合并后，运行模型为 7,821,600 bytes、12 条动作，保留新增的自然站姿、沙发搭腿与托腮；双方袖部权重一致，联合导出只改变六条伸懒腰旋转轨道，其余二进制数据逐字节保留。`cardigan-sleeve-binding.py` 沿用已有肘部修复的局部平滑权重规则。与其他人物分支合并时，先核对制作源中的权重，再以合并后的 GLB 为 `--base` 导出，避免覆盖另一批蒙皮修复。专项回归为 `node --test src/scene/orbital/cardiganStretch.test.mjs`。
+
+
+## 历史站立环顾素材
 
 Mixamo 页面按描述 `Idle Stand Looking Around` 确认的 `Looking Around`，使用 X Bot 空手站姿，完整 1–191 帧。下载设为 FBX Binary / Without Skin / 30 FPS / Keyframe Reduction none；Body Type 0、Surprise Level 50、Overdrive 50、Arm-Space 50、Trim 0–100%、Mirror 关闭。不是同名持火把动作，也不是 `Look Around — Looking Around The Body`。
 
-复用 `scripts/export-luna-yawn.py` 的绑定姿态与肩臂方向修正：`blender --background --python scripts/export-luna-yawn.py -- "<Looking Around.fbx路径>" looking-around`。生成 `luna-looking-around.glb`：180,012 bytes，54 条上身旋转轨道，6.33 秒；无网格、纹理和根位移。骨盆、腿及脚由原中立姿态负责，环顾期间保持原地。源 FBX 留在仓库外，SHA-256 与许可入口见来源清单。
+复用 `scripts/export-luna-yawn.py` 的绑定姿态与肩臂方向修正：`blender --background --python scripts/export-luna-yawn.py -- "<Looking Around.fbx路径>" looking-around`。生成非运行时素材 `assets/models/resident/luna-looking-around.glb`：180,012 bytes，54 条上身旋转轨道，6.33 秒；无网格、纹理和根位移。源 FBX 留在仓库外，SHA-256 与许可入口见来源清单。
 
-环顾和伸懒腰各自按需加载；偏头、拢手和松弛站姿由运行时直接计算。时序与打断由 `standingIdle.ts` 统一管理，数值参数及产品行为见 SPEC.md。
+站立环顾已从待机调度、加载和播放中移除；上述素材仅供历史制作参考，不随站点发布。开衫模型内的历史片段保留但不再绑定。伸懒腰仍按需加载；偏头、拢手和松弛站姿由运行时直接计算。时序与打断由 `standingIdle.ts` 统一管理，数值参数及产品行为见 SPEC.md。
 
 ## 书柜取书与归还
 
@@ -166,6 +214,19 @@ blender --background --factory-startup --python-exit-code 1 --python scripts/bak
 托底转移采用 `SUPPORT_SKIN_OFFSETS` 的书本局部接触修正：在制作帧 96–144（导出帧 132–180）加密到每帧四个采样。烘焙先保留原始手掌、手指朝向与动作，再从评估后的 Blender 姿态只重新求解左腕位置和两段手臂，保持原肘部弯曲平面；修正值依据实际蒙皮到圆角封面三角形的距离标定。导出仍为 6 秒，含 325 个采样时点，归还逆向使用同一动作。程序开合与双向翻页仍由网页姿态控制。
 
 程序开合左手继续使用 `bookSupportPose` 的提早抬升曲线，右手闭合抓握的前臂轴向分担在展开前半段淡出；阅读和双向翻页保留原轨迹。取书左手在导出 124 帧完成接触求解并开始承重，主手在 132 帧后才转向封面；接托期间的肘部让位连续淡出到原转书姿态。不能把接近 1 的伸手混合权重或掌部代理点当作真实皮肤接触。左手从书底下方进入接托。真实手与书的三角面回归覆盖三层正逆 115–134 帧，每 0.25 帧采样，共 462 个姿态。双手进入书体的深度须小于 1 mm，从第 124 帧开始要求左手承重间隙小于 2 mm；原转书与开合接触、65°掌向、70°静态腕角及连续性阈值保留。右掌在书本局部朝 +Y，左手承重后，右手沿书脊外缘退开并绕书本局部 Z 轴换握。闭书时右掌朝 −Y、左掌朝 +Y。回归以放松时五指的自然内弯方向标定蒙皮指腹，以拇指对掌校验左右掌面符号，逐层双向检查每根手指的指腹顶点到近侧封面、拇指腹到包边，以及左掌侧到书底的距离。有限采样的范围见[场景进度文档](../../../src/scene/orbital/进度文档.md)。
+
+### 丁香开衫掌面校准
+
+[`Luna-Cardigan-Book-Hands.blend`](Luna-Cardigan-Book-Hands.blend) 保存两侧 `PalmBearing` 掌部导引，以及 `Cardigan_Book_Hands_0`、`_1`、`_2` 三层取书动作（0–180 帧，30 fps）。掌轴按真实指根横排和掌侧蒙皮校准，避免偏向掌内的右中指指根误导腕部朝向。导引的 `openPadDepth` 属性用于放松手指后的指垫厚度；修改后须复查掌侧皮肤到封面或书底的接触。
+
+`scripts/bake-cardigan-library-hands.py` 从 Blender 导引导出 `cardiganPalms.ts`，供开合、阅读和翻页 IK 使用；三层手臂旋转导出到 `cardiganPickup.ts`，由 `libraryMotion.ts` 按原 GLB 时钟采样，归还倒放。书本和未涉及的骨骼仍使用原动作。验证以变形后的掌侧三角面判断朝向，分别检查指垫、拇指与承重掌面；不能仅用手骨到中指指根的方向代替真实手掌。
+
+从可编辑源重导到仓库外，核对两份数据后再替换对应 `src/scene/orbital/library/` 文件：
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 --python scripts/bake-cardigan-library-hands.py -- --from-blend assets/models/resident/Luna-Cardigan-Book-Hands.blend --palm-output "$env:PI_SCRATCH_DIR/cardiganPalms.ts" --pickup-output "$env:PI_SCRATCH_DIR/cardiganPickup.ts"
+node --test src/scene/orbital/library/bookMotion.test.mjs src/scene/orbital/library/library.test.mjs
+```
 
 ### 翻页曲线制作与运行时对照
 
@@ -183,3 +244,27 @@ blender --background --factory-startup --python-exit-code 1 --python scripts/bak
 可编辑 Blender 控制器后用 `--from-blend "$reviewDir/Luna-PageTurn.blend"` 重新导出曲线，再重新采样实际运行时姿态。`--runtime` 导入正反两套 101 帧的真实蒙皮骨骼、书本变换与纸页顶点，供多视角对照；查看动作时须同时选择对应的 `Luna_PageTurn_*`、`Book_PageTurn_*`、`Sheet_PageTurn_*`，相机为 `Front`、`Left`、`Right`、`Top`、`ThreeQuarter`。这些骨骼动作是运行时的审查快照；直接改快照骨骼不会自动修改网页动作，网页使用的源仍是控制曲线与 IK 实现。
 
 重建时先导出控制曲线，再采样网页，最后导入新采样；修改过控制器的场景在最后一步加 `--from-blend`，避免默认参数覆盖编辑值。截图、采样 JSON 与检查用 Blender 文件留在仓库外，不进入静态发布包。已有取书 GLB 不受翻页曲线导出影响。
+
+
+### 丁香开衫楼梯、盘腿与抱熊接触
+
+`Luna-Cardigan-Contact-Hands.blend` 保存 `Contact_up`、`Contact_down` 两个 65 帧循环和 `Contact_grip` 掌面/指形导引。掌轴由食指、无名指、小指指根平均得到，避开偏向掌内的中指根。`Bear_Contact_0/1` 的 Y/Z 位置是相对于小熊半高/半深的接触位置；`Right/Left_0/1_tangent/normal` 控制接近和抱稳时的掌面方向。`Bear_Cradle` 自定义属性控制抬升、前后间距、抬起弧线和肩部可达距离。手指姿态从 Blender 动作导出，运行时只为动态小熊位置求解腕部接触。兔子、企鹅和前两套服装继续使用原握法。
+
+导出 `luna-cardigan-hands.glb` 为 143,388 bytes，只含上肢旋转、骨架和导引，不含角色网格或贴图。楼梯按原双步时钟采样上肢，不改骨盆和腿脚。抱熊按导出的掌向、指形和真实蒙皮表面拟合玩偶，抱持中心同时受肩部可达距离约束。创建接触播放器前须像正式动作链一样先应用人物基础姿态。
+
+`Luna-Cardigan-Floor-Hands.blend` 保存完整角色及 30 FPS 的 `floorSit` / `floorStand` 动作。`bake-luna-floor-hands.py` 只替换这两条动作的肩、臂、腕、指旋转，入座末段渐入接触，起身初段释放。`luna-cabin-actions-cardigan.glb` 共 791,940 bytes、11 条动作；基包取自既有开衫动作适配资源，仅改两条动作的 76 条上肢通道，其余动作、骨盆腿脚、采样时间与原始数据保持一致。来源及原包校验值见 `assets/models.sources.json`。
+
+从可编辑源重导无需临时采样 JSON；在项目根目录执行，输出与报告放到仓库外：
+
+```powershell
+$reviewDir = $env:PI_SCRATCH_DIR
+Copy-Item assets/models/resident/Luna-Cardigan-Contact-Hands.blend "$reviewDir/contact-source.blend"
+blender --background --factory-startup --python-exit-code 1 --python scripts/bake-luna-contact-hands.py -- --root . --from-blend --blend "$reviewDir/contact-source.blend" --output "$reviewDir/luna-cardigan-hands.glb"
+Copy-Item assets/models/resident/Luna-Cardigan-Floor-Hands.blend "$reviewDir/floor-source.blend"
+blender --background --factory-startup --python-exit-code 1 --python scripts/bake-luna-floor-hands.py -- --root . --from-blend --base assets/public/models/resident/luna-cabin-actions-cardigan.glb --blend "$reviewDir/floor-source.blend" --output "$reviewDir/luna-cabin-actions-cardigan.glb" --report "$reviewDir/floor-report.json"
+node --test src/scene/orbital/contactHands.test.mjs src/scene/orbital/floorHands.test.mjs
+```
+
+重新制作楼梯时，`node scripts/sample-luna-contact-hands.mjs . <仓库外JSON>` 采样原步态，再通过 `bake-luna-contact-hands.py --input <JSON>` 烘焙。不要把显示层 1.43 倍缩放重复计入本地骨骼变换。
+
+回归检查真实掌侧皮肤：楼梯全周期掌轴/前臂夹角小于 8°，腿脚轨迹与原求解逐点一致；盘腿最近接触小于 4 mm、中位小于 15 mm；小熊接近阶段最近间隙小于 8 mm、抱稳小于 4.5 mm、中位小于 15 mm，同时检查皮肤穿入及 30/60/120 Hz 正反播放连续性。距离限于有限采样，不能替代网页多角度检查。角色网格未改动；通用 QA 的原有装饰孤岛、共面重叠和 UV 拆点提示保留，不宣称整个源素材的通用 QA 全绿。

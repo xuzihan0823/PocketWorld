@@ -108,6 +108,6 @@ encoded += b" " * (-len(encoded) % 4)
 output = struct.pack("<III", 0x46546C67, 2, 28 + len(encoded) + len(binary))
 output += struct.pack("<II", len(encoded), 0x4E4F534A) + encoded
 output += struct.pack("<II", len(binary), 0x004E4942) + binary
-target = ROOT / "assets/public/models/resident" / filename
+target = ROOT / ("assets/models/resident" if looking else "assets/public/models/resident") / filename
 target.write_bytes(output)
 print(target, len(output), "bytes", len(selected), "rotation tracks", (end - start) / 30, "seconds")

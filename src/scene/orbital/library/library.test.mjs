@@ -143,6 +143,7 @@ function controller(reducedMotion = false) {
   dependencies['../residentRig'] = loadModule('../residentRig.ts');
   dependencies['./pageTurnFrames'] = loadModule('./pageTurnFrames.ts');
   dependencies['./bookMotion'] = loadModule('./bookMotion.ts');
+  dependencies['./cardiganPickup'] = loadModule('./cardiganPickup.ts');
   dependencies['./libraryMotion'] = loadModule('./libraryMotion.ts');
   const c = loadModule('./useLibrary.ts').useLibrary({ sceneId: 'habitat', reducedMotion, onAction: a => actions.push(a), onReturn: () => actions.push('return'), error: s => errors.push(s) }); effects.forEach(fn => fn());
   const advance = () => { for (let i = 0; i < 250; i++) { if (['approach', 'reading', 'catalog', 'align', 'recenter', 'idle'].includes(c.flow.current.phase)) break; c.tick(.04); } };

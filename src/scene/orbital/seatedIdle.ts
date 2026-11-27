@@ -1,4 +1,4 @@
-import { MathUtils, Matrix4, Quaternion, Vector3, type Bone } from 'three';
+import { MathUtils, Matrix4, Quaternion, Vector3, PropertyBinding, type AnimationClip, type Bone } from 'three';
 import type { ResidentRig } from './ResidentModel';
 import type { ResidentOutfit } from './wardrobe/outfit';
 import { CHAIR_LEG_SWING, SEATED_IDLE_FPS, SOFA_CHEEK_REST } from './seatedIdleFrames';
@@ -68,13 +68,21 @@ const cheekContact: Record<ResidentOutfit, [number, number, number]> = {
   cardigan: [.058, .018, -.055],
 };
 
-export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit) {
+export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit, lapClip?: AnimationClip, cheekClip?: AnimationClip) {
   const bone = (name: string) => rig.mesh.getObjectByName('mixamorig' + name) as Bone;
+  const bindPose = (clip?: AnimationClip) => clip?.tracks.map(track => {
+    const { nodeName, propertyName } = PropertyBinding.parseTrackName(track.name);
+    const joint = rig.mesh.getObjectByName(nodeName)!;
+    if (!joint || propertyName !== 'quaternion') throw new Error('Incompatible lap pose ' + track.name);
+    return { joint, rotation: new Quaternion().fromArray(track.values) };
+  }) ?? [];
+  const lapChannels = bindPose(lapClip), cheekChannels = bindPose(cheekClip);
   const spine = [bone('Spine'), bone('Spine1'), bone('Spine2')];
   const neck = bone('Neck'), head = bone('Head');
   function arm(side: 'Left' | 'Right') {
     const hand = bone(side + 'Hand');
-    const middle = hand.worldToLocal(bone(side + 'HandMiddle1').getWorldPosition(new Vector3()));
+    const middle = hand.worldToLocal(['Index', 'Ring', 'Pinky'].reduce((point, finger) =>
+      point.add(bone(side + 'Hand' + finger + '1').getWorldPosition(new Vector3())), new Vector3()).multiplyScalar(1 / 3));
     const across = hand.worldToLocal(bone(side + 'HandIndex1').getWorldPosition(new Vector3()))
       .sub(hand.worldToLocal(bone(side + 'HandPinky1').getWorldPosition(new Vector3())));
     const fingers = middle.clone().normalize();
@@ -198,7 +206,8 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     solveHand(right, weight);
   }
 
-  return (idle: ReturnType<typeof createSeatedIdle>) => {
+  return (idle: ReturnType<typeof createSeatedIdle>, lapWeight = 0) => {
+    for (const { joint, rotation } of lapChannels) joint.quaternion.slerp(rotation, lapWeight);
     if (!idle.seat || idle.seat === 'floor' || idle.overlay || !idle.weight) return;
     const { samples } = motions[idle.seat];
     const frame = MathUtils.clamp(idle.time, 0, duration(samples)) * SEATED_IDLE_FPS;
@@ -217,7 +226,10 @@ export function createSeatedIdlePlayer(rig: ResidentRig, outfit: ResidentOutfit)
     } else {
       roomY.set(0, 1, 0).applyQuaternion(room);
       roomZ.set(0, 0, 1).applyQuaternion(room);
-      restOnCheek(MathUtils.smoothstep(first, 0, 1) * weight, second);
+      const cheekWeight = MathUtils.smoothstep(first, 0, 1) * weight;
+      if (cheekClip) {
+        for (const { joint, rotation } of cheekChannels) joint.quaternion.slerp(rotation, cheekWeight);
+      } else restOnCheek(cheekWeight, second);
     }
   };
 }
