@@ -5,6 +5,7 @@ import { SOFA_ENTRY, SOFA_STEPS, loadSofaClip, sofaPlayer } from './sofaMotion';
 import { DECK_WALK_BOUNDS, UPPER_DECK_OFFSET, deckFromAuthoredX, BED_POSITION, CAT_HOME, CAT_MAT_Y, COMPUTER_STAND, FLOOR_SOFA, PLUSH_DOLLS, TRASH_CAN, HABITAT_SPAWN, WARDROBE_FOOTPRINT, WARDROBE_STAND, NIGHTSTAND_X, NIGHTSTAND_Z, LOW_FURNITURE_CLEARANCE, RESIDENT_RADIUS, WALK_BOUNDS } from './cabinLayout';
 import { CABIN_STAIRS, STAIR_DISTANCE, STAIR_TREAD_RUN, otherDeck, sampleCabinStairs, stairDestination, stairLanding, type CabinResidentView } from './cabinStairs';
 import type { CabinDeck } from './cabinLayout';
+import type { CabinView } from './cabinView';
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -57,6 +58,7 @@ type ResidentsProps = WorldModelProps & {
   onQuickTravelTarget?: (target: CabinDeck | null) => void;
   deckView?: React.MutableRefObject<CabinResidentView>;
   deckOpacity?: React.MutableRefObject<CabinOpacity>;
+  cabinView?: CabinView;
   showNearbyHints?: boolean;
   prefetchSeat?: boolean;
   loadPlush?: boolean;
@@ -445,6 +447,11 @@ export function OrbitalResidents(props: ResidentsProps) {
       idleInput.current = true;
       root.position.set(x, 0, z);
       root.rotation.y = Math.PI / 2;
+      if (current.current.deckView) {
+        current.current.deckView.current.deck = target;
+        current.current.deckView.current.stairAscent = null;
+        current.current.deckView.current.stairFrom = null;
+      }
       return true;
     };
     return () => { handle.current = null; };
@@ -1209,15 +1216,16 @@ export function OrbitalResidents(props: ResidentsProps) {
     root.userData.sofaTime = p.sofaTime.current;
     root.userData.plushBodies = plushBodies.current;
     root.userData.paperBodies = paperBodiesRef.current;
-    const nearbyList = p.showNearbyHints === false ? [] : nearbyActions();
+    const showHints = p.showNearbyHints !== false && (!p.cabinView || p.cabinView === 'overview' || p.cabinView === deck);
+    const nearbyList = showHints ? nearbyActions() : [];
     const nearby = nearbyList[0] ?? null;
     const rugHint = cabinPerformance.current?.kind === 'floor' && !cabinPerformance.current.leaving
-      && p.enabled && p.showNearbyHints !== false ? 'E · 起身' : '';
+      && p.enabled && showHints ? 'E · 起身' : '';
     const carrying = plushGrip.current;
-    const carryStairs = carrying && !cabinPerformance.current && !s.stairs && p.enabled && p.showNearbyHints !== false ? stairReady() : null;
-    const carryHint = carrying && !cabinPerformance.current && !s.stairs && p.enabled && p.showNearbyHints !== false
+    const carryStairs = carrying && !cabinPerformance.current && !s.stairs && p.enabled && showHints ? stairReady() : null;
+    const carryHint = carrying && !cabinPerformance.current && !s.stairs && p.enabled && showHints
       ? carryStairs ? `E · ${carryStairs === 'lower' ? '上楼' : '下楼'}` : 'E · 放下' + plushLabels[carrying.body.id] : '';
-    const hint = carryHint || rugHint || (p.enabled && p.showNearbyHints !== false && (s.posture !== 'standing' || wanted !== 'standing')
+    const hint = carryHint || rugHint || (p.enabled && showHints && (s.posture !== 'standing' || wanted !== 'standing')
       ? canUseComputer() ? 'E · 起身　Q · 使用电脑' : 'E · 起身'
       : nearbyList.map((target, index) => `${INTERACT_LABELS[index]} · ${target.hint}`).join('　'));
     if (nearby?.id !== s.nearby?.id || hint !== s.nearbyHint) {
