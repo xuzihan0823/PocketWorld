@@ -721,7 +721,8 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
               onInspectionEnd={props.onReturn} onOutfitMounted={onResidentMounted}
               prefetchSeat={cabinLoading.equipment} loadPlush={cabinLoading.plush} loadCat={cabinLoading.cat}
               deckView={residentView} deckOpacity={deckOpacity} quickTravel={props.quickTravel} onQuickTravelTarget={props.onQuickTravelTarget}
-              showNearbyHints={!props.cleaning && (props.cabinView === 'overview' || props.cabinView === residentView.current.deck)}
+              cabinView={props.cabinView}
+              showNearbyHints={!props.cleaning}
               approachEnabled={inCabin && !props.cleaning && !props.focusedObject && ['idle', 'active', 'error'].includes(props.transition.phase)}
               walkTarget={walkTarget} onArrive={() => setWalkTarget(null)}
               enabled={canWalk && (!props.library || props.library.view.phase === 'idle')} />

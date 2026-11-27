@@ -958,6 +958,34 @@ test('quick stair travel cancels an in-flight approach and reaches both landings
   assert.equal(quickTravel.current, null);
 });
 
+test('quick travel synchronously updates deckView and preserves upper-deck proximity hints like sitting on the rug', () => {
+  const quickTravel = { current: null }, deckView = { current: { deck: 'lower', stairAscent: null, stairFrom: null } };
+  const hovers = [];
+  const view = mount('orbital', {
+    quickTravel,
+    deckView,
+    cabinView: 'overview',
+    showNearbyHints: true,
+    onHover: (id, hint) => hovers.push({ id, hint }),
+  });
+  try {
+    assert.equal(quickTravel.current('upper'), true);
+    assert.equal(deckView.current.deck, 'upper', 'deckView updates before cabinView re-renders');
+    view.props.cabinView = 'upper';
+    view.frame(1 / 60);
+    assert.equal(hovers.at(-1)?.hint, 'E · 下楼');
+
+    const [rugX, rugZ] = cabinActions.RUG_SEAT;
+    view.root.position.set(rugX, 0, rugZ);
+    view.frame(1 / 60);
+    assert.ok(hovers.at(-1)?.hint?.includes('坐在地毯上'), 'upper rug hint stays visible after quick travel');
+
+    view.props.cabinView = 'lower';
+    view.frame(1 / 60);
+    assert.equal(hovers.at(-1)?.hint, undefined, 'mismatched deck view still suppresses off-deck hints');
+  } finally { view.dispose(); }
+});
+
 test('a click on the other deck walks to the stair landing and waits for E instead of crossing', () => {
   const [lx, lz] = cabinStairs.stairLanding('lower');
   assert.deepEqual([...cabinStairs.stairApproachPoint('lower', [-3.05, .8])], [lx, 0, lz]);
