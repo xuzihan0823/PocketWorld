@@ -5,6 +5,7 @@ export class ClockAudioPlayer {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private synthTimer: ReturnType<typeof setInterval> | null = null;
+  private pendingClassicBurst = false;
   private activeOscillators = new Set<OscillatorNode>();
   private htmlAudio: HTMLAudioElement | null = null;
   private muted = false;
@@ -33,9 +34,12 @@ export class ClockAudioPlayer {
   public unlock(): void {
     if (this.disposed) return;
     const ctx = this.ensureContext();
-    if (ctx && ctx.state !== 'running') {
-      void ctx.resume().catch(() => {});
-    }
+    if (!ctx) return;
+    const resumePlayback = () => {
+      if (this.ctx === ctx && ctx.state === 'running' && this.pendingClassicBurst) this.triggerClassicBurst();
+    };
+    if (ctx.state === 'running') resumePlayback();
+    else void ctx.resume().then(resumePlayback).catch(() => {});
   }
 
   public isPlaying(): boolean {
@@ -87,28 +91,27 @@ export class ClockAudioPlayer {
   }
 
   private startClassic(): void {
-    const ctx = this.ensureContext();
-    if (!ctx) return;
-    if (ctx.state !== 'running') {
-      void ctx.resume().catch(() => {});
-    }
-    const triggerBurst = () => {
-      if (this.disposed || !this.playingTone || this.muted) return;
-      const context = this.ensureContext();
-      if (!context || !this.masterGain) return;
-      if (context.state !== 'running') void context.resume().catch(() => {});
-      const now = context.currentTime;
-      // Classic 4-pulse alarm clock pattern ("beep-beep-beep-beep" + twin-bell overtone)
-      const pulseOffsets = [0, 0.11, 0.22, 0.33];
-      for (const offset of pulseOffsets) {
-        this.scheduleClassicPulse(context, now + offset);
-      }
-    };
-    triggerBurst();
+    if (!this.ensureContext()) return;
     const setIntervalFn = typeof window !== 'undefined' && typeof window.setInterval === 'function'
       ? window.setInterval.bind(window)
       : setInterval;
-    this.synthTimer = setIntervalFn(triggerBurst, 820);
+    this.synthTimer = setIntervalFn(() => this.triggerClassicBurst(), 820);
+    this.triggerClassicBurst();
+    this.unlock();
+  }
+
+  private triggerClassicBurst(): void {
+    if (this.disposed || this.synthTimer === null || !this.playingTone || this.muted) return;
+    const context = this.ensureContext();
+    if (!context || !this.masterGain) return;
+    if (context.state !== 'running') {
+      this.pendingClassicBurst = true;
+      return;
+    }
+    this.pendingClassicBurst = false;
+    const now = context.currentTime;
+    const pulseOffsets = [0, 0.11, 0.22, 0.33];
+    for (const offset of pulseOffsets) this.scheduleClassicPulse(context, now + offset);
   }
 
   private scheduleClassicPulse(ctx: AudioContext, startTime: number): void {
@@ -189,6 +192,7 @@ export class ClockAudioPlayer {
 
   public stop(): void {
     this.playingTone = null;
+    this.pendingClassicBurst = false;
     if (this.synthTimer !== null) {
       const clearIntervalFn = typeof window !== 'undefined' && typeof window.clearInterval === 'function'
         ? window.clearInterval.bind(window)

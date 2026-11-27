@@ -132,6 +132,7 @@ export function JournalEditor({ entry, book, leafCount, saveState, onChange, onG
     const key = (event: KeyboardEvent) => {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
       if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.target instanceof HTMLElement && (event.target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName))) return;
       event.preventDefault();
       if (!event.repeat) turn(event.key === 'ArrowLeft' ? -1 : 1);
     };

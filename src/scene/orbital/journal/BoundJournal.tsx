@@ -215,7 +215,10 @@ export function BoundJournal({ opened, control, reducedMotion, leafCount, coverT
     const handled = 'deltaY' in native
       ? control.current.onPaperPointer(page, event.uv.x, 1 - event.uv.y, kind, event.shiftKey, native.deltaY)
       : control.current.onPaperPointer(page, event.uv.x, 1 - event.uv.y, kind, event.shiftKey, undefined, native);
-    if (handled !== false) event.stopPropagation();
+    if (handled !== false) {
+      event.stopPropagation();
+      if (kind === 'wheel') native.stopPropagation();
+    }
   };
   return <group name="Journal_Binding">
     <mesh position={[0.045 + 1.49 / 2, B.board / 2, 0]} geometry={data.board} castShadow receiveShadow>{boardMaterial}</mesh>

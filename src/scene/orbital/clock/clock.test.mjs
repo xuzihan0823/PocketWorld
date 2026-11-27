@@ -259,3 +259,106 @@ test('ClockAudioPlayer plays classic synthesized alarm and special built-in intr
     globalThis.window = prevWindow;
   }
 });
+
+test('alarm catches a skipped target minute once and keeps the original target key', () => {
+  const { DEFAULT_CLOCK_STATE, evaluateClockTick } = clockStateMod;
+  const state = { ...DEFAULT_CLOCK_STATE, alarmEnabled: true, alarmTime: '08:15' };
+  const before = new Date(2026, 10, 27, 8, 14, 59);
+  const after = new Date(2026, 10, 27, 8, 16, 0);
+  const hit = evaluateClockTick(state, after, before);
+  assert.equal(hit.triggered, 'alarm');
+  assert.equal(hit.nextState.lastTriggeredKey, '2026-11-27T08:15');
+  assert.equal(evaluateClockTick(hit.nextState, after, before).triggered, null);
+  assert.equal(evaluateClockTick(state, after).triggered, null);
+  assert.equal(evaluateClockTick(state, after, after).triggered, null);
+  assert.equal(evaluateClockTick({ ...state, alarmEnabled: false }, after, before).triggered, null);
+});
+
+test('alarm catches midnight and multi-day gaps without replaying every missed day', () => {
+  const { DEFAULT_CLOCK_STATE, evaluateClockTick } = clockStateMod;
+  const state = { ...DEFAULT_CLOCK_STATE, alarmEnabled: true, alarmTime: '23:59' };
+  const before = new Date(2026, 10, 27, 23, 58, 59);
+  const after = new Date(2026, 10, 28, 0, 1, 0);
+  const midnight = evaluateClockTick(state, after, before);
+  assert.equal(midnight.triggered, 'alarm');
+  assert.equal(midnight.nextState.lastTriggeredKey, '2026-11-27T23:59');
+  const later = new Date(2026, 10, 30, 0, 1, 0);
+  const resumed = evaluateClockTick(midnight.nextState, later, after);
+  assert.equal(resumed.triggered, 'alarm');
+  assert.equal(resumed.nextState.lastTriggeredKey, '2026-11-29T23:59');
+  assert.equal(evaluateClockTick(resumed.nextState, later, after).triggered, null);
+  assert.equal(evaluateClockTick(state, before, after).triggered, null);
+});
+
+test('suspended classic audio stays empty, resumes one burst and never revives after stop or dispose', async () => {
+  const intervals = new Set(), contexts = [], oscillators = [];
+  class SuspendedContext {
+    state = 'suspended';
+    currentTime = 0;
+    destination = {};
+    pending = [];
+    constructor() { contexts.push(this); }
+    createGain() {
+      return {
+        gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} },
+        connect() {}, disconnect() {},
+      };
+    }
+    createOscillator() {
+      const osc = {
+        frequency: { setValueAtTime() {} }, connect() {}, disconnect() {}, start() {},
+        stop(at) { if (at === undefined) this.onended?.(); },
+      };
+      oscillators.push(osc);
+      return osc;
+    }
+    resume() { return new Promise(resolve => this.pending.push(resolve)); }
+    finishResume() {
+      this.state = 'running';
+      this.pending.splice(0).forEach(resolve => resolve());
+    }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+  }
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    AudioContext: SuspendedContext,
+    setInterval(fn) { intervals.add(fn); return fn; },
+    clearInterval(fn) { intervals.delete(fn); },
+  };
+  const player = new clockAudioMod.ClockAudioPlayer();
+  try {
+    player.start('classic');
+    for (let i = 0; i < 100; i++) for (const interval of intervals) interval();
+    assert.equal(oscillators.length, 0);
+    assert.equal(player.activeOscillators.size, 0);
+    player.unlock();
+    player.unlock();
+    contexts[0].finishResume();
+    await Promise.resolve();
+    assert.equal(oscillators.length, 8);
+    assert.equal(player.activeOscillators.size, 8);
+    player.setMuted(true);
+    assert.equal(player.activeOscillators.size, 0);
+    for (const interval of intervals) interval();
+    assert.equal(oscillators.length, 8);
+    player.setMuted(false);
+    contexts[0].state = 'suspended';
+    for (const interval of intervals) interval();
+    player.unlock();
+    player.stop();
+    contexts[0].finishResume();
+    await Promise.resolve();
+    assert.equal(oscillators.length, 8);
+    assert.equal(intervals.size, 0);
+    contexts[0].state = 'suspended';
+    player.start('classic');
+    player.dispose();
+    contexts[0].finishResume();
+    await Promise.resolve();
+    assert.equal(oscillators.length, 8);
+    assert.equal(intervals.size, 0);
+  } finally {
+    player.dispose();
+    globalThis.window = previousWindow;
+  }
+});
