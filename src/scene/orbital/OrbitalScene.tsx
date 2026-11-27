@@ -73,6 +73,10 @@ interface OrbitalSceneProps extends WorldSceneProps {
   onViewModeChange: (mode: SpacecraftViewMode) => void;
   onEnterCabin: () => void;
   onLeaveCabin?: () => void;
+  /** True while the trash-can full-screen clean-up owns the view. */
+  cleaning: boolean;
+  /** Increments once the clean-up has put loose props back in place. */
+  cleanTick: number;
 }
 interface CabinCameraProps {
   cabinView: CabinView;
@@ -434,7 +438,7 @@ function CameraRig(props: CameraRigProps) {
     if (progress >= 1) moving.current = false;
   });
   const inTransition = props.viewMode === 'entering-cabin' || props.viewMode === 'leaving-cabin';
-  const locked = inTransition || props.gestureActive || !!props.focusedObject || !['idle', 'active', 'error'].includes(props.transition.phase);
+  const locked = inTransition || props.cleaning || props.gestureActive || !!props.focusedObject || !['idle', 'active', 'error'].includes(props.transition.phase);
   const inCabin = props.viewMode === 'cabin';
   return <OrbitControls ref={controls} enabled={!locked} enablePan={false} enableDamping dampingFactor={0.08}
     minDistance={inCabin || props.viewMode === 'entering-cabin' ? 5 : 16}
@@ -597,10 +601,10 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
     || (isTravelling && props.transition.toScene === 'observatory');
   const activeOutfit = readOutfit(props.sceneObjects.habitat.wardrobe?.itemId);
   const cabinLoading = useCabinLoadStage(showInterior, residentSettled, props.viewMode === 'entering-cabin');
-  const canWalk = inCabin && !props.catMenuOpen && !props.focusedObject && !props.gestureActive
+  const canWalk = inCabin && !props.cleaning && !props.catMenuOpen && !props.focusedObject && !props.gestureActive
     && (!props.library || props.library.flow.current.phase === 'idle') && ['idle', 'active', 'error'].includes(props.transition.phase);
   const walkTo = (id: WorldSceneId, point: [number, number, number]) => {
-    if (!canWalk || props.quickDeck || props.sceneId !== id) return;
+    if (!canWalk || props.cleaning || props.quickDeck || props.sceneId !== id) return;
     void roomAudio.unlock();
     // Crossing decks is a manual stair action: walk to this deck's landing and wait for E.
     setWalkTarget(id === 'habitat' ? stairApproachPoint(residentView.current.deck, [point[0], point[2]]) : point);
@@ -671,7 +675,7 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
         {(showInterior || visitedCabin) && <group visible={showInterior}>
           <CabinFadeGroup part="lower" name={id === 'habitat' ? 'Cabin_LowerDeck' : undefined}>
             <HabitatShell world={world} deck="lower" onFloorClick={onFloorClick} />
-            {id === 'habitat' && cabinLoading.furniture && <ScheduleSurfaces {...world} paperPickup={paperPickup} paperBodies={paperBodies}
+            {id === 'habitat' && cabinLoading.furniture && <ScheduleSurfaces {...world} cleanTick={props.cleanTick} paperPickup={paperPickup} paperBodies={paperBodies}
               visible={inCabin && props.sceneId === 'habitat'} />}
             {cabinLoading.furniture && <>
               <Suspense fallback={null}><HabitatFurniture {...world} stage={cabinLoading.furnitureStage} /></Suspense>
@@ -699,8 +703,8 @@ function WorldContent(props: OrbitalSceneProps & CabinCameraProps & { catMenuOpe
               onInspectionEnd={props.onReturn} onOutfitMounted={onResidentMounted}
               prefetchSeat={cabinLoading.equipment} loadPlush={cabinLoading.plush} loadCat={cabinLoading.cat}
               deckView={residentView} deckOpacity={deckOpacity} quickTravel={props.quickTravel} onQuickTravelTarget={props.onQuickTravelTarget}
-              showNearbyHints={props.cabinView === 'overview' || props.cabinView === residentView.current.deck}
-              approachEnabled={inCabin && !props.focusedObject && ['idle', 'active', 'error'].includes(props.transition.phase)}
+              showNearbyHints={!props.cleaning && (props.cabinView === 'overview' || props.cabinView === residentView.current.deck)}
+              approachEnabled={inCabin && !props.cleaning && !props.focusedObject && ['idle', 'active', 'error'].includes(props.transition.phase)}
               walkTarget={walkTarget} onArrive={() => setWalkTarget(null)}
               enabled={canWalk && (!props.library || props.library.view.phase === 'idle')} />
           </>}
@@ -746,7 +750,7 @@ export function OrbitalScene(props: OrbitalSceneProps) {
   const [quickDeck, setQuickDeck] = useState<CabinDeck | null>(null);
   const [view, setView] = useState<{ mode: CabinView; revision: number }>({ mode: outfitPreview ? 'lower' : 'overview', revision: 0 });
   const selectView = (mode: CabinView) => setView(current => ({ mode, revision: current.revision + 1 }));
-  const showCabinControls = props.sceneId === 'habitat' && props.viewMode === 'cabin' && !props.focusedObject && !catMenu
+  const showCabinControls = props.sceneId === 'habitat' && props.viewMode === 'cabin' && !props.cleaning && !props.focusedObject && !catMenu
     && ['idle', 'active', 'error'].includes(props.transition.phase);
   const canQuickTravel = showCabinControls && !props.gestureActive && !quickDeck;
   useEffect(() => {
@@ -812,7 +816,7 @@ export function OrbitalScene(props: OrbitalSceneProps) {
     onDoubleClick={e => { if ((e.target as HTMLElement).tagName === 'CANVAS' && props.focusedObject && !props.activeGame) props.onReturn(); }}>
     <Canvas events={visibleSceneEvents} shadows dpr={[1, maxDpr]} gl={{ antialias: true, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
       onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.shadowMap.type = THREE.PCFSoftShadowMap; }}>
-      <AdaptiveQuality paused={!!props.activeGame || !!quickDeck || !['cabin', 'orbit'].includes(props.viewMode)} onChange={setQualityLevel} />
+      <AdaptiveQuality paused={!!props.activeGame || props.cleaning || !!quickDeck || !['cabin', 'orbit'].includes(props.viewMode)} onChange={setQualityLevel} />
       <WorldContent {...props} catMenuOpen={!!catMenu} outfitPreview={outfitPreview} shadowSize={quality.shadowSize}
         quickDeck={quickDeck} quickTravel={quickTravel} onQuickTravelFinish={() => setQuickDeck(null)} onQuickTravelTarget={setQuickTarget}
         cabinView={view.mode} viewRevision={view.revision} onCabinViewChange={selectView} onAction={action => {

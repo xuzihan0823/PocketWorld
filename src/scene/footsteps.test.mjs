@@ -124,6 +124,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     './scene/orbital/useWorldController': { useWorldController: () => world },
     './scene/orbital/OrbitalDustPrompt': { DustPrompt: 'DustPrompt' },
     './scene/orbital/spacecraftFlight': { readInitialViewMode: () => 'cabin' },
+    './scene/orbital/cleaning': load('./orbital/cleaning.ts', {}),
     './standingIdle': load('./orbital/standingIdle.ts', { three: THREE, 'three/examples/jsm/loaders/GLTFLoader.js': { GLTFLoader: class {
       loadAsync(url) { return idleLibrary ? Promise.resolve(idleLibrary[url]) : Promise.reject(new Error('Animation offline in controller tests')); }
     } } }),
@@ -187,7 +188,7 @@ test('拖鞋经历楼层渐隐后恢复原始材质与完整透明度', () => {
   const side = { center: [-4, .1], baseY: .014, halfHeight: .05, parts: [{ geometry, material: original }] };
   const { SlipperPair } = load('./orbital/Slippers.tsx', {
     react: {
-      useMemo: fn => fn(), useRef: value => ({ current: value }),
+      useMemo: fn => fn(), useRef: value => ({ current: value }), useEffect: () => {},
       createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
     },
     three: THREE,

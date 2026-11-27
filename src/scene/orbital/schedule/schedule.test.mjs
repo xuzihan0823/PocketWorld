@@ -9,7 +9,7 @@ const source = fs.readFileSync(new URL('./schedule.ts', import.meta.url), 'utf8'
 const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const context = { exports: {}, crypto: webcrypto };
 vm.runInNewContext(output, context);
-const { migrateSchedule, openSchedulePage, updateSchedulePage, turnSchedulePage, tearSchedulePage, discardSchedulePage, createSchedulePage, isScheduleNotebook, flattenSchedule, readScheduleNotebook, SCHEDULE_KEY, PAPER_BALL_RADIUS, paperBallPosition, paperBallBoxes } = context.exports;
+const { migrateSchedule, openSchedulePage, updateSchedulePage, turnSchedulePage, tearSchedulePage, discardSchedulePage, clearDiscardedPaper, createSchedulePage, isScheduleNotebook, flattenSchedule, readScheduleNotebook, SCHEDULE_KEY, PAPER_BALL_RADIUS, paperBallPosition, paperBallBoxes } = context.exports;
 const entry = (id, time = '09:00') => ({ id, title: `任务 ${id}`, time, completed: false, content: `正文 ${id}` });
 
 test('editing the turned left sheet updates its queued record without switching or overwriting the right sheet', () => {
@@ -105,6 +105,21 @@ test('tearing leaves legacy glass posters untouched and bounds the paper-ball li
   assert.equal(state.discarded.length, 24);
   assert.equal(state.current.number > 15, true);
   assert.equal(isScheduleNotebook(JSON.parse(JSON.stringify(state))), true);
+});
+
+test('cleaning sweeps all loose paper balls but keeps the notebook sheets', () => {
+  let state = migrateSchedule([entry('clean')]);
+  state.posted = [createSchedulePage(4)];
+  state = tearSchedulePage(state);
+  state = discardSchedulePage(state, state.posted[0].id);
+  assert.equal(state.discarded.length, 2);
+  const currentId = state.current.id;
+  const postedCount = state.posted.length;
+  const cleared = clearDiscardedPaper(state);
+  assert.equal(cleared.discarded.length, 0);
+  assert.equal(cleared.current.id, currentId);
+  assert.equal(cleared.posted.length, postedCount);
+  assert.equal(clearDiscardedPaper(cleared), cleared);
 });
 
 test('v1 notebook migration preserves page identity, old text and the original storage value', () => {

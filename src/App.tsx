@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { MusicDisc } from './types/interactable';
 import type { GameId } from './types/game';
-import type { WorldFeatureAdapters } from './types/world';
+import type { WorldAction, WorldFeatureAdapters } from './types/world';
 import { PRESET_MUSIC_DISCS, generateDiscColorsFromName, roomAudio } from './scene/audioEngine';
+import { cleaningSweepCount, cleaningTiming } from './scene/orbital/cleaning';
 import { RACK_FULL_MESSAGE, RACK_SLOT_COUNT, validateMusicImport } from './scene/orbital/media/record-motion';
 import { OrbitalScene } from './scene/orbital/OrbitalScene';
 import { useLibrary } from './scene/orbital/library/useLibrary';
@@ -26,6 +27,7 @@ const FOCUS_GUIDES: Record<string, readonly PromptEntry[] | undefined> = {
   clock: [{ label: '设定闹钟或倒计时' }, { label: '试听经典版与特供版铃声' }, BACK_HINT],
 };
 const FOCUSED_OBJECT_GUIDE = [{ label: '操作物品继续探索' }, { label: '双指轻触退回' }, BACK_HINT];
+type CleaningPhase = 'idle' | 'fading-in' | 'cleaning' | 'fading-out';
 const ORBIT_GUIDE = [
   { label: '长按加速绕地', keys: ['Space'] },
   { label: '点击飞船或按键进入舱室', keys: ['E'] },
@@ -56,7 +58,43 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     hintTimer.current = window.setTimeout(() => setAnnouncement(''), 5500);
   }, []);
   const library = useLibrary({ sceneId: baseWorld.sceneId, reducedMotion: baseWorld.reducedMotion, onAction: baseWorld.onAction, onReturn: baseWorld.onReturn, error: onFeatureError });
-  const world = { ...baseWorld, library, onAction: library.dispatch, onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); } };
+  const [cleaning, setCleaning] = useState<CleaningPhase>('idle');
+  const [cleanTick, setCleanTick] = useState(0);
+  const cleaningRef = useRef<CleaningPhase>('idle');
+  const cleanTimers = useRef<number[]>([]);
+  const scheduleClean = useCallback((step: () => void, delay: number) => {
+    cleanTimers.current.push(window.setTimeout(step, delay));
+  }, []);
+  const startCleaning = useCallback(() => {
+    if (cleaningRef.current !== 'idle' || baseWorld.focusedObject || library.flow.current.phase !== 'idle') return;
+    cleaningRef.current = 'fading-in';
+    cleanTimers.current.forEach(window.clearTimeout);
+    cleanTimers.current = [];
+    void roomAudio.unlock();
+    const timing = cleaningTiming(baseWorld.reducedMotion);
+    setCleaning('fading-in');
+    scheduleClean(() => {
+      roomAudio.playSfx('switch');
+      setCleaning('cleaning');
+      const strokes = cleaningSweepCount(timing);
+      for (let i = 0; i < strokes; i++) scheduleClean(() => roomAudio.playCleaningSweep(i % 2 === 1), i * timing.sweepInterval);
+      scheduleClean(() => {
+        // Loose items are put back while the screen is still black, so the room returns tidy.
+        setCleanTick(tick => tick + 1);
+        roomAudio.playSfx('soft');
+        setCleaning('fading-out');
+        scheduleClean(() => {
+          cleaningRef.current = 'idle';
+          setCleaning('idle');
+        }, timing.fadeOut);
+      }, timing.sweep);
+    }, timing.fadeIn);
+  }, [baseWorld.focusedObject, baseWorld.reducedMotion, library.flow, scheduleClean]);
+  const dispatchWorldAction = useCallback((action: WorldAction) => {
+    if (action.objectId === 'trash-can' && action.kind === 'clean') { startCleaning(); return; }
+    library.dispatch(action);
+  }, [library.dispatch, startCleaning]);
+  const world = { ...baseWorld, library, onAction: dispatchWorldAction, onReturn: () => { if (library.flow.current.phase !== 'idle') library.back(); else baseWorld.onReturn(); } };
   const books = library.data.books.map(book => ({ id: book.id, title: book.title, author: book.author, pages: [book.text] }));
   const enterCabin = useCallback(() => {
     void roomAudio.unlock();
@@ -90,6 +128,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+      if (cleaningRef.current !== 'idle') { event.preventDefault(); return; }
       const editable = event.target instanceof HTMLElement && (['INPUT', 'TEXTAREA'].includes(event.target.tagName) || event.target.isContentEditable);
       if (editable || (event.target instanceof HTMLElement && event.target.closest?.('.cat-interaction[open]'))) return;
       if (viewMode === 'approach' || viewMode === 'orbit') {
@@ -136,6 +175,8 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   }, [viewMode, world.onReturn, world.onAction, world.sceneId, world.focusedObject, activeGame, activateBoost, enterCabin, leaveCabin, library.flow]);
   useEffect(() => () => {
     window.clearTimeout(hintTimer.current);
+    cleanTimers.current.forEach(window.clearTimeout);
+    cleanTimers.current = [];
     roomAudio.stopMusic();
     ownedUrls.current.forEach(url => URL.revokeObjectURL(url));
     ownedUrls.current = [];
@@ -185,7 +226,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
   const status = viewMode !== 'cabin'
     ? orbitGuide
     : (announcement || world.error || audio.error || focusGuide || world.hover?.hint || (world.focusedObject ? FOCUSED_OBJECT_GUIDE : ''));
-  const showFlightControls = !world.focusedObject && !activeGame && library.flow.current.phase === 'idle' && (viewMode === 'orbit' || viewMode === 'approach' || viewMode === 'cabin');
+  const showFlightControls = cleaning === 'idle' && !world.focusedObject && !activeGame && library.flow.current.phase === 'idle' && (viewMode === 'orbit' || viewMode === 'approach' || viewMode === 'cabin');
   return <main className={`orbital-app${draggingFile ? ' is-importing' : ''}${world.focusedObject ? ' is-focused' : ''}${viewMode !== 'cabin' ? ' is-orbit' : ''}`} aria-label="PocketWorld 轨道居住舱"
     onDragEnter={event => { if (viewMode !== 'cabin' || world.focusedObject !== 'music-player' || !event.dataTransfer.types.includes('Files')) return; event.preventDefault(); inputDepth.current += 1; setDraggingFile(true); }}
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) event.preventDefault(); }}
@@ -193,6 +234,7 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
     onDrop={event => { event.preventDefault(); inputDepth.current = 0; setDraggingFile(false); importFiles(event.dataTransfer.files); }}>
     <OrbitalScene {...world} viewMode={viewMode} boosting={boosting} onViewModeChange={setViewMode} onEnterCabin={enterCabin}
       onLeaveCabin={showFlightControls && viewMode === 'cabin' ? leaveCabin : undefined}
+      cleaning={cleaning !== 'idle'} cleanTick={cleanTick}
       books={books} adapters={adapters} onImportMusic={onImportMusic} discs={discs} activeDisc={audio.disc} isMusicPlaying={audio.isPlaying} isMuted={audio.isMuted}
       onSelectDisc={onSelectDisc} onToggleMusic={onToggleMusic} onToggleMute={onToggleMute} activeGame={activeGame} onGameChange={setActiveGame} onFeatureError={onFeatureError} />
     {viewMode === 'cabin' && world.focusedObject === 'wardrobe' && <WardrobeSurface
@@ -200,6 +242,13 @@ export const App: React.FC<{ adapters?: WorldFeatureAdapters }> = ({ adapters })
       onChoose={itemId => world.onAction({ sceneId: 'habitat', objectId: 'wardrobe', kind: 'select', payload: { itemId } })}
       onCancel={world.onReturn} />}
     <LibrarySurface library={library} />
+    <div className={`orbital-cleaning${cleaning === 'idle' ? '' : cleaning === 'fading-out' ? ' is-out' : ' is-visible'}`} aria-hidden={cleaning === 'idle'}>
+      {cleaning === 'cleaning' && <div className="orbital-cleaning-card" role="status" aria-live="assertive">
+        <span className="orbital-cleaning-broom" aria-hidden="true" />
+        <p>正在打扫中</p>
+        <small>地板重新变得整洁，物品也会回到原来的位置</small>
+      </div>}
+    </div>
     <header className="orbital-header">
       <div className="orbital-wordmark"><span className="orbital-emblem" aria-hidden="true" /><img src={wordmark} alt="pocketworld" width={800} height={171} /></div>
     </header>

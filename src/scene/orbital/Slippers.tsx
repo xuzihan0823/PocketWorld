@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useSceneGLTF as useGLTF } from './useSceneGLTF';
 import * as THREE from 'three';
@@ -11,6 +11,8 @@ interface SlipperPairProps {
   resident: React.RefObject<THREE.Group>;
   room: { boxes: SlipperRect[] };
   reducedMotion: boolean;
+  /** Bumped when the room is cleaned; loose slippers return to the rug. */
+  resetKey: number;
 }
 
 function isValidBody(body: ReturnType<typeof createSlipperPair>[number] | undefined) {
@@ -30,7 +32,7 @@ function isValidBody(body: ReturnType<typeof createSlipperPair>[number] | undefi
     && Number.isFinite(body.cooldown);
 }
 
-export function SlipperPair({ resident, room, reducedMotion }: SlipperPairProps) {
+export function SlipperPair({ resident, room, reducedMotion, resetKey }: SlipperPairProps) {
   const { scene } = useGLTF(SLIPPER_MODEL_URL);
   const model = useMemo(() => extractSlipperModel(scene), [scene]);
   const left = useRef<THREE.Group>(null);
@@ -38,6 +40,11 @@ export function SlipperPair({ resident, room, reducedMotion }: SlipperPairProps)
   const bodies = useRef(createSlipperPair([[0, 0], [0, 0]]));
   const readyModel = useRef<typeof model>(null);
   const last = useRef<{ x: number; z: number } | null>(null);
+
+  useEffect(() => {
+    if (!model) return;
+    bodies.current = createSlipperPair([model.left.center, model.right.center], [model.left.radius, model.right.radius]);
+  }, [model, resetKey]);
 
   useFrame((_, rawDelta) => {
     const groups = [left.current, right.current];
