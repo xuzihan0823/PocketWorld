@@ -2,11 +2,11 @@ import React, { createContext, useContext, useLayoutEffect, useMemo, useRef } fr
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import { UPPER_DECK_OFFSET } from './cabinLayout';
-import { createCabinGroupFade, type CabinOpacity } from './cabinCutaway';
+import { createCabinGroupFade, type CabinOpacity, type CabinZoomFadePart } from './cabinCutaway';
 
 export const CabinOpacityContext = createContext<React.MutableRefObject<CabinOpacity> | null>(null);
 
-type CabinFadePart = Exclude<keyof CabinOpacity, 'zoomFade'>;
+type CabinFadePart = Exclude<keyof CabinOpacity, 'zoomFades'>;
 
 export function CabinFadeGroup({ part, name, position, children }: React.PropsWithChildren<{
   part: CabinFadePart | (() => CabinFadePart);
@@ -22,19 +22,20 @@ export function CabinFadeGroup({ part, name, position, children }: React.PropsWi
     const state = cutaway?.current;
     return state ? state.interior * (selectedPart === 'interior' ? 1 : state[selectedPart]) : 1;
   };
-  useLayoutEffect(() => fade.restore, [fade]);
+  useLayoutEffect(() => fade.dispose, [fade]);
   useFrame(() => {
     const root = group.current;
     if (!root) return;
     const selectedPart = getPart();
     const amount = opacity(selectedPart);
-    const wholeDeck = cutaway?.current.zoomFade === selectedPart;
-    const materialOpacity = wholeDeck ? 1 : amount;
+    const wholePart = selectedPart !== 'interior'
+      && !!cutaway?.current.zoomFades.includes(selectedPart as CabinZoomFadePart);
+    const materialOpacity = wholePart ? 1 : amount;
     if (materialOpacity !== applied.current || (materialOpacity > 0 && materialOpacity < 1)) {
       fade.set(root, materialOpacity);
       applied.current = materialOpacity;
     }
-    root.userData.cabinZoomOpacity = wholeDeck ? amount : undefined;
+    root.userData.cabinZoomPart = wholePart ? selectedPart : undefined;
     root.userData.cabinInteractive = amount >= .5;
   });
   return <group ref={group} name={name} position={position} visible={opacity(getPart()) > 0}>

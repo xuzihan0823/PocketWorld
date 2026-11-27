@@ -3,7 +3,7 @@ import type { MutableRefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Camera, FramebufferTexture, Mesh, PlaneGeometry, Scene, ShaderMaterial, Vector2 } from 'three';
 import type { Object3D } from 'three';
-import type { CabinOpacity } from './cabinCutaway';
+import type { CabinOpacity, CabinZoomFadePart } from './cabinCutaway';
 
 export function CabinZoomRenderer({ opacity }: { opacity: MutableRefObject<CabinOpacity> }) {
   const pass = useMemo(() => {
@@ -34,7 +34,8 @@ export function CabinZoomRenderer({ opacity }: { opacity: MutableRefObject<Cabin
     const quad = new Mesh(geometry, material);
     quad.frustumCulled = false;
     scene.add(quad);
-    return { scene, material, geometry, camera: new Camera(), size: new Vector2(), parts: [] as Object3D[] };
+    const buckets: Record<CabinZoomFadePart, Object3D[]> = { lower: [], upper: [], resident: [] };
+    return { scene, material, geometry, camera: new Camera(), size: new Vector2(), buckets, active: [] as CabinZoomFadePart[] };
   }, []);
 
   useEffect(() => () => {
@@ -44,15 +45,26 @@ export function CabinZoomRenderer({ opacity }: { opacity: MutableRefObject<Cabin
   }, [pass]);
 
   useFrame(({ gl, scene, camera }) => {
-    // The first pass preserves the complete room's depth and shadows.
-    gl.render(scene, camera);
-    const deck = opacity.current.zoomFade;
-    if (!deck) return;
+    const requested = opacity.current.zoomFades;
+    if (requested.length === 0) {
+      gl.render(scene, camera);
+      return;
+    }
 
+    const { buckets, active } = pass;
+    for (const part of requested) buckets[part].length = 0;
     scene.traverseVisible(node => {
-      if (typeof node.userData.cabinZoomOpacity === 'number') pass.parts.push(node);
+      const part = node.userData.cabinZoomPart as CabinZoomFadePart | undefined;
+      if (part && requested.includes(part)) buckets[part].push(node);
     });
-    if (pass.parts.length === 0) return;
+    active.length = 0;
+    for (const part of requested) {
+      if (buckets[part].length > 0) active.push(part);
+    }
+    if (active.length === 0) {
+      gl.render(scene, camera);
+      return;
+    }
 
     const autoClear = gl.autoClear;
     try {
@@ -63,17 +75,30 @@ export function CabinZoomRenderer({ opacity }: { opacity: MutableRefObject<Cabin
         texture = new FramebufferTexture(width, height);
         pass.material.uniforms.frame.value = texture;
       }
-      // Copy display colors so exposure and antialiasing match the normal render.
-      gl.copyFramebufferToTexture(texture);
 
-      for (const part of pass.parts) part.visible = false;
+      // Render the opaque base scene once, then composite each fading layer with its own opaque shaders.
+      for (const part of active) {
+        for (const node of buckets[part]) node.visible = false;
+      }
+      gl.autoClear = true;
       gl.render(scene, camera);
-      gl.autoClear = false;
-      pass.material.uniforms.amount.value = opacity.current[deck];
-      gl.render(pass.scene, pass.camera);
+
+      for (const part of active) {
+        gl.copyFramebufferToTexture(texture);
+        for (const node of buckets[part]) node.visible = true;
+        gl.autoClear = true;
+        gl.render(scene, camera);
+        gl.autoClear = false;
+        pass.material.uniforms.amount.value = 1 - opacity.current[part];
+        gl.render(pass.scene, pass.camera);
+        for (const node of buckets[part]) node.visible = false;
+      }
     } finally {
-      for (const part of pass.parts) part.visible = true;
-      pass.parts.length = 0;
+      for (const part of active) {
+        for (const node of buckets[part]) node.visible = true;
+        buckets[part].length = 0;
+      }
+      active.length = 0;
       gl.autoClear = autoClear;
     }
   }, 1);
