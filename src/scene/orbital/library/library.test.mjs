@@ -235,6 +235,46 @@ test('书柜取书、展开、翻页、合书、插回及新书上架按阶段�
   assert.deepEqual(sfx, ['book-shelf-add']);
 });
 
+for (const hz of [15, 20, 60]) for (const reduced of [false, true]) test(`取还书和接力阶段保留真实时间与余量：${hz} FPS，减少动态=${reduced}`, () => {
+  for (const authored of [false, true]) {
+    const { c, enter, sfx } = controller(reduced);
+    // The authored three shelf clips are six seconds; tick only needs duration.
+    c.motion.current = authored ? [0, 1, 2].map(() => ({ duration: 6 })) : null;
+    enter('book-01'); c.arrived();
+    const runUntil = phase => {
+      let elapsed = 0;
+      while (c.flow.current.phase !== phase) {
+        c.tick(1 / hz); elapsed += 1 / hz;
+        assert.ok(elapsed < 10, 'interaction must reach its final phase');
+      }
+      return elapsed;
+    };
+    const rate = reduced ? authored ? .8 : .5 : 1;
+    const takeSeconds = (authored ? 7.35 : .74 + .62 + .96 + 1.35) * rate;
+    assert.ok(Math.abs(runUntil('reading') - takeSeconds) <= 1 / hz + 1e-6,
+      'frame remainder is retained across reach/extract/carry/open');
+    assert.deepEqual(sfx, ['book-extract', 'book-open']);
+    c.back();
+    const returnSeconds = (authored ? 7.35 : 1.35 + .96 + .62 + .58) * rate;
+    assert.ok(Math.abs(runUntil('recenter') - returnSeconds) <= 1 / hz + 1e-6);
+    assert.deepEqual(sfx, ['book-extract', 'book-open', 'book-close', 'book-insert']);
+    c.tick(1 / hz); assert.equal(c.flow.current.phase, 'recenter', 'arrival still requires the resident');
+  }
+});
+
+test('书柜跨阶段同帧不漏接力音效，非法时间不破坏进度', () => {
+  const { c, enter, sfx } = controller(true);
+  enter('book-01'); c.arrived();
+  c.tick(.36); // Ten milliseconds before the end of reach.
+  const progress = c.flow.current.progress;
+  for (const dt of [NaN, Infinity, -1, 0]) c.tick(dt);
+  assert.equal(c.flow.current.progress, progress);
+  c.tick(.4); // Cross both reach -> extract and extract -> carry.
+  assert.equal(c.flow.current.phase, 'carry');
+  assert.ok(Math.abs(c.flow.current.progress - .08 / .48) < 1e-9);
+  assert.deepEqual(sfx, ['book-extract']);
+});
+
 test('本地上传解析支持 UTF-8 .txt 与 .md，并严格拦截格式、编码、容量及满柜', () => {
   const m = fixture();
   let d = m.freshLibrary();

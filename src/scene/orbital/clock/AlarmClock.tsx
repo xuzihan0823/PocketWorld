@@ -241,7 +241,9 @@ export function AlarmClock3D(world: WorldSceneProps) {
       targetHand.current.visible = targetAngle !== null;
       if (targetAngle !== null) targetHand.current.rotation.z = targetAngle;
     }
-    const t = clock.getElapsedTime();
+    // R3F advances this shared clock once per frame. getElapsedTime() also calls
+    // getDelta(), stealing this frame's CPU time from every next-frame consumer.
+    const t = clock.elapsedTime;
     if (hammer.current) {
       hammer.current.rotation.z = ringing && !world.reducedMotion ? Math.sin(t * 54) * 0.42 : 0;
     }

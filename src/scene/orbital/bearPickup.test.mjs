@@ -18,7 +18,7 @@ for (const outfit of ['everyday', 'ribbon', 'cardigan']) {
       const original = old.tracks.find(t => t.name === track.name);
       assert.deepEqual(track.values, original.values, 'all poses, including foot contact, stay intact');
       const current = track.createInterpolant(), previous = original.createInterpolant();
-      for (const hz of [30, 60, 120]) for (let i = 0; i <= Math.ceil(clip.duration * hz); i++) {
+      for (const hz of [15, 20, 30, 60, 120]) for (let i = 0; i <= Math.ceil(clip.duration * hz); i++) {
         const time = Math.min(clip.duration, i / hz);
         const actual = current.evaluate(time), expected = previous.evaluate(bearPickupSourceTime(time));
         actual.forEach((v, axis) => assert.ok(Math.abs(v - expected[axis]) < 2e-5,
@@ -35,7 +35,7 @@ for (const outfit of ['everyday', 'ribbon', 'cardigan']) {
 
 test('bear pickup completes sooner, cancels along the same clock, and leaves placement unchanged', () => {
   const clips = { pickUp: { duration: 119 / 30 }, bearPickUp: { duration: BEAR_PICKUP_DURATION } };
-  for (const hz of [30, 60, 120]) {
+  for (const hz of [15, 20, 30, 60, 120]) {
     const pickup = { kind: 'plush', placing: false, time: 0, leaving: false, bearPickup: true };
     let frames = 0;
     while (!advanceCabinPerformance(pickup, 1 / hz, clips)) assert.ok(++frames < 4 * hz);

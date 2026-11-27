@@ -95,3 +95,39 @@ for (const placement of PLUSH_DOLLS) test(placement.id + ' stays clear of Luna w
     }
   } finally { rig.dispose(); }
 });
+
+for (const placement of PLUSH_DOLLS) test(placement.id + ' cached contact bounds preserve exact ray hits and skip unrelated meshes', async () => {
+  const { gltf } = await load(model(placement.path));
+  const shape = createPlushShape(gltf.scene, placement.height);
+  const ray = new Raycaster(), origin = new Vector3(), direction = new Vector3();
+  const expected = [], actual = [], originals = [];
+  let calls = 0, before = 0, after = 0, hitCount = 0;
+  gltf.scene.traverse(mesh => {
+    if (!mesh.isMesh) return;
+    const original = mesh.raycast;
+    originals.push(() => { mesh.raycast = original; });
+    mesh.raycast = function(...args) { calls++; return original.apply(this, args); };
+  });
+  try {
+    for (const side of [-1, 1]) for (const tilt of [-.6, 0, .6]) {
+      for (let y = -12; y <= 12; y++) for (let z = -12; z <= 12; z++) {
+        origin.set(side * (shape.half.length() + .2), shape.half.y * y / 10, shape.half.z * z / 10)
+          .divideScalar(shape.scale).add(shape.origin);
+        direction.set(-side, tilt, .2 * tilt).normalize();
+        ray.set(origin, direction);
+        expected.length = actual.length = 0;
+        calls = 0; ray.intersectObject(gltf.scene, true, expected); before += calls;
+        calls = 0; shape.raycast(ray, actual); after += calls;
+        assert.equal(actual.length, expected.length);
+        for (let i = 0; i < actual.length; i++) {
+          assert.equal(actual[i].object, expected[i].object);
+          assert.equal(actual[i].faceIndex, expected[i].faceIndex);
+          assert.ok(Math.abs(actual[i].distance - expected[i].distance) < 1e-10);
+        }
+        hitCount += actual.length;
+      }
+    }
+    assert.ok(hitCount > 100, 'comparison includes real surface hits, not only empty rays');
+    assert.ok(after < before / 4, `cached bounds must reduce mesh raycasts: ${before} -> ${after}`);
+  } finally { originals.forEach(restore => restore()); }
+});

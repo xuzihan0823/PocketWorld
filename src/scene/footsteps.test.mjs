@@ -12,6 +12,8 @@ import { load as loadModel } from './orbital/load-for-validation.mjs';
 import * as cabinActions from './orbital/cabinActions.ts';
 import * as stairGait from './orbital/stairGait.ts';
 import { createCabinGroupFade } from './orbital/cabinCutaway.ts';
+import * as residentFrameClock from './orbital/residentFrameClock.ts';
+import { WALK_SPEED } from './orbital/residentRig.ts';
 
 const { gltf: residentModel } = await loadModel(new URL('../../assets/public/models/resident/luna-walk-room.glb', import.meta.url));
 
@@ -51,7 +53,9 @@ function libraryDependencies(residentRig) {
 }
 
 function mount(kind, overrides = {}, idleLibrary) {
-  const effects = [], cleanups = [], frames = [], sounds = [], actions = [];
+  const effects = [], cleanups = [], frames = [], sounds = [], actions = [], sfx = [];
+  const page = Object.assign(new EventTarget(), { hidden: false });
+  let mountedRig;
   const target = Object.assign(new EventTarget(), { location: { search: '' }, clearTimeout });
   const camera = new THREE.PerspectiveCamera();
   camera.position.set(0, 3, 5);
@@ -67,7 +71,7 @@ function mount(kind, overrides = {}, idleLibrary) {
   };
   const audio = {
     playFootstep: (options = {}) => sounds.push({ ...options }),
-    playSfx() {},
+    playSfx(type) { sfx.push(type); },
     unlock() { actions.push('unlock'); return Promise.resolve(true); },
     getSnapshot: () => ({ disc: {}, isPlaying: false }),
     subscribe() {}, stopMusic() {},
@@ -93,10 +97,11 @@ function mount(kind, overrides = {}, idleLibrary) {
     './plushMotion': load('./orbital/plushMotion.ts', {}),
     './ResidentModel': { HIP_HEIGHT: 0.69, ResidentModel: 'ResidentModel' },
     './residentRig': residentRig,
+    './residentFrameClock': residentFrameClock,
     './cabinLayout': cabinLayout,
     './cabinStairs': cabinStairs,
     './stairGait': stairGait,
-    './cabinActions': { ...cabinActions, loadCabinActions: async () => undefined },
+    './cabinActions': { ...cabinActions, loadCabinActions: async () => overrides.cabinClips },
     './wardrobe/inspectPose': load('./orbital/wardrobe/inspectPose.ts', { three: THREE }),
     './sofaMotion': load('./orbital/sofaMotion.ts', { three: THREE, './cabinLayout': cabinLayout, './residentRig': residentRig, 'three/examples/jsm/loaders/GLTFLoader.js': {} }),
     './journalLayout': load('./orbital/journalLayout.ts', {}),
@@ -141,7 +146,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     ...overrides,
   };
   const component = load(files[kind], dependencies, {
-    window: target, document: new EventTarget(), Element: class {}, HTMLElement: class {}, URLSearchParams,
+    window: target, document: page, Element: class {}, HTMLElement: class {}, URLSearchParams,
   })[names[kind]];
   const tree = component(props);
   const groups = [];
@@ -151,6 +156,7 @@ function mount(kind, overrides = {}, idleLibrary) {
     if (node.type === 'ResidentModel') {
       const rig = dependencies['./residentRig'].createResidentRig(clone(residentModel.scene), residentModel.animations.find(clip => clip.name === 'Walk_Grounded_Loop'));
       node.props.rig.current = rig;
+      mountedRig = rig;
       cleanups.push(() => rig.dispose());
     }
     if (node.type === 'group' && node.props.ref) {
@@ -165,8 +171,10 @@ function mount(kind, overrides = {}, idleLibrary) {
   attach(tree);
   effects.forEach(effect => cleanups.push(effect()));
   const root = groups.find(item => item.name === 'OrbitalResident')?.group;
+  if (overrides.cabinClips) root.add(mountedRig.mesh);
   return {
-    tree, root, sounds, actions, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    tree, root, sounds, actions, sfx, props, chair: dependencies['./chairPose'].CHAIR_POSES.habitat,
+    visibility(hidden) { page.hidden = hidden; page.dispatchEvent(new Event('visibilitychange')); },
     key(code, type = 'keydown') {
       const event = new Event(type, { cancelable: true });
       Object.assign(event, { code, repeat: false });
@@ -484,6 +492,85 @@ test('a paper ball stays pickable at its live kicked position without getting ki
     assert.ok(gap >= paperBallMotion.PAPER_BALL_MOVER_RADIUS + live.radius - 1e-3, `the ball keeps Luna outside its body, gap=${gap}`);
     assert.ok(Math.hypot(live.x - 0.85, live.z - 0.65) < 0.01, 'approaching to pick up must not kick the target ball away');
     assert.ok(!hints.some(hint => hint?.includes('前方空间不足')));
+  } finally { view.dispose(); }
+});
+
+for (const hz of [15, 20, 60]) for (const reducedMotion of [false, true]) {
+  test(`paper pickup uses elapsed time and crosses grip once at ${hz} FPS (reduced=${reducedMotion})`, async () => {
+    const { gltf } = await loadModel(new URL('../../assets/public/models/resident/luna-cabin-actions-everyday.glb', import.meta.url));
+    const clips = Object.fromEntries(gltf.animations.map(clip => [clip.name, clip]));
+    const view = mount('orbital', { paperBalls: [{ id: 'timed', seed: 3 }], cabinClips: clips, reducedMotion });
+    await Promise.resolve();
+    let completed = 0;
+    const dt = 1 / hz, rate = reducedMotion ? 4 : 1;
+    try {
+      view.frame(dt);
+      const ball = view.root.userData.paperBodies[0];
+      ball.x = .85; ball.z = .65;
+      view.root.position.set(.85, 0, .25);
+      view.root.rotation.y = .08;
+      const begin = () => {
+        view.props.interaction.current([ball.x, .105, ball.z],
+          { sceneId: 'habitat', objectId: 'schedule-paper-timed', kind: 'select' }, () => completed++);
+        for (let i = 0; i < 120 && view.root.userData.cabinAction !== 'paper'; i++) view.frame(dt);
+        assert.equal(view.root.userData.cabinAction, 'paper');
+      };
+      begin();
+      let elapsed = 0, grippedAt;
+      while (view.root.userData.cabinAction === 'paper') {
+        // A full hide/show can occur without any hidden frame. Neither this
+        // interval nor the first resumed callback may trigger contact/commit.
+        if (elapsed === 0) {
+          view.visibility(true); view.visibility(false); view.frame(120);
+          assert.equal(view.props.paperPickup.current, null);
+          assert.equal(completed, 0);
+        }
+        view.frame(dt); elapsed += dt;
+        if (view.props.paperPickup.current && grippedAt === undefined) grippedAt = elapsed;
+        assert.ok(elapsed < 5 / rate);
+      }
+      assert.ok(grippedAt >= cabinActions.PICKUP_GRIP_TIME / rate - 1e-6);
+      assert.ok(grippedAt <= cabinActions.PICKUP_GRIP_TIME / rate + dt + 1e-6);
+      assert.ok(Math.abs(elapsed - clips.pickUp.duration / rate) <= dt + 1e-6);
+      assert.equal(view.sfx.filter(type => type === 'paper-pickup').length, 1);
+      assert.equal(completed, 1);
+      view.frame(dt); assert.equal(completed, 1, 'completion is not repeated');
+
+      // Cancel after crossing the attachment threshold: detach on the reverse
+      // crossing, restore the floor object, and never commit the discarded paper.
+      begin();
+      for (let i = 0; !view.props.paperPickup.current; i++) { assert.ok(i < 3 * hz); view.frame(dt); }
+      view.visibility(true); view.frame(30);
+      assert.ok(view.props.paperPickup.current, 'hidden callbacks preserve the current grip');
+      view.visibility(false); view.frame(30);
+      view.key('Escape');
+      for (let i = 0; view.root.userData.cabinAction === 'paper'; i++) { assert.ok(i < 3 * hz); view.frame(dt); }
+      assert.equal(view.props.paperPickup.current, null);
+      assert.equal(completed, 1, 'cancel does not remove the paper');
+      assert.equal(view.sfx.filter(type => type === 'paper-pickup').length, 2, 'reverse contact does not replay pickup sound');
+      assert.ok(view.root.userData.paperBodies.some(body => body.id === 'timed'));
+    } finally { view.dispose(); }
+  });
+}
+
+test('resident clock pauses on hidden/stalled frames while library time and collision use separate deltas', () => {
+  const ticks = [];
+  const library = { view: { phase: 'idle' }, flow: { current: { phase: 'idle' } }, motion: { current: null }, tick: dt => ticks.push(dt) };
+  const view = mount('orbital', { library, start: [0, 0, .5] });
+  try {
+    for (const hz of [15, 20, 60]) { view.frame(1 / hz); assert.equal(ticks.at(-1), 1 / hz); }
+    view.key('KeyD');
+    const before = view.root.position.clone();
+    view.frame(.4);
+    const distance = view.root.position.distanceTo(before);
+    assert.ok(distance > 0 && distance <= .04 * WALK_SPEED + 1e-6, 'walking retains its 40 ms collision bound');
+    const count = ticks.length;
+    for (const delta of [30, 300, NaN, Infinity, -1, 0]) view.frame(delta);
+    assert.equal(ticks.length, count, 'invalid and long frames are not replayed');
+    view.visibility(true); view.frame(1 / 15); view.frame(60);
+    view.visibility(false); view.frame(1 / 15);
+    assert.equal(ticks.length, count, 'background and first resumed frames do not tick the library');
+    view.frame(1 / 15); assert.equal(ticks.length, count + 1);
   } finally { view.dispose(); }
 });
 
