@@ -10,11 +10,22 @@
 .computer-game-resume-surface { position: absolute; inset: 0; z-index: 10; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: manipulation; }
 .computer-game-resume-surface:focus-visible { outline: 3px solid #e3cc8f; outline-offset: -3px; }
 .orbital-header { position: absolute; top: 34px; left: 42px; right: 42px; display: flex; align-items: center; pointer-events: none; z-index: 4; }
-.orbital-wordmark { display: flex; align-items: center; gap: 13px; font-size: 25px; font-weight: 500; letter-spacing: -1.2px; }
-.orbital-wordmark-dot { color: #c4a879; }
-.orbital-emblem { display: block; width: 22px; height: 22px; border: 1px solid #e5dcc4; border-radius: 50%; position: relative; }
-.orbital-emblem::after { content: ''; position: absolute; inset: 6px -5px; border: 1px solid #bca783; border-radius: 50%; transform: rotate(-35deg); }
-.orbital-edition { margin: 4px 0 0 27px; font-size: 8px; letter-spacing: 2.4px; color: #8c969b; }
+.orbital-wordmark { display: flex; align-items: center; gap: 13px; }
+.orbital-wordmark img {
+  display: block; width: 180px; height: auto;
+  filter: drop-shadow(0 1px 0 #b58b5d) drop-shadow(0 3px 3px #03020bb3);
+}
+.orbital-emblem {
+  display: block; width: 28px; height: 28px; position: relative;
+  border: 1px solid; border-color: #fff0cd #d7b883 #998264 #e9d6ae; border-radius: 50%;
+  background: radial-gradient(circle at 28% 24%, #efd09536, #9b744b10 55%, transparent 76%);
+  box-shadow: inset 0 1px 2px #ffe7b525, 0 2px 3px #03020b80;
+}
+.orbital-emblem::after {
+  content: ''; position: absolute; inset: 8px -6px; border: 1px solid;
+  border-color: #f3dfad #c4a778 #a88b64 #ead1a1; border-radius: 50%; transform: rotate(-35deg);
+  box-shadow: 0 1px 1px #03020b80;
+}
 .orbital-dust-prompt { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 4; display: flex; justify-content: center; width: min(1040px, calc(100vw - 24px)); }
 .orbital-dust-canvas { display: block; pointer-events: none; }
 .orbital-dust-keycaps { position: absolute; inset: 0; opacity: 0; }
@@ -48,7 +59,6 @@
 .orbital-now-playing p { margin: 5px 0 0; font-size: 11px; letter-spacing: 1px; }
 .orbital-record-dot { height: 28px; width: 28px; border-radius: 50%; border: 1px solid #b4aa8b99; background: repeating-radial-gradient(#111a20 0 2px, #57605b 3px, #111a20 4px); position: relative; }
 .orbital-record-dot::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #bf9a65; position: absolute; top: 10px; left: 10px; }
-.is-focused .orbital-edition { opacity: .3; }
 .orbital-drop-message { position: absolute; inset: 0; background: #08141dce; backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 50; }
 .orbital-drop-message p { font-family: 'Songti SC', Georgia, serif; font-size: 25px; letter-spacing: 3px; }
 .orbital-drop-message small { color: #a4b1b2; letter-spacing: 2px; }
@@ -93,8 +103,8 @@
   .orbital-app { --cabin-controls-bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px)); }
   .orbital-cabin-controls { left: max(20px, calc(env(safe-area-inset-left) + 10px)); }
   .orbital-header { top: max(23px, env(safe-area-inset-top)); left: 22px; right: 22px; }
-  .orbital-wordmark { font-size: 22px; gap: 10px; }
-  .orbital-edition { display: none; }
+  .orbital-wordmark { gap: 10px; }
+  .orbital-wordmark img { width: 144px; }
   .orbital-dust-prompt { top: max(62px, calc(env(safe-area-inset-top) + 42px)); }
   .orbital-now-playing { left: 24px; bottom: max(28px, env(safe-area-inset-bottom)); }
   .orbital-now-playing p { max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
