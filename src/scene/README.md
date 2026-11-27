@@ -19,7 +19,7 @@
 - `orbital/chairMotion.ts` 管理固定椅的入座、离座与取消；`chairAnimation.ts` 采样坐姿与局部接触缓存。资源与复建方法见 [Luna 制作源](../../assets/models/resident/README.md)。
 - `orbital/seatedIdle.ts` 在生活舱的入座动作结束后采样托腮与晃腿，并在起身前淡出。[动捕来源和复建方法](../../assets/models/resident/README.md#坐姿待机)
 - `orbital/media/RecordPlayer.tsx` 保留唱机/唱片的原有几何，`record-motion.ts` 统一管理舱室局部坐标路径、唱臂和串行播放阶段；架位在本次会话中稳定，音乐淡入淡出不影响房间音效。
-- `audioEngine.ts` 提供音乐播放、静音、环境、脚步和团子音效。三首 C418 预置唱片通过 Vite 导入 MP3 地址，默认唱片为《Sweden》，选片时复用本地导入唱片的 HTMLAudio 播放链路，不在首屏预加载音乐。[唱片与闹铃来源](../../assets/audio/README.md)，[团子音效来源](../../assets/audio/cat/README.md)。
+- `audioEngine.ts` 提供音乐播放、静音、环境、脚步和团子音效。三首 C418 预置唱片通过 Vite 导入 MP3 地址，首次进入生活舱自动播放《Sweden》，浏览器拦截时在点击或按键后重试，手动暂停后不再自动重播；选片时复用本地导入唱片的 HTMLAudio 播放链路，唱机同步转盘与落针动画，舱外首屏不预加载音乐。[唱片与闹铃来源](../../assets/audio/README.md)，[团子音效来源](../../assets/audio/cat/README.md)。
 - `geometry.ts` 提供场景共用的几何工具。
 
 ## 模块接入

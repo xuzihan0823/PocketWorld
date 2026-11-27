@@ -56,7 +56,7 @@ function mount(kind, overrides = {}, idleLibrary) {
   const effects = [], cleanups = [], frames = [], sounds = [], actions = [], sfx = [];
   const page = Object.assign(new EventTarget(), { hidden: false });
   let mountedRig;
-  const target = Object.assign(new EventTarget(), { location: { search: '' }, clearTimeout });
+  const target = Object.assign(new EventTarget(), { location: { search: '' }, setTimeout, clearTimeout });
   const camera = new THREE.PerspectiveCamera();
   camera.position.set(0, 3, 5);
   camera.lookAt(0, 0, 0);

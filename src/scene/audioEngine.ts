@@ -1008,7 +1008,7 @@ class RoomAudioEngine {
   }
 
   /** Resolves only when playback really starts; stale and rejected requests resolve false. */
-  public async startMusic(disc: MusicDisc): Promise<boolean> {
+  public async startMusic(disc: MusicDisc, { autoplay = false } = {}): Promise<boolean> {
     const sameDisc = this.currentDisc.id === disc.id && this.currentDisc.audioUrl === disc.audioUrl;
     if (sameDisc && this.isPlaying) return true;
     const prepared = this.preparedMusic?.disc.id === disc.id && this.preparedMusic.disc.audioUrl === disc.audioUrl ? this.preparedMusic.audio : null;
@@ -1051,10 +1051,11 @@ class RoomAudioEngine {
       if (disc.audioUrl.startsWith('synth:')) this.startSynth();
       this.publish('playing');
       return true;
-    } catch {
+    } catch (error) {
       if (request !== this.requestId) return false;
       this.pauseMusic();
-      this.publish('error', '音乐未能开始播放，请再次触碰唱机。');
+      const blocked = autoplay && (error as { name?: string } | null)?.name === 'NotAllowedError';
+      this.publish(blocked ? 'idle' : 'error', blocked ? null : '音乐未能开始播放，请再次触碰唱机。');
       return false;
     }
   }

@@ -10,7 +10,7 @@ const compiledApp = ts.transpileModule(appSource, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true },
 }).outputText;
 
-function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
+function mountApp({ presetCount = 4, focusedObject = 'music-player', initialViewMode = 'cabin', blockedAutoplay = false } = {}) {
   const slots = [];
   let cursor = 0, dirty = true, tree;
   const effects = [];
@@ -18,6 +18,9 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
   const revokedUrls = [];
   const preparedDiscs = [];
   let inputClicks = 0;
+  const timers = new Map();
+  const starts = [];
+  let timerId = 0;
 
   const same = (a, b) => a && b && a.length === b.length && a.every((item, i) => Object.is(item, b[i]));
   const hooks = {
@@ -71,8 +74,15 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
     getSnapshot: () => audioSnapshot,
     unlock: async () => true,
     prepareMusic: disc => preparedDiscs.push(disc),
-    startMusic: async () => true,
-    pauseMusic() {},
+    async startMusic(disc, options) {
+      starts.push({ disc, options });
+      audioSnapshot.status = 'starting';
+      await Promise.resolve();
+      Object.assign(audioSnapshot, { disc, status: blockedAutoplay ? 'idle' : 'playing', isPlaying: !blockedAutoplay });
+      dirty = true;
+      return !blockedAutoplay;
+    },
+    pauseMusic() { audioSnapshot.status = 'paused'; audioSnapshot.isPlaying = false; dirty = true; },
     resumeMusic: async () => true,
     stopMusic() {},
     setMuted() {},
@@ -94,8 +104,8 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
   const target = new EventTarget();
   Object.assign(target, {
     location: { search: '?view=cabin' },
-    setTimeout: () => 1,
-    clearTimeout() {},
+    setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, delay }); return id; },
+    clearTimeout(id) { timers.delete(id); },
   });
   const URLMock = {
     createObjectURL(file) {
@@ -132,7 +142,7 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
       if (name === './scene/orbital/wardrobe/outfit') return { readOutfit: () => 'everyday' };
       if (name === './scene/orbital/cleaning') return { cleaningTiming: () => ({ fadeIn: 0, sweep: 0, fadeOut: 0, sweepInterval: 1 }), cleaningSweepCount: () => 1 };
       if (name === './scene/orbital/OrbitalDustPrompt') return { DustPrompt: 'DustPrompt' };
-      if (name === './scene/orbital/spacecraftFlight') return { readInitialViewMode: () => 'cabin' };
+      if (name === './scene/orbital/spacecraftFlight') return { readInitialViewMode: () => initialViewMode };
       if (name === './scene/orbital/orbital.css') return {};
       if (name === '../assets/brand/pocketworld-wordmark.webp') return 'wordmark.webp';
       throw new Error(`Unexpected dependency: ${name}`);
@@ -170,6 +180,17 @@ function mountApp({ presetCount = 4, focusedObject = 'music-player' } = {}) {
     createdUrls,
     revokedUrls,
     preparedDiscs,
+    starts,
+    audioSnapshot,
+    pauseMusic: roomAudio.pauseMusic,
+    set blocked(value) { blockedAutoplay = value; },
+    view(mode) { find(n => n.type === 'OrbitalScene').props.onViewModeChange(mode); render(); },
+    gesture(type) { target.dispatchEvent(new Event(type)); render(); },
+    async settle() { await Promise.resolve(); await Promise.resolve(); render(); },
+    async flushAutoplay() {
+      for (const [id, timer] of [...timers]) if (timer.delay === 0) { timers.delete(id); timer.fn(); }
+      await Promise.resolve(); await Promise.resolve(); render();
+    },
     scene: () => find(n => n.type === 'OrbitalScene'),
     promptText: () => find(n => n.type === 'DustPrompt')?.props?.text ?? '',
     main: () => find(n => n.type === 'main'),
@@ -232,4 +253,61 @@ test('App caps local music imports at the 6 vinyl rack slots for both click and 
   } finally {
     app.dispose();
   }
+});
+
+test('cabin entry autoplays the default record once and respects a later manual pause across reentry', async () => {
+  const app = mountApp({ initialViewMode: 'orbit' });
+  try {
+    await app.flushAutoplay();
+    app.gesture('pointerdown');
+    assert.equal(app.starts.length, 0);
+    app.view('cabin');
+    await app.flushAutoplay();
+    assert.equal(app.starts.length, 1);
+    assert.equal(app.starts[0].disc.id, 'preset-0');
+    assert.equal(app.starts[0].options.autoplay, true);
+    assert.equal(app.scene().props.isMusicPlaying, true);
+    app.pauseMusic();
+    app.gesture('keydown');
+    app.view('orbit'); app.view('cabin');
+    await app.flushAutoplay();
+    assert.equal(app.starts.length, 1);
+    assert.equal(app.scene().props.isMusicPlaying, false);
+  } finally { app.dispose(); }
+});
+
+test('blocked autoplay retries on pointer and keyboard gestures without overlapping requests', async () => {
+  const app = mountApp({ blockedAutoplay: true });
+  try {
+    await app.flushAutoplay();
+    assert.equal(app.starts.length, 1);
+    app.gesture('pointerdown'); app.gesture('keydown');
+    assert.equal(app.starts.length, 2);
+    await app.settle();
+    app.blocked = false;
+    app.gesture('keydown');
+    await app.settle();
+    assert.equal(app.starts.length, 3);
+    assert.equal(app.scene().props.isMusicPlaying, true);
+    app.gesture('pointerdown');
+    assert.equal(app.starts.length, 3);
+  } finally { app.dispose(); }
+});
+
+test('manual pause or another selected record cancels pending autoplay and unmount removes retries', async () => {
+  for (const status of ['paused', 'playing']) {
+    const app = mountApp({ blockedAutoplay: true });
+    await app.flushAutoplay();
+    Object.assign(app.audioSnapshot, { status, isPlaying: status === 'playing', disc: { id: 'manual-record' } });
+    app.gesture('pointerdown');
+    await app.settle();
+    assert.equal(app.starts.length, 1);
+    app.dispose();
+    app.gesture('keydown');
+    assert.equal(app.starts.length, 1);
+  }
+  const app = mountApp();
+  app.dispose();
+  await app.flushAutoplay();
+  assert.equal(app.starts.length, 0);
 });
